@@ -11,7 +11,7 @@ It crawls your file system and index files and adds to [Amazon Elasticsearch](ht
 
 ```sh
 git clone https://github.com/shirosaidev/diskover.git
-cd diskcover
+cd diskover
 ```
 
 The distribution contains:
@@ -56,17 +56,19 @@ python diskover.py
 
 Diskcover will read a local config file (`diskover.cfg`).
 
-* `[excluded_dirs]`
-* `dirs = .snapshot`
+```
+[excluded_dirs]
+dirs = .snapshot
 
-* `[excluded_files]`
-* `files = Thumbs.db, .DS_Store, ._.DS_Store, .localized`
+[excluded_files]
+files = Thumbs.db, .DS_Store, ._.DS_Store, .localized
 
-* `[aws_es]`
-* `host = `
+[aws_es]
+host = 
 
-* `[es_index]`
-* `name = logstash-diskover`
+[es_index]
+name = logstash-diskover
+```
 
 
 # Amazon Elasticsearch
