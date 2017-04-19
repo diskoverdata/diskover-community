@@ -2,8 +2,8 @@
 
 Welcome to Diskover FS Crawler 
 
-This crawler helps to index files from your local file system or over nfs mounts.
-It crawls your file system and index files and adds to [Amazon Elasticsearch](https://aws.amazon.com/elasticsearch-service/).
+This crawler helps to index files from your local file system or nfs mounts.
+It crawls your file system and index files and adds to [Amazon Elasticsearch](https://aws.amazon.com/elasticsearch-service/). It can help you find files which have not been modified for a long time, which can be archived and deleted to free up space.
 
 # Installation Guide
 
@@ -20,7 +20,6 @@ The distribution contains:
 $ tree
 .
 ├── LICENSE
-├── NOTICE
 ├── README.md
 ├── diskover.py
 └── diskover.cfg
@@ -37,11 +36,12 @@ You need to have at least **Python 2.7.10** and have installed Python client for
 pip install elasticsearch
 ```
 
-Start Diskcover FS crawler with:
+Start Diskcover FS crawler as root user with:
 
 ```sh
-python diskover.py
+sudo python diskover.py
 ```
+
 
 ## Diskover CLI options
 
