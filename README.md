@@ -3,7 +3,7 @@
 Welcome to Diskover FS Crawler 
 
 This crawler helps to index files from your local file system or nfs mounts.
-It crawls your file system and index files and adds to [Amazon Elasticsearch](https://aws.amazon.com/elasticsearch-service/). It can help you find files which have not been modified for a long time, which can be archived and deleted to free up space.
+It crawls your file system and index files and adds to [Amazon Elasticsearch](https://aws.amazon.com/elasticsearch-service/). It can help you find large files which have not been modified for a long time, which can be archived and deleted to free up disk space.
 
 # Installation Guide
 
