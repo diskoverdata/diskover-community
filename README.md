@@ -22,6 +22,7 @@ $ tree
 ├── LICENSE
 ├── README.md
 ├── diskover.py
+├── diskover_aws_es.py
 └── diskover.cfg
 ```
 
