@@ -5,6 +5,9 @@ Welcome to Diskover FS Crawler
 This crawler helps to index files from your local file system or nfs mounts.
 It crawls your file system and indexes files and adds to [Elasticsearch](https://www.elastic.co) or [Amazon Elasticsearch Service](https://aws.amazon.com/elasticsearch-service/). It is written in Python using Queue and threading modules for multi-threading the indexing. The indexed files are bulk added and streamed into Elasticsearch while the crawl is running allowing you to visualize the data in Kibana without having to wait until the crawl is finished.
 
+![alt tag](https://github.com/shirosaidev/diskover/blob/master/kibana-screenshot.png)
+
+
 # Installation Guide
 
 ## Download diskover
