@@ -22,7 +22,9 @@ $ tree
 ├── LICENSE
 ├── README.md
 ├── diskover.cfg
-└── diskover.py
+├── diskover.py
+├── export.json
+└── kibana-screenshot.png
 ```
 
 
@@ -100,6 +102,15 @@ Diskover creates the following fields :
 | `group`              | Group name                                  | `"staff"`                                   |
 | `hardlinks`          | Hardlink count                              | `1`                                         |
 | `inode`              | Inode number                                | `652490`                                    |
+
+
+## Saved objects for Diskover Kibana dashboard
+
+You can import the saved objects file `export.json` into Kibana for the dashboard visualizations in `kibana-screenshot.png`. In Kibana go to:
+
+* Management
+* Saved Objects
+* Import
 
 
 # License
