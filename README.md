@@ -106,11 +106,7 @@ Diskover creates the following fields :
 
 ## Saved objects for Diskover Kibana dashboard
 
-You can import the saved objects file `export.json` into Kibana for the dashboard visualizations in `kibana-screenshot.png`. In Kibana go to:
-
-* Management
-* Saved Objects
-* Import
+You can import the saved objects file `export.json` into Kibana for the dashboard visualizations in `kibana-screenshot.png`. In Kibana go to Management > Saved Objects > Import.
 
 
 # License
