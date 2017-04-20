@@ -7,7 +7,6 @@ It crawls your file system and indexes files and adds to [Elasticsearch](https:/
 
 ![alt tag](https://github.com/shirosaidev/diskover/blob/master/kibana-screenshot.png)
 
-
 # Installation Guide
 
 ## Download diskover
@@ -107,7 +106,7 @@ Diskover creates the following fields :
 | `inode`              | Inode number                                | `652490`                                    |
 
 
-## Saved objects for Diskover Kibana dashboard
+## Diskover Kibana dashboard
 
 You can import the saved objects file `export.json` into Kibana for the dashboard visualizations in `kibana-screenshot.png`. In Kibana go to Management > Saved Objects > Import.
 
