@@ -116,7 +116,7 @@ You can import the saved objects file `export.json` into Kibana for the dashboar
 ```
 This software is licensed under the Apache 2 license, quoted below.
 
-Copyright 2016-2017 Chris Park
+Copyright 2017 Chris Park
 
 Licensed under the Apache License, Version 2.0 (the "License"); you may not
 use this file except in compliance with the License. You may obtain a copy of
