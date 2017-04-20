@@ -3,7 +3,7 @@
 Welcome to Diskover FS Crawler 
 
 This crawler helps to index files from your local file system or nfs mounts.
-It crawls your file system and indexes files and adds to [Amazon Elasticsearch](https://aws.amazon.com/elasticsearch-service/). It is written in Python using Queue and threading modules for multi-threading the indexing. The indexed files are bulk added and streamed into Elasticsearch while the crawl is running.
+It crawls your file system and indexes files and adds to [Amazon Elasticsearch](https://aws.amazon.com/elasticsearch-service/). It is written in Python using Queue and threading modules for multi-threading the indexing. The indexed files are bulk added and streamed into Elasticsearch while the crawl is running allowing you to visualize the data in Kibana without having to wait until the crawl is finished.
 
 # Installation Guide
 
@@ -30,12 +30,16 @@ $ tree
 
 ## Getting Started
 
-GNU `find` command needs to be in your user path, which is usually `/usr/bin`. Diskover uses this for finding target directories to add to the queue.
-
 You need to have at least **Python 2.7.10** and have installed Python client for Elasticsearch using `pip`:
 
 ```sh
 pip install elasticsearch
+```
+
+You also need GNU `find` command which is used for building the directory queue list. It needs to be in your PATH, which is usually in `/usr/bin`:
+
+```sh
+which find
 ```
 
 Start Diskcover FS crawler as root user with:
