@@ -3,7 +3,7 @@
 Welcome to Diskover FS Crawler 
 
 This crawler helps to index files from your local file system or nfs mounts.
-It crawls your file system and indexes files and adds to [Amazon Elasticsearch](https://aws.amazon.com/elasticsearch-service/). It is written in Python using Queue and threading modules for multi-threading the indexing. The indexed files are bulk added and streamed into Elasticsearch while the crawl is running allowing you to visualize the data in Kibana without having to wait until the crawl is finished.
+It crawls your file system and indexes files and adds to [Elasticsearch](https://www.elastic.co) or [Amazon Elasticsearch Service](https://aws.amazon.com/elasticsearch-service/). It is written in Python using Queue and threading modules for multi-threading the indexing. The indexed files are bulk added and streamed into Elasticsearch while the crawl is running allowing you to visualize the data in Kibana without having to wait until the crawl is finished.
 
 # Installation Guide
 
@@ -22,8 +22,7 @@ $ tree
 ├── LICENSE
 ├── README.md
 ├── diskover.cfg
-├── diskover.py
-└── diskover_aws_es.py
+└── diskover.py
 ```
 
 
@@ -31,7 +30,7 @@ $ tree
 
 ## Getting Started
 
-You need to have at least **Python 2.7.10** and have installed Python client for Elasticsearch using `pip`:
+You need to have at least **Python 2.7.** and have installed Python client for Elasticsearch using `pip`:
 
 ```sh
 pip install elasticsearch
@@ -61,7 +60,7 @@ sudo python diskover.py
 
 ## Config file
 
-Diskcover will read a local config file (`diskover.cfg`). Here you can exclude any directories and files you don't want to index separated by comma. Elasticsearch hostname (endpoint) and index name are also set here.
+Diskcover will read a local config file (`diskover.cfg`). Here you can exclude any directories and files you don't want to index separated by comma. Elasticsearch hostname (endpoint), port and index name are also set here.
 
 ```
 [excluded_dirs]
@@ -70,11 +69,13 @@ dirs = .snapshot
 [excluded_files]
 files = Thumbs.db, .DS_Store, ._.DS_Store, .localized
 
-[aws_es]
-host = search-crawl-es-cluster-hr4yztrvzb7qucroyyjk1vokyb.ap-northeast-1.es.amazonaws.com
-
-[es_index]
-name = logstash-diskover
+[elasticsearch]
+aws = False
+;host = search-crawl-es-cluster-hr4yztrvzb7qucroyyjk1vokyb.ap-northeast-1.es.amazonaws.com
+;port = 443
+host = localhost
+port = 9200
+indexname = logstash-diskover
 ```
 
 
