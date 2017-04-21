@@ -73,7 +73,7 @@ Diskcover will read a local config file (`diskover.cfg`). Here you can exclude a
 dirs = .snapshot
 
 [excluded_files]
-files = Thumbs.db, .DS_Store, ._.DS_Store, .localized
+files = Thumbs.db, .DS_Store, ._.DS_Store, .localized, desktop.ini
 
 [elasticsearch]
 aws = False
