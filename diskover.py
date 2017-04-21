@@ -17,7 +17,6 @@ import optparse
 import Queue
 import threading
 import ConfigParser
-import json
 from elasticsearch import Elasticsearch, helpers, RequestsHttpConnection
 
 def printLog(x):
