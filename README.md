@@ -39,7 +39,17 @@ $ tree
 You need to have at least **Python 2.7.** and have installed Python client for Elasticsearch using `pip`:
 
 ```sh
+python --version
+```
+
+```sh
 pip install elasticsearch
+```
+
+If you don't have pip, you can install it with:
+
+```sh
+sudo easy_install pip
 ```
 
 You also need GNU `find` command which is used for building the directory queue list. It needs to be in your PATH, which is usually in `/usr/bin`:
@@ -51,7 +61,8 @@ which find
 Start Diskcover FS crawler as root user with:
 
 ```sh
-sudo python diskover.py
+cd /some/path/you/want/to/crawl
+sudo python /path/to/diskover.py
 ```
 
 
@@ -66,7 +77,7 @@ sudo python diskover.py
 
 ## Config file
 
-Diskcover will read a local config file (`diskover.cfg`). Here you can exclude any directories and files you don't want to index separated by comma. Elasticsearch hostname (endpoint), port and index name are also set here.
+Diskcover will read a local config file (`diskover.cfg`). ***It needs to be in the same directory as `diskover.py`***. Here you can exclude any directories and files you don't want to index separated by comma. Elasticsearch hostname (endpoint), port and index name are also set here. If you are using AWS, set `aws = True` and `port = 443` and set the host to the endpoint in your AWS ES console. Lines with `;` are comments and ignored by Diskover.
 
 ```
 [excluded_dirs]
