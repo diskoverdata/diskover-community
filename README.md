@@ -77,7 +77,7 @@ sudo python /path/to/diskover.py
 
 ## Config file
 
-Diskcover will read a local config file (`diskover.cfg`). ***It needs to be in the same directory as `diskover.py`***. Here you can exclude any directories and files you don't want to index separated by comma. Elasticsearch hostname (endpoint), port and index name are also set here. If you are using AWS ES, set `aws = True` and `port = 443` and set the host to the endpoint in your AWS ES console. Lines beginning with `;` are comments and ignored by Diskover. If you are running Elasticsearch on your localhost or lan, set `aws = False` and the default port is `9200`.
+Diskcover will read a local config file (`diskover.cfg`). **It needs to be in the same directory as `diskover.py`**. Here you can exclude any directories and files you don't want to index separated by comma. Elasticsearch hostname (endpoint), port and index name are also set here. If you are using AWS ES, set `aws = True` and `port = 443` and set the host to the endpoint in your AWS ES console. Lines beginning with `;` are comments and ignored by Diskover. If you are running Elasticsearch on your localhost or lan, set `aws = False` and the default port is `9200`.
 
 ```
 [excluded_dirs]
