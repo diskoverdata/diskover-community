@@ -77,11 +77,11 @@ files = Thumbs.db, .DS_Store, ._.DS_Store, .localized, desktop.ini
 
 [elasticsearch]
 aws = False
-;host = search-crawl-es-cluster-hr4yztrvzb7qucroyyjk1vokyb.ap-northeast-1.es.amazonaws.com
+;host = search-diskover-es-cluster-eg3yztrvzb6qucroyyjk2vokza.ap-northeast-1.es.amazonaws.com
 ;port = 443
 host = localhost
 port = 9200
-indexname = logstash-diskover
+indexname = diskover-2017.04.22
 ```
 
 
@@ -108,7 +108,11 @@ Diskover creates the following fields :
 | `inode`              | Inode number                                | `652490`                                    |
 
 
-## Diskover Kibana dashboard
+## Kibana
+
+For the index pattern use `diskover-*`. Make sure the `Index contains time-based events` box is `unchecked` when you create index patterns.
+
+### Diskover Dashboard
 
 You can import the saved objects file `export.json` into Kibana for the dashboard visualizations in `kibana-screenshot.png`. In Kibana go to Management > Saved Objects > Import.
 
