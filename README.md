@@ -87,6 +87,11 @@ indexname = diskover-2017.04.22
 
 # Elasticsearch
 
+## Indices
+
+Diskover creates an index with the name from the config file. **If an existing index exists with the same name, it will be deleted and a new index created.** If you are doing crawls every month you could name the indices diskover-2017.04, diskover-2017.05, diskover-2017-06, etc.
+
+
 ## Generated fields
 
 Diskover creates the following fields :
@@ -112,9 +117,15 @@ Diskover creates the following fields :
 
 For the index pattern use `diskover-*`. Make sure the `Index contains time-based events` box is `unchecked` when you create index patterns.
 
+
 ### Diskover Dashboard
 
-You can import the saved objects file `export.json` into Kibana for the dashboard visualizations in `kibana-screenshot.png`. In Kibana go to Management > Saved Objects > Import.
+To use the Diskover dashboard (screenshot), import the saved objects file `export.json` into Kibana for the dashboard visualizations. In Kibana go to `Management > Saved Objects > Import`.
+
+
+### Kibana Field Formatting
+
+This will help make the dashboard easier to read like in the screenshot for filesize and dates. In Kibana go to `Management > Index Patterns > diskover-*`. In the `Fields tab` click the `edit icon` under controls column for `filesize` field. Change the format to `bytes` and click `Update Field`. For `access_time, modified_time, and change_time`, edit the fields and change the format to `date` and set the format pattern to `MM-DD-YYYY, HH:mm` and click `Update Field`.
 
 
 # License
