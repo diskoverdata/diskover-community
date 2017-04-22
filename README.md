@@ -34,6 +34,15 @@ $ tree
 
 # User Guide
 
+## Requirements
+
+* `Python 2.7.` (tested on Python 2.7.10, have not tested on Python 3)
+* `Python client for Elasticsearch`
+* `GNU find command` (most likely you already have this)
+* `Elasticsearch (local or aws es service)`
+* `Kibana`
+
+
 ## Getting Started
 
 You need to have at least **Python 2.7.** and have installed Python client for Elasticsearch using `pip`:
