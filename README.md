@@ -126,7 +126,7 @@ Diskover creates the following fields :
 
 ## Kibana
 
-For the index pattern use `diskover-*`. Make sure the `Index contains time-based events` box is `unchecked` when you create index patterns.
+For the index pattern use `diskover-*`. **Make sure the `Index contains time-based events` box is `unchecked`** when you create index patterns.
 
 
 ### Diskover Dashboard
