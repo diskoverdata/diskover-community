@@ -104,6 +104,24 @@ port = 9200
 indexname = diskover-2017.04.22
 ```
 
+## Benchmarks and speeding up crawl times
+
+The command line options for Diskover should help speed up the crawl times such as setting minimum file size and modified time. Also excluding certain files/directories will help.
+
+You could also speed up the crawl by running multiple Diskover processes and bulk loading into different `diskover-<name>` indices in Elasticsearch. I haven't tested this but in theory that should help to pull in data faster for analysis. Diskover bulk loads data into Elasticsearch while the crawl is running so you can view in Kibana during the scan.
+
+Here are some benchmarks running on my macbook pro, this includes time to crawl my local filesystem and index in Elasticsearch using the default of 2 threads. The files were all 1KB.
+
+```sh
+[2017-04-23 10:02:58] *** Processed Directories: 10001
+[2017-04-23 10:02:58] *** Processed Files: 10000
+[2017-04-23 10:02:58] *** Elapsed time: 16.2423961163
+
+[2017-04-23 10:46:24] *** Processed Directories: 100001
+[2017-04-23 10:46:24] *** Processed Files: 100000
+[2017-04-23 10:46:24] *** Elapsed time: 167.5496099
+```
+
 
 # Elasticsearch
 
