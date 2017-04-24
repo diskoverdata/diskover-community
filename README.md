@@ -107,7 +107,7 @@ indexname = diskover-2017.04.22
 
 ## Benchmarks and speeding up crawl times
 
-The command line options for Diskover should help speed up the crawl times such as setting minimum file size and modified time. Also excluding certain files/directories will help.
+The command line options for Diskover should help speed up the crawl times such as setting minimum file size and modified time. Also excluding certain files/directories will help. Running with verbose logging will increase crawl times.
 
 You could also speed up the crawl by running multiple Diskover processes and bulk loading into different `diskover-<name>` indices in Elasticsearch. I haven't tested this but in theory that should help to pull in data faster for analysis. Diskover bulk loads data into Elasticsearch while the crawl is running so you can view in Kibana during the scan.
 
