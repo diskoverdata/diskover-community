@@ -164,7 +164,7 @@ def processDirectoryWorker(threadnum, DIRECTORY_QUEUE, ES, INDEXNAME, DATEEPOCH,
 		if path is None:
 			break
 		if VERBOSE > 0:
-			printLog('%s: Processing: %s' % (threadnum, path))
+			printLog('%s: Crawling: %s' % (threadnum, path))
 		# crawl the files in the directory
 		filelist = crawlFiles(path, DATEEPOCH, DAYS, MINSIZE, EXCLUDED_FILES, VERBOSE)
 		# add filelist to ES index
@@ -331,8 +331,8 @@ def main():
 		t.join()
 	elapsedtime = time.time() - DATEEPOCH
 	printLog('*** Done')
-	printLog('*** Processed Directories: %s' % total_num_dirs)
-	printLog('*** Processed Files: %s' % total_num_files)
+	printLog('*** Directories Crawled: %s' % total_num_dirs)
+	printLog('*** Files Indexed: %s' % total_num_files)
 	printLog('*** Elapsed time: %s' % elapsedtime)
 
 if __name__ == "__main__":
