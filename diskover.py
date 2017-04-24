@@ -46,11 +46,11 @@ def loadConfig():
 	EXCLUDED_FILES = f.split(',')
 	return AWS, ES_HOST, ES_PORT, INDEXNAME, EXCLUDED_DIRS, EXCLUDED_FILES
 
-def crawlDirectories(TOPDIR, EXCLUDED_DIRS, DIRECTORY_QUEUE):
+def crawlDirectories(TOPDIR, EXCLUDED_DIRS, DIRECTORY_QUEUE, VERBOSE):
 	"""This is the walk directory tree function.
 	It crawls the tree top-down using find command.
 	Ignores directories that are empty and in
-	'excluded_dirs'.
+	'EXCLUDED_DIRS'.
 	"""
 	global total_num_dirs
 	cmd = ['find', TOPDIR, '-type', 'd', '!', '-empty']
@@ -63,12 +63,13 @@ def crawlDirectories(TOPDIR, EXCLUDED_DIRS, DIRECTORY_QUEUE):
 					stdout=subprocess.PIPE,stderr=subprocess.PIPE)
 	for line in p.stdout:
 		dir = line.strip()
-		#printLog('Queuing directory: %s' % dir)
+		if VERBOSE > 0:
+			printLog('Queuing directory: %s' % dir)
 		# add item to queue (directory)
 		DIRECTORY_QUEUE.put(dir)
 		total_num_dirs += 1
 
-def crawlFiles(path, DATEEPOCH, DAYS, MINSIZE, EXCLUDED_FILES):
+def crawlFiles(path, DATEEPOCH, DAYS, MINSIZE, EXCLUDED_FILES, VERBOSE):
 	"""This is the list directory function.
 	It crawls for files using os.listdir.
 	Ignores files smaller than 'MINSIZE' MB, newer
@@ -78,6 +79,7 @@ def crawlFiles(path, DATEEPOCH, DAYS, MINSIZE, EXCLUDED_FILES):
 	filelist = []
 	# Crawl files in the directory
 	for name in os.listdir(path):
+		name = name.strip()
 		# Skip file if it's excluded
 		if name not in EXCLUDED_FILES:
 			# get parent path
@@ -132,19 +134,21 @@ def crawlFiles(path, DATEEPOCH, DAYS, MINSIZE, EXCLUDED_FILES):
 						indextime = int(time.time())
 						# add file metadata to filelist
 						filelist.append('{"filename": "%s", "extension": "%s", "path_full": "%s", "path_parent": "%s", "filesize": %s, "owner": "%s", "group": "%s", "last_modified": %s, "last_access": %s, "last_change": %s, "hardlinks": %s, "inode": %s, "indexing_date": %s}' % (name.decode('utf-8'), extension, filename_fullpath.decode('utf-8'), abspath.decode('utf-8'), size, owner, group, mtime, atime, ctime, hardlinks, inode, indextime))
+						if VERBOSE > 1:
+							printLog('{"filename": "%s", "extension": "%s", "path_full": "%s", "path_parent": "%s", "filesize": %s, "owner": "%s", "group": "%s", "last_modified": %s, "last_access": %s, "last_change": %s, "hardlinks": %s, "inode": %s, "indexing_date": %s}' % (name.decode('utf-8'), extension, filename_fullpath.decode('utf-8'), abspath.decode('utf-8'), size, owner, group, mtime, atime, ctime, hardlinks, inode, indextime))
 						total_num_files += 1
 	return filelist
 
-def workerSetup(DIRECTORY_QUEUE, NUM_THREADS, ES, INDEXNAME, DATEEPOCH, DAYS, MINSIZE, EXCLUDED_FILES):
+def workerSetup(DIRECTORY_QUEUE, NUM_THREADS, ES, INDEXNAME, DATEEPOCH, DAYS, MINSIZE, EXCLUDED_FILES, VERBOSE):
 	threads = []
 	for i in range(NUM_THREADS):
-		worker = threading.Thread(target=processDirectoryWorker, args=(i, DIRECTORY_QUEUE, ES, INDEXNAME, DATEEPOCH, DAYS, MINSIZE, EXCLUDED_FILES,))
+		worker = threading.Thread(target=processDirectoryWorker, args=(i, DIRECTORY_QUEUE, ES, INDEXNAME, DATEEPOCH, DAYS, MINSIZE, EXCLUDED_FILES, VERBOSE,))
 		worker.setDaemon(True)
 		worker.start()
 		threads.append(worker)
 	return threads
 
-def processDirectoryWorker(threadnum, DIRECTORY_QUEUE, ES, INDEXNAME, DATEEPOCH, DAYS, MINSIZE, EXCLUDED_FILES):
+def processDirectoryWorker(threadnum, DIRECTORY_QUEUE, ES, INDEXNAME, DATEEPOCH, DAYS, MINSIZE, EXCLUDED_FILES, VERBOSE):
 	"""This is the worker thread function.
 	It processes items in the queue one after another.
 	These daemon threads go into an infinite loop,
@@ -153,17 +157,19 @@ def processDirectoryWorker(threadnum, DIRECTORY_QUEUE, ES, INDEXNAME, DATEEPOCH,
 	"""
 	filelist = []
 	while True:
-		#printLog('%s: Looking for the next directory' % threadnum)
+		if VERBOSE > 0:
+			printLog('%s: Looking for the next directory' % threadnum)
 		# get an item from the queue (directory)
 		path = DIRECTORY_QUEUE.get()
 		if path is None:
 			break
-		#printLog('%s: Processing: %s' % (threadnum, path))
+		if VERBOSE > 0:
+			printLog('%s: Processing: %s' % (threadnum, path))
 		# crawl the files in the directory
-		filelist = crawlFiles(path, DATEEPOCH, DAYS, MINSIZE, EXCLUDED_FILES)
+		filelist = crawlFiles(path, DATEEPOCH, DAYS, MINSIZE, EXCLUDED_FILES, VERBOSE)
 		# add filelist to ES index
 		if filelist:
-			indexAdd(ES, INDEXNAME, filelist)
+			indexAdd(ES, INDEXNAME, filelist, VERBOSE)
 		DIRECTORY_QUEUE.task_done()
 
 def elasticsearchConnect(AWS, ES_HOST, ES_PORT):
@@ -249,13 +255,14 @@ def indexCreate(ES, INDEXNAME):
 	printLog('*** Creating ES index')
 	ES.indices.create(index=INDEXNAME, body=mappings)
 
-def indexAdd(ES, INDEXNAME, filelist):
+def indexAdd(ES, INDEXNAME, filelist, VERBOSE):
 	"""This is the ES index add function.
 	It bulk adds data from worker's crawl
 	results into ES.
 	"""
 	# bulk load index data
-	#printLog('*** Bulk loading to ES index')
+	if VERBOSE > 0:
+		printLog('*** Bulk loading to ES index')
 	helpers.bulk(ES, filelist, index=INDEXNAME, doc_type='file')
 
 def main():
@@ -272,6 +279,8 @@ def main():
 						help="minimum file size in MB (default: 5)")
 	parser.add_option("-t", "--threads", dest="NUM_THREADS",
 						help="number of threads to use (default: 2)")
+	parser.add_option("-v", "--verbose", dest="VERBOSE",
+						help="run in verbose level (default: 0)")
 	(options, args) = parser.parse_args()
 	# Check for arguments
 	if options.TOPDIR is None:
@@ -290,6 +299,10 @@ def main():
 		NUM_THREADS = 2
 	else:
 		NUM_THREADS = int(options.NUM_THREADS)
+	if options.VERBOSE is None:
+		VERBOSE = 0
+	else:
+		VERBOSE = int(options.VERBOSE)
 
 	# Date calculation seconds since epoch
 	DATEEPOCH = int(time.time())
@@ -305,10 +318,10 @@ def main():
 	# create ES index
 	indexCreate(ES, INDEXNAME)
 	# setup worker threads
-	THREADS = workerSetup(DIRECTORY_QUEUE, NUM_THREADS, ES, INDEXNAME, DATEEPOCH, DAYS, MINSIZE, EXCLUDED_FILES)
+	THREADS = workerSetup(DIRECTORY_QUEUE, NUM_THREADS, ES, INDEXNAME, DATEEPOCH, DAYS, MINSIZE, EXCLUDED_FILES, VERBOSE)
 	printLog('*** Starting crawl')
 	# walk directory tree
-	crawlDirectories(TOPDIR, EXCLUDED_DIRS, DIRECTORY_QUEUE)
+	crawlDirectories(TOPDIR, EXCLUDED_DIRS, DIRECTORY_QUEUE, VERBOSE)
 
 	printLog('*** Main thread waiting')
 	# wait for all threads to finish
