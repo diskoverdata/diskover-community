@@ -114,12 +114,12 @@ You could also speed up the crawl by running multiple Diskover processes and bul
 Here are some benchmarks running on my macbook pro, this includes time to crawl my local filesystem and index in Elasticsearch (in seconds) using the default of 2 threads. The files were all 1KB.
 
 ```sh
-[2017-04-23 10:02:58] *** Processed Directories: 10001
-[2017-04-23 10:02:58] *** Processed Files: 10000
+[2017-04-23 10:02:58] *** Directories Crawled: 10001
+[2017-04-23 10:02:58] *** Files Indexed: 10000
 [2017-04-23 10:02:58] *** Elapsed time: 16.2423961163
 
-[2017-04-23 10:46:24] *** Processed Directories: 100001
-[2017-04-23 10:46:24] *** Processed Files: 100000
+[2017-04-23 10:46:24] *** Directories Crawled: 100001
+[2017-04-23 10:46:24] *** Files Indexed: 100000
 [2017-04-23 10:46:24] *** Elapsed time: 167.5496099
 ```
 
