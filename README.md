@@ -82,6 +82,7 @@ sudo python /path/to/diskover.py
 * `-m, --mtime` minimum days ago for modified time (default: 30)
 * `-s, --minsize` minimum file size in MB (default: 5)
 * `-t, --threads` number of threads to use (default: 2)
+* `-v VERBOSE, --verbose` run in verbose level (default: 0)
 
 
 ## Config file
