@@ -53,12 +53,12 @@ def crawlDirectories(TOPDIR, EXCLUDED_DIRS, DIRECTORY_QUEUE, VERBOSE):
 	'EXCLUDED_DIRS'.
 	"""
 	global total_num_dirs
-	cmd = ['find', TOPDIR, '-type', 'd', '!', '-empty']
+	cmd = ['find', TOPDIR, '-type', 'd', '-and', '-not', '-empty']
 	for i in EXCLUDED_DIRS:
 		cmd.append('-and')
-		cmd.append('!')
-		cmd.append('-name')
-		cmd.append(i)
+		cmd.append('-not')
+		cmd.append('-path')
+		cmd.append('*%s*' %i)
 	p = subprocess.Popen(cmd,shell=False,stdin=subprocess.PIPE,
 					stdout=subprocess.PIPE,stderr=subprocess.PIPE)
 	for line in p.stdout:
