@@ -40,8 +40,8 @@ $ tree
 * `Python 2.7.` (tested on Python 2.7.10, have not tested on Python 3)
 * `Python client for Elasticsearch`
 * `GNU find command` (most likely you already have this)
-* `Elasticsearch (local or AWS ES service, tested on Elasticsearch 5.3.0)`
-* `Kibana (tested on Kibana 5.3.0)`
+* `Elasticsearch` (local or AWS ES service, tested on Elasticsearch 5.3.0)
+* `Kibana` (tested on Kibana 5.3.0)
 
 
 ## Getting Started
