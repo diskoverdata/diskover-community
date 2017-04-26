@@ -36,11 +36,12 @@ $ tree
 
 ## Requirements
 
+* `Linux or Mac OS X` (tested on Mac OS X 10.11.6 and Ubuntu 16.04, have not tested on Windows)
 * `Python 2.7.` (tested on Python 2.7.10, have not tested on Python 3)
 * `Python client for Elasticsearch`
 * `GNU find command` (most likely you already have this)
-* `Elasticsearch (local or aws es service)`
-* `Kibana`
+* `Elasticsearch (local or AWS ES service, tested on Elasticsearch 5.3.0)`
+* `Kibana (tested on Kibana 5.3.0)`
 
 
 ## Getting Started
