@@ -128,7 +128,7 @@ Here are some benchmarks running on my macbook pro, this includes time to crawl 
 
 ## Indices
 
-Diskover creates an index with the name from the config file. **If an existing index exists with the same name, it will be deleted and a new index created.** If you are doing crawls every month you could name the indices diskover-2017.04, diskover-2017.05, diskover-2017-06, etc.
+Diskover creates an index with the name from the config file. **If an existing index exists with the same name, it will be deleted and a new index created.** If you are doing crawls every week for example, you could name the indices diskover-2017.04.09, diskover-2017.04.16, diskover-2017.04.23, etc.
 
 
 ## Generated fields
