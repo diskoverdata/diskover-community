@@ -26,17 +26,20 @@ def printBanner():
 	b = randint(1,3)
 	# print banner
 	if b == 1:
-		banner = """\033[93m
+		banner = """
+\033[93m
   ________  .__        __
   \______ \ |__| _____|  | _________  __ ___________
    |    |  \|  |/  ___/  |/ /  _ \  \/ // __ \_  __ \\ /)___(\\
    |    `   \  |\___ \|    <  <_> )   /\  ___/|  | \/ (='.'=)
   /_______  /__/____  >__|_ \____/ \_/  \___  >__|   (\\")_(\\")
           \/        \/     \/   v%s      \/
-                      https://github.com/shirosaidev/diskover\033[0m
+                      https://github.com/shirosaidev/diskover
+\033[0m
 """ % VERSION
 	elif b == 2:
-		banner = """\033[93m
+		banner = """
+\033[93m
    ___       ___       ___       ___       ___       ___       ___       ___
   /\  \     /\  \     /\  \     /\__\     /\  \     /\__\     /\  \     /\  \\
  /::\  \   _\:\  \   /::\  \   /:/ _/_   /::\  \   /:/ _/_   /::\  \   /::\  \\
@@ -44,16 +47,19 @@ def printBanner():
 \:\/:/  / \::/\/__/ \:\:\/__/ \;:;-",-" \:\/:/  / |::::/  / \:\:\/  / \;:::/  /
  \::/  /   \:\__\    \::/  /   |:|  |    \::/  /   L;;/__/   \:\/  /   |:\/__/
   \/__/     \/__/     \/__/     \|__|     \/__/    v%s     \/__/     \|__|
-                                      https://github.com/shirosaidev/diskover\033[0m
+                                      https://github.com/shirosaidev/diskover
+\033[0m
 """ % VERSION
 	elif b == 3:
-		banner = """\033[93m
+		banner = """
+\033[93m
     _/_/_/    _/            _/
    _/    _/        _/_/_/  _/  _/      _/_/    _/      _/    _/_/    _/  _/_/
   _/    _/  _/  _/_/      _/_/      _/    _/  _/      _/  _/_/_/_/  _/_/
  _/    _/  _/      _/_/  _/  _/    _/    _/    _/  _/    _/        _/
 _/_/_/    _/  _/_/_/    _/    _/    _/_/        _/ v%s   _/_/_/  _/
-                              https://github.com/shirosaidev/diskover\033[0m
+                              https://github.com/shirosaidev/diskover
+\033[0m
 """ % VERSION
 	print(banner)
 
@@ -62,7 +68,7 @@ def printProgressBar(iteration, total, suffix=''):
 	It shows progress of the queue.
 	"""
 	decimals = 0
-	bar_length = 60
+	bar_length = 50
 	str_format = "{0:." + str(decimals) + "f}"
 	percents = str_format.format(100 * (iteration / float(total)))
 	filled_length = int(round(bar_length * iteration / float(total)))
