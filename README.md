@@ -75,6 +75,37 @@ cd /path/you/want/to/crawl
 sudo python /path/to/diskover.py
 ```
 
+A successfull crawl should look like this:
+
+```sh
+sudo python /path/to/diskover.py
+
+
+ _ .-') _             .-')   .-. .-')                     (`-.      ('-.  _  .-')
+( (  OO) )           ( OO ). \  ( OO )                  _(OO  )_  _(  OO)( \( -O )
+ \     .'_   ,-.-') (_)---\_),--. ,--.  .-'),-----. ,--(_/   ,. \(,------.,------.
+ ,`'--..._)  |  |OO)/    _ | |  .'   / ( OO'  .-.  '\   \   /(__/ |  .---'|   /`. '
+ |  |  \  '  |  |  \\  :` `. |      /, /   |  | |  | \   \ /   /  |  |    |  /  | |
+ |  |   ' |  |  |(_/ '..`''.)|     ' _)\_) |  |\|  |  \   '   /, (|  '--. |  |_.' |
+ |  |   / : ,|  |_.'.-._)   \|  .   \    \ |  | |  |   \     /__) |  .--' |  .  '.'
+ |  '--'  /(_|  |   \       /|  |\   \    `'  '-'  '    \   /     |  `---.|  |\  \
+ `-------'   `--'    `-----' `--' '--'      `-----'      `-'v1.0.1`------'`--' '--'
+                                           https://github.com/shirosaidev/diskover
+
+
+[2017-04-27 11:37:16] [status] Connecting to Elasticsearch
+[2017-04-27 11:37:16] [info] Checking for ES index
+[2017-04-27 11:37:16] [warning] ES index exists, deleting
+[2017-04-27 11:37:16] [info] Creating ES index
+[2017-04-27 11:37:16] [status] Finding directories to crawl
+[2017-04-27 11:37:19] [info] Found 7722 directories
+[2017-04-27 11:37:19] [status] Crawling
+100% |████████████████████████████████████████████████████████████| 7721/7722
+[2017-04-27 11:37:25] [info] Directories Crawled: 7722
+[2017-04-27 11:37:25] [info] Files Indexed: 350
+[2017-04-27 11:37:25] [info] Elapsed time: 9.66399002075
+```
+
 
 ## Diskover CLI options
 
