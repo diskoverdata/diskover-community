@@ -17,7 +17,7 @@ import ConfigParser
 from random import randint
 from elasticsearch import Elasticsearch, helpers, RequestsHttpConnection
 
-VERSION = '1.0.1'
+VERSION = '1.0.2'
 
 def printBanner():
 	"""This is the print banner function.
@@ -328,7 +328,7 @@ def indexCreate(ES, INDEXNAME):
 						"type": "integer"
 					},
 					"inode": {
-						"type": "integer"
+						"type": "long"
 					},
 					"indexing_date": {
 						"type": "date",
