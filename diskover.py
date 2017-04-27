@@ -1,13 +1,10 @@
 #!/usr/bin/env python
-#
-# diskover.py
-#
+# -*- coding: utf-8 -*-
 # Diskover fs crawler
-# Chris Park cpark16@gmail.com
 # https://github.com/shirosaidev/diskover
-#
 
 import os
+import sys
 import subprocess
 import pwd
 import grp
@@ -19,10 +16,46 @@ import threading
 import ConfigParser
 from elasticsearch import Elasticsearch, helpers, RequestsHttpConnection
 
-def printLog(x):
+VERSION = 1.1
+
+# Print iterations progress
+def printProgressBar(iteration, total, suffix=''):
+	"""This is the create terminal progress bar function.
+	It shows progress of the queue.
+	"""
+	decimals = 0
+	bar_length = 60
+	str_format = "{0:." + str(decimals) + "f}"
+	percents = str_format.format(100 * (iteration / float(total)))
+	filled_length = int(round(bar_length * iteration / float(total)))
+	bar = '█' * filled_length + '-' * (bar_length - filled_length)
+
+	sys.stdout.write('\r\033[96m%s%s |%s| %s\033[0m' % (percents, '%', bar, suffix)),
+
+	if iteration == total:
+	    sys.stdout.write('\n')
+	sys.stdout.flush()
+
+def printLog(logtext, logtype='', newline=True):
+	"""This is the print log function.
+	It prints log ouptput with date and log type prefix.
+	"""
+	if logtype == 'info':
+		 prefix = '[\033[92minfo\033[00m]' # info green
+	elif logtype == 'status':
+		 prefix = '[\033[93mstatus\033[00m]' # status yellow
+	elif logtype == 'warning':
+		prefix = '[\033[91mwarning\033[00m]' # warning red
+	elif logtype == 'error':
+		prefix = '[\033[91merror\033[00m]' # error red
+	else:
+		prefix = ''
 	ts = time.time()
 	st = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
-	print('[' +st+ '] '+x)
+	sys.stdout.write('\r[%s] %s %s'%(st, prefix, logtext))
+	if newline:
+		sys.stdout.write('\n')
+		sys.stdout.flush()
 
 def loadConfig():
 	"""This is the load config function.
@@ -68,6 +101,9 @@ def crawlDirectories(TOPDIR, EXCLUDED_DIRS, DIRECTORY_QUEUE, VERBOSE):
 		# add item to queue (directory)
 		DIRECTORY_QUEUE.put(dir)
 		total_num_dirs += 1
+		printLog('Found %s directories'%total_num_dirs, logtype='info', newline=False)
+	sys.stdout.write('\n')
+	sys.stdout.flush()
 
 def crawlFiles(path, DATEEPOCH, DAYS, MINSIZE, EXCLUDED_FILES, VERBOSE):
 	"""This is the list directory function.
@@ -110,26 +146,30 @@ def crawlFiles(path, DATEEPOCH, DAYS, MINSIZE, EXCLUDED_FILES, VERBOSE):
 						hardlinks = int(os.stat(filename_fullpath).st_nlink)
 						# get inode number
 						inode = int(os.stat(filename_fullpath).st_ino)
-						# get owner
+						# get owner name
+						uid = os.stat(filename_fullpath).st_uid
 						try:
-							owner = pwd.getpwuid(os.stat(filename_fullpath).st_uid).pw_name.split('\\')
+							owner = pwd.getpwuid(uid).pw_name.split('\\')
 							# remove domain before owner
 							if len(owner) == 2:
 								owner = owner[1]
 							else:
 								owner = owner[0]
+						# if we can't find the owner name, get the uid number
 						except KeyError:
-							owner = null
+							owner = uid
 						# get group
+						gid = os.stat(filename_fullpath).st_gid
 						try:
-							group = grp.getgrgid(os.stat(filename_fullpath).st_gid).gr_name.split('\\')
+							group = grp.getgrgid(gid).gr_name.split('\\')
 							# remove domain before group
 							if len(group) == 2:
 								group = group[1]
 							else:
 								group = group[0]
+						# if we can't find the group name, get the gid number
 						except KeyError:
-							group = null
+							group = gid
 						# get time (seconds since epoch)
 						indextime = int(time.time())
 						# add file metadata to filelist
@@ -158,13 +198,13 @@ def processDirectoryWorker(threadnum, DIRECTORY_QUEUE, ES, INDEXNAME, DATEEPOCH,
 	filelist = []
 	while True:
 		if VERBOSE > 0:
-			printLog('%s: Looking for the next directory' % threadnum)
+			printLog('[%s]: Looking for the next directory'%threadnum, logtype='status')
 		# get an item from the queue (directory)
 		path = DIRECTORY_QUEUE.get()
 		if path is None:
 			break
 		if VERBOSE > 0:
-			printLog('%s: Crawling: %s' % (threadnum, path))
+			printLog('[%s]: Crawling: %s'%(threadnum, path), logtype='info')
 		# crawl the files in the directory
 		filelist = crawlFiles(path, DATEEPOCH, DAYS, MINSIZE, EXCLUDED_FILES, VERBOSE)
 		# add filelist to ES index
@@ -185,7 +225,7 @@ def elasticsearchConnect(AWS, ES_HOST, ES_PORT):
 		ES = Elasticsearch(hosts=[{'host': ES_HOST, 'port': ES_PORT}])
 	# Ping check ES
 	if not ES.ping():
-		raise ValueError("Connection failed")
+		raise ValueError(printLog('Unable to connect to Elasticsearch', logtype='error'))
 	return ES
 
 def indexCreate(ES, INDEXNAME):
@@ -194,10 +234,10 @@ def indexCreate(ES, INDEXNAME):
 	there is one with same name. It also creates
 	the new index and sets up mappings.
 	"""
-	printLog('*** Checking for ES index')
+	printLog('Checking for ES index', logtype='info')
 	#delete index if exists
 	if ES.indices.exists(index=INDEXNAME):
-		printLog('*** ES index exists, deleting')
+		printLog('ES index exists, deleting', logtype='warning')
 		ES.indices.delete(index=INDEXNAME, ignore=[400, 404])
 	#index mappings
 	mappings = {
@@ -252,7 +292,7 @@ def indexCreate(ES, INDEXNAME):
 		}
 	}
 	#create index
-	printLog('*** Creating ES index')
+	printLog('Creating ES index', logtype='info')
 	ES.indices.create(index=INDEXNAME, body=mappings)
 
 def indexAdd(ES, INDEXNAME, filelist, VERBOSE):
@@ -262,14 +302,32 @@ def indexAdd(ES, INDEXNAME, filelist, VERBOSE):
 	"""
 	# bulk load index data
 	if VERBOSE > 0:
-		printLog('*** Bulk loading to ES index')
+		printLog('Bulk loading to ES index', logtype='info')
 	helpers.bulk(ES, filelist, index=INDEXNAME, doc_type='file')
 
 def main():
 	global total_num_files
 	global total_num_dirs
+
+	# banner
+	print """
+\033[96m
+ _ .-') _             .-')   .-. .-')                     (`-.      ('-.  _  .-')
+( (  OO) )           ( OO ). \  ( OO )                  _(OO  )_  _(  OO)( \( -O )
+ \     .'_   ,-.-') (_)---\_),--. ,--.  .-'),-----. ,--(_/   ,. \(,------.,------.
+ ,`'--..._)  |  |OO)/    _ | |  .'   / ( OO'  .-.  '\   \   /(__/ |  .---'|   /`. '
+ |  |  \  '  |  |  \\\  :` `. |      /, /   |  | |  | \   \ /   /  |  |    |  /  | |
+ |  |   ' |  |  |(_/ '..`''.)|     ' _)\_) |  |\|  |  \   '   /, (|  '--. |  |_.' |
+ |  |   / : ,|  |_.'.-._)   \|  .   \    \ |  | |  |   \     /__) |  .--' |  .  '.'
+ |  '--'  /(_|  |   \       /|  |\   \    `'  '-'  '    \   /     |  `---.|  |\  \\
+ `-------'   `--'    `-----' `--' '--'      `-----'      `-' v%s `------'`--' '--'
+                                           https://github.com/shirosaidev/diskover
+\033[0m
+""" % VERSION
+
 	total_num_files = 0
 	total_num_dirs = 0
+
 	parser = optparse.OptionParser()
 	parser.add_option("-d", "--topdir", dest="TOPDIR",
 						help="directory to start crawling from (default: .)")
@@ -313,27 +371,41 @@ def main():
 
 	# load config file
 	AWS, ES_HOST, ES_PORT, INDEXNAME, EXCLUDED_DIRS, EXCLUDED_FILES = loadConfig()
+
 	# check ES status
+	printLog('Connecting to Elasticsearch', logtype='status')
 	ES = elasticsearchConnect(AWS, ES_HOST, ES_PORT)
+
 	# create ES index
 	indexCreate(ES, INDEXNAME)
+
 	# setup worker threads
 	THREADS = workerSetup(DIRECTORY_QUEUE, NUM_THREADS, ES, INDEXNAME, DATEEPOCH, DAYS, MINSIZE, EXCLUDED_FILES, VERBOSE)
-	printLog('*** Starting crawl')
-	# walk directory tree
+
+	# walk directory tree and start crawling
+	printLog('Finding directories to crawl', logtype='status')
 	crawlDirectories(TOPDIR, EXCLUDED_DIRS, DIRECTORY_QUEUE, VERBOSE)
 
-	printLog('*** Main thread waiting')
+	printLog('Crawling', logtype='status')
+	# print progress
+	if VERBOSE == 0:
+		while DIRECTORY_QUEUE.qsize() > 0:
+			dircount = total_num_dirs - DIRECTORY_QUEUE.qsize()
+			printProgressBar(dircount, total_num_dirs, '%s/%s'%(dircount,total_num_dirs))
+
 	# wait for all threads to finish
 	for i in range(NUM_THREADS):
 		DIRECTORY_QUEUE.put(None)
 	for t in THREADS:
 		t.join()
+
+	# print stats
 	elapsedtime = time.time() - DATEEPOCH
-	printLog('*** Done')
-	printLog('*** Directories Crawled: %s' % total_num_dirs)
-	printLog('*** Files Indexed: %s' % total_num_files)
-	printLog('*** Elapsed time: %s' % elapsedtime)
+	sys.stdout.write('\n')
+	sys.stdout.flush()
+	printLog('Directories Crawled: %s'%total_num_dirs, logtype='info')
+	printLog('Files Indexed: %s'%total_num_files, logtype='info')
+	printLog('Elapsed time: %s'%elapsedtime, logtype='info')
 
 if __name__ == "__main__":
 	main()
