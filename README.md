@@ -78,6 +78,7 @@ sudo python /path/to/diskover.py
 A successfull crawl should look like this:
 
 ```sh
+
    ___       ___       ___       ___       ___       ___       ___       ___
   /\  \     /\  \     /\  \     /\__\     /\  \     /\__\     /\  \     /\  \
  /::\  \   _\:\  \   /::\  \   /:/ _/_   /::\  \   /:/ _/_   /::\  \   /::\  \
@@ -88,17 +89,15 @@ A successfull crawl should look like this:
                                       https://github.com/shirosaidev/diskover
 
 
-[2017-04-27 11:37:16] [status] Connecting to Elasticsearch
-[2017-04-27 11:37:16] [info] Checking for ES index
-[2017-04-27 11:37:16] [warning] ES index exists, deleting
-[2017-04-27 11:37:16] [info] Creating ES index
-[2017-04-27 11:37:16] [status] Finding directories to crawl
-[2017-04-27 11:37:19] [info] Found 7722 directories
-[2017-04-27 11:37:19] [status] Crawling
-100% |████████████████████████████████████████████████████████████| 7721/7722
-[2017-04-27 11:37:25] [info] Directories Crawled: 7722
-[2017-04-27 11:37:25] [info] Files Indexed: 350
-[2017-04-27 11:37:25] [info] Elapsed time: 9.66399002075
+[2017-04-27 23:02:05] [status] Connecting to Elasticsearch
+[2017-04-27 23:02:05] [info] Checking for ES index
+[2017-04-27 23:02:05] [warning] ES index exists, deleting
+[2017-04-27 23:02:05] [info] Creating ES index
+[2017-04-27 23:02:05] [status] Finding directories to crawl
+Crawling: [100%] |████████████████████████████████████████| 7743/7744
+[2017-04-27 23:02:11] [info] Directories Crawled: 7744
+[2017-04-27 23:02:11] [info] Files Indexed: 350
+[2017-04-27 23:02:11] [info] Elapsed time: 6.34155106544
 ```
 
 
