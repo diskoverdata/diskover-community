@@ -218,6 +218,7 @@ def elasticsearchConnect(AWS, ES_HOST, ES_PORT):
 	and checks if it can connect.
 	"""
 	# Check if we are using AWS ES
+	printLog('Connecting to Elasticsearch', logtype='status')
 	if AWS == 'True':
 		ES = Elasticsearch(hosts=[{'host': ES_HOST, 'port': ES_PORT}], use_ssl=True, verify_certs=True, connection_class=RequestsHttpConnection)
 	# Local connection to ES
@@ -225,7 +226,8 @@ def elasticsearchConnect(AWS, ES_HOST, ES_PORT):
 		ES = Elasticsearch(hosts=[{'host': ES_HOST, 'port': ES_PORT}])
 	# Ping check ES
 	if not ES.ping():
-		raise ValueError(printLog('Unable to connect to Elasticsearch', logtype='error'))
+		printLog('Unable to connect to Elasticsearch', logtype='error')
+		sys.exit(1)
 	return ES
 
 def indexCreate(ES, INDEXNAME):
@@ -337,6 +339,8 @@ def main():
 						help="minimum file size in MB (default: 5)")
 	parser.add_option("-t", "--threads", dest="NUM_THREADS",
 						help="number of threads to use (default: 2)")
+	parser.add_option("-i", "--index", dest="INDEXNAME",
+						help="elasticsearch index name (default: from config)")
 	parser.add_option("-v", "--verbose", dest="VERBOSE",
 						help="run in verbose level (default: 0)")
 	(options, args) = parser.parse_args()
@@ -372,8 +376,11 @@ def main():
 	# load config file
 	AWS, ES_HOST, ES_PORT, INDEXNAME, EXCLUDED_DIRS, EXCLUDED_FILES = loadConfig()
 
+	# use es index name from cli options instead of config file
+	if options.INDEXNAME:
+		INDEXNAME = options.INDEXNAME
+
 	# check ES status
-	printLog('Connecting to Elasticsearch', logtype='status')
 	ES = elasticsearchConnect(AWS, ES_HOST, ES_PORT)
 
 	# create ES index
