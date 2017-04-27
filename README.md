@@ -78,8 +78,6 @@ sudo python /path/to/diskover.py
 A successfull crawl should look like this:
 
 ```sh
-sudo python /path/to/diskover.py
-
 
  _ .-') _             .-')   .-. .-')                     (`-.      ('-.  _  .-')
 ( (  OO) )           ( OO ). \  ( OO )                  _(OO  )_  _(  OO)( \( -O )
