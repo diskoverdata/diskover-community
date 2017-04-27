@@ -63,18 +63,18 @@ _/_/_/    _/  _/_/_/    _/    _/    _/_/        _/ v%s   _/_/_/  _/
 """ % VERSION
 	print(banner)
 
-def printProgressBar(iteration, total, suffix=''):
+def printProgressBar(iteration, total, prefix='', suffix=''):
 	"""This is the create terminal progress bar function.
 	It shows progress of the queue.
 	"""
 	decimals = 0
-	bar_length = 50
+	bar_length = 40
 	str_format = "{0:." + str(decimals) + "f}"
 	percents = str_format.format(100 * (iteration / float(total)))
 	filled_length = int(round(bar_length * iteration / float(total)))
 	bar = '█' * filled_length + '-' * (bar_length - filled_length)
 
-	sys.stdout.write('\r\033[96m%s%s |%s| %s\033[0m' % (percents, '%', bar, suffix)),
+	sys.stdout.write('\r\033[96m%s [%s%s] |%s| %s\033[0m' % (prefix, percents, '%', bar, suffix)),
 
 	if iteration == total:
 	    sys.stdout.write('\n')
@@ -145,9 +145,6 @@ def crawlDirectories(TOPDIR, EXCLUDED_DIRS, DIRECTORY_QUEUE, VERBOSE):
 		# add item to queue (directory)
 		DIRECTORY_QUEUE.put(dir)
 		total_num_dirs += 1
-		printLog('Found %s directories'%total_num_dirs, logtype='info', newline=False)
-	sys.stdout.write('\n')
-	sys.stdout.flush()
 
 def crawlFiles(path, DATEEPOCH, DAYS, MINSIZE, EXCLUDED_FILES, VERBOSE):
 	"""This is the list directory function.
@@ -239,6 +236,7 @@ def processDirectoryWorker(threadnum, DIRECTORY_QUEUE, ES, INDEXNAME, DATEEPOCH,
 	and only exit when the main thread ends and
 	there are no more paths.
 	"""
+	global total_num_dirs
 	filelist = []
 	while True:
 		if VERBOSE > 0:
@@ -254,6 +252,8 @@ def processDirectoryWorker(threadnum, DIRECTORY_QUEUE, ES, INDEXNAME, DATEEPOCH,
 		# add filelist to ES index
 		if filelist:
 			indexAdd(ES, INDEXNAME, filelist, VERBOSE)
+			dircount = total_num_dirs - DIRECTORY_QUEUE.qsize()
+			printProgressBar(dircount, total_num_dirs, 'Crawling:', '%s/%s'%(dircount,total_num_dirs))
 		DIRECTORY_QUEUE.task_done()
 
 def elasticsearchConnect(AWS, ES_HOST, ES_PORT):
@@ -423,13 +423,6 @@ def main():
 	# walk directory tree and start crawling
 	printLog('Finding directories to crawl', logtype='status')
 	crawlDirectories(TOPDIR, EXCLUDED_DIRS, DIRECTORY_QUEUE, VERBOSE)
-
-	printLog('Crawling', logtype='status')
-	# print progress
-	if VERBOSE == 0:
-		while DIRECTORY_QUEUE.qsize() > 0:
-			dircount = total_num_dirs - DIRECTORY_QUEUE.qsize()
-			printProgressBar(dircount, total_num_dirs, '%s/%s'%(dircount,total_num_dirs))
 
 	# wait for all threads to finish
 	for i in range(NUM_THREADS):
