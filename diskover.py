@@ -16,7 +16,7 @@ import threading
 import ConfigParser
 from elasticsearch import Elasticsearch, helpers, RequestsHttpConnection
 
-VERSION = 1.1
+VERSION = '1.0.1'
 
 # Print iterations progress
 def printProgressBar(iteration, total, suffix=''):
@@ -320,7 +320,7 @@ def main():
  |  |   ' |  |  |(_/ '..`''.)|     ' _)\_) |  |\|  |  \   '   /, (|  '--. |  |_.' |
  |  |   / : ,|  |_.'.-._)   \|  .   \    \ |  | |  |   \     /__) |  .--' |  .  '.'
  |  '--'  /(_|  |   \       /|  |\   \    `'  '-'  '    \   /     |  `---.|  |\  \\
- `-------'   `--'    `-----' `--' '--'      `-----'      `-' v%s `------'`--' '--'
+ `-------'   `--'    `-----' `--' '--'      `-----'      `-'v%s`------'`--' '--'
                                            https://github.com/shirosaidev/diskover
 \033[0m
 """ % VERSION
