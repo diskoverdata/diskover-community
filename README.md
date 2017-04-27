@@ -108,16 +108,23 @@ A successfull crawl should look like this:
 ## Diskover CLI options
 
 * `-h, --help` displays help
-* `-d, --topdir` directory to start crawling from (default: .)
-* `-m, --mtime` minimum days ago for modified time (default: 30)
-* `-s, --minsize` minimum file size in MB (default: 5)
-* `-t, --threads` number of threads to use (default: 2)
-* `-v VERBOSE, --verbose` run in verbose level (default: 0)
+* `-d TOPDIR, --topdir=TOPDIR` directory to start crawling from (default: .)
+* `-m DAYS, --mtime=DAYS` minimum days ago for modified time (default: 30)
+* `-s MINSIZE, --minsize=MINSIZE` minimum file size in MB (default: 5)
+* `-t, NUM_THREADS, --threads=NUM_THREADS` number of threads to use (default: 2)
+* `-i, INDEXNAME, --index=INDEXNAME` elasticsearch index name (default: from config)
+* `-v VERBOSE, --verbose=VERBOSE` run in verbose level (default: 0)
 
 
 ## Config file
 
-Diskcover will read a local config file (`diskover.cfg`). **It needs to be in the same directory as `diskover.py`**. Here you can exclude any directories and files you don't want to index separated by `,` (**spaces after comma are treated as part of file/directory name**). Elasticsearch hostname (endpoint), port and index name are also set here. If you are using AWS ES, set `aws = True` and `port = 443` and set the host to the endpoint in your AWS ES console. Lines beginning with `;` are comments and ignored by Diskover. If you are running Elasticsearch on your localhost or lan, set `aws = False` and the default port is `9200`.
+Diskcover will read a local config file (`diskover.cfg`). **It needs to be in the same directory as `diskover.py`**.
+
+Here you can exclude any directories and files you don't want to index separated by `,` (**spaces after comma are treated as part of file/directory name**).
+
+Elasticsearch hostname (endpoint), port and index name are also set here. If you are using AWS ES, set `aws = True` and `port = 443` and set the host to the endpoint in your AWS ES console. If you are running Elasticsearch on your localhost or lan, set `aws = False` and the default port is `9200`.
+
+Lines beginning with `;` are comments and ignored by Diskover.
 
 ```
 [excluded_dirs]
@@ -165,7 +172,7 @@ Here are some benchmarks running on my macbook pro, this includes time to crawl 
 
 ## Indices
 
-Diskover creates an index with the name from the config file. **If an existing index exists with the same name, it will be deleted and a new index created.** If you are doing crawls every week for example, you could name the indices diskover-2017.04.09, diskover-2017.04.16, diskover-2017.04.23, etc.
+Diskover creates an index with the name from the config file or from the cli option `-i`. **If an existing index exists with the same name, it will be deleted and a new index created.** If you are doing crawls every week for example, you could name the indices diskover-2017.04.09, diskover-2017.04.16, diskover-2017.04.23, etc.
 
 
 ## Generated fields
