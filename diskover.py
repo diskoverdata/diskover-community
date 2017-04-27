@@ -14,11 +14,49 @@ import optparse
 import Queue
 import threading
 import ConfigParser
+from random import randint
 from elasticsearch import Elasticsearch, helpers, RequestsHttpConnection
 
 VERSION = '1.0.1'
 
-# Print iterations progress
+def printBanner():
+	"""This is the print banner function.
+	It prints a random banner.
+	"""
+	b = randint(1,3)
+	# print banner
+	if b == 1:
+		banner = """\033[93m
+  ________  .__        __
+  \______ \ |__| _____|  | _________  __ ___________
+   |    |  \|  |/  ___/  |/ /  _ \  \/ // __ \_  __ \\ /)___(\\
+   |    `   \  |\___ \|    <  <_> )   /\  ___/|  | \/ (='.'=)
+  /_______  /__/____  >__|_ \____/ \_/  \___  >__|   (\\")_(\\")
+          \/        \/     \/   v%s      \/
+                      https://github.com/shirosaidev/diskover\033[0m
+""" % VERSION
+	elif b == 2:
+		banner = """\033[93m
+   ___       ___       ___       ___       ___       ___       ___       ___
+  /\  \     /\  \     /\  \     /\__\     /\  \     /\__\     /\  \     /\  \\
+ /::\  \   _\:\  \   /::\  \   /:/ _/_   /::\  \   /:/ _/_   /::\  \   /::\  \\
+/:/\:\__\ /\/::\__\ /\:\:\__\ /::-"\__\ /:/\:\__\ |::L/\__\ /::\:\__\ /::\:\__\\
+\:\/:/  / \::/\/__/ \:\:\/__/ \;:;-",-" \:\/:/  / |::::/  / \:\:\/  / \;:::/  /
+ \::/  /   \:\__\    \::/  /   |:|  |    \::/  /   L;;/__/   \:\/  /   |:\/__/
+  \/__/     \/__/     \/__/     \|__|     \/__/    v%s     \/__/     \|__|
+                                      https://github.com/shirosaidev/diskover\033[0m
+""" % VERSION
+	elif b == 3:
+		banner = """\033[93m
+    _/_/_/    _/            _/
+   _/    _/        _/_/_/  _/  _/      _/_/    _/      _/    _/_/    _/  _/_/
+  _/    _/  _/  _/_/      _/_/      _/    _/  _/      _/  _/_/_/_/  _/_/
+ _/    _/  _/      _/_/  _/  _/    _/    _/    _/  _/    _/        _/
+_/_/_/    _/  _/_/_/    _/    _/    _/_/        _/ v%s   _/_/_/  _/
+                              https://github.com/shirosaidev/diskover\033[0m
+""" % VERSION
+	print(banner)
+
 def printProgressBar(iteration, total, suffix=''):
 	"""This is the create terminal progress bar function.
 	It shows progress of the queue.
@@ -311,21 +349,8 @@ def main():
 	global total_num_files
 	global total_num_dirs
 
-	# banner
-	print """
-\033[96m
- _ .-') _             .-')   .-. .-')                     (`-.      ('-.  _  .-')
-( (  OO) )           ( OO ). \  ( OO )                  _(OO  )_  _(  OO)( \( -O )
- \     .'_   ,-.-') (_)---\_),--. ,--.  .-'),-----. ,--(_/   ,. \(,------.,------.
- ,`'--..._)  |  |OO)/    _ | |  .'   / ( OO'  .-.  '\   \   /(__/ |  .---'|   /`. '
- |  |  \  '  |  |  \\\  :` `. |      /, /   |  | |  | \   \ /   /  |  |    |  /  | |
- |  |   ' |  |  |(_/ '..`''.)|     ' _)\_) |  |\|  |  \   '   /, (|  '--. |  |_.' |
- |  |   / : ,|  |_.'.-._)   \|  .   \    \ |  | |  |   \     /__) |  .--' |  .  '.'
- |  '--'  /(_|  |   \       /|  |\   \    `'  '-'  '    \   /     |  `---.|  |\  \\
- `-------'   `--'    `-----' `--' '--'      `-----'      `-'v%s`------'`--' '--'
-                                           https://github.com/shirosaidev/diskover
-\033[0m
-""" % VERSION
+	# print random banner
+	printBanner()
 
 	total_num_files = 0
 	total_num_dirs = 0
