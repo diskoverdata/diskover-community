@@ -252,8 +252,9 @@ def processDirectoryWorker(threadnum, DIRECTORY_QUEUE, ES, INDEXNAME, DATEEPOCH,
 		# add filelist to ES index
 		if filelist:
 			indexAdd(ES, INDEXNAME, filelist, VERBOSE)
-			dircount = total_num_dirs - DIRECTORY_QUEUE.qsize()
-			printProgressBar(dircount, total_num_dirs, 'Crawling:', '%s/%s'%(dircount,total_num_dirs))
+			if VERBOSE == 0:
+				dircount = total_num_dirs - DIRECTORY_QUEUE.qsize()
+				printProgressBar(dircount, total_num_dirs, 'Crawling:', '%s/%s'%(dircount,total_num_dirs))
 		DIRECTORY_QUEUE.task_done()
 
 def elasticsearchConnect(AWS, ES_HOST, ES_PORT):
