@@ -110,6 +110,7 @@ Crawling: [100%] |████████████████████�
 * `-t, NUM_THREADS, --threads=NUM_THREADS` number of threads to use (default: 2)
 * `-i, INDEXNAME, --index=INDEXNAME` elasticsearch index name (default: from config)
 * `-v VERBOSE, --verbose=VERBOSE` run in verbose level (default: 0)
+* `--debug=DEBUG, --debug=DEBUG` run in debug mode (default: false)
 
 
 ## Config file
