@@ -20,15 +20,14 @@
     "_id": "6fad6310-2651-11e7-9c7e-376534115aac",
     "_type": "search",
     "_source": {
-      "title": "FileListByModifiedTime",
+      "title": "FileList",
       "description": "",
       "hits": 0,
       "columns": [
-        "filename",
         "path_full",
         "filesize",
         "owner",
-        "last_change",
+        "last_modified",
         "last_access"
       ],
       "sort": [
