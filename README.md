@@ -209,6 +209,8 @@ For the index pattern use `diskover-*`. **Make sure the `Index contains time-bas
 
 To use the Diskover dashboard (screenshot), import the saved objects file `export.json` into Kibana for the dashboard visualizations. In Kibana go to `Management > Saved Objects > Import`.
 
+If nothing is showing in the dashboard, go to `Management > Index Patterns > diskover-*` and then hit the `refresh icon`.
+
 
 ### Kibana Field Formatting
 
