@@ -31,6 +31,13 @@ $ tree
 └── kibana-screenshot.png
 ```
 
+## Update diskover
+
+```sh
+cd diskover
+git pull
+```
+
 
 # User Guide
 
