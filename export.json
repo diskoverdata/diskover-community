@@ -41,10 +41,10 @@
     }
   },
   {
-    "_id": "1d88a230-2c7c-11e7-b6ab-31946c4781b2",
+    "_id": "16cd70c0-2cfd-11e7-ab8c-9b1687d6e68c",
     "_type": "search",
     "_source": {
-      "title": "FileListWithFilter",
+      "title": "FileListWithFilter6MonthsOld",
       "description": "",
       "hits": 0,
       "columns": [
@@ -60,7 +60,31 @@
       ],
       "version": 1,
       "kibanaSavedObjectMeta": {
-        "searchSourceJSON": "{\"index\":\"diskover-*\",\"highlightAll\":true,\"query\":{\"query_string\":{\"query\":\"last_modified:[now-5y TO now-6m] AND last_access:[now-5y TO now-6m]\",\"analyze_wildcard\":true}},\"filter\":[]}"
+        "searchSourceJSON": "{\"index\":\"diskover-*\",\"highlightAll\":true,\"query\":{\"query_string\":{\"query\":\"last_modified:[now-5y TO now-6M] AND last_access:[now-5y TO now-6M]\",\"analyze_wildcard\":true}},\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "33f85430-2cfd-11e7-ab8c-9b1687d6e68c",
+    "_type": "search",
+    "_source": {
+      "title": "FileListWithFilter1YearOld",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "path_full",
+        "filesize",
+        "owner",
+        "last_modified",
+        "last_access"
+      ],
+      "sort": [
+        "last_modified",
+        "asc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"diskover-*\",\"highlightAll\":true,\"query\":{\"query_string\":{\"query\":\"last_modified:[now-5y TO now-1y] AND last_access:[now-5y TO now-1y]\",\"analyze_wildcard\":true}},\"filter\":[]}"
       }
     }
   },
@@ -285,11 +309,11 @@
     }
   },
   {
-    "_id": "59157790-2c7e-11e7-b6ab-31946c4781b2",
+    "_id": "d89c5dc0-2cf7-11e7-8011-032e2cd84e02",
     "_type": "visualization",
     "_source": {
-      "title": "LastModifiedPerMonthArea",
-      "visState": "{\"title\":\"LastModifiedPerMonthArea\",\"type\":\"area\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"top\",\"scale\":\"linear\",\"interpolate\":\"linear\",\"mode\":\"stacked\",\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"last_modified\",\"interval\":\"M\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{}}}],\"listeners\":{}}",
+      "title": "LastModifiedPerMonthSumFileSize",
+      "visState": "{\"title\":\"LastModifiedPerMonthSumFileSize\",\"type\":\"histogram\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"top\",\"scale\":\"linear\",\"mode\":\"stacked\",\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"sum\",\"schema\":\"metric\",\"params\":{\"field\":\"filesize\"}},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"last_modified\",\"interval\":\"M\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{}}}],\"listeners\":{}}",
       "uiStateJSON": "{}",
       "description": "",
       "version": 1,
@@ -299,11 +323,11 @@
     }
   },
   {
-    "_id": "d89c5dc0-2cf7-11e7-8011-032e2cd84e02",
+    "_id": "59157790-2c7e-11e7-b6ab-31946c4781b2",
     "_type": "visualization",
     "_source": {
-      "title": "LastModifiedPerMonthSumFileSize",
-      "visState": "{\"title\":\"LastModifiedPerMonthSumFileSize\",\"type\":\"histogram\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"top\",\"scale\":\"linear\",\"mode\":\"stacked\",\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"sum\",\"schema\":\"metric\",\"params\":{\"field\":\"filesize\"}},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"last_modified\",\"interval\":\"M\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{}}}],\"listeners\":{}}",
+      "title": "LastModifiedPerMonthArea",
+      "visState": "{\"title\":\"LastModifiedPerMonthArea\",\"type\":\"area\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"top\",\"scale\":\"linear\",\"interpolate\":\"linear\",\"mode\":\"stacked\",\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"last_modified\",\"interval\":\"M\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{}}}],\"listeners\":{}}",
       "uiStateJSON": "{}",
       "description": "",
       "version": 1,
