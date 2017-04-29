@@ -23,9 +23,9 @@
       "title": "Diskover - The Sayonara List",
       "hits": 0,
       "description": "",
-      "panelsJSON": "[{\"col\":1,\"columns\":[\"path_full\",\"filesize\",\"owner\",\"last_modified\",\"last_access\"],\"id\":\"6fad6310-2651-11e7-9c7e-376534115aac\",\"panelIndex\":3,\"row\":4,\"size_x\":12,\"size_y\":5,\"sort\":[\"last_modified\",\"asc\"],\"type\":\"search\"},{\"col\":6,\"id\":\"59157790-2c7e-11e7-b6ab-31946c4781b2\",\"panelIndex\":5,\"row\":1,\"size_x\":7,\"size_y\":3,\"type\":\"visualization\"},{\"col\":1,\"id\":\"2c971940-2c82-11e7-b438-87a311623f6a\",\"panelIndex\":6,\"row\":1,\"size_x\":5,\"size_y\":3,\"type\":\"visualization\"}]",
+      "panelsJSON": "[{\"col\":1,\"columns\":[\"path_full\",\"filesize\",\"owner\",\"last_modified\",\"last_access\"],\"id\":\"6fad6310-2651-11e7-9c7e-376534115aac\",\"panelIndex\":3,\"row\":6,\"size_x\":12,\"size_y\":3,\"sort\":[\"last_modified\",\"asc\"],\"type\":\"search\"},{\"col\":1,\"id\":\"2c971940-2c82-11e7-b438-87a311623f6a\",\"panelIndex\":6,\"row\":1,\"size_x\":12,\"size_y\":2,\"type\":\"visualization\"},{\"col\":7,\"id\":\"d89c5dc0-2cf7-11e7-8011-032e2cd84e02\",\"panelIndex\":7,\"row\":3,\"size_x\":6,\"size_y\":3,\"type\":\"visualization\"},{\"col\":1,\"id\":\"59157790-2c7e-11e7-b6ab-31946c4781b2\",\"panelIndex\":8,\"row\":3,\"size_x\":6,\"size_y\":3,\"type\":\"visualization\"}]",
       "optionsJSON": "{\"darkTheme\":false}",
-      "uiStateJSON": "{\"P-5\":{\"vis\":{\"legendOpen\":true}}}",
+      "uiStateJSON": "{}",
       "version": 1,
       "timeRestore": true,
       "timeTo": "now",
@@ -36,7 +36,7 @@
         "value": 0
       },
       "kibanaSavedObjectMeta": {
-        "searchSourceJSON": "{\"filter\":[{\"query\":{\"query_string\":{\"analyze_wildcard\":true,\"query\":\"last_modified:[now-5y TO now-6M] AND last_access:[now-5y TO now-6M]\"}}}]}"
+        "searchSourceJSON": "{\"filter\":[{\"query\":{\"query_string\":{\"query\":\"last_modified:[now-5y TO now-6M] AND last_access:[now-5y TO now-6M]\",\"analyze_wildcard\":true}}}]}"
       }
     }
   },
@@ -285,34 +285,6 @@
     }
   },
   {
-    "_id": "59157790-2c7e-11e7-b6ab-31946c4781b2",
-    "_type": "visualization",
-    "_source": {
-      "title": "LastModifiedPerMonthArea",
-      "visState": "{\"title\":\"LastModifiedPerMonthArea\",\"type\":\"area\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"top\",\"scale\":\"linear\",\"interpolate\":\"linear\",\"mode\":\"stacked\",\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{\"customLabel\":\"files\"}},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"last_modified\",\"interval\":\"M\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{}}}],\"listeners\":{}}",
-      "uiStateJSON": "{}",
-      "description": "",
-      "version": 1,
-      "kibanaSavedObjectMeta": {
-        "searchSourceJSON": "{\"index\":\"diskover-*\",\"query\":{\"query_string\":{\"query\":\"*\",\"analyze_wildcard\":true}},\"filter\":[]}"
-      }
-    }
-  },
-  {
-    "_id": "7771b670-2c7b-11e7-87e2-31621a4c98cb",
-    "_type": "visualization",
-    "_source": {
-      "title": "LastModifiedSumFilesizeAll",
-      "visState": "{\"title\":\"LastModifiedSumFilesizeAll\",\"type\":\"histogram\",\"params\":{\"addLegend\":true,\"addTimeMarker\":false,\"addTooltip\":true,\"defaultYExtents\":false,\"legendPosition\":\"top\",\"mode\":\"stacked\",\"scale\":\"linear\",\"setYExtents\":false,\"times\":[],\"orderBucketsBySum\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"sum\",\"schema\":\"metric\",\"params\":{\"field\":\"filesize\"}}],\"listeners\":{}}",
-      "uiStateJSON": "{}",
-      "description": "",
-      "version": 1,
-      "kibanaSavedObjectMeta": {
-        "searchSourceJSON": "{\"index\":\"diskover-*\",\"query\":{\"query_string\":{\"analyze_wildcard\":true,\"query\":\"*\"}},\"filter\":[]}"
-      }
-    }
-  },
-  {
     "_id": "2c971940-2c82-11e7-b438-87a311623f6a",
     "_type": "visualization",
     "_source": {
@@ -323,6 +295,34 @@
       "version": 1,
       "kibanaSavedObjectMeta": {
         "searchSourceJSON": "{\"index\":\"diskover-*\",\"query\":{\"query_string\":{\"analyze_wildcard\":true,\"query\":\"*\"}},\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "59157790-2c7e-11e7-b6ab-31946c4781b2",
+    "_type": "visualization",
+    "_source": {
+      "title": "LastModifiedPerMonthArea",
+      "visState": "{\"title\":\"LastModifiedPerMonthArea\",\"type\":\"area\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"top\",\"scale\":\"linear\",\"interpolate\":\"linear\",\"mode\":\"stacked\",\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"last_modified\",\"interval\":\"M\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{}}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"diskover-*\",\"query\":{\"query_string\":{\"query\":\"*\",\"analyze_wildcard\":true}},\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "d89c5dc0-2cf7-11e7-8011-032e2cd84e02",
+    "_type": "visualization",
+    "_source": {
+      "title": "LastModifiedPerMonthSumFileSize",
+      "visState": "{\"title\":\"LastModifiedPerMonthSumFileSize\",\"type\":\"histogram\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"top\",\"scale\":\"linear\",\"mode\":\"stacked\",\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"sum\",\"schema\":\"metric\",\"params\":{\"field\":\"filesize\"}},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"last_modified\",\"interval\":\"M\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{}}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"diskover-*\",\"query\":{\"query_string\":{\"query\":\"*\",\"analyze_wildcard\":true}},\"filter\":[]}"
       }
     }
   }
