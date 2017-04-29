@@ -224,8 +224,8 @@ Once you have imported the `export.json` into Kibana, in Kibana's `Discover` pag
 Here are some filter examples:
 
 * `last_modified:[now-5y TO now-3M]` filters files that haven't been modified in over 3 months and less than 5 years
-* `last_modified:[now-5y TO now-1y] AND last_access:[now-5y TO now-1y]` filters files that haven't been modified or access in over 1 year and less than 5 years
-* `last_modified:[now-5y TO now-6M] AND last_access:[now-5y TO now-6M]` filters files that haven't been modified or access in over 6 months and less than 5 years
+* `last_modified:[now-5y TO now-1y] AND last_access:[now-5y TO now-1y]` filters files that haven't been modified or accessed in over 1 year and less than 5 years
+* `last_modified:[now-5y TO now-6M] AND last_access:[now-5y TO now-6M]` filters files that haven't been modified or accessed in over 6 months and less than 5 years
 * `last_modified:[now-5y TO now-1y] AND last_access:[now-5y TO now-1y]` filters files that haven't been modified or access in over 1 year and less than 5 years
 * `extension:(jpg OR gif OR png OR tif OR tiff OR dpx OR exr OR psd OR bmp OR tga)` filters for image files
 * `extension:(aif OR iff OR m3u OR m4a OR mid OR mp3 OR mpa OR wav OR wma)` filters for audio files
