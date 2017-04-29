@@ -23,7 +23,7 @@
       "title": "Diskover - The Sayonara List",
       "hits": 0,
       "description": "",
-      "panelsJSON": "[{\"col\":1,\"columns\":[\"path_full\",\"filesize\",\"owner\",\"last_modified\",\"last_access\"],\"id\":\"6fad6310-2651-11e7-9c7e-376534115aac\",\"panelIndex\":3,\"row\":6,\"size_x\":12,\"size_y\":3,\"sort\":[\"last_modified\",\"asc\"],\"type\":\"search\"},{\"col\":1,\"id\":\"2c971940-2c82-11e7-b438-87a311623f6a\",\"panelIndex\":6,\"row\":1,\"size_x\":12,\"size_y\":2,\"type\":\"visualization\"},{\"col\":7,\"id\":\"d89c5dc0-2cf7-11e7-8011-032e2cd84e02\",\"panelIndex\":7,\"row\":3,\"size_x\":6,\"size_y\":3,\"type\":\"visualization\"},{\"col\":1,\"id\":\"59157790-2c7e-11e7-b6ab-31946c4781b2\",\"panelIndex\":8,\"row\":3,\"size_x\":6,\"size_y\":3,\"type\":\"visualization\"}]",
+      "panelsJSON": "[{\"col\":1,\"columns\":[\"path_full\",\"filesize\",\"owner\",\"last_modified\",\"last_access\"],\"id\":\"6fad6310-2651-11e7-9c7e-376534115aac\",\"panelIndex\":3,\"row\":4,\"size_x\":12,\"size_y\":5,\"sort\":[\"last_modified\",\"asc\"],\"type\":\"search\"},{\"col\":1,\"id\":\"2c971940-2c82-11e7-b438-87a311623f6a\",\"panelIndex\":6,\"row\":1,\"size_x\":12,\"size_y\":1,\"type\":\"visualization\"},{\"col\":7,\"id\":\"d89c5dc0-2cf7-11e7-8011-032e2cd84e02\",\"panelIndex\":7,\"row\":2,\"size_x\":6,\"size_y\":2,\"type\":\"visualization\"},{\"col\":1,\"id\":\"59157790-2c7e-11e7-b6ab-31946c4781b2\",\"panelIndex\":8,\"row\":2,\"size_x\":6,\"size_y\":2,\"type\":\"visualization\"}]",
       "optionsJSON": "{\"darkTheme\":false}",
       "uiStateJSON": "{}",
       "version": 1,
@@ -36,7 +36,7 @@
         "value": 0
       },
       "kibanaSavedObjectMeta": {
-        "searchSourceJSON": "{\"filter\":[{\"query\":{\"query_string\":{\"query\":\"last_modified:[now-5y TO now-6M] AND last_access:[now-5y TO now-6M]\",\"analyze_wildcard\":true}}}]}"
+        "searchSourceJSON": "{\"filter\":[{\"query\":{\"query_string\":{\"analyze_wildcard\":true,\"query\":\"last_modified:[now-5y TO now-6M] AND last_access:[now-5y TO now-6M]\"}}}]}"
       }
     }
   },
@@ -285,20 +285,6 @@
     }
   },
   {
-    "_id": "2c971940-2c82-11e7-b438-87a311623f6a",
-    "_type": "visualization",
-    "_source": {
-      "title": "DataSavings",
-      "visState": "{\"title\":\"DataSavings\",\"type\":\"metric\",\"params\":{\"fontSize\":\"52\",\"handleNoResults\":true},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{\"customLabel\":\"files\"}},{\"id\":\"2\",\"enabled\":true,\"type\":\"sum\",\"schema\":\"metric\",\"params\":{\"field\":\"filesize\",\"customLabel\":\"total filesize\"}}],\"listeners\":{}}",
-      "uiStateJSON": "{}",
-      "description": "",
-      "version": 1,
-      "kibanaSavedObjectMeta": {
-        "searchSourceJSON": "{\"index\":\"diskover-*\",\"query\":{\"query_string\":{\"analyze_wildcard\":true,\"query\":\"*\"}},\"filter\":[]}"
-      }
-    }
-  },
-  {
     "_id": "59157790-2c7e-11e7-b6ab-31946c4781b2",
     "_type": "visualization",
     "_source": {
@@ -323,6 +309,20 @@
       "version": 1,
       "kibanaSavedObjectMeta": {
         "searchSourceJSON": "{\"index\":\"diskover-*\",\"query\":{\"query_string\":{\"query\":\"*\",\"analyze_wildcard\":true}},\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "2c971940-2c82-11e7-b438-87a311623f6a",
+    "_type": "visualization",
+    "_source": {
+      "title": "DataSavings",
+      "visState": "{\"title\":\"DataSavings\",\"type\":\"metric\",\"params\":{\"fontSize\":\"32\",\"handleNoResults\":true},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{\"customLabel\":\"files\"}},{\"id\":\"2\",\"enabled\":true,\"type\":\"sum\",\"schema\":\"metric\",\"params\":{\"field\":\"filesize\",\"customLabel\":\"total filesize\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"diskover-*\",\"query\":{\"query_string\":{\"analyze_wildcard\":true,\"query\":\"*\"}},\"filter\":[]}"
       }
     }
   }
