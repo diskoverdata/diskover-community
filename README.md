@@ -221,9 +221,9 @@ This will help make the dashboard easier to read like in the screenshot for file
 
 Once you have imported the `export.json` into Kibana, in Kibana's `Discover` page click `open`. There will be a few saved searches in there to help you filter for old files.
 
-Here are some other useful search filters:
+Here are some filter examples:
 
-* `last_modified:[now-5y TO now-3M] filters files that haven't been modified in over 3 months and less than 5 years
+* `last_modified:[now-5y TO now-3M]` filters files that haven't been modified in over 3 months and less than 5 years
 * `last_modified:[now-5y TO now-1y] AND last_access:[now-5y TO now-1y]` filters files that haven't been modified or access in over 1 year and less than 5 years
 * `last_modified:[now-5y TO now-6M] AND last_access:[now-5y TO now-6M]` filters files that haven't been modified or access in over 6 months and less than 5 years
 * `last_modified:[now-5y TO now-1y] AND last_access:[now-5y TO now-1y]` filters files that haven't been modified or access in over 1 year and less than 5 years
