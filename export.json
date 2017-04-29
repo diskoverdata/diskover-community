@@ -317,7 +317,7 @@
     "_type": "visualization",
     "_source": {
       "title": "DataSavings",
-      "visState": "{\"title\":\"DataSavings\",\"type\":\"metric\",\"params\":{\"fontSize\":\"32\",\"handleNoResults\":true},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{\"customLabel\":\"files\"}},{\"id\":\"2\",\"enabled\":true,\"type\":\"sum\",\"schema\":\"metric\",\"params\":{\"field\":\"filesize\",\"customLabel\":\"total filesize\"}}],\"listeners\":{}}",
+      "visState": "{\"title\":\"DataSavings\",\"type\":\"metric\",\"params\":{\"fontSize\":\"28\",\"handleNoResults\":true},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{\"customLabel\":\"files\"}},{\"id\":\"2\",\"enabled\":true,\"type\":\"sum\",\"schema\":\"metric\",\"params\":{\"field\":\"filesize\",\"customLabel\":\"total filesize\"}}],\"listeners\":{}}",
       "uiStateJSON": "{}",
       "description": "",
       "version": 1,
