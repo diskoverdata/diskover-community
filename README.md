@@ -28,7 +28,8 @@ $ tree
 ├── diskover.cfg
 ├── diskover.py
 ├── export.json
-└── kibana-screenshot.png
+├── kibana-screenshot.png
+└── kibana-screenshot2.png
 ```
 
 ## Update diskover
@@ -210,6 +211,10 @@ For the index pattern use `diskover-*`. **Make sure the `Index contains time-bas
 To use the Diskover dashboard (screenshot), import the saved objects file `export.json` into Kibana for the dashboard visualizations. In Kibana go to `Management > Saved Objects > Import`.
 
 If nothing is showing in the dashboard, go to `Management > Index Patterns > diskover-*` and then hit the `refresh icon`.
+
+There is an alternate dashboard named `Diskover - The Sayonara List` which filters files that have **modified time and access times older than 6 months**. This should help narrow down what can be deleted.
+
+![alt tag](https://github.com/shirosaidev/diskover/blob/master/kibana-screenshot2.png)
 
 
 ### Kibana Field Formatting
