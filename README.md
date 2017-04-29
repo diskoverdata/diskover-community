@@ -212,14 +212,26 @@ To use the Diskover dashboard (screenshot), import the saved objects file `expor
 
 If nothing is showing in the dashboard, go to `Management > Index Patterns > diskover-*` and then hit the `refresh icon`.
 
-There is an alternate dashboard named `Diskover - The Sayonara List` which filters files that have **modified time and access times older than 6 months**. This should help narrow down what can be deleted.
-
-![alt tag](https://github.com/shirosaidev/diskover/blob/master/kibana-screenshot2.png)
-
 
 ### Kibana Field Formatting
 
 This will help make the dashboard easier to read like in the screenshot for filesize and dates. In Kibana go to `Management > Index Patterns > diskover-*`. In the `Fields tab` click the `edit icon` under controls column for `filesize` field. Change the format to `bytes` and click `Update Field`. For `access_time, modified_time, and change_time`, edit the fields and change the format to `date` and set the format pattern to `MM-DD-YYYY, HH:mm` and click `Update Field`.
+
+### Kibana Search Filters
+
+Once you have imported the `export.json` into Kibana, in Kibana's `Discover` page click `open`. There will be a few saved searches in there to help you filter for old files.
+
+Here are some other useful search filters:
+
+* `last_modified:[now-5y TO now-3M] filters files that haven't been modified in over 3 months and less than 5 years
+* `last_modified:[now-5y TO now-1y] AND last_access:[now-5y TO now-1y]` filters files that haven't been modified or access in over 1 year and less than 5 years
+* `last_modified:[now-5y TO now-6M] AND last_access:[now-5y TO now-6M]` filters files that haven't been modified or access in over 6 months and less than 5 years
+* `last_modified:[now-5y TO now-1y] AND last_access:[now-5y TO now-1y]` filters files that haven't been modified or access in over 1 year and less than 5 years
+* `extension:(jpg OR gif OR png OR tif OR tiff OR dpx OR exr OR psd OR bmp OR tga)` filters for image files
+* `extension:(aif OR iff OR m3u OR m4a OR mid OR mp3 OR mpa OR wav OR wma)` filters for audio files
+* `extension:(asf OR avi OR flv OR m4v OR mov OR mp4 OR mpg OR rm OR vob OR wmv)` filters for video files
+* `extension:(cache OR tmp OR temp OR bak OR old)` filters for temp files
+* `extension:(7z OR deb OR gz OR pkg OR rar OR rpm OR tar OR zip OR zipx)` filters for compressed files
 
 
 # License
