@@ -28,8 +28,7 @@ $ tree
 ├── diskover.cfg
 ├── diskover.py
 ├── export.json
-├── kibana-screenshot.png
-└── kibana-screenshot2.png
+└── kibana-screenshot.png
 ```
 
 ## Update diskover
