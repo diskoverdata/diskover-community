@@ -17,30 +17,6 @@
     }
   },
   {
-    "_id": "ebf948d0-2c78-11e7-87e2-31621a4c98cb",
-    "_type": "dashboard",
-    "_source": {
-      "title": "Diskover - The Sayonara List",
-      "hits": 0,
-      "description": "",
-      "panelsJSON": "[{\"col\":1,\"columns\":[\"path_full\",\"filesize\",\"owner\",\"last_modified\",\"last_access\"],\"id\":\"6fad6310-2651-11e7-9c7e-376534115aac\",\"panelIndex\":3,\"row\":4,\"size_x\":12,\"size_y\":5,\"sort\":[\"last_modified\",\"asc\"],\"type\":\"search\"},{\"col\":1,\"id\":\"2c971940-2c82-11e7-b438-87a311623f6a\",\"panelIndex\":6,\"row\":1,\"size_x\":12,\"size_y\":1,\"type\":\"visualization\"},{\"col\":7,\"id\":\"d89c5dc0-2cf7-11e7-8011-032e2cd84e02\",\"panelIndex\":7,\"row\":2,\"size_x\":6,\"size_y\":2,\"type\":\"visualization\"},{\"col\":1,\"id\":\"59157790-2c7e-11e7-b6ab-31946c4781b2\",\"panelIndex\":8,\"row\":2,\"size_x\":6,\"size_y\":2,\"type\":\"visualization\"}]",
-      "optionsJSON": "{\"darkTheme\":false}",
-      "uiStateJSON": "{}",
-      "version": 1,
-      "timeRestore": true,
-      "timeTo": "now",
-      "timeFrom": "now-15m",
-      "refreshInterval": {
-        "display": "Off",
-        "pause": false,
-        "value": 0
-      },
-      "kibanaSavedObjectMeta": {
-        "searchSourceJSON": "{\"filter\":[{\"query\":{\"query_string\":{\"analyze_wildcard\":true,\"query\":\"last_modified:[now-5y TO now-6M] AND last_access:[now-5y TO now-6M]\"}}}]}"
-      }
-    }
-  },
-  {
     "_id": "16cd70c0-2cfd-11e7-ab8c-9b1687d6e68c",
     "_type": "search",
     "_source": {
@@ -109,6 +85,126 @@
       "version": 1,
       "kibanaSavedObjectMeta": {
         "searchSourceJSON": "{\"index\":\"diskover-*\",\"highlightAll\":true,\"query\":{\"query_string\":{\"query\":\"*\",\"analyze_wildcard\":true}},\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "af592b70-2d36-11e7-907c-e1628960d26b",
+    "_type": "search",
+    "_source": {
+      "title": "FileListTempFiles",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "path_full",
+        "filesize",
+        "owner",
+        "last_modified",
+        "last_access"
+      ],
+      "sort": [
+        "last_modified",
+        "asc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"diskover-*\",\"highlightAll\":true,\"query\":{\"query_string\":{\"query\":\"extension:(cache OR tmp OR temp OR bak OR old)\",\"analyze_wildcard\":true}},\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "bec9f580-2d36-11e7-907c-e1628960d26b",
+    "_type": "search",
+    "_source": {
+      "title": "FileListVideoFiles",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "path_full",
+        "filesize",
+        "owner",
+        "last_modified",
+        "last_access"
+      ],
+      "sort": [
+        "last_modified",
+        "asc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"diskover-*\",\"highlightAll\":true,\"query\":{\"query_string\":{\"query\":\"extension:(asf OR avi OR flv OR m4v OR mov OR mp4 OR mpg OR rm OR vob OR wmv)\",\"analyze_wildcard\":true}},\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "c883bc50-2d36-11e7-907c-e1628960d26b",
+    "_type": "search",
+    "_source": {
+      "title": "FileListImageFiles",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "path_full",
+        "filesize",
+        "owner",
+        "last_modified",
+        "last_access"
+      ],
+      "sort": [
+        "last_modified",
+        "asc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"diskover-*\",\"highlightAll\":true,\"query\":{\"query_string\":{\"query\":\"extension:(jpg OR gif OR png OR tif OR tiff OR dpx OR exr OR psd OR bmp OR tga)\",\"analyze_wildcard\":true}},\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "d8f7c590-2d36-11e7-907c-e1628960d26b",
+    "_type": "search",
+    "_source": {
+      "title": "FileListAudioFiles",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "path_full",
+        "filesize",
+        "owner",
+        "last_modified",
+        "last_access"
+      ],
+      "sort": [
+        "last_modified",
+        "asc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"diskover-*\",\"highlightAll\":true,\"query\":{\"query_string\":{\"query\":\"extension:(aif OR iff OR m3u OR m4a OR mid OR mp3 OR mpa OR wav OR wma)\",\"analyze_wildcard\":true}},\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "f2c8cfa0-2d36-11e7-907c-e1628960d26b",
+    "_type": "search",
+    "_source": {
+      "title": "FileListCompressedFiles",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "path_full",
+        "filesize",
+        "owner",
+        "last_modified",
+        "last_access"
+      ],
+      "sort": [
+        "last_modified",
+        "asc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"diskover-*\",\"highlightAll\":true,\"query\":{\"query_string\":{\"query\":\"extension:(7z OR deb OR gz OR pkg OR rar OR rpm OR tar OR zip OR zipx)\",\"analyze_wildcard\":true}},\"filter\":[]}"
       }
     }
   },
@@ -333,20 +429,6 @@
       "version": 1,
       "kibanaSavedObjectMeta": {
         "searchSourceJSON": "{\"index\":\"diskover-*\",\"query\":{\"query_string\":{\"query\":\"*\",\"analyze_wildcard\":true}},\"filter\":[]}"
-      }
-    }
-  },
-  {
-    "_id": "2c971940-2c82-11e7-b438-87a311623f6a",
-    "_type": "visualization",
-    "_source": {
-      "title": "DataSavings",
-      "visState": "{\"title\":\"DataSavings\",\"type\":\"metric\",\"params\":{\"fontSize\":\"28\",\"handleNoResults\":true},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{\"customLabel\":\"files\"}},{\"id\":\"2\",\"enabled\":true,\"type\":\"sum\",\"schema\":\"metric\",\"params\":{\"field\":\"filesize\",\"customLabel\":\"total filesize\"}}],\"listeners\":{}}",
-      "uiStateJSON": "{}",
-      "description": "",
-      "version": 1,
-      "kibanaSavedObjectMeta": {
-        "searchSourceJSON": "{\"index\":\"diskover-*\",\"query\":{\"query_string\":{\"analyze_wildcard\":true,\"query\":\"*\"}},\"filter\":[]}"
       }
     }
   }
