@@ -3,6 +3,7 @@
 ## [1.0.5] - 2017-05-04
 ### fixed
 - crash caused from unicode decoding if integer value for owner/group
+
 ## [1.0.4] - 2017-05-03
 ### added
 - check for running as root user
