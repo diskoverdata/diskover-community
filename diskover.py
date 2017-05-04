@@ -14,10 +14,11 @@ import optparse
 import Queue
 import threading
 import ConfigParser
+import hashlib
 from random import randint
 from elasticsearch import Elasticsearch, helpers, RequestsHttpConnection
 
-VERSION = '1.0.3'
+VERSION = '1.0.4'
 
 def printBanner():
 	"""This is the print banner function.
@@ -73,11 +74,7 @@ def printProgressBar(iteration, total, prefix='', suffix=''):
 	percents = str_format.format(100 * (iteration / float(total)))
 	filled_length = int(round(bar_length * iteration / float(total)))
 	bar = '█' * filled_length + '-' * (bar_length - filled_length)
-
 	sys.stdout.write('\r\033[96m%s [%s%s] |%s| %s\033[0m' % (prefix, percents, '%', bar, suffix)),
-
-	if iteration == total:
-	    sys.stdout.write('\n')
 	sys.stdout.flush()
 
 def printLog(logtext, logtype='', newline=True):
@@ -96,10 +93,10 @@ def printLog(logtext, logtype='', newline=True):
 		prefix = ''
 	ts = time.time()
 	st = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
-	sys.stdout.write('\r[%s] %s %s'%(st, prefix, logtext))
 	if newline:
 		sys.stdout.write('\n')
 		sys.stdout.flush()
+	sys.stdout.write('\r[%s] %s %s'%(st, prefix, logtext))
 
 def loadConfig():
 	"""This is the load config function.
@@ -111,7 +108,7 @@ def loadConfig():
 	configfile = '%s/diskover.cfg'% dir_path
 	# Check for config file
 	if not os.path.isfile(configfile):
-		raise ValueError("Config file not found")
+		sys.exit('Config file not found')
 	config.read(configfile)
 	d = config.get('excluded_dirs', 'dirs')
 	f = config.get('excluded_files', 'files')
@@ -121,7 +118,52 @@ def loadConfig():
 	INDEXNAME = config.get('elasticsearch', 'indexname')
 	EXCLUDED_DIRS = d.split(',')
 	EXCLUDED_FILES = f.split(',')
+
 	return AWS, ES_HOST, ES_PORT, INDEXNAME, EXCLUDED_DIRS, EXCLUDED_FILES
+
+def parseCLIoptions(INDEXNAME):
+	"""This is the parse CLI options function.
+	It parses command line arguments.
+	"""
+	parser = optparse.OptionParser()
+	parser.add_option("-d", "--topdir", dest="TOPDIR",
+						help="directory to start crawling from (default: .)")
+	parser.add_option("-m", "--mtime", dest="DAYSOLD",
+						help="minimum days ago for modified time (default: 30)")
+	parser.add_option("-s", "--minsize", dest="MINSIZE",
+						help="minimum file size in MB (default: 5)")
+	parser.add_option("-t", "--threads", dest="NUM_THREADS",
+						help="number of threads to use (default: 2)")
+	parser.add_option("-i", "--index", dest="INDEXNAME",
+						help="elasticsearch index name (default: from config)")
+	parser.add_option("-v", "--verbose", dest="VERBOSE",
+						help="run in verbose level (default: 0)")
+	(options, args) = parser.parse_args()
+	# Check for arguments
+	if options.TOPDIR is None:
+		TOPDIR = "."
+	else:
+		TOPDIR = options.TOPDIR
+	if options.DAYSOLD is None:
+		DAYSOLD = 30
+	else:
+		DAYSOLD = int(options.DAYSOLD)
+	if options.MINSIZE is None:
+		MINSIZE = 5
+	else:
+		MINSIZE = int(options.MINSIZE)
+	if options.NUM_THREADS is None:
+		NUM_THREADS = 2
+	else:
+		NUM_THREADS = int(options.NUM_THREADS)
+	if options.INDEXNAME:
+		INDEXNAME = options.INDEXNAME
+	if options.VERBOSE is None:
+		VERBOSE = 0
+	else:
+		VERBOSE = int(options.VERBOSE)
+
+	return TOPDIR, DAYSOLD, MINSIZE, NUM_THREADS, INDEXNAME, VERBOSE
 
 def crawlDirectories(TOPDIR, EXCLUDED_DIRS, DIRECTORY_QUEUE, VERBOSE):
 	"""This is the walk directory tree function.
@@ -136,43 +178,42 @@ def crawlDirectories(TOPDIR, EXCLUDED_DIRS, DIRECTORY_QUEUE, VERBOSE):
 		cmd.append('-not')
 		cmd.append('-path')
 		cmd.append('*%s*' %i)
+	printLog('Finding directories to crawl', logtype='status')
 	p = subprocess.Popen(cmd,shell=False,stdin=subprocess.PIPE,
 					stdout=subprocess.PIPE,stderr=subprocess.PIPE)
 	for line in p.stdout:
 		# remove any newline chars
-		dir = line.rstrip('\r')
-		dir = line.rstrip('\n')
+		directory = line.rstrip('\r\n')
 		if VERBOSE > 0:
-			printLog('Queuing directory: %s'%dir, logtype='info')
+			printLog('Queuing directory: %s'%directory, logtype='info')
 		# add item to queue (directory)
-		DIRECTORY_QUEUE.put(dir)
+		DIRECTORY_QUEUE.put(directory)
 		total_num_dirs += 1
 
-def crawlFiles(path, DATEEPOCH, DAYS, MINSIZE, EXCLUDED_FILES, VERBOSE, DEBUG):
+def crawlFiles(path, DATEEPOCH, DAYSOLD, MINSIZE, EXCLUDED_FILES, VERBOSE):
 	"""This is the list directory function.
 	It crawls for files using os.listdir.
 	Ignores files smaller than 'MINSIZE' MB, newer
-	than 'DAYS' old and in 'EXCLUDED_FILES'.
+	than 'DAYSOLD' old and in 'EXCLUDED_FILES'.
 	"""
 	global total_num_files
 	filelist = []
 	# Crawl files in the directory
 	for name in os.listdir(path):
 		# remove any newline chars
-		name = name.rstrip('\n')
-		name = name.rstrip('\r')
-		# Skip file if it's excluded
-		if name not in EXCLUDED_FILES:
-			# get parent path
-			abspath = os.path.abspath(path)
-			# get full path to file
-			filename_fullpath = os.path.join(abspath, name)
-			# only process if file
-			if os.path.isfile(filename_fullpath):
+		name = name.rstrip('\r\n')
+		# get absolute path (parent of file)
+		abspath = os.path.abspath(path)
+		# get full path to file
+		filename_fullpath = os.path.join(abspath, name)
+		# only process if regular file and not symbolic link
+		if os.path.isfile(filename_fullpath) and not os.path.islink(filename_fullpath):
+			# Skip file if it's excluded
+			if name not in EXCLUDED_FILES:
 				# Get file modified time
 				mtime = int(os.path.getmtime(filename_fullpath))
 				# Convert time in days to seconds
-				time_sec = DAYS * 86400
+				time_sec = DAYSOLD * 86400
 				file_mtime_sec = DATEEPOCH - mtime
 				# Only process files modified x days ago
 				if file_mtime_sec >= time_sec:
@@ -182,7 +223,7 @@ def crawlFiles(path, DATEEPOCH, DAYS, MINSIZE, EXCLUDED_FILES, VERBOSE, DEBUG):
 					# Skip files smaller than x MB
 					if size_mb >= MINSIZE:
 						# get file extension
-						extension = str.lower(os.path.splitext(filename_fullpath)[1]).strip('.')
+						extension = str(os.path.splitext(filename_fullpath)[1][1:].strip().lower())
 						# get access time
 						atime = int(os.path.getatime(filename_fullpath))
 						# get change time
@@ -203,8 +244,6 @@ def crawlFiles(path, DATEEPOCH, DAYS, MINSIZE, EXCLUDED_FILES, VERBOSE, DEBUG):
 						# if we can't find the owner name, get the uid number
 						except KeyError:
 							owner = uid
-							if DEBUG:
-								print owner
 						# get group
 						gid = os.stat(filename_fullpath).st_gid
 						try:
@@ -217,28 +256,43 @@ def crawlFiles(path, DATEEPOCH, DAYS, MINSIZE, EXCLUDED_FILES, VERBOSE, DEBUG):
 						# if we can't find the group name, get the gid number
 						except KeyError:
 							group = gid
-							if DEBUG:
-								print group
 						# get time (seconds since epoch)
 						indextime = int(time.time())
-						# add file metadata to filelist
-						filemeta = '{"filename": "%s", "extension": "%s", "path_full": "%s", "path_parent": "%s", "filesize": %s, "owner": "%s", "group": "%s", "last_modified": %s, "last_access": %s, "last_change": %s, "hardlinks": %s, "inode": %s, "indexing_date": %s}' % (name.decode('utf-8'), extension, filename_fullpath.decode('utf-8'), abspath.decode('utf-8'), size, owner, group, mtime, atime, ctime, hardlinks, inode, indextime)
-						filelist.append(filemeta)
-						if DEBUG:
-							print filemeta
+						# create md5 hash of file using metadata
+						filehash = hashlib.md5(name+str(size)+str(mtime)).hexdigest()
+						# create file metadata dictionary
+						filemeta_dict = {
+							"filename": "%s" % name.decode('utf-8'),
+							"extension": "%s" % extension.decode('utf-8'),
+							"path_full": "%s" % filename_fullpath.decode('utf-8'),
+							"path_parent": "%s" % abspath.decode('utf-8'),
+							"filesize": size,
+							"owner": "%s" % owner.decode('utf-8'),
+							"group": "%s" % group.decode('utf-8'),
+							"last_modified": mtime,
+							"last_access": atime,
+							"last_change": ctime,
+							"hardlinks": hardlinks,
+							"inode": inode,
+							"filehash": "%s" % filehash,
+							"indexing_date": indextime
+							}
+						# add file metadata dictionary to filelist list
+						filelist.append(filemeta_dict)
 						total_num_files += 1
 	return filelist
 
-def workerSetup(DIRECTORY_QUEUE, NUM_THREADS, ES, INDEXNAME, DATEEPOCH, DAYS, MINSIZE, EXCLUDED_FILES, VERBOSE, DEBUG):
+def workerSetup(DIRECTORY_QUEUE, NUM_THREADS, ES, INDEXNAME, DATEEPOCH, DAYSOLD, MINSIZE, EXCLUDED_FILES, VERBOSE):
 	threads = []
 	for i in range(NUM_THREADS):
-		worker = threading.Thread(target=processDirectoryWorker, args=(i, DIRECTORY_QUEUE, ES, INDEXNAME, DATEEPOCH, DAYS, MINSIZE, EXCLUDED_FILES, VERBOSE, DEBUG,))
+		worker = threading.Thread(target=processDirectoryWorker, args=(i, DIRECTORY_QUEUE, ES, INDEXNAME, \
+					DATEEPOCH, DAYSOLD, MINSIZE, EXCLUDED_FILES, VERBOSE,))
 		worker.setDaemon(True)
 		worker.start()
 		threads.append(worker)
 	return threads
 
-def processDirectoryWorker(threadnum, DIRECTORY_QUEUE, ES, INDEXNAME, DATEEPOCH, DAYS, MINSIZE, EXCLUDED_FILES, VERBOSE, DEBUG):
+def processDirectoryWorker(threadnum, DIRECTORY_QUEUE, ES, INDEXNAME, DATEEPOCH, DAYSOLD, MINSIZE, EXCLUDED_FILES, VERBOSE):
 	"""This is the worker thread function.
 	It processes items in the queue one after another.
 	These daemon threads go into an infinite loop,
@@ -250,18 +304,18 @@ def processDirectoryWorker(threadnum, DIRECTORY_QUEUE, ES, INDEXNAME, DATEEPOCH,
 	while True:
 		if VERBOSE > 0:
 			printLog('[%s]: Looking for the next directory'%threadnum, logtype='status')
-		# get an item from the queue (directory)
+		# get an item (directory) from the queue
 		path = DIRECTORY_QUEUE.get()
 		if path is None:
 			break
 		if VERBOSE > 0:
 			printLog('[%s]: Crawling: %s'%(threadnum, path), logtype='info')
 		# crawl the files in the directory
-		filelist = crawlFiles(path, DATEEPOCH, DAYS, MINSIZE, EXCLUDED_FILES, VERBOSE, DEBUG)
+		filelist = crawlFiles(path, DATEEPOCH, DAYSOLD, MINSIZE, EXCLUDED_FILES, VERBOSE)
 		# add filelist to ES index
 		if filelist:
 			indexAdd(ES, INDEXNAME, filelist, VERBOSE)
-			if VERBOSE == 0 and not DEBUG:
+			if VERBOSE == 0:
 				dircount = total_num_dirs - DIRECTORY_QUEUE.qsize()
 				printProgressBar(dircount, total_num_dirs, 'Crawling:', '%s/%s'%(dircount,total_num_dirs))
 		DIRECTORY_QUEUE.task_done()
@@ -274,7 +328,8 @@ def elasticsearchConnect(AWS, ES_HOST, ES_PORT):
 	# Check if we are using AWS ES
 	printLog('Connecting to Elasticsearch', logtype='status')
 	if AWS == 'True':
-		ES = Elasticsearch(hosts=[{'host': ES_HOST, 'port': ES_PORT}], use_ssl=True, verify_certs=True, connection_class=RequestsHttpConnection)
+		ES = Elasticsearch(hosts=[{'host': ES_HOST, 'port': ES_PORT}], \
+			use_ssl=True, verify_certs=True, connection_class=RequestsHttpConnection)
 	# Local connection to ES
 	else:
 		ES = Elasticsearch(hosts=[{'host': ES_HOST, 'port': ES_PORT}])
@@ -290,7 +345,7 @@ def indexCreate(ES, INDEXNAME):
 	there is one with same name. It also creates
 	the new index and sets up mappings.
 	"""
-	printLog('Checking for ES index', logtype='info')
+	printLog('Checking for ES index: %s' % INDEXNAME, logtype='info')
 	#delete index if exists
 	if ES.indices.exists(index=INDEXNAME):
 		printLog('ES index exists, deleting', logtype='warning')
@@ -339,6 +394,9 @@ def indexCreate(ES, INDEXNAME):
 					"inode": {
 						"type": "long"
 					},
+					"filehash": {
+						"type": "keyword"
+					},
 					"indexing_date": {
 						"type": "date",
 						"format": "epoch_second"
@@ -356,81 +414,55 @@ def indexAdd(ES, INDEXNAME, filelist, VERBOSE):
 	It bulk adds data from worker's crawl
 	results into ES.
 	"""
-	# bulk load index data
 	if VERBOSE > 0:
 		printLog('Bulk loading to ES index', logtype='info')
-	try:
-		helpers.bulk(ES, filelist, index=INDEXNAME, doc_type='file')
-	except:
-		if DEBUG:
-			print filelist
-		pass
+	# bulk load data to Elasticsearch index
+	helpers.bulk(ES, filelist, index=INDEXNAME, doc_type='file')
+
+def dupeFinder(ES, INDEXNAME):
+	"""This is the duplicate file finder function.
+	It searches Elasticsearch for files that have the same filehash
+	and creates a new index containing those files.
+	"""
+	dupes_list = []
+	data = {
+	"size": 0,
+	"aggs": {
+	  "duplicateCount": {
+	    "terms": {
+	    "field": "filehash",
+	      "min_doc_count": 2
+	    },
+	    "aggs": {
+	      "duplicateDocuments": {
+	        "top_hits": {}
+	      }
+	    }
+	  }
+	}
+	}
+	ES.indices.refresh(index=INDEXNAME)
+	res = ES.search(index=INDEXNAME, body=data)
+	for hit in res['aggregations']['duplicateCount']['buckets']:
+		for hit in hit['duplicateDocuments']['hits']['hits']:
+			dupes_list.append(hit['_source'])
+	return dupes_list
 
 def main():
-	global total_num_files
-	global total_num_dirs
-
-	# print random banner
-	printBanner()
-
-	total_num_files = 0
-	total_num_dirs = 0
-
-	parser = optparse.OptionParser()
-	parser.add_option("-d", "--topdir", dest="TOPDIR",
-						help="directory to start crawling from (default: .)")
-	parser.add_option("-m", "--mtime", dest="DAYS",
-						help="minimum days ago for modified time (default: 30)")
-	parser.add_option("-s", "--minsize", dest="MINSIZE",
-						help="minimum file size in MB (default: 5)")
-	parser.add_option("-t", "--threads", dest="NUM_THREADS",
-						help="number of threads to use (default: 2)")
-	parser.add_option("-i", "--index", dest="INDEXNAME",
-						help="elasticsearch index name (default: from config)")
-	parser.add_option("-v", "--verbose", dest="VERBOSE",
-						help="run in verbose level (default: 0)")
-	parser.add_option("--debug", "--debug", dest="DEBUG",
-						help="run in debug mode (default: false)")
-	(options, args) = parser.parse_args()
-	# Check for arguments
-	if options.TOPDIR is None:
-		TOPDIR = "."
-	else:
-		TOPDIR = options.TOPDIR
-	if options.DAYS is None:
-		DAYS = 30
-	else:
-		DAYS = int(options.DAYS)
-	if options.MINSIZE is None:
-		MINSIZE = 5
-	else:
-		MINSIZE = int(options.MINSIZE)
-	if options.NUM_THREADS is None:
-		NUM_THREADS = 2
-	else:
-		NUM_THREADS = int(options.NUM_THREADS)
-	if options.VERBOSE is None:
-		VERBOSE = 0
-	else:
-		VERBOSE = int(options.VERBOSE)
-	if options.DEBUG is None:
-		DEBUG = False
-	else:
-		DEBUG = True
+	if os.geteuid():
+		sys.exit('Please run as root')
 
 	# Date calculation seconds since epoch
 	DATEEPOCH = int(time.time())
 
-	# Set up directory queue
-	DIRECTORY_QUEUE = Queue.Queue()
-	THREADS = []
+	# print random banner
+	printBanner()
 
 	# load config file
 	AWS, ES_HOST, ES_PORT, INDEXNAME, EXCLUDED_DIRS, EXCLUDED_FILES = loadConfig()
 
-	# use es index name from cli options instead of config file
-	if options.INDEXNAME:
-		INDEXNAME = options.INDEXNAME
+	# parse cli options
+	TOPDIR, DAYSOLD, MINSIZE, NUM_THREADS, INDEXNAME, VERBOSE = parseCLIoptions(INDEXNAME)
 
 	# check ES status
 	ES = elasticsearchConnect(AWS, ES_HOST, ES_PORT)
@@ -438,26 +470,48 @@ def main():
 	# create ES index
 	indexCreate(ES, INDEXNAME)
 
+	# Set up directory queue
+	DIRECTORY_QUEUE = Queue.Queue()
+
 	# setup worker threads
-	THREADS = workerSetup(DIRECTORY_QUEUE, NUM_THREADS, ES, INDEXNAME, DATEEPOCH, DAYS, MINSIZE, EXCLUDED_FILES, VERBOSE, DEBUG)
+	THREADS = []
+	THREADS = workerSetup(DIRECTORY_QUEUE, NUM_THREADS, ES, INDEXNAME, DATEEPOCH, DAYSOLD, MINSIZE, EXCLUDED_FILES, VERBOSE)
 
-	# walk directory tree and start crawling
-	printLog('Finding directories to crawl', logtype='status')
-	crawlDirectories(TOPDIR, EXCLUDED_DIRS, DIRECTORY_QUEUE, VERBOSE)
+	try:
+		# walk directory tree and start crawling
+		crawlDirectories(TOPDIR, EXCLUDED_DIRS, DIRECTORY_QUEUE, VERBOSE)
 
-	# wait for all threads to finish
-	for i in range(NUM_THREADS):
-		DIRECTORY_QUEUE.put(None)
-	for t in THREADS:
-		t.join()
+		# wait for all threads to finish
+		for i in range(NUM_THREADS):
+			DIRECTORY_QUEUE.put(None)
+		for t in THREADS:
+			t.join()
 
-	# print stats
-	elapsedtime = time.time() - DATEEPOCH
-	sys.stdout.write('\n')
-	sys.stdout.flush()
-	printLog('Directories Crawled: %s'%total_num_dirs, logtype='info')
-	printLog('Files Indexed: %s'%total_num_files, logtype='info')
-	printLog('Elapsed time: %s'%elapsedtime, logtype='info')
+		printLog('Finished crawling', logtype='status')
+
+		# search ES for duplicate files
+		dupes_list = dupeFinder(ES, INDEXNAME)
+		# get index suffix
+		INDEXSUFFIX = INDEXNAME.split('diskover-')[1].strip()
+		INDEXNAME='diskover_dupes-%s' % INDEXSUFFIX
+		# create new index for dupes
+		indexCreate(ES, INDEXNAME)
+		# add dupes to new index
+		indexAdd(ES, INDEXNAME, dupes_list, VERBOSE)
+
+		# print stats
+		elapsedtime = time.time() - DATEEPOCH
+		printLog('Directories Crawled: %s'%total_num_dirs, logtype='info')
+		printLog('Files Indexed: %s'%total_num_files, logtype='info')
+		printLog('Elapsed time: %s'%elapsedtime, logtype='info')
+		print('\n')
+		sys.exit(0)
+
+	except KeyboardInterrupt:
+		print("\nkeyboard interrupt received, exiting")
+		pass
 
 if __name__ == "__main__":
+	total_num_files = 0
+	total_num_dirs = 0
 	main()
