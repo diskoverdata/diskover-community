@@ -23,6 +23,7 @@ The distribution contains:
 ```
 $ tree
 .
+├── CHANGES
 ├── LICENSE
 ├── README.md
 ├── diskover.cfg
@@ -96,15 +97,18 @@ A successfull crawl should look like this:
                                       https://github.com/shirosaidev/diskover
 
 
-[2017-04-27 23:02:05] [status] Connecting to Elasticsearch
-[2017-04-27 23:02:05] [info] Checking for ES index
-[2017-04-27 23:02:05] [warning] ES index exists, deleting
-[2017-04-27 23:02:05] [info] Creating ES index
-[2017-04-27 23:02:05] [status] Finding directories to crawl
-Crawling: [100%] |████████████████████████████████████████| 7743/7744
-[2017-04-27 23:02:11] [info] Directories Crawled: 7744
-[2017-04-27 23:02:11] [info] Files Indexed: 350
-[2017-04-27 23:02:11] [info] Elapsed time: 6.34155106544
+[2017-05-03 17:58:31] [status] Connecting to Elasticsearch
+[2017-05-03 17:58:31] [info] Checking for ES index: diskover-2017.04.22
+[2017-05-03 17:58:31] [warning] ES index exists, deleting
+[2017-05-03 17:58:31] [info] Creating ES index
+Crawling: [100%] |████████████████████████████████████████| 7959/7960
+[2017-05-03 17:58:40] [status] Finished crawling
+[2017-05-03 17:58:40] [info] Checking for ES index: diskover_dupes-2017.04.22
+[2017-05-03 17:58:40] [warning] ES index exists, deleting
+[2017-05-03 17:58:40] [info] Creating ES index
+[2017-05-03 17:58:40] [info] Directories Crawled: 7960
+[2017-05-03 17:58:40] [info] Files Indexed: 344
+[2017-05-03 17:58:40] [info] Elapsed time: 9.41380310059
 ```
 
 
@@ -117,7 +121,6 @@ Crawling: [100%] |████████████████████�
 * `-t, NUM_THREADS, --threads=NUM_THREADS` number of threads to use (default: 2)
 * `-i, INDEXNAME, --index=INDEXNAME` elasticsearch index name (default: from config)
 * `-v VERBOSE, --verbose=VERBOSE` run in verbose level (default: 0)
-* `--debug=DEBUG, --debug=DEBUG` run in debug mode (default: false)
 
 
 ## Config file
@@ -178,6 +181,7 @@ Here are some benchmarks running on my macbook pro, this includes time to crawl 
 
 Diskover creates an index with the name from the config file or from the cli option `-i`. **If an existing index exists with the same name, it will be deleted and a new index created.** If you are doing crawls every week for example, you could name the indices diskover-2017.04.09, diskover-2017.04.16, diskover-2017.04.23, etc.
 
+An index for duplicate files will also be created. If you named your index `diskover-2017.05.03`, the index for duplicate files will be named `diskover_dupes-2017.05.03`.
 
 ## Generated fields
 
@@ -198,19 +202,21 @@ Diskover creates the following fields :
 | `group`              | Group name                                  | `"staff"`                                   |
 | `hardlinks`          | Hardlink count                              | `1`                                         |
 | `inode`              | Inode number                                | `652490`                                    |
+| `filehash`           | MD5 hash of file                            | `3a6949b4b74846a482016d0779560327`          |
 
+## Filehash
+
+In order to speed up crawl times, a MD5 hash for each file is made from combining the strings `filename+filesize+last_modified` and hashing that string, rather than the contents of the file. This seems to be a fast high-level way to create a hash of the file. **You should run the md5 command on the files to compare their hashes before you delete the dupes**.
 
 ## Kibana
 
-For the index pattern use `diskover-*`. **Make sure the `Index contains time-based events` box is `unchecked`** when you create index patterns.
-
+For the index pattern use `diskover-*`. For the duplicate files use `diskover_dupes-*`. **Make sure the `Index contains time-based events` box is `unchecked`** when you create index patterns.
 
 ### Diskover Dashboard
 
 To use the Diskover dashboard (screenshot), import the saved objects file `export.json` into Kibana for the dashboard visualizations. In Kibana go to `Management > Saved Objects > Import`.
 
 If nothing is showing in the dashboard, go to `Management > Index Patterns > diskover-*` and then hit the `refresh icon`.
-
 
 ### Kibana Field Formatting
 
