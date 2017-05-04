@@ -18,7 +18,7 @@ import hashlib
 from random import randint
 from elasticsearch import Elasticsearch, helpers, RequestsHttpConnection
 
-VERSION = '1.0.4'
+VERSION = '1.0.5'
 
 def printBanner():
 	"""This is the print banner function.
@@ -243,7 +243,7 @@ def crawlFiles(path, DATEEPOCH, DAYSOLD, MINSIZE, EXCLUDED_FILES, VERBOSE):
 								owner = owner[0]
 						# if we can't find the owner name, get the uid number
 						except KeyError:
-							owner = uid
+							owner = str(uid)
 						# get group
 						gid = os.stat(filename_fullpath).st_gid
 						try:
@@ -255,7 +255,7 @@ def crawlFiles(path, DATEEPOCH, DAYSOLD, MINSIZE, EXCLUDED_FILES, VERBOSE):
 								group = group[0]
 						# if we can't find the group name, get the gid number
 						except KeyError:
-							group = gid
+							group = str(gid)
 						# get time (seconds since epoch)
 						indextime = int(time.time())
 						# create md5 hash of file using metadata
