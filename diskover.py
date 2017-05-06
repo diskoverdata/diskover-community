@@ -18,7 +18,7 @@ import hashlib
 from random import randint
 from elasticsearch import Elasticsearch, helpers, RequestsHttpConnection
 
-VERSION = '1.0.5'
+VERSION = '1.0.6'
 
 def printBanner():
 	"""This is the print banner function.
@@ -127,17 +127,24 @@ def parseCLIoptions(INDEXNAME):
 	"""
 	parser = optparse.OptionParser()
 	parser.add_option("-d", "--topdir", dest="TOPDIR",
-						help="directory to start crawling from (default: .)")
+						help="Directory to start crawling from (default: .) \
+							Example: -d /mnt/stor1/dir1/dir2")
 	parser.add_option("-m", "--mtime", dest="DAYSOLD",
-						help="minimum days ago for modified time (default: 30)")
+						help="Minimum days ago for modified time (default: 30) \
+							Example: -m 180 for files older than 180 days")
 	parser.add_option("-s", "--minsize", dest="MINSIZE",
-						help="minimum file size in MB (default: 5)")
+						help="Minimum file size in MB (default: 5) \
+							Example: -s 100 for files larger than 100 MB")
 	parser.add_option("-t", "--threads", dest="NUM_THREADS",
-						help="number of threads to use (default: 2)")
+						help="Number of threads to use (default: 2) \
+							Example: -t 4 to run 4 indexing threads")
 	parser.add_option("-i", "--index", dest="INDEXNAME",
-						help="elasticsearch index name (default: from config)")
+						help="Elasticsearch index name (default: from config) \
+							diskover-<string> required \
+							Example: -i diskover-2017.05.05")
 	parser.add_option("-v", "--verbose", dest="VERBOSE",
-						help="run in verbose level (default: 0)")
+						help="Run in verbose level (default: 0) \
+							Example: -v 1 for more verbose logging")
 	(options, args) = parser.parse_args()
 	# Check for arguments
 	if options.TOPDIR is None:
@@ -449,20 +456,25 @@ def dupeFinder(ES, INDEXNAME):
 	return dupes_list
 
 def main():
+
+	# print random banner
+	printBanner()
+
 	if os.geteuid():
 		sys.exit('Please run as root')
 
 	# Date calculation seconds since epoch
 	DATEEPOCH = int(time.time())
 
-	# print random banner
-	printBanner()
-
 	# load config file
 	AWS, ES_HOST, ES_PORT, INDEXNAME, EXCLUDED_DIRS, EXCLUDED_FILES = loadConfig()
 
 	# parse cli options
 	TOPDIR, DAYSOLD, MINSIZE, NUM_THREADS, INDEXNAME, VERBOSE = parseCLIoptions(INDEXNAME)
+
+	# check index name
+	if INDEXNAME == "diskover" or INDEXNAME.split('-')[0] != "diskover":
+		sys.exit('Please name your index: diskover-<string>')
 
 	# check ES status
 	ES = elasticsearchConnect(AWS, ES_HOST, ES_PORT)

@@ -1,5 +1,9 @@
 # Diskover Change Log
 
+## [1.0.6] - 2017-05-05
+### added
+- check for index name is diskover-<string>
+
 ## [1.0.5] - 2017-05-04
 ### fixed
 - crash caused from unicode decoding if integer value for owner/group
