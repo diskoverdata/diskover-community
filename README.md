@@ -114,13 +114,28 @@ Crawling: [100%] |████████████████████�
 
 ## Diskover CLI options
 
-* `-h, --help` displays help
-* `-d TOPDIR, --topdir=TOPDIR` directory to start crawling from (default: .)
-* `-m DAYS, --mtime=DAYS` minimum days ago for modified time (default: 30)
-* `-s MINSIZE, --minsize=MINSIZE` minimum file size in MB (default: 5)
-* `-t, NUM_THREADS, --threads=NUM_THREADS` number of threads to use (default: 2)
-* `-i, INDEXNAME, --index=INDEXNAME` elasticsearch index name (default: from config)
-* `-v VERBOSE, --verbose=VERBOSE` run in verbose level (default: 0)
+```sh
+  -h, --help            show this help message and exit
+  -d TOPDIR, --topdir=TOPDIR
+                        Directory to start crawling from (default: .)
+                        Example: -d /mnt/stor1/dir1/dir2
+  -m DAYSOLD, --mtime=DAYSOLD
+                        Minimum days ago for modified time (default: 30)
+                        Example: -m 180 for files older than 180 days
+  -s MINSIZE, --minsize=MINSIZE
+                        Minimum file size in MB (default: 5)
+                        Example: -s 100 for files larger than 100 MB
+  -t NUM_THREADS, --threads=NUM_THREADS
+                        Number of threads to use (default: 2)
+                        Example: -t 4 to run 4 indexing threads
+  -i INDEXNAME, --index=INDEXNAME
+                        Elasticsearch index name (default: from config)
+                        diskover-<string> required
+                        Example: -i diskover-2017.05.05
+  -v VERBOSE, --verbose=VERBOSE
+                        Run in verbose level (default: 0)
+                        Example: -v 1 for more verbose logging
+```
 
 
 ## Config file
