@@ -160,7 +160,7 @@ port = 9200
 indexname = diskover-2017.04.22
 ```
 
-## Benchmarks and speeding up crawl times
+## Speeding up crawl times
 
 Diskover skips empty directories and will only index files that are older than `modified time` and larger than `minimum file size` from the command line options. Excluding certain files/directories will help speed up crawl times as well. **Running with verbose logging will increase crawl times**.
 
@@ -171,11 +171,13 @@ cd /path/you/want/to/crawl
 sudo python /path/to/diskover.py -m 180 -s 10
 ```
 
-You could also speed up the crawl by running multiple Diskover processes and bulk loading into the same `diskover-<name>` index in Elasticsearch. Below is a diagram showing how-to. **Diskover bulk loads data into Elasticsearch while the crawl is running so you can view in Kibana during the scan**.
+You could also speed up the crawl by running multiple Diskover `diskover.py` processes and bulk loading into the same `diskover-<name>` index in Elasticsearch. Below is a diagram showing this example.
 
 ![alt tag](https://github.com/shirosaidev/diskover/blob/master/diskover-diagram.png)
 
-Here are some benchmarks running on my macbook pro, this includes time to crawl my local filesystem and index in Elasticsearch (in seconds) using the default of 2 threads. The files were all 1KB.
+## Benchmarks
+
+Here are some benchmarks running on my macbook pro, this includes time to crawl my local filesystem and index in Elasticsearch (in seconds) using the default of 2 threads and single `diskover.py` running. The files were all 1KB.
 
 ```sh
 [2017-04-23 10:02:58] [info] Directories Crawled: 10001
@@ -192,9 +194,15 @@ Here are some benchmarks running on my macbook pro, this includes time to crawl 
 
 ## Indices
 
-Diskover creates an index with the name from the config file or from the cli option `-i`. **If an existing index exists with the same name, it will be deleted and a new index created.** If you are doing crawls every week for example, you could name the indices diskover-2017.04.09, diskover-2017.04.16, diskover-2017.04.23, etc. **Index names are required to be `diskover-<string>`**.
+Diskover creates an index with the name from the config file or from the cli option `-i`. **If an existing index exists with the same name, it will be deleted and a new index created unless `-n or --nodelete` cli argument is used** If you are doing crawls every week for example, you could name the indices diskover-2017.04.09, diskover-2017.04.16, diskover-2017.04.23, etc. **Index names are required to be `diskover-<string>`**.
 
-An index for duplicate files will also be created. If you named your index `diskover-2017.05.03`, the index for duplicate files will be named `diskover_dupes-2017.05.03`.
+### Append data to existing index
+
+If you are running concurrent `diskover.py` processes you will need to use the `-n or --nodelete` cli argument to append  data to an existing index.
+
+### Duplicate files index
+
+An index for duplicate files can also be created using the `--dupesindex` cli argument **after all crawls are finished**. If you named your index `diskover-2017.05.03`, the index for duplicate files will be named `diskover_dupes-2017.05.03`.
 
 ## Generated fields
 
