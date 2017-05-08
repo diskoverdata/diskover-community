@@ -28,6 +28,7 @@ $ tree
 ├── README.md
 ├── diskover.cfg
 ├── diskover.py
+├── diskover-diagram.png
 ├── export.json
 └── kibana-screenshot.png
 ```
@@ -93,7 +94,7 @@ A successfull crawl should look like this:
 /:/\:\__\ /\/::\__\ /\:\:\__\ /::-"\__\ /:/\:\__\ |::L/\__\ /::\:\__\ /::\:\__\
 \:\/:/  / \::/\/__/ \:\:\/__/ \;:;-",-" \:\/:/  / |::::/  / \:\:\/  / \;:::/  /
  \::/  /   \:\__\    \::/  /   |:|  |    \::/  /   L;;/__/   \:\/  /   |:\/__/
-  \/__/     \/__/     \/__/     \|__|     \/__/    v1.0.1     \/__/     \|__|
+  \/__/     \/__/     \/__/     \|__|     \/__/    v1.0.7     \/__/     \|__|
                                       https://github.com/shirosaidev/diskover
 
 
@@ -101,40 +102,35 @@ A successfull crawl should look like this:
 [2017-05-03 17:58:31] [info] Checking for ES index: diskover-2017.04.22
 [2017-05-03 17:58:31] [warning] ES index exists, deleting
 [2017-05-03 17:58:31] [info] Creating ES index
-Crawling: [100%] |████████████████████████████████████████| 7959/7960
+Crawling: [100%] |████████████████████████████████████████| 7960/7960
 [2017-05-03 17:58:40] [status] Finished crawling
-[2017-05-03 17:58:40] [info] Checking for ES index: diskover_dupes-2017.04.22
-[2017-05-03 17:58:40] [warning] ES index exists, deleting
-[2017-05-03 17:58:40] [info] Creating ES index
 [2017-05-03 17:58:40] [info] Directories Crawled: 7960
 [2017-05-03 17:58:40] [info] Files Indexed: 344
 [2017-05-03 17:58:40] [info] Elapsed time: 9.41380310059
 ```
 
 
-## Diskover CLI options
+## Diskover CLI arguments
 
 ```sh
+usage: diskover.py [-h] [-d TOPDIR] [-m MTIME] [-s MINSIZE] [-t THREADS]
+                   [-i INDEX] [-n] [--dupesindex] [-v]
+
+optional arguments:
   -h, --help            show this help message and exit
-  -d TOPDIR, --topdir=TOPDIR
+  -d TOPDIR, --topdir TOPDIR
                         Directory to start crawling from (default: .)
-                        Example: -d /mnt/stor1/dir1/dir2
-  -m DAYSOLD, --mtime=DAYSOLD
+  -m MTIME, --mtime MTIME
                         Minimum days ago for modified time (default: 30)
-                        Example: -m 180 for files older than 180 days
-  -s MINSIZE, --minsize=MINSIZE
+  -s MINSIZE, --minsize MINSIZE
                         Minimum file size in MB (default: 5)
-                        Example: -s 100 for files larger than 100 MB
-  -t NUM_THREADS, --threads=NUM_THREADS
+  -t THREADS, --threads THREADS
                         Number of threads to use (default: 2)
-                        Example: -t 4 to run 4 indexing threads
-  -i INDEXNAME, --index=INDEXNAME
+  -i INDEX, --index INDEX
                         Elasticsearch index name (default: from config)
-                        diskover-<string> required
-                        Example: -i diskover-2017.05.05
-  -v VERBOSE, --verbose=VERBOSE
-                        Run in verbose level (default: 0)
-                        Example: -v 1 for more verbose logging
+  -n, --nodelete        Do not delete existing index (default: delete index)
+  --dupesindex          Create duplicate files index (default: don't create)
+  -v, --verbose         Run more verbose (default: not verbose)
 ```
 
 
@@ -175,7 +171,9 @@ cd /path/you/want/to/crawl
 sudo python /path/to/diskover.py -m 180 -s 10
 ```
 
-You could also speed up the crawl by running multiple Diskover processes and bulk loading into different `diskover-<name>` indices in Elasticsearch. I haven't tested this but in theory that should help to pull in data faster for analysis. Diskover bulk loads data into Elasticsearch while the crawl is running so you can view in Kibana during the scan.
+You could also speed up the crawl by running multiple Diskover processes and bulk loading into the same `diskover-<name>` index in Elasticsearch. Below is a diagram showing how-to. **Diskover bulk loads data into Elasticsearch while the crawl is running so you can view in Kibana during the scan**.
+
+![alt tag](https://github.com/shirosaidev/diskover/blob/master/diskover-diagram.png)
 
 Here are some benchmarks running on my macbook pro, this includes time to crawl my local filesystem and index in Elasticsearch (in seconds) using the default of 2 threads. The files were all 1KB.
 
@@ -239,7 +237,7 @@ This will help make the dashboard easier to read like in the screenshot for file
 
 ### Kibana Search Filters
 
-Once you have imported the `export.json` into Kibana, in Kibana's `Discover` page click `open`. There will be a few saved searches in there to help you filter for old files.
+Once you have imported the `export.json` into Kibana, in Kibana's `Discover` page click `open`. There will be a few saved searches in there to help you filter for old files and find duplicate files.
 
 Here are some filter examples:
 
