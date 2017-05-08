@@ -10,7 +10,7 @@ import pwd
 import grp
 import time
 import datetime
-import optparse
+import argparse
 import Queue
 import threading
 import ConfigParser
@@ -18,7 +18,7 @@ import hashlib
 from random import randint
 from elasticsearch import Elasticsearch, helpers, RequestsHttpConnection
 
-VERSION = '1.0.6'
+VERSION = '1.0.7'
 
 def printBanner():
 	"""This is the print banner function.
@@ -121,56 +121,37 @@ def loadConfig():
 
 	return AWS, ES_HOST, ES_PORT, INDEXNAME, EXCLUDED_DIRS, EXCLUDED_FILES
 
-def parseCLIoptions(INDEXNAME):
-	"""This is the parse CLI options function.
+def parseCLIArgs(INDEXNAME):
+	"""This is the parse CLI arguments function.
 	It parses command line arguments.
 	"""
-	parser = optparse.OptionParser()
-	parser.add_option("-d", "--topdir", dest="TOPDIR",
-						help="Directory to start crawling from (default: .) \
-							Example: -d /mnt/stor1/dir1/dir2")
-	parser.add_option("-m", "--mtime", dest="DAYSOLD",
-						help="Minimum days ago for modified time (default: 30) \
-							Example: -m 180 for files older than 180 days")
-	parser.add_option("-s", "--minsize", dest="MINSIZE",
-						help="Minimum file size in MB (default: 5) \
-							Example: -s 100 for files larger than 100 MB")
-	parser.add_option("-t", "--threads", dest="NUM_THREADS",
-						help="Number of threads to use (default: 2) \
-							Example: -t 4 to run 4 indexing threads")
-	parser.add_option("-i", "--index", dest="INDEXNAME",
-						help="Elasticsearch index name (default: from config) \
-							diskover-<string> required \
-							Example: -i diskover-2017.05.05")
-	parser.add_option("-v", "--verbose", dest="VERBOSE",
-						help="Run in verbose level (default: 0) \
-							Example: -v 1 for more verbose logging")
-	(options, args) = parser.parse_args()
-	# Check for arguments
-	if options.TOPDIR is None:
-		TOPDIR = "."
-	else:
-		TOPDIR = options.TOPDIR
-	if options.DAYSOLD is None:
-		DAYSOLD = 30
-	else:
-		DAYSOLD = int(options.DAYSOLD)
-	if options.MINSIZE is None:
-		MINSIZE = 5
-	else:
-		MINSIZE = int(options.MINSIZE)
-	if options.NUM_THREADS is None:
-		NUM_THREADS = 2
-	else:
-		NUM_THREADS = int(options.NUM_THREADS)
-	if options.INDEXNAME:
-		INDEXNAME = options.INDEXNAME
-	if options.VERBOSE is None:
-		VERBOSE = 0
-	else:
-		VERBOSE = int(options.VERBOSE)
+	parser = argparse.ArgumentParser()
+	parser.add_argument("-d", "--topdir", default=".", type=str,
+						help="Directory to start crawling from (default: .)")
+	parser.add_argument("-m", "--mtime", default=30, type=int,
+						help="Minimum days ago for modified time (default: 30)")
+	parser.add_argument("-s", "--minsize", default=5, type=int,
+						help="Minimum file size in MB (default: 5)")
+	parser.add_argument("-t", "--threads", default=2, type=int,
+						help="Number of threads to use (default: 2)")
+	parser.add_argument("-i", "--index", type=str,
+						help="Elasticsearch index name (default: from config)")
+	parser.add_argument("-n", "--nodelete", action="store_true",
+						help="Do not delete existing index (default: delete index)")
+	parser.add_argument("--dupesindex", action="store_true",
+						help="Create duplicate files index (default: don't create)")
+	parser.add_argument("-v", "--verbose", action="store_true",
+						help="Run more verbose (default: not verbose)")
+	args = parser.parse_args()
 
-	return TOPDIR, DAYSOLD, MINSIZE, NUM_THREADS, INDEXNAME, VERBOSE
+	# use index name from command line instead of config file
+	if args.index:
+		INDEXNAME = args.index
+	# check index name
+	if INDEXNAME == "diskover" or INDEXNAME.split('-')[0] != "diskover":
+		sys.exit('Please name your index: diskover-<string>')
+
+	return args.topdir, args.mtime, args.minsize, args.threads, INDEXNAME, args.nodelete, args.dupesindex, args.verbose
 
 def crawlDirectories(TOPDIR, EXCLUDED_DIRS, DIRECTORY_QUEUE, VERBOSE):
 	"""This is the walk directory tree function.
@@ -191,7 +172,7 @@ def crawlDirectories(TOPDIR, EXCLUDED_DIRS, DIRECTORY_QUEUE, VERBOSE):
 	for line in p.stdout:
 		# remove any newline chars
 		directory = line.rstrip('\r\n')
-		if VERBOSE > 0:
+		if VERBOSE:
 			printLog('Queuing directory: %s'%directory, logtype='info')
 		# add item to queue (directory)
 		DIRECTORY_QUEUE.put(directory)
@@ -309,20 +290,23 @@ def processDirectoryWorker(threadnum, DIRECTORY_QUEUE, ES, INDEXNAME, DATEEPOCH,
 	global total_num_dirs
 	filelist = []
 	while True:
-		if VERBOSE > 0:
+		if VERBOSE:
 			printLog('[%s]: Looking for the next directory'%threadnum, logtype='status')
 		# get an item (directory) from the queue
 		path = DIRECTORY_QUEUE.get()
 		if path is None:
+			if not VERBOSE:
+				dircount = total_num_dirs - DIRECTORY_QUEUE.qsize()
+				printProgressBar(dircount, total_num_dirs, 'Crawling:', '%s/%s'%(dircount,total_num_dirs))
 			break
-		if VERBOSE > 0:
+		if VERBOSE:
 			printLog('[%s]: Crawling: %s'%(threadnum, path), logtype='info')
 		# crawl the files in the directory
 		filelist = crawlFiles(path, DATEEPOCH, DAYSOLD, MINSIZE, EXCLUDED_FILES, VERBOSE)
 		# add filelist to ES index
 		if filelist:
 			indexAdd(ES, INDEXNAME, filelist, VERBOSE)
-			if VERBOSE == 0:
+			if not VERBOSE:
 				dircount = total_num_dirs - DIRECTORY_QUEUE.qsize()
 				printProgressBar(dircount, total_num_dirs, 'Crawling:', '%s/%s'%(dircount,total_num_dirs))
 		DIRECTORY_QUEUE.task_done()
@@ -346,18 +330,24 @@ def elasticsearchConnect(AWS, ES_HOST, ES_PORT):
 		sys.exit(1)
 	return ES
 
-def indexCreate(ES, INDEXNAME):
+def indexCreate(ES, INDEXNAME, NODELETE):
 	"""This is the ES index create function.
 	It checks for existing index and deletes if
 	there is one with same name. It also creates
 	the new index and sets up mappings.
 	"""
 	printLog('Checking for ES index: %s' % INDEXNAME, logtype='info')
-	#delete index if exists
+	# check for existing es index
 	if ES.indices.exists(index=INDEXNAME):
-		printLog('ES index exists, deleting', logtype='warning')
-		ES.indices.delete(index=INDEXNAME, ignore=[400, 404])
-	#index mappings
+		# check if nodelete cli argument and don't delete existing index
+		if NODELETE:
+			printLog('ES index exists, NOT deleting', logtype='info')
+			return
+		# delete existing index
+		else:
+			printLog('ES index exists, deleting', logtype='warning')
+			ES.indices.delete(index=INDEXNAME, ignore=[400, 404])
+	# set up es index mappings and create new index
 	mappings = {
 		"mappings": {
 			"file": {
@@ -412,7 +402,6 @@ def indexCreate(ES, INDEXNAME):
 			}
 		}
 	}
-	#create index
 	printLog('Creating ES index', logtype='info')
 	ES.indices.create(index=INDEXNAME, body=mappings)
 
@@ -421,17 +410,35 @@ def indexAdd(ES, INDEXNAME, filelist, VERBOSE):
 	It bulk adds data from worker's crawl
 	results into ES.
 	"""
-	if VERBOSE > 0:
+	if VERBOSE:
 		printLog('Bulk loading to ES index', logtype='info')
 	# bulk load data to Elasticsearch index
 	helpers.bulk(ES, filelist, index=INDEXNAME, doc_type='file')
 
-def dupeFinder(ES, INDEXNAME):
+def indexCreateDupes(ES, INDEXNAME, NODELETE, VERBOSE):
+	"""This is the duplicate file ES index creator.
+	It creates a new index of duplicate files from
+	an existing index.
+	"""
+	# search ES for duplicate files
+	dupes_list, dupe_count = dupesFinder(ES, INDEXNAME)
+	# get index suffix
+	INDEXSUFFIX = INDEXNAME.split('diskover-')[1].strip()
+	INDEXNAME='diskover_dupes-%s' % INDEXSUFFIX
+	# create new index for dupes
+	indexCreate(ES, INDEXNAME, NODELETE)
+	# add dupes to new index
+	indexAdd(ES, INDEXNAME, dupes_list, VERBOSE)
+	printLog('Found %s duplicates'% dupe_count, logtype='info')
+	printLog('Finished creating duplicate files index', logtype='status')
+
+def dupesFinder(ES, INDEXNAME):
 	"""This is the duplicate file finder function.
 	It searches Elasticsearch for files that have the same filehash
 	and creates a new index containing those files.
 	"""
 	dupes_list = []
+	dupe_count = 0
 	data = {
 	"size": 0,
 	"aggs": {
@@ -453,7 +460,8 @@ def dupeFinder(ES, INDEXNAME):
 	for hit in res['aggregations']['duplicateCount']['buckets']:
 		for hit in hit['duplicateDocuments']['hits']['hits']:
 			dupes_list.append(hit['_source'])
-	return dupes_list
+			dupe_count += 1
+	return dupes_list, dupe_count
 
 def main():
 
@@ -469,18 +477,20 @@ def main():
 	# load config file
 	AWS, ES_HOST, ES_PORT, INDEXNAME, EXCLUDED_DIRS, EXCLUDED_FILES = loadConfig()
 
-	# parse cli options
-	TOPDIR, DAYSOLD, MINSIZE, NUM_THREADS, INDEXNAME, VERBOSE = parseCLIoptions(INDEXNAME)
+	# parse cli arguments
+	TOPDIR, DAYSOLD, MINSIZE, NUM_THREADS, INDEXNAME, NODELETE, DUPESINDEX, VERBOSE = parseCLIArgs(INDEXNAME)
 
-	# check index name
-	if INDEXNAME == "diskover" or INDEXNAME.split('-')[0] != "diskover":
-		sys.exit('Please name your index: diskover-<string>')
-
-	# check ES status
+	# connect to Elasticsearch
 	ES = elasticsearchConnect(AWS, ES_HOST, ES_PORT)
 
-	# create ES index
-	indexCreate(ES, INDEXNAME)
+	# create duplicate file index if cli argument
+	if DUPESINDEX:
+		indexCreateDupes(ES, INDEXNAME, NODELETE, VERBOSE)
+		print('\n')
+		sys.exit(0)
+
+	# create Elasticsearch index
+	indexCreate(ES, INDEXNAME, NODELETE)
 
 	# Set up directory queue
 	DIRECTORY_QUEUE = Queue.Queue()
@@ -498,19 +508,7 @@ def main():
 			DIRECTORY_QUEUE.put(None)
 		for t in THREADS:
 			t.join()
-
 		printLog('Finished crawling', logtype='status')
-
-		# search ES for duplicate files
-		dupes_list = dupeFinder(ES, INDEXNAME)
-		# get index suffix
-		INDEXSUFFIX = INDEXNAME.split('diskover-')[1].strip()
-		INDEXNAME='diskover_dupes-%s' % INDEXSUFFIX
-		# create new index for dupes
-		indexCreate(ES, INDEXNAME)
-		# add dupes to new index
-		indexAdd(ES, INDEXNAME, dupes_list, VERBOSE)
-
 		# print stats
 		elapsedtime = time.time() - DATEEPOCH
 		printLog('Directories Crawled: %s'%total_num_dirs, logtype='info')

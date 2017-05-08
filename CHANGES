@@ -1,5 +1,17 @@
 # Diskover Change Log
 
+## [1.0.7] - 2017-05-07
+### added
+- nodelete command line argument to not delete existing index
+- dupes command line argument to create a duplicate files index
+### changed
+- replaced optparse module with argparse
+- cleaned up parseCLIArgs function
+- verbose now requires no integer value
+- duplicate file index is now created with optional command line argument rather than at end of crawl
+### fixed
+- progress bar not showing 100% for when crawl finishes
+
 ## [1.0.6] - 2017-05-05
 ### added
 - check for index name is diskover-<string>
