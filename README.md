@@ -7,20 +7,20 @@ What if you are running low on disk space. You need to free some up, by finding 
 Diskover helps to index files from your local file system or nfs mounts.
 It crawls your file system and indexes files and adds to [Elasticsearch](https://www.elastic.co) or [Amazon Elasticsearch Service](https://aws.amazon.com/elasticsearch-service/). It is written in Python and uses multi-threading to speed up indexing crawl times. The indexed files are bulk added and streamed into Elasticsearch while the crawl is running allowing you to visualize the data in [Kibana](https://www.elastic.co/products/kibana) without having to wait until the crawl is finished.
 
-[[https://github.com/shirosaidev/diskover/blob/master/kibana-screenshot.png|alt=kibana-screenshot]]
+![kibana-screenshot](docs/kibana-screenshot.png)
 
 # Installation Guide
 
 ## Download diskover
 
-```
+```sh
 git clone https://github.com/shirosaidev/diskover.git
 cd diskover
 ```
 
 The distribution contains:
 
-```
+```sh
 $ tree
 .
 ├── CHANGES
@@ -35,7 +35,7 @@ $ tree
 
 ## Update diskover
 
-```
+```sh
 cd diskover
 git pull
 ```
@@ -61,32 +61,32 @@ You need to have at least **Python 2.7.** and have installed Python client for E
 python --version
 ```
 
-```
+```sh
 pip install elasticsearch
 ```
 
 If you don't have pip, you can install it with:
 
-```
+```sh
 sudo easy_install pip
 ```
 
 You also need GNU `find` command which is used for building the directory queue list. It needs to be in your PATH, which is usually in `/usr/bin`:
 
-```
+```sh
 which find
 ```
 
 Start Diskcover FS crawler as root user with:
 
-```
+```sh
 cd /path/you/want/to/crawl
 sudo python /path/to/diskover.py
 ```
 
 A successfull crawl should look like this:
 
-```
+```sh
 
    ___       ___       ___       ___       ___       ___       ___       ___
   /\  \     /\  \     /\  \     /\__\     /\  \     /\__\     /\  \     /\  \
@@ -112,7 +112,7 @@ Crawling: [100%] |████████████████████�
 
 ## Diskover CLI arguments
 
-```
+```sh
 usage: diskover.py [-h] [-d TOPDIR] [-m MTIME] [-s MINSIZE] [-t THREADS]
                    [-i INDEX] [-n] [--dupesindex] [-v]
 
@@ -144,7 +144,7 @@ Elasticsearch hostname (endpoint), port and index name are also set here. If you
 
 Lines beginning with `;` are comments and ignored by Diskover.
 
-```
+```sh
 [excluded_dirs]
 dirs = .snapshot,DO_NOT_DELETE
 
@@ -166,14 +166,14 @@ Diskover skips empty directories and will only index files that are older than `
 
 For example, if you wanted to find all the old files that are larger than 10MB that haven't been modified in more than 6 months, you could run Diskover with:
 
-```
+```sh
 cd /path/you/want/to/crawl
 sudo python /path/to/diskover.py -m 180 -s 10
 ```
 
 You could also speed up the crawl by running multiple Diskover `diskover.py` processes and bulk loading into the same `diskover-<name>` index in Elasticsearch. Below is a diagram showing this example.
 
-[[https://github.com/shirosaidev/diskover/blob/master/diskover-diagram.png|alt=diskover-diagram]]
+![diskover-diagram](docs/diskover-diagram.png)
 
 ## Benchmarks
 
