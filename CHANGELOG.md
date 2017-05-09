@@ -1,5 +1,9 @@
 # Diskover Change Log
 
+## [1.0.8] - 2017-05-09
+### fixed
+- bug in finding duplicate files
+
 ## [1.0.7] - 2017-05-07
 ### added
 - nodelete command line argument to not delete existing index

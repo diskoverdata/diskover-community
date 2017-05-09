@@ -18,7 +18,7 @@ import hashlib
 from random import randint
 from elasticsearch import Elasticsearch, helpers, RequestsHttpConnection
 
-VERSION = '1.0.7'
+VERSION = '1.0.8'
 
 def printBanner():
 	"""This is the print banner function.
@@ -429,8 +429,8 @@ def indexCreateDupes(ES, INDEXNAME, NODELETE, VERBOSE):
 	indexCreate(ES, INDEXNAME, NODELETE)
 	# add dupes to new index
 	indexAdd(ES, INDEXNAME, dupes_list, VERBOSE)
-	printLog('Found %s duplicates'% dupe_count, logtype='info')
 	printLog('Finished creating duplicate files index', logtype='status')
+	return dupe_count
 
 def dupesFinder(ES, INDEXNAME):
 	"""This is the duplicate file finder function.
@@ -449,7 +449,9 @@ def dupesFinder(ES, INDEXNAME):
 	    },
 	    "aggs": {
 	      "duplicateDocuments": {
-	        "top_hits": {}
+	        "top_hits": {
+			  "size": 1000000
+			}
 	      }
 	    }
 	  }
@@ -485,7 +487,11 @@ def main():
 
 	# create duplicate file index if cli argument
 	if DUPESINDEX:
-		indexCreateDupes(ES, INDEXNAME, NODELETE, VERBOSE)
+		dupe_count = indexCreateDupes(ES, INDEXNAME, NODELETE, VERBOSE)
+		# print stats
+		elapsedtime = time.time() - DATEEPOCH
+		printLog('Found %s duplicates'% dupe_count, logtype='info')
+		printLog('Elapsed time: %s'%elapsedtime, logtype='info')
 		print('\n')
 		sys.exit(0)
 
