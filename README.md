@@ -18,21 +18,6 @@ git clone https://github.com/shirosaidev/diskover.git
 cd diskover
 ```
 
-The distribution contains:
-
-```sh
-$ tree
-.
-├── CHANGES
-├── LICENSE
-├── README.md
-├── diskover.cfg
-├── diskover.py
-├── diskover-diagram.png
-├── export.json
-└── kibana-screenshot.png
-```
-
 ## Update diskover
 
 ```sh
