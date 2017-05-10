@@ -9,8 +9,9 @@ It crawls your file system and indexes files and adds to [Elasticsearch](https:/
 
 ## Screenshots
 
-### Dashboard
-![kibana-screenshot](docs/kibana-screenshot.png)
+### Dashboards
+![kibana-screenshot](docs/kibana-dashboard-screenshot.png)
+![kibana-screenshot](docs/kibana-dashboard-dupes-screenshot.png)
 ### Dupes Graph
 ![kibana-screenshot](docs/kibana-graph-dupes-screenshot.png)
 ### Hardlinks Graph
