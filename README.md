@@ -48,7 +48,7 @@ git pull
 
 ### Optional Install
 
-* [X-Pack](https://www.elastic.co/downloads/x-pack) (for graphing, reports, monitoring and http auth)
+* [X-Pack](https://www.elastic.co/downloads/x-pack) (for graphs, reports, monitoring and http auth)
 
 
 ## Getting Started
@@ -260,6 +260,29 @@ Here are some filter examples:
 * `extension:(asf OR avi OR flv OR m4v OR mov OR mp4 OR mpg OR rm OR vob OR wmv)` filters for video files
 * `extension:(cache OR tmp OR temp OR bak OR old)` filters for temp files
 * `extension:(7z OR deb OR gz OR pkg OR rar OR rpm OR tar OR zip OR zipx)` filters for compressed files
+
+## X-Pack
+
+### Graphs
+
+To create the graphs in the screenshots above you need to install [X-Pack](https://www.elastic.co/downloads/x-pack). After X-Pack is installed, edit `diskover.cfg` for http auth credentials since X-Pack adds http auth to Elasticsearch and Kibana.
+
+#### Dupes graph
+
+index pattern: `diskover_dupes-*`
+verticies field source #1: `filehash` set to `50 max terms per hop`
+verticies field source #2: `inode` set to `50 max terms per hop`
+verticies field source #3: `path_parent` set to `50 max terms per hop`
+settings: uncheck `Significant links` and set `Certainty to 1`
+search filter: `hardlinks: 1`
+
+#### Hardlinks graph
+
+index pattern: `diskover-*`
+verticies field source #1: `path_parent` set to `50 max terms per hop`
+verticies field source #2: `inode` set to `50 max terms per hop`
+settings: uncheck `Significant links` and set `Certainty to 1`
+search filter: `hardlinks: >1`
 
 
 # License
