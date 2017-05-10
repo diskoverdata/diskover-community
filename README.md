@@ -46,6 +46,10 @@ git pull
 * `Elasticsearch` (local or AWS ES service, tested on Elasticsearch 5.3.0)
 * `Kibana` (tested on Kibana 5.3.0)
 
+### Optional Install
+
+* `[X-Pack](https://www.elastic.co/downloads/x-pack)` (for graphing, reports, monitoring and http auth)
+
 
 ## Getting Started
 
