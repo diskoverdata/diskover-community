@@ -1,5 +1,15 @@
 # Diskover Change Log
 
+## [1.0.9] - 2017-05-10
+### fixed
+- bug in finding duplicate files
+### added
+- http auth for elasticsearch x-pack
+- word cloud visualization to dupes dashboard
+- check for required config items that are commented out
+### changed
+- added user and password to config file for http auth
+
 ## [1.0.8] - 2017-05-09
 ### fixed
 - bug in finding duplicate files

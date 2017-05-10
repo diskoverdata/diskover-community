@@ -18,7 +18,7 @@ import hashlib
 from random import randint
 from elasticsearch import Elasticsearch, helpers, RequestsHttpConnection
 
-VERSION = '1.0.8'
+VERSION = '1.0.9'
 
 def printBanner():
 	"""This is the print banner function.
@@ -95,8 +95,8 @@ def printLog(logtext, logtype='', newline=True):
 	st = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
 	if newline:
 		sys.stdout.write('\n')
-		sys.stdout.flush()
 	sys.stdout.write('\r[%s] %s %s'%(st, prefix, logtext))
+	sys.stdout.flush()
 
 def loadConfig():
 	"""This is the load config function.
@@ -110,16 +110,38 @@ def loadConfig():
 	if not os.path.isfile(configfile):
 		sys.exit('Config file not found')
 	config.read(configfile)
-	d = config.get('excluded_dirs', 'dirs')
-	f = config.get('excluded_files', 'files')
-	AWS = config.get('elasticsearch', 'aws')
+	try:
+		d = config.get('excluded_dirs', 'dirs')
+	except:
+		d = ''
+		pass
+	try:
+		f = config.get('excluded_files', 'files')
+	except:
+		f = ''
+		pass
+	try:
+		AWS = config.get('elasticsearch', 'aws')
+	except:
+		AWS = False
+		pass
 	ES_HOST = config.get('elasticsearch', 'host')
 	ES_PORT = int(config.get('elasticsearch', 'port'))
+	try:
+		ES_USER = config.get('elasticsearch', 'user')
+	except:
+		ES_USER = ''
+		pass
+	try:
+		ES_PASSWORD = config.get('elasticsearch', 'password')
+	except:
+		ES_PASSWORD = ''
+		pass
 	INDEXNAME = config.get('elasticsearch', 'indexname')
 	EXCLUDED_DIRS = d.split(',')
 	EXCLUDED_FILES = f.split(',')
 
-	return AWS, ES_HOST, ES_PORT, INDEXNAME, EXCLUDED_DIRS, EXCLUDED_FILES
+	return AWS, ES_HOST, ES_PORT, ES_USER, ES_PASSWORD, INDEXNAME, EXCLUDED_DIRS, EXCLUDED_FILES
 
 def parseCLIArgs(INDEXNAME):
 	"""This is the parse CLI arguments function.
@@ -311,22 +333,24 @@ def processDirectoryWorker(threadnum, DIRECTORY_QUEUE, ES, INDEXNAME, DATEEPOCH,
 				printProgressBar(dircount, total_num_dirs, 'Crawling:', '%s/%s'%(dircount,total_num_dirs))
 		DIRECTORY_QUEUE.task_done()
 
-def elasticsearchConnect(AWS, ES_HOST, ES_PORT):
+def elasticsearchConnect(AWS, ES_HOST, ES_PORT, ES_USER, ES_PASSWORD):
 	"""This is the ES function.
 	It creates the connection to Elasticsearch
 	and checks if it can connect.
 	"""
 	# Check if we are using AWS ES
 	printLog('Connecting to Elasticsearch', logtype='status')
-	if AWS == 'True':
+	if AWS:
 		ES = Elasticsearch(hosts=[{'host': ES_HOST, 'port': ES_PORT}], \
 			use_ssl=True, verify_certs=True, connection_class=RequestsHttpConnection)
 	# Local connection to ES
 	else:
-		ES = Elasticsearch(hosts=[{'host': ES_HOST, 'port': ES_PORT}])
+		ES = Elasticsearch(hosts=[{'host': ES_HOST, 'port': ES_PORT}], \
+							http_auth=(ES_USER, ES_PASSWORD))
 	# Ping check ES
 	if not ES.ping():
 		printLog('Unable to connect to Elasticsearch', logtype='error')
+		print('\n')
 		sys.exit(1)
 	return ES
 
@@ -445,7 +469,8 @@ def dupesFinder(ES, INDEXNAME):
 	  "duplicateCount": {
 	    "terms": {
 	    "field": "filehash",
-	      "min_doc_count": 2
+	      "min_doc_count": 2,
+		  "size": 1000000
 	    },
 	    "aggs": {
 	      "duplicateDocuments": {
@@ -471,19 +496,20 @@ def main():
 	printBanner()
 
 	if os.geteuid():
-		sys.exit('Please run as root')
+		print('\nPlease run as root')
+		sys.exit(1)
 
 	# Date calculation seconds since epoch
 	DATEEPOCH = int(time.time())
 
 	# load config file
-	AWS, ES_HOST, ES_PORT, INDEXNAME, EXCLUDED_DIRS, EXCLUDED_FILES = loadConfig()
+	AWS, ES_HOST, ES_PORT, ES_USER, ES_PASSWORD, INDEXNAME, EXCLUDED_DIRS, EXCLUDED_FILES = loadConfig()
 
 	# parse cli arguments
 	TOPDIR, DAYSOLD, MINSIZE, NUM_THREADS, INDEXNAME, NODELETE, DUPESINDEX, VERBOSE = parseCLIArgs(INDEXNAME)
 
 	# connect to Elasticsearch
-	ES = elasticsearchConnect(AWS, ES_HOST, ES_PORT)
+	ES = elasticsearchConnect(AWS, ES_HOST, ES_PORT, ES_USER, ES_PASSWORD)
 
 	# create duplicate file index if cli argument
 	if DUPESINDEX:
@@ -524,8 +550,8 @@ def main():
 		sys.exit(0)
 
 	except KeyboardInterrupt:
-		print("\nkeyboard interrupt received, exiting")
-		pass
+		print('\nkeyboard interrupt received, exiting')
+		sys.exit(0)
 
 if __name__ == "__main__":
 	total_num_files = 0
