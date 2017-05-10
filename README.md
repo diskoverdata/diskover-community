@@ -48,7 +48,7 @@ git pull
 
 ### Optional Install
 
-* `[X-Pack](https://www.elastic.co/downloads/x-pack)` (for graphing, reports, monitoring and http auth)
+* [X-Pack](https://www.elastic.co/downloads/x-pack) (for graphing, reports, monitoring and http auth)
 
 
 ## Getting Started
