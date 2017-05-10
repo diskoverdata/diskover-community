@@ -269,20 +269,20 @@ To create the graphs in the screenshots above you need to install [X-Pack](https
 
 #### Dupes graph
 
-index pattern: `diskover_dupes-*`
-verticies field source #1: `filehash` set to `50 max terms per hop`
-verticies field source #2: `inode` set to `50 max terms per hop`
-verticies field source #3: `path_parent` set to `50 max terms per hop`
-settings: uncheck `Significant links` and set `Certainty to 1`
-search filter: `hardlinks: 1`
+* index pattern: `diskover_dupes-*`
+* verticies field source #1: `filehash` set to `50 max terms per hop`
+* verticies field source #2: `inode` set to `50 max terms per hop`
+* verticies field source #3: `path_parent` set to `50 max terms per hop`
+* settings: uncheck `Significant links` and set `Certainty to 1`
+* search filter: `hardlinks: 1`
 
 #### Hardlinks graph
 
-index pattern: `diskover-*`
-verticies field source #1: `path_parent` set to `50 max terms per hop`
-verticies field source #2: `inode` set to `50 max terms per hop`
-settings: uncheck `Significant links` and set `Certainty to 1`
-search filter: `hardlinks: >1`
+* index pattern: `diskover-*`
+* verticies field source #1: `path_parent` set to `50 max terms per hop`
+* verticies field source #2: `inode` set to `50 max terms per hop`
+* settings: uncheck `Significant links` and set `Certainty to 1`
+* search filter: `hardlinks: >1`
 
 
 # License
