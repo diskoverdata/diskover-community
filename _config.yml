@@ -1,4 +1,4 @@
-theme: jekyll-theme-hacker
+theme: jekyll-theme-cayman
 title: Diskover File System Crawler
 description: Diskover is a filesystem crawler that uses Elasticsearch and Kibana to help find unstructured dark data
 show_downloads: true
