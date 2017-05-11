@@ -190,6 +190,16 @@ Here are some benchmarks running on my macbook pro, this includes time to crawl 
 [2017-04-23 10:46:24] [info] Elapsed time: 167.5496099
 ```
 
+## Tracking directory tree size over time
+
+To track a directory tree's change in size over time, create a new index each time crawling from the top-level directory of the project.
+
+Every week or month for example: diskover-PROJA-2017.05.10, diskover-PROJA-2017.05.17, etc.
+
+Then create a new Kibana index pattern `diskover-PROJA-*` to filter to just those indices.
+
+To visualy see the change over time, create a line chart in Kibana using `sum of filesize` for `y-axis` and set `x-axis` to `date-histogram` using `indexing_date` field. Set `interval` to `weekly` or `monthly`.
+
 
 # Elasticsearch
 
