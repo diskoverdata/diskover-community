@@ -1,7 +1,5 @@
 # Diskover FileSystem Crawler
 
-Welcome to Diskover FS Crawler
-
 What if you are running low on disk space. You need to free some up, by finding files that are a waste of space and deleting them (or moving them to archive). How do you find the right files to delete?
 
 Diskover helps to index files from your local file system or nfs mounts.
