@@ -8,12 +8,12 @@ It crawls your file system and indexes files and adds to [Elasticsearch](https:/
 ## Screenshots
 
 ### Dashboards
-![kibana-screenshot](docs/kibana-dashboard-screenshot.png)
-![kibana-screenshot](docs/kibana-dashboard-dupes-screenshot.png)
+![kibana-screenshot](docs/kibana-dashboard-screenshot.png?raw=True)
+![kibana-screenshot](docs/kibana-dashboard-dupes-screenshot.png?raw=True)
 ### Dupes Graph
-![kibana-screenshot](docs/kibana-graph-dupes-screenshot.png)
+![kibana-screenshot](docs/kibana-graph-dupes-screenshot.png?raw=True)
 ### Hardlinks Graph
-![kibana-screenshot](docs/kibana-graph-hardlinks-screenshot.png)
+![kibana-screenshot](docs/kibana-graph-hardlinks-screenshot.png?raw=True)
 
 
 # Installation Guide
@@ -172,7 +172,7 @@ sudo python /path/to/diskover.py -m 180 -s 10
 
 You could also speed up the crawl by running multiple Diskover `diskover.py` processes and bulk loading into the same `diskover-<name>` index in Elasticsearch. Below is a diagram showing this example.
 
-![diskover-diagram](docs/diskover-diagram.png)
+![diskover-diagram](docs/diskover-diagram.png?raw=True)
 
 ## Benchmarks
 
