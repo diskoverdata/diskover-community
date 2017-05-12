@@ -1,4 +1,4 @@
-# Diskover FileSystem Crawler
+## Introduction
 
 What if you are running low on disk space. You need to free some up, by finding files that are a waste of space and deleting them (or moving them to archive). How do you find the right files to delete?
 
@@ -13,16 +13,16 @@ It crawls your file system and indexes files and adds to [Elasticsearch](https:/
 ![kibana-screenshot](docs/kibana-graph-hardlinks-screenshot.png?raw=True)
 
 
-# Installation Guide
+## Installation Guide
 
-## Download Diskover
+### Download Diskover
 
 ```sh
 git clone https://github.com/shirosaidev/diskover.git
 cd diskover
 ```
 
-## Update Diskover
+### Update Diskover
 
 ```sh
 cd diskover
@@ -30,9 +30,9 @@ git pull
 ```
 
 
-# User Guide
+## User Guide
 
-## Requirements
+### Requirements
 
 * `Linux or Mac OS X` (tested on Mac OS X 10.11.6 and Ubuntu 16.04, have not tested on Windows)
 * `Python 2.7.` (tested on Python 2.7.10 and 2.7.12, have not tested on Python 3)
@@ -46,7 +46,7 @@ git pull
 * [X-Pack](https://www.elastic.co/downloads/x-pack) (for graphs, reports, monitoring and http auth)
 
 
-## Getting Started
+### Getting Started
 
 You need to have at least **Python 2.7.** and have installed Python client for Elasticsearch using `pip`:
 
@@ -103,7 +103,7 @@ Crawling: [100%] |████████████████████�
 ```
 
 
-## Diskover CLI arguments
+### Diskover CLI arguments
 
 ```
 usage: diskover.py [-h] [-d TOPDIR] [-m MTIME] [-s MINSIZE] [-t THREADS]
@@ -127,7 +127,7 @@ optional arguments:
 ```
 
 
-## Config file
+### Config file
 
 Diskcover will read a local config file `diskover.cfg`. **It needs to be in the same directory as `diskover.py`**.
 
@@ -156,7 +156,7 @@ port = 9200
 indexname = diskover-2017.04.22
 ```
 
-## Speeding up crawl times
+### Speeding up crawl times
 
 Diskover skips empty directories and will only index files that are older than `modified time` and larger than `minimum file size` from the command line options. Excluding certain files/directories will help speed up crawl times as well. **Running with verbose logging will increase crawl times**.
 
@@ -171,7 +171,7 @@ You could also speed up the crawl by running multiple Diskover `diskover.py` pro
 
 ![diskover-diagram](docs/diskover-diagram.png?raw=True)
 
-## Benchmarks
+### Benchmarks
 
 Here are some benchmarks running on my macbook pro, this includes time to crawl my local filesystem and index in Elasticsearch (in seconds) using the default of 2 threads and single `diskover.py` running. The files were all 1KB.
 
@@ -185,7 +185,7 @@ Here are some benchmarks running on my macbook pro, this includes time to crawl 
 [2017-04-23 10:46:24] [info] Elapsed time: 167.5496099
 ```
 
-## Tracking directory tree size over time
+### Tracking directory tree size over time
 
 To track a directory tree's change in size over time, create a new index each time crawling from the top-level directory of the project.
 
@@ -196,23 +196,23 @@ Then create a new Kibana index pattern `diskover-PROJA-*` to filter to just thos
 To visualy see the change over time, create a line chart in Kibana using `sum of filesize` for `y-axis` and set `x-axis` to `date-histogram` using `indexing_date` field. Set `interval` to `weekly` or `monthly`.
 
 
-# Elasticsearch
+## Elasticsearch
 
-## Indices
+### Indices
 
 Diskover creates an index with the name from the config file or from the cli option `-i`. **If an existing index exists with the same name, it will be deleted and a new index created, unless `-n or --nodelete` cli argument is used**. 
 
 If you are doing crawls every week for example, you could name the indices diskover-2017.04.09, diskover-2017.04.16, diskover-2017.04.23, etc. **Index names are required to be `diskover-<string>`**.
 
-### Append data to existing index
+#### Append data to existing index
 
 If you are running concurrent `diskover.py` processes you will need to use the `-n or --nodelete` cli argument to append  data to an existing index. See above diagram for example.
 
-### Duplicate files index
+#### Duplicate files index
 
 An index for duplicate files can also be created using the `--dupesindex` cli argument **after all crawls are finished**. If you named your index `diskover-2017.05.03`, the index for duplicate files will be named `diskover_dupes-2017.05.03`. See above diagram for example.
 
-## Generated fields
+#### Generated fields
 
 Diskover creates the following fields :
 
@@ -233,7 +233,7 @@ Diskover creates the following fields :
 | `inode`              | Inode number                                | `652490`                                    |
 | `filehash`           | MD5 hash of file                            | `3a6949b4b74846a482016d0779560327`          |
 
-## Filehash
+#### Filehash
 
 In order to speed up crawl times, a MD5 hash for each file is made from combining the strings `filename+filesize+last_modified` and hashing that string, rather than the contents of the file. This seems to be a fast high-level way to create a hash of the file. **You should run the md5 command on the files to compare their hashes before you delete the dupes**.
 
@@ -290,7 +290,7 @@ To create the graphs in the screenshots above you need to install [X-Pack](https
 * search filter: `hardlinks: >1`
 
 
-# License
+## License
 
 ```
 This software is licensed under the Apache 2 license, quoted below.
