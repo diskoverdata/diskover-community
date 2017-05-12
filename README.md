@@ -3,7 +3,7 @@
 
 ### Introduction
 
-Diskover is a disk usage analyzer which uses [Amazon Elasticsearch Service](https://aws.amazon.com/elasticsearch-service/) or [Elasticsearch](https://www.elastic.co) and [Kibana](https://www.elastic.co/products/kibana). It is designed to crawl your filesystem and find unneeded files on a local or remote server. Indexed files are bulk added and streamed into Elasticsearch allowing you to visualize the data in Kibana without having to wait until the crawl is finished. Diskover aims to be fast, simple and easy to use, and runs in Linux or OS X. 
+Diskover is a disk usage analyzer which uses [Amazon Elasticsearch Service](https://aws.amazon.com/elasticsearch-service/) or [Elasticsearch](https://www.elastic.co) and [Kibana](https://www.elastic.co/products/kibana). It is designed to crawl your filesystem and find unneeded files on a local or remote server. Indexed files are bulk added and streamed into Elasticsearch allowing you to **visualize the data in Kibana without having to wait until the crawl is finished**. Diskover aims to be fast, simple and easy to use, and runs in Linux or OS X. 
 
 ### Screenshots
 
@@ -158,7 +158,7 @@ indexname = diskover-2017.04.22
 
 #### Speeding up crawl times
 
-Diskover skips empty directories and will only index files that are older than `modified time` and larger than `minimum file size` from the command line options. Excluding certain files/directories will help speed up crawl times as well. **Running with verbose logging will increase crawl times**.
+Diskover **skips empty directories** and will **only index files that are older than `modified time` and larger than `minimum file size`** from the command line options. Excluding certain files/directories will help speed up crawl times as well. **Running with verbose logging will increase crawl times**.
 
 For example, if you wanted to find all the old files that are larger than 10MB that haven't been modified in more than 6 months, you could run Diskover with:
 
