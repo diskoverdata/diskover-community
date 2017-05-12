@@ -164,16 +164,6 @@ Here are some benchmarks running on my Macbook Pro, this includes time to crawl 
 [2017-04-23 10:46:24] [info] Elapsed time: 167.5496099
 ```
 
-#### Tracking directory tree size over time
-
-To track a directory tree's change in size over time, create a new index each time crawling from the top-level directory of the project.
-
-Every week or month for example: diskover-PROJA-2017.05.10, diskover-PROJA-2017.05.17, etc.
-
-Then create a new Kibana index pattern `diskover-PROJA-*` to filter to just those indices.
-
-To visualy see the change over time, create a line chart in Kibana using `sum of filesize` for `y-axis` and set `x-axis` to `date-histogram` using `indexing_date` field. Set `interval` to `weekly` or `monthly`.
-
 
 ### Elasticsearch
 
@@ -222,7 +212,7 @@ For the index pattern use `diskover-*`. For the duplicate files use `diskover_du
 
 #### diskover dashboard
 
-To use the diskover dashboard (screenshots), import the saved objects file `export.json` into Kibana for the dashboard visualizations. In Kibana go to `Management > Saved Objects > Import`.
+To use the diskover dashboard (screenshots above), import the saved objects file `export.json` into Kibana for the dashboard visualizations. In Kibana go to `Management > Saved Objects > Import`.
 
 If nothing is showing in the dashboard, go to `Management > Index Patterns > diskover-*` and then hit the `refresh icon`.
 
@@ -244,6 +234,16 @@ Here are some filter examples:
 * `extension:(asf OR avi OR flv OR m4v OR mov OR mp4 OR mpg OR rm OR vob OR wmv)` filters for video files
 * `extension:(cache OR tmp OR temp OR bak OR old)` filters for temp files
 * `extension:(7z OR deb OR gz OR pkg OR rar OR rpm OR tar OR zip OR zipx)` filters for compressed files
+
+#### Tracking directory tree size over time
+
+To track a directory tree's change in size over time, create a new index each time crawling from the top-level directory of the project.
+
+Every week or month for example: diskover-PROJA-2017.05.10, diskover-PROJA-2017.05.17, etc.
+
+Then create a new Kibana index pattern `diskover-PROJA-*` to filter to just those indices.
+
+To visualy see the change over time, create a line chart in Kibana using `sum of filesize` for `y-axis` and set `x-axis` to `date-histogram` using `indexing_date` field. Set `interval` to `weekly` or `monthly`.
 
 ### X-Pack
 
