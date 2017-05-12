@@ -1,9 +1,6 @@
-# Diskover
-*File System Crawler and Disk Usage Analyzer*
+# diskover
 
-### Introduction
-
-Diskover uses [Amazon Elasticsearch Service](https://aws.amazon.com/elasticsearch-service/) or [Elasticsearch](https://www.elastic.co) and [Kibana](https://www.elastic.co/products/kibana) to index and visualize your data. It is designed to crawl your filesystem and find unneeded files on a local or remote server. Indexed files are bulk added and streamed into Elasticsearch allowing you to visualize the data in Kibana without having to wait until the crawl is finished. Diskover aims to be fast, simple and easy to use, and runs in Linux or OS X. 
+diskover is a filesystem crawler and disk usage analyzer which uses [Amazon Elasticsearch Service](https://aws.amazon.com/elasticsearch-service/) or [Elasticsearch](https://www.elastic.co) and [Kibana](https://www.elastic.co/products/kibana) to index and visualize your data. It is designed to crawl your filesystem and find unneeded files on a local or remote server. Indexed files are bulk added and streamed into Elasticsearch allowing you to visualize the data in Kibana without having to wait until the crawl is finished. diskover aims to be fast, simple and easy to use, and runs in Linux or OS X/macOS. 
 
 ### Screenshots
 
@@ -34,10 +31,9 @@ git pull
 
 #### Requirements
 
-* `Linux or Mac OS X` (tested on Mac OS X 10.11.6 and Ubuntu 16.04, have not tested on Windows)
-* `Python 2.7.` (tested on Python 2.7.10 and 2.7.12, have not tested on Python 3)
+* `Linux or OS X/macOS` (tested on OS X 10.11.6 and Ubuntu 16.04)
+* `Python 2.7.` (tested on Python 2.7.10 and 2.7.12)
 * `Python client for Elasticsearch`
-* `GNU find command` (most likely you already have this)
 * `Elasticsearch` (local or AWS ES service, tested on Elasticsearch 5.3.0)
 * `Kibana` (tested on Kibana 5.3.0)
 
@@ -62,12 +58,6 @@ If you don't have pip, you can install it with:
 
 ```sh
 sudo easy_install pip
-```
-
-You also need GNU `find` command which is used for building the directory queue list. It needs to be in your PATH, which is usually in `/usr/bin`:
-
-```sh
-which find
 ```
 
 Start Diskcover FS crawler as root user with:
