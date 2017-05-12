@@ -1,11 +1,11 @@
 # Diskover
 *File System Crawler*
 
-## Introduction
+### Introduction
 
 Diskover is a disk usage analyzer which uses [Amazon Elasticsearch Service](https://aws.amazon.com/elasticsearch-service/) or [Elasticsearch](https://www.elastic.co) and [Kibana](https://www.elastic.co/products/kibana). It is designed to find unneeded files on a local or remote server and help to understand your unstructured dark data. Diskover aims to be fast, simple and easy to use, and runs in Linux or OS X. Indexed files are bulk added and streamed into Elasticsearch allowing you to visualize the data in Kibana without having to wait until the crawl is finished.
 
-## Screenshots
+### Screenshots
 
 ![kibana-screenshot](docs/kibana-dashboard-screenshot.png?raw=True)
 ![kibana-screenshot](docs/kibana-dashboard-dupes-screenshot.png?raw=True)
@@ -13,16 +13,16 @@ Diskover is a disk usage analyzer which uses [Amazon Elasticsearch Service](http
 ![kibana-screenshot](docs/kibana-graph-hardlinks-screenshot.png?raw=True)
 
 
-## Installation Guide
+### Installation Guide
 
-### Download
+#### Download
 
 ```sh
 git clone https://github.com/shirosaidev/diskover.git
 cd diskover
 ```
 
-### Update
+#### Update
 
 ```sh
 cd diskover
@@ -30,9 +30,9 @@ git pull
 ```
 
 
-## User Guide
+### User Guide
 
-### Requirements
+#### Requirements
 
 * `Linux or Mac OS X` (tested on Mac OS X 10.11.6 and Ubuntu 16.04, have not tested on Windows)
 * `Python 2.7.` (tested on Python 2.7.10 and 2.7.12, have not tested on Python 3)
@@ -41,12 +41,12 @@ git pull
 * `Elasticsearch` (local or AWS ES service, tested on Elasticsearch 5.3.0)
 * `Kibana` (tested on Kibana 5.3.0)
 
-### Optional Install
+#### Optional Install
 
 * [X-Pack](https://www.elastic.co/downloads/x-pack) (for graphs, reports, monitoring and http auth)
 
 
-### Getting Started
+#### Getting Started
 
 You need to have at least **Python 2.7.** and have installed Python client for Elasticsearch using `pip`:
 
@@ -103,7 +103,7 @@ Crawling: [100%] |████████████████████�
 ```
 
 
-### Diskover CLI arguments
+#### Diskover CLI arguments
 
 ```
 usage: diskover.py [-h] [-d TOPDIR] [-m MTIME] [-s MINSIZE] [-t THREADS]
@@ -127,7 +127,7 @@ optional arguments:
 ```
 
 
-### Config file
+#### Config file
 
 Diskcover will read a local config file `diskover.cfg`. **It needs to be in the same directory as `diskover.py`**.
 
@@ -156,7 +156,7 @@ port = 9200
 indexname = diskover-2017.04.22
 ```
 
-### Speeding up crawl times
+#### Speeding up crawl times
 
 Diskover skips empty directories and will only index files that are older than `modified time` and larger than `minimum file size` from the command line options. Excluding certain files/directories will help speed up crawl times as well. **Running with verbose logging will increase crawl times**.
 
@@ -171,7 +171,7 @@ You could also speed up the crawl by running multiple Diskover `diskover.py` pro
 
 ![diskover-diagram](docs/diskover-diagram.png?raw=True)
 
-### Benchmarks
+#### Benchmarks
 
 Here are some benchmarks running on my macbook pro, this includes time to crawl my local filesystem and index in Elasticsearch (in seconds) using the default of 2 threads and single `diskover.py` running. The files were all 1KB.
 
@@ -185,7 +185,7 @@ Here are some benchmarks running on my macbook pro, this includes time to crawl 
 [2017-04-23 10:46:24] [info] Elapsed time: 167.5496099
 ```
 
-### Tracking directory tree size over time
+#### Tracking directory tree size over time
 
 To track a directory tree's change in size over time, create a new index each time crawling from the top-level directory of the project.
 
@@ -196,9 +196,9 @@ Then create a new Kibana index pattern `diskover-PROJA-*` to filter to just thos
 To visualy see the change over time, create a line chart in Kibana using `sum of filesize` for `y-axis` and set `x-axis` to `date-histogram` using `indexing_date` field. Set `interval` to `weekly` or `monthly`.
 
 
-## Elasticsearch
+### Elasticsearch
 
-### Indices
+#### Indices
 
 Diskover creates an index with the name from the config file or from the cli option `-i`. **If an existing index exists with the same name, it will be deleted and a new index created, unless `-n or --nodelete` cli argument is used**. 
 
@@ -237,21 +237,21 @@ Diskover creates the following fields :
 
 In order to speed up crawl times, a MD5 hash for each file is made from combining the strings `filename+filesize+last_modified` and hashing that string, rather than the contents of the file. This seems to be a fast high-level way to create a hash of the file. **You should run the md5 command on the files to compare their hashes before you delete the dupes**.
 
-## Kibana
+### Kibana
 
 For the index pattern use `diskover-*`. For the duplicate files use `diskover_dupes-*`. **Make sure the `Index contains time-based events` box is `unchecked`** when you create index patterns.
 
-### Diskover Dashboard
+#### Diskover Dashboard
 
 To use the Diskover dashboard (screenshot), import the saved objects file `export.json` into Kibana for the dashboard visualizations. In Kibana go to `Management > Saved Objects > Import`.
 
 If nothing is showing in the dashboard, go to `Management > Index Patterns > diskover-*` and then hit the `refresh icon`.
 
-### Kibana Field Formatting
+#### Kibana Field Formatting
 
 This will help make the dashboard easier to read like in the screenshot for filesize and dates. In Kibana go to `Management > Index Patterns > diskover-*`. In the `Fields tab` click the `edit icon` under controls column for `filesize` field. Change the format to `bytes` and click `Update Field`. For `access_time, modified_time, and change_time`, edit the fields and change the format to `date` and set the format pattern to `MM-DD-YYYY, HH:mm` and click `Update Field`.
 
-### Kibana Search Filters
+#### Kibana Search Filters
 
 Once you have imported the `export.json` into Kibana, in Kibana's `Discover` page click `open`. There will be a few saved searches in there to help you filter for old files and find duplicate files.
 
@@ -266,9 +266,9 @@ Here are some filter examples:
 * `extension:(cache OR tmp OR temp OR bak OR old)` filters for temp files
 * `extension:(7z OR deb OR gz OR pkg OR rar OR rpm OR tar OR zip OR zipx)` filters for compressed files
 
-## X-Pack
+### X-Pack
 
-### Graphs
+#### Graphs
 
 To create the graphs in the screenshots above you need to install [X-Pack](https://www.elastic.co/downloads/x-pack). After X-Pack is installed, edit `diskover.cfg` for http auth credentials since X-Pack adds http auth to Elasticsearch and Kibana.
 
@@ -290,7 +290,7 @@ To create the graphs in the screenshots above you need to install [X-Pack](https
 * search filter: `hardlinks: >1`
 
 
-# License
+## License
 
 ```
 This software is licensed under the Apache 2 license, quoted below.
