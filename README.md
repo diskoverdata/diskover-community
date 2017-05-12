@@ -3,7 +3,7 @@
 
 ### Introduction
 
-Diskover is a disk usage analyzer which uses [Amazon Elasticsearch Service](https://aws.amazon.com/elasticsearch-service/) or [Elasticsearch](https://www.elastic.co) and [Kibana](https://www.elastic.co/products/kibana). It is designed to find unneeded files on a local or remote server and help to understand your unstructured dark data. Diskover aims to be fast, simple and easy to use, and runs in Linux or OS X. Indexed files are bulk added and streamed into Elasticsearch allowing you to visualize the data in Kibana without having to wait until the crawl is finished.
+Diskover is a disk usage analyzer which uses [Amazon Elasticsearch Service](https://aws.amazon.com/elasticsearch-service/) or [Elasticsearch](https://www.elastic.co) and [Kibana](https://www.elastic.co/products/kibana). It is designed to crawl your filesystem and find unneeded files on a local or remote server. Indexed files are bulk added and streamed into Elasticsearch allowing you to visualize the data in Kibana without having to wait until the crawl is finished. Diskover aims to be fast, simple and easy to use, and runs in Linux or OS X. 
 
 ### Screenshots
 
