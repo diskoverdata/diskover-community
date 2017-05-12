@@ -39,7 +39,7 @@ cd diskover
 
 #### Getting Started
 
-You need to have at least **Python 2.7.** and have installed Python client for Elasticsearch using `pip`:
+You need to have at least **Python 2.7.** and have installed **Python client for Elasticsearch** using `pip`:
 
 ```sh
 python --version
@@ -49,13 +49,7 @@ python --version
 pip install elasticsearch
 ```
 
-If you don't have pip, you can install it with:
-
-```sh
-sudo easy_install pip
-```
-
-Start Diskcover FS crawler as root user with:
+Start diskover as root user with:
 
 ```sh
 cd /path/you/want/to/crawl
@@ -88,7 +82,7 @@ Crawling: [100%] |████████████████████�
 ```
 
 
-#### Diskover CLI arguments
+#### diskover CLI arguments
 
 ```
 usage: diskover.py [-h] [-d TOPDIR] [-m MTIME] [-s MINSIZE] [-t THREADS]
@@ -114,13 +108,13 @@ optional arguments:
 
 #### Config file
 
-Diskcover will read a local config file `diskover.cfg`. **It needs to be in the same directory as `diskover.py`**.
+diskcover will read a local config file `diskover.cfg`. **It needs to be in the same directory as `diskover.py`**.
 
 Here you can exclude any directories and files you don't want to index separated by `,` (**spaces after comma are treated as part of file/directory name**).
 
 Elasticsearch hostname (endpoint), port and index name are also set here. If you are using AWS ES, set `aws = True` and `port = 443` and set the host to the endpoint in your AWS ES console. If you are running Elasticsearch on your localhost or lan, comment out or set `aws = False` and the default port is `9200`. **If you installed Elasticsearch X-Pack, uncomment and set user/password for http auth**.
 
-Lines beginning with `;` are comments and ignored by Diskover.
+Lines beginning with `;` are comments and ignored by diskover.
 
 ```
 [excluded_dirs]
@@ -143,22 +137,22 @@ indexname = diskover-2017.04.22
 
 #### Speeding up crawl times
 
-Diskover **skips empty directories** and will **only index files that are older than `modified time` and larger than `minimum file size`** from the command line options. Excluding certain files/directories will help speed up crawl times as well. **Running with verbose logging will increase crawl times**.
+diskover **skips empty directories** and will **only index files that are older than `modified time` and larger than `minimum file size`** from the command line options. Excluding certain files/directories will help speed up crawl times as well. **Running with verbose logging will increase crawl times**.
 
-For example, if you wanted to find all the old files that are larger than 10MB that haven't been modified in more than 6 months, you could run Diskover with:
+For example, if you wanted to find all the old files that are larger than 10MB that haven't been modified in more than 6 months, you could run diskover with:
 
 ```sh
 cd /path/you/want/to/crawl
 sudo python /path/to/diskover.py -m 180 -s 10
 ```
 
-You could also speed up the crawl by running multiple Diskover `diskover.py` processes and bulk loading into the same `diskover-<name>` index in Elasticsearch. Below is a diagram showing this example.
+You could also speed up the crawl by running multiple `diskover.py` processes and bulk loading into the same `diskover-<name>` index in Elasticsearch. Below is a diagram showing this example.
 
 ![diskover-diagram](docs/diskover-diagram.png?raw=True)
 
 #### Benchmarks
 
-Here are some benchmarks running on my macbook pro, this includes time to crawl my local filesystem and index in Elasticsearch (in seconds) using the default of 2 threads and single `diskover.py` running. The files were all 1KB.
+Here are some benchmarks running on my Macbook Pro, this includes time to crawl my local filesystem and index in Elasticsearch (in seconds) using the default of 2 threads and single `diskover.py` running.
 
 ```
 [2017-04-23 10:02:58] [info] Directories Crawled: 10001
@@ -185,7 +179,7 @@ To visualy see the change over time, create a line chart in Kibana using `sum of
 
 #### Indices
 
-Diskover creates an index with the name from the config file or from the cli option `-i`. **If an existing index exists with the same name, it will be deleted and a new index created, unless `-n or --nodelete` cli argument is used**. 
+diskover creates an index with the name from the config file or from the cli option `-i`. **If an existing index exists with the same name, it will be deleted and a new index created, unless `-n or --nodelete` cli argument is used**. 
 
 If you are doing crawls every week for example, you could name the indices diskover-2017.04.09, diskover-2017.04.16, diskover-2017.04.23, etc. **Index names are required to be `diskover-<string>`**.
 
@@ -199,7 +193,7 @@ An index for duplicate files can also be created using the `--dupesindex` cli ar
 
 #### Generated fields
 
-Diskover creates the following fields :
+diskover creates the following fields:
 
 |         Field        |                Description                  |                    Example                  |
 |----------------------|---------------------------------------------|---------------------------------------------|
@@ -220,15 +214,15 @@ Diskover creates the following fields :
 
 #### Filehash
 
-In order to speed up crawl times, a MD5 hash for each file is made from combining the strings `filename+filesize+last_modified` and hashing that string, rather than the contents of the file. This seems to be a fast high-level way to create a hash of the file. **You should run the md5 command on the files to compare their hashes before you delete the dupes**.
+In order to speed up crawl times, a md5 hash for each file is made from combining the strings `filename+filesize+last_modified` and hashing that string, rather than the contents of the file. This seems to be a fast high-level way to create a hash of the file. **You should run the md5 command on the files to compare their hashes before you delete the dupes**.
 
 ### Kibana
 
 For the index pattern use `diskover-*`. For the duplicate files use `diskover_dupes-*`. **Make sure the `Index contains time-based events` box is `unchecked`** when you create index patterns.
 
-#### Diskover Dashboard
+#### diskover dashboard
 
-To use the Diskover dashboard (screenshot), import the saved objects file `export.json` into Kibana for the dashboard visualizations. In Kibana go to `Management > Saved Objects > Import`.
+To use the diskover dashboard (screenshots), import the saved objects file `export.json` into Kibana for the dashboard visualizations. In Kibana go to `Management > Saved Objects > Import`.
 
 If nothing is showing in the dashboard, go to `Management > Index Patterns > diskover-*` and then hit the `refresh icon`.
 
