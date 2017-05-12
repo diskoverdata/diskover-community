@@ -1,9 +1,9 @@
+# Diskover
+*File System Crawler*
+
 ## Introduction
 
-What if you are running low on disk space. You need to free some up, by finding files that are a waste of space and deleting them (or moving them to archive). How do you find the right files to delete?
-
-Diskover helps to index files from your local file system or nfs mounts.
-It crawls your file system and indexes files and adds to [Elasticsearch](https://www.elastic.co) or [Amazon Elasticsearch Service](https://aws.amazon.com/elasticsearch-service/). It is written in Python and uses multi-threading to speed up indexing crawl times. The indexed files are bulk added and streamed into Elasticsearch while the crawl is running allowing you to visualize the data in [Kibana](https://www.elastic.co/products/kibana) without having to wait until the crawl is finished.
+Diskover is a disk usage analyzer which uses [Amazon Elasticsearch Service](https://aws.amazon.com/elasticsearch-service/) or [Elasticsearch](https://www.elastic.co) and [Kibana](https://www.elastic.co/products/kibana). It is designed to find unneeded files on a local or remote server and help to understand your unstructured dark data. Diskover aims to be fast, simple and easy to use, and runs in Linux or OS X. Indexed files are bulk added and streamed into Elasticsearch allowing you to visualize the data in Kibana without having to wait until the crawl is finished.
 
 ## Screenshots
 
@@ -15,14 +15,14 @@ It crawls your file system and indexes files and adds to [Elasticsearch](https:/
 
 ## Installation Guide
 
-### Download Diskover
+### Download
 
 ```sh
 git clone https://github.com/shirosaidev/diskover.git
 cd diskover
 ```
 
-### Update Diskover
+### Update
 
 ```sh
 cd diskover
@@ -290,7 +290,7 @@ To create the graphs in the screenshots above you need to install [X-Pack](https
 * search filter: `hardlinks: >1`
 
 
-## License
+# License
 
 ```
 This software is licensed under the Apache 2 license, quoted below.
