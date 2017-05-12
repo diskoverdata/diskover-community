@@ -21,13 +21,6 @@ git clone https://github.com/shirosaidev/diskover.git
 cd diskover
 ```
 
-#### Update
-
-```sh
-cd diskover
-git pull
-```
-
 
 ### User Guide
 
