@@ -7,25 +7,22 @@ It crawls your file system and indexes files and adds to [Elasticsearch](https:/
 
 ## Screenshots
 
-### Dashboards
 ![kibana-screenshot](docs/kibana-dashboard-screenshot.png?raw=True)
 ![kibana-screenshot](docs/kibana-dashboard-dupes-screenshot.png?raw=True)
-### Dupes Graph
 ![kibana-screenshot](docs/kibana-graph-dupes-screenshot.png?raw=True)
-### Hardlinks Graph
 ![kibana-screenshot](docs/kibana-graph-hardlinks-screenshot.png?raw=True)
 
 
 # Installation Guide
 
-## Download diskover
+## Download Diskover
 
 ```sh
 git clone https://github.com/shirosaidev/diskover.git
 cd diskover
 ```
 
-## Update diskover
+## Update Diskover
 
 ```sh
 cd diskover
