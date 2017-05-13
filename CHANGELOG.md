@@ -1,7 +1,7 @@
 # Diskover Change Log
 
 
-## [1.0.10] - 2017-05-????????????
+## [1.0.10] - 2017-05-13
 ### fixed
 - crawl thread crashing when file/directory gets deleted during crawl
 - removed code to rstrip newline characters on filename
