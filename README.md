@@ -29,7 +29,7 @@ cd diskover
 * `Linux or OS X/macOS` (tested on OS X 10.11.6 and Ubuntu 16.04)
 * `Python 2.7.` (tested on Python 2.7.10 and 2.7.12)
 * `Python client for Elasticsearch`
-* `Elasticsearch` (local or AWS ES service, tested on Elasticsearch 5.3.0)
+* `Elasticsearch` (local or [AWS ES Service](https://aws.amazon.com/elasticsearch-service/), tested on Elasticsearch 5.3.0)
 * `Kibana` (tested on Kibana 5.3.0)
 
 #### Optional Install
