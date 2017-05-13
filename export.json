@@ -34,6 +34,23 @@
     }
   },
   {
+    "_id": "356be4b0-37ae-11e7-a073-1b5d899f9668",
+    "_type": "dashboard",
+    "_source": {
+      "title": "Diskover dark",
+      "hits": 0,
+      "description": "",
+      "panelsJSON": "[{\"col\":4,\"id\":\"Extension\",\"panelIndex\":1,\"row\":1,\"size_x\":3,\"size_y\":4,\"type\":\"visualization\"},{\"col\":1,\"id\":\"d53e3620-273a-11e7-8c8b-cd3a59e7992a\",\"panelIndex\":10,\"row\":1,\"size_x\":3,\"size_y\":4,\"type\":\"visualization\"},{\"col\":1,\"id\":\"06d89b00-290a-11e7-b1ac-ab6cbed4d1eb\",\"panelIndex\":13,\"row\":7,\"size_x\":12,\"size_y\":2,\"type\":\"visualization\"},{\"col\":1,\"id\":\"OldestModifiedFiles\",\"panelIndex\":14,\"row\":5,\"size_x\":12,\"size_y\":2,\"type\":\"visualization\"},{\"col\":10,\"id\":\"TotalsToDelete\",\"panelIndex\":15,\"row\":1,\"size_x\":3,\"size_y\":4,\"type\":\"visualization\"},{\"col\":7,\"id\":\"b86e5940-3607-11e7-b6c1-199a2de46f7d\",\"panelIndex\":16,\"row\":1,\"size_x\":3,\"size_y\":4,\"type\":\"visualization\"}]",
+      "optionsJSON": "{\"darkTheme\":true}",
+      "uiStateJSON": "{\"P-10\":{\"vis\":{\"legendOpen\":true}},\"P-13\":{\"vis\":{\"legendOpen\":false}},\"P-14\":{\"vis\":{\"legendOpen\":false}}}",
+      "version": 1,
+      "timeRestore": false,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[{\"query\":{\"query_string\":{\"analyze_wildcard\":true,\"query\":\"*\"}}}]}"
+      }
+    }
+  },
+  {
     "_id": "33f85430-2cfd-11e7-ab8c-9b1687d6e68c",
     "_type": "search",
     "_source": {
@@ -250,20 +267,6 @@
     }
   },
   {
-    "_id": "cb0269e0-2741-11e7-9d73-49feacfcea77",
-    "_type": "visualization",
-    "_source": {
-      "title": "ByDateRange",
-      "visState": "{\"title\":\"ByDateRange\",\"type\":\"pie\",\"params\":{\"addLegend\":true,\"addTooltip\":true,\"isDonut\":false,\"legendPosition\":\"right\"},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_range\",\"schema\":\"segment\",\"params\":{\"field\":\"last_modified\",\"ranges\":[{\"from\":\"now-30d/d\",\"to\":\"now\"},{\"from\":\"now-60d/d\",\"to\":\"now-30d/d\"},{\"from\":\"now-90d/d\",\"to\":\"now-60d/d\"},{\"from\":\"now-180d/d\",\"to\":\"now-90d/d\"},{\"from\":\"now-5y/y\",\"to\":\"now-180d/d\"}],\"customLabel\":\"date range\"}}],\"listeners\":{}}",
-      "uiStateJSON": "{}",
-      "description": "",
-      "version": 1,
-      "kibanaSavedObjectMeta": {
-        "searchSourceJSON": "{\"index\":\"diskover-*\",\"query\":{\"query_string\":{\"analyze_wildcard\":true,\"query\":\"*\"}},\"filter\":[]}"
-      }
-    }
-  },
-  {
     "_id": "LargestFiles",
     "_type": "visualization",
     "_source": {
@@ -274,20 +277,6 @@
       "version": 1,
       "kibanaSavedObjectMeta": {
         "searchSourceJSON": "{\"index\":\"diskover-*\",\"query\":{\"query_string\":{\"query\":\"*\",\"analyze_wildcard\":true}},\"filter\":[]}"
-      }
-    }
-  },
-  {
-    "_id": "d53e3620-273a-11e7-8c8b-cd3a59e7992a",
-    "_type": "visualization",
-    "_source": {
-      "title": "ByFileSize",
-      "visState": "{\"title\":\"ByFileSize\",\"type\":\"pie\",\"params\":{\"addLegend\":true,\"addTooltip\":true,\"isDonut\":false,\"legendPosition\":\"right\"},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"range\",\"schema\":\"segment\",\"params\":{\"field\":\"filesize\",\"ranges\":[{\"from\":524288000,\"to\":1073741824},{\"from\":104857600,\"to\":524288000},{\"from\":52428800,\"to\":104857600},{\"from\":26214400,\"to\":52428800},{\"to\":26214400,\"from\":10485760},{\"from\":0,\"to\":10485760},{\"from\":1073741824,\"to\":null}],\"customLabel\":\"size\"}}],\"listeners\":{}}",
-      "uiStateJSON": "{}",
-      "description": "",
-      "version": 1,
-      "kibanaSavedObjectMeta": {
-        "searchSourceJSON": "{\"index\":\"diskover-*\",\"query\":{\"query_string\":{\"analyze_wildcard\":true,\"query\":\"*\"}},\"filter\":[]}"
       }
     }
   },
@@ -418,20 +407,6 @@
     }
   },
   {
-    "_id": "130323a0-26ad-11e7-976a-7d83553d8876",
-    "_type": "visualization",
-    "_source": {
-      "title": "LargestDirectories",
-      "visState": "{\"title\":\"LargestDirectories\",\"type\":\"pie\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"isDonut\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"sum\",\"schema\":\"metric\",\"params\":{\"field\":\"filesize\",\"customLabel\":\"total filesize\"}},{\"id\":\"2\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"segment\",\"params\":{\"field\":\"path_parent\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"1\",\"customLabel\":\"directory\"}}],\"listeners\":{}}",
-      "uiStateJSON": "{}",
-      "description": "",
-      "version": 1,
-      "kibanaSavedObjectMeta": {
-        "searchSourceJSON": "{\"index\":\"diskover-*\",\"query\":{\"query_string\":{\"query\":\"*\",\"analyze_wildcard\":true}},\"filter\":[]}"
-      }
-    }
-  },
-  {
     "_id": "6d65ab70-269d-11e7-ae12-a1e6549ef24c",
     "_type": "visualization",
     "_source": {
@@ -512,6 +487,48 @@
       "version": 1,
       "kibanaSavedObjectMeta": {
         "searchSourceJSON": "{\"index\":\"diskover_dupes-*\",\"query\":{\"query_string\":{\"analyze_wildcard\":true,\"query\":\"*\"}},\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "b86e5940-3607-11e7-b6c1-199a2de46f7d",
+    "_type": "visualization",
+    "_source": {
+      "title": "LargestDirectoriesAndFiles",
+      "visState": "{\"title\":\"LargestDirectoriesAndFiles\",\"type\":\"pie\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"isDonut\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"sum\",\"schema\":\"metric\",\"params\":{\"field\":\"filesize\"}},{\"id\":\"2\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"segment\",\"params\":{\"field\":\"path_parent\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"1\"}},{\"id\":\"3\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"segment\",\"params\":{\"field\":\"filename\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"1\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"diskover-*\",\"query\":{\"query_string\":{\"query\":\"*\",\"analyze_wildcard\":true}},\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "d53e3620-273a-11e7-8c8b-cd3a59e7992a",
+    "_type": "visualization",
+    "_source": {
+      "title": "ByFileSize",
+      "visState": "{\"title\":\"ByFileSize\",\"type\":\"pie\",\"params\":{\"addLegend\":true,\"addTooltip\":true,\"isDonut\":false,\"legendPosition\":\"right\"},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"range\",\"schema\":\"segment\",\"params\":{\"field\":\"filesize\",\"ranges\":[{\"from\":524288000,\"to\":1073741824},{\"from\":104857600,\"to\":524288000},{\"from\":52428800,\"to\":104857600},{\"from\":26214400,\"to\":52428800},{\"to\":26214400,\"from\":10485760},{\"from\":0,\"to\":10485760},{\"from\":1073741824,\"to\":null}],\"customLabel\":\"size\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"diskover-*\",\"query\":{\"query_string\":{\"analyze_wildcard\":true,\"query\":\"*\"}},\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "130323a0-26ad-11e7-976a-7d83553d8876",
+    "_type": "visualization",
+    "_source": {
+      "title": "LargestDirectories",
+      "visState": "{\"title\":\"LargestDirectories\",\"type\":\"pie\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"isDonut\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"sum\",\"schema\":\"metric\",\"params\":{\"field\":\"filesize\",\"customLabel\":\"total filesize\"}},{\"id\":\"2\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"segment\",\"params\":{\"field\":\"path_parent\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"1\",\"customLabel\":\"directory\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"diskover-*\",\"query\":{\"query_string\":{\"query\":\"*\",\"analyze_wildcard\":true}},\"filter\":[]}"
       }
     }
   }
