@@ -18,7 +18,7 @@ import hashlib
 from random import randint
 from elasticsearch import Elasticsearch, helpers, RequestsHttpConnection
 
-VERSION = '1.0.9'
+VERSION = '1.0.10'
 
 def printBanner():
 	"""This is the print banner function.
@@ -177,7 +177,8 @@ def parseCLIArgs(INDEXNAME):
 
 def crawlDirectories(TOPDIR, EXCLUDED_DIRS, DIRECTORY_QUEUE, VERBOSE):
 	"""This is the walk directory tree function.
-	It crawls the tree top-down using find command.
+	It crawls the tree top-down using find command
+	and adds directories to the Queue.
 	Ignores directories that are empty and in
 	'EXCLUDED_DIRS'.
 	"""
@@ -205,94 +206,106 @@ def crawlFiles(path, DATEEPOCH, DAYSOLD, MINSIZE, EXCLUDED_FILES, VERBOSE):
 	It crawls for files using os.listdir.
 	Ignores files smaller than 'MINSIZE' MB, newer
 	than 'DAYSOLD' old and in 'EXCLUDED_FILES'.
+	Tries to reduce the amount of stat calls to the fs
+	to help speed up crawl times.
 	"""
 	global total_num_files
 	filelist = []
-	# Crawl files in the directory
-	for name in os.listdir(path):
-		# remove any newline chars
-		name = name.rstrip('\r\n')
-		# get absolute path (parent of file)
-		abspath = os.path.abspath(path)
-		# get full path to file
-		filename_fullpath = os.path.join(abspath, name)
-		# only process if regular file and not symbolic link
-		if os.path.isfile(filename_fullpath) and not os.path.islink(filename_fullpath):
+	# if path doesn't exist anymore, pass
+	try:
+		# Crawl files in the directory
+		for name in os.listdir(path):
 			# Skip file if it's excluded
 			if name not in EXCLUDED_FILES:
-				# Get file modified time
-				mtime = int(os.path.getmtime(filename_fullpath))
-				# Convert time in days to seconds
-				time_sec = DAYSOLD * 86400
-				file_mtime_sec = DATEEPOCH - mtime
-				# Only process files modified x days ago
-				if file_mtime_sec >= time_sec:
-					size = int(os.path.getsize(filename_fullpath))
-					# Convert bytes to MB
-					size_mb = size / 1024 / 1024
-					# Skip files smaller than x MB
-					if size_mb >= MINSIZE:
-						# get file extension
-						extension = str(os.path.splitext(filename_fullpath)[1][1:].strip().lower())
-						# get access time
-						atime = int(os.path.getatime(filename_fullpath))
-						# get change time
-						ctime = int(os.path.getctime(filename_fullpath))
-						# get number of hardlinks
-						hardlinks = int(os.stat(filename_fullpath).st_nlink)
-						# get inode number
-						inode = int(os.stat(filename_fullpath).st_ino)
-						# get owner name
-						uid = os.stat(filename_fullpath).st_uid
-						try:
-							owner = pwd.getpwuid(uid).pw_name.split('\\')
-							# remove domain before owner
-							if len(owner) == 2:
-								owner = owner[1]
-							else:
-								owner = owner[0]
-						# if we can't find the owner name, get the uid number
-						except KeyError:
-							owner = str(uid)
-						# get group
-						gid = os.stat(filename_fullpath).st_gid
-						try:
-							group = grp.getgrgid(gid).gr_name.split('\\')
-							# remove domain before group
-							if len(group) == 2:
-								group = group[1]
-							else:
-								group = group[0]
-						# if we can't find the group name, get the gid number
-						except KeyError:
-							group = str(gid)
-						# get time (seconds since epoch)
-						indextime = int(time.time())
-						# create md5 hash of file using metadata
-						filehash = hashlib.md5(name+str(size)+str(mtime)).hexdigest()
-						# create file metadata dictionary
-						filemeta_dict = {
-							"filename": "%s" % name.decode('utf-8'),
-							"extension": "%s" % extension.decode('utf-8'),
-							"path_full": "%s" % filename_fullpath.decode('utf-8'),
-							"path_parent": "%s" % abspath.decode('utf-8'),
-							"filesize": size,
-							"owner": "%s" % owner.decode('utf-8'),
-							"group": "%s" % group.decode('utf-8'),
-							"last_modified": mtime,
-							"last_access": atime,
-							"last_change": ctime,
-							"hardlinks": hardlinks,
-							"inode": inode,
-							"filehash": "%s" % filehash,
-							"indexing_date": indextime
-							}
-						# add file metadata dictionary to filelist list
-						filelist.append(filemeta_dict)
-						total_num_files += 1
-	return filelist
+				# get absolute path (parent of file)
+				abspath = os.path.abspath(path)
+				# get full path to file
+				filename_fullpath = os.path.join(abspath, name)
+				# if file doesn't exist anymore, pass
+				try:
+					# check if file is symbolic link
+					if not os.path.islink(filename_fullpath):
+						size = int(os.path.getsize(filename_fullpath))
+						# Convert bytes to MB
+						size_mb = size / 1024 / 1024
+						# Skip files smaller than x MB
+						if size_mb >= MINSIZE:
+							# Get file modified time
+							mtime = int(os.path.getmtime(filename_fullpath))
+							# Convert time in days to seconds
+							time_sec = DAYSOLD * 86400
+							file_mtime_sec = DATEEPOCH - mtime
+							# Only process files modified x days ago
+							if file_mtime_sec >= time_sec:
+								# get file extension
+								extension = str(os.path.splitext(filename_fullpath)[1][1:].strip().lower())
+								# get access time
+								atime = int(os.path.getatime(filename_fullpath))
+								# get change time
+								ctime = int(os.path.getctime(filename_fullpath))
+								# get number of hardlinks
+								hardlinks = int(os.stat(filename_fullpath).st_nlink)
+								# get inode number
+								inode = int(os.stat(filename_fullpath).st_ino)
+								# get owner name
+								uid = os.stat(filename_fullpath).st_uid
+								try:
+									owner = pwd.getpwuid(uid).pw_name.split('\\')
+									# remove domain before owner
+									if len(owner) == 2:
+										owner = owner[1]
+									else:
+										owner = owner[0]
+								# if we can't find the owner name, get the uid number
+								except KeyError:
+									owner = str(uid)
+								# get group
+								gid = os.stat(filename_fullpath).st_gid
+								try:
+									group = grp.getgrgid(gid).gr_name.split('\\')
+									# remove domain before group
+									if len(group) == 2:
+										group = group[1]
+									else:
+										group = group[0]
+								# if we can't find the group name, get the gid number
+								except KeyError:
+									group = str(gid)
+								# get time (seconds since epoch)
+								indextime = int(time.time())
+								# create md5 hash of file using metadata
+								filehash = hashlib.md5(name+str(size)+str(mtime)).hexdigest()
+								# create file metadata dictionary
+								filemeta_dict = {
+									"filename": "%s" % name.decode('utf-8'),
+									"extension": "%s" % extension.decode('utf-8'),
+									"path_full": "%s" % filename_fullpath.decode('utf-8'),
+									"path_parent": "%s" % abspath.decode('utf-8'),
+									"filesize": size,
+									"owner": "%s" % owner.decode('utf-8'),
+									"group": "%s" % group.decode('utf-8'),
+									"last_modified": mtime,
+									"last_access": atime,
+									"last_change": ctime,
+									"hardlinks": hardlinks,
+									"inode": inode,
+									"filehash": "%s" % filehash,
+									"indexing_date": indextime
+									}
+								# add file metadata dictionary to filelist list
+								filelist.append(filemeta_dict)
+								total_num_files += 1
+				except:
+					pass
+		return filelist
+	except:
+		pass
 
 def workerSetup(DIRECTORY_QUEUE, NUM_THREADS, ES, INDEXNAME, DATEEPOCH, DAYSOLD, MINSIZE, EXCLUDED_FILES, VERBOSE):
+	"""This is the worker setup function.
+	It sets up the worker threads to process
+	the directory list Queue.
+	"""
 	threads = []
 	for i in range(NUM_THREADS):
 		worker = threading.Thread(target=processDirectoryWorker, args=(i, DIRECTORY_QUEUE, ES, INDEXNAME, \
@@ -304,7 +317,7 @@ def workerSetup(DIRECTORY_QUEUE, NUM_THREADS, ES, INDEXNAME, DATEEPOCH, DAYSOLD,
 
 def processDirectoryWorker(threadnum, DIRECTORY_QUEUE, ES, INDEXNAME, DATEEPOCH, DAYSOLD, MINSIZE, EXCLUDED_FILES, VERBOSE):
 	"""This is the worker thread function.
-	It processes items in the queue one after another.
+	It processes items in the Queue one after another.
 	These daemon threads go into an infinite loop,
 	and only exit when the main thread ends and
 	there are no more paths.
@@ -495,6 +508,7 @@ def main():
 	# print random banner
 	printBanner()
 
+	# check we are root
 	if os.geteuid():
 		print('\nPlease run as root')
 		sys.exit(1)

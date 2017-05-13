@@ -1,5 +1,17 @@
 # Diskover Change Log
 
+
+## [1.0.10] - 2017-05-????????????
+### fixed
+- crawl thread crashing when file/directory gets deleted during crawl
+- removed code to rstrip newline characters on filename
+### added
+- additional comments
+- check for file/directory deletion during crawl
+- new kibana dashboard
+### changed
+- improved crawlFiles function to speed up crawl times
+
 ## [1.0.9] - 2017-05-10
 ### fixed
 - bug in finding duplicate files
