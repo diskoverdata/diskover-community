@@ -1,4 +1,4 @@
-theme: jekyll-theme-slate
+theme: jekyll-theme-modernist
 title: diskover
 description: Elasticsearch and Kibana powered filesystem crawler.
 show_downloads: true
