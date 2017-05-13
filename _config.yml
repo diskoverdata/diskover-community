@@ -1,4 +1,4 @@
-theme: jekyll-theme-midnight
+theme: jekyll-theme-tactile
 title: diskover
 description: diskover is a filesystem crawler and disk usage analyzer which uses Elasticsearch and Kibana to help find unstructured dark data.
 show_downloads: true
