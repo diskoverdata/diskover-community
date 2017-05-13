@@ -1,4 +1,4 @@
-theme: jekyll-theme-tactile
+theme: jekyll-theme-midnight
 title: diskover
 description: Elasticsearch and Kibana powered filesystem crawler and disk usage analyzer to help find unstructured dark data.
 show_downloads: true
