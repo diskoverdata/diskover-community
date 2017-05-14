@@ -8,8 +8,6 @@ diskover is a multi-threaded filesystem crawler which uses [Elasticsearch](https
 
 ![kibana-screenshot](docs/kibana-dashboarddark-screenshot.png?raw=True)
 ![kibana-screenshot](docs/kibana-dashboard-dupes-screenshot.png?raw=True)
-![kibana-screenshot](docs/kibana-graph-dupes-screenshot.png?raw=True)
-![kibana-screenshot](docs/kibana-graph-hardlinks-screenshot.png?raw=True)
 
 
 ### Installation Guide
@@ -249,9 +247,11 @@ To visualy see the change over time, create a line chart in Kibana using `sum of
 
 #### Graphs
 
-To create the graphs in the screenshots above you need to install [X-Pack](https://www.elastic.co/downloads/x-pack). After X-Pack is installed, edit `diskover.cfg` for http auth credentials since X-Pack adds http auth to Elasticsearch and Kibana.
+To create graphs you need to install [X-Pack](https://www.elastic.co/downloads/x-pack). After X-Pack is installed, edit `diskover.cfg` for http auth credentials since X-Pack adds http auth to Elasticsearch and Kibana.
 
 #### Dupes graph
+
+![kibana-screenshot](docs/kibana-graph-dupes-screenshot.png?raw=True)
 
 * index pattern: `diskover_dupes-*`
 * verticies field source #1: `filehash` set to `50 max terms per hop`
@@ -261,6 +261,8 @@ To create the graphs in the screenshots above you need to install [X-Pack](https
 * search filter: `hardlinks: 1`
 
 #### Hardlinks graph
+
+![kibana-screenshot](docs/kibana-graph-hardlinks-screenshot.png?raw=True)
 
 * index pattern: `diskover-*`
 * verticies field source #1: `path_parent` set to `50 max terms per hop`
