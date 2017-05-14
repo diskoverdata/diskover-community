@@ -4,10 +4,9 @@
 
 diskover is a multi-threaded filesystem crawler which uses [Elasticsearch](https://www.elastic.co) and [Kibana](https://www.elastic.co/products/kibana) to index and visualize your data. It is designed to crawl your filesystem and analyze disk usage on a local or remote server using single or concurrent processes. File metadata is bulk added and streamed into Elasticsearch allowing you to visualize the results in Kibana, without having to wait until the crawl is finished. diskover aims to be fast, simple and easy to use, and runs in Linux or OS X/macOS. 
 
-### Screenshots
+### Screenshot
 
 ![kibana-screenshot](docs/kibana-dashboarddark-screenshot.png?raw=True)
-![kibana-screenshot](docs/kibana-dashboard-dupes-screenshot.png?raw=True)
 
 
 ### Installation Guide
@@ -177,6 +176,8 @@ If you are running concurrent `diskover.py` processes you will need to use the `
 
 #### Duplicate files index
 
+![kibana-screenshot](docs/kibana-dashboard-dupes-screenshot.png?raw=True)
+
 An index for duplicate files can also be created using the `--dupesindex` cli argument **after all crawls are finished**. If you named your index `diskover-2017.05.03`, the index for duplicate files will be named `diskover_dupes-2017.05.03`. See above diagram for example.
 
 #### Generated fields
@@ -206,11 +207,13 @@ In order to speed up crawl times, a md5 hash for each file is made from combinin
 
 ### Kibana
 
-For the index pattern use `diskover-*`. For the duplicate files use `diskover_dupes-*`. **Make sure the `Index contains time-based events` box is `unchecked`** when you create index patterns.
+For the index pattern use `diskover-*`. For the duplicate files use `diskover_dupes-*`. **Make sure the `Index contains time-based events` box is `unchecked`** when you create index patterns. You could also use `modified_time` as your timestamp if you want to filter using time ranges in Kibana. This could be useful if you didn't run the crawl using an old `-m` modified file time.
 
 #### diskover dashboard
 
-To use the diskover dashboard (screenshots above), import the saved objects file `export.json` into Kibana for the dashboard visualizations. In Kibana go to `Management > Saved Objects > Import`.
+![kibana-screenshot](docs/kibana-dashboardlight-screenshot.png?raw=True)
+
+To use the diskover dashboards, import the saved objects file `export.json` into Kibana for the dashboard visualizations. In Kibana go to `Management > Saved Objects > Import`.
 
 If nothing is showing in the dashboard, go to `Management > Index Patterns > diskover-*` and then hit the `refresh icon`.
 
