@@ -11,16 +11,6 @@ diskover is a multi-threaded filesystem crawler which uses [Elasticsearch](https
 
 ### Installation Guide
 
-#### Download
-
-```sh
-git clone https://github.com/shirosaidev/diskover.git
-cd diskover
-```
-
-
-### User Guide
-
 #### Requirements
 
 * `Linux or OS X/macOS` (tested on OS X 10.11.6 and Ubuntu 16.04)
@@ -33,8 +23,12 @@ cd diskover
 
 * [X-Pack](https://www.elastic.co/downloads/x-pack) (for graphs, reports, monitoring and http auth)
 
+#### Download
 
-#### Getting Started
+```sh
+git clone https://github.com/shirosaidev/diskover.git
+cd diskover
+```
 
 You need to have at least **Python 2.7.** and have installed **Python client for Elasticsearch** using `pip`:
 
@@ -45,6 +39,10 @@ python --version
 ```sh
 pip install -r requirements.txt
 ```
+
+### User Guide
+
+#### Getting Started
 
 Start diskover as root user with:
 
