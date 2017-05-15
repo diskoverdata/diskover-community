@@ -15,13 +15,13 @@ diskover is a multi-threaded filesystem crawler which uses [Elasticsearch](https
 
 * `Linux or OS X/macOS` (tested on OS X 10.11.6 and Ubuntu 16.04)
 * `Python 2.7.` (tested on Python 2.7.10 and 2.7.12)
-* `Python client for Elasticsearch (elasticsearch-py)`
+* `Python client for Elasticsearch` (elasticsearch-py)
 * `Elasticsearch` (local or [AWS ES Service](https://aws.amazon.com/elasticsearch-service/), tested on Elasticsearch 5.3.0)
 * `Kibana` (tested on Kibana 5.3.0)
 
 #### Optional Install
 
-* [X-Pack](https://www.elastic.co/downloads/x-pack) (for graphs, reports, monitoring and http auth)
+* `[X-Pack](https://www.elastic.co/downloads/x-pack)` (for graphs, reports, monitoring and http auth)
 
 #### Download
 
