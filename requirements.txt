@@ -1,2 +1,1 @@
-diskover
-elasticsearch>=5.3.0
+elasticsearch >= 5.3.0
