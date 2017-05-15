@@ -43,7 +43,7 @@ python --version
 ```
 
 ```sh
-pip install elasticsearch
+pip install -r requirements.txt
 ```
 
 Start diskover as root user with:
