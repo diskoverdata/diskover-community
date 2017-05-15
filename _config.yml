@@ -1,5 +1,5 @@
 theme: jekyll-theme-tactile
 title: diskover
-description: Elasticsearch and Kibana powered filesystem crawler.
+description: Elasticsearch and Kibana filesystem crawler and disk usage analyzer.
 show_downloads: true
 google_analytics: UA-98866026-1
