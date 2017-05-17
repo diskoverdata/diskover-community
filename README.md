@@ -57,19 +57,19 @@ A successfull crawl should look like this:
 /:/\:\__\ /\/::\__\ /\:\:\__\ /::-"\__\ /:/\:\__\ |::L/\__\ /::\:\__\ /::\:\__\
 \:\/:/  / \::/\/__/ \:\:\/__/ \;:;-",-" \:\/:/  / |::::/  / \:\:\/  / \;:::/  /
  \::/  /   \:\__\    \::/  /   |:|  |    \::/  /   L;;/__/   \:\/  /   |:\/__/
-  \/__/     \/__/     \/__/     \|__|     \/__/    v1.0.7     \/__/     \|__|
+  \/__/     \/__/     \/__/     \|__|     \/__/    v1.0.11    \/__/     \|__|
                                       https://github.com/shirosaidev/diskover
 
 
-[2017-05-03 17:58:31] [status] Connecting to Elasticsearch
-[2017-05-03 17:58:31] [info] Checking for ES index: diskover-2017.04.22
-[2017-05-03 17:58:31] [warning] ES index exists, deleting
-[2017-05-03 17:58:31] [info] Creating ES index
-Crawling: [100%] |████████████████████████████████████████| 7960/7960
-[2017-05-03 17:58:40] [status] Finished crawling
-[2017-05-03 17:58:40] [info] Directories Crawled: 7960
-[2017-05-03 17:58:40] [info] Files Indexed: 344
-[2017-05-03 17:58:40] [info] Elapsed time: 9.41380310059
+2017-05-16 23:09:11,937 [INFO][diskover] Connecting to Elasticsearch
+2017-05-16 23:09:11,942 [INFO][diskover] Checking for ES index: diskover-2017.05.16
+2017-05-16 23:09:11,944 [WARNING][diskover] ES index exists, deleting
+2017-05-16 23:09:12,039 [INFO][diskover] Creating ES index
+Crawling: [100%] |████████████████████████████████████████| 8593/8593
+2017-05-16 23:09:23,441 [INFO][diskover] Finished crawling
+2017-05-16 23:09:23,442 [INFO][diskover] Directories Crawled: 8593
+2017-05-16 23:09:23,442 [INFO][diskover] Files Indexed: 322
+2017-05-16 23:09:23,442 [INFO][diskover] Elapsed time: 11.5070669651
 ```
 
 
@@ -128,9 +128,9 @@ indexname = diskover-2017.04.22
 
 #### Speeding up crawl times
 
-diskover **skips empty directories** and will **only index files that are older than `modified time` and larger than `minimum file size`** from the command line options. Excluding certain files/directories will help speed up crawl times as well. **Running with verbose logging will increase crawl times**.
+diskover **skips empty directories and empty files** and will **only index files >= `modified time` and >= `minimum file size`** from the command line options. Excluding certain files/directories will help speed up crawl times as well. **Running with verbose logging will increase crawl times**.
 
-For example, if you wanted to find all the old files that are larger than 10MB that haven't been modified in more than 6 months, you could run diskover with:
+For example, if you wanted to find and index files that are >= 10 MB that have been modified >= 180 days ago, you could run diskover with:
 
 ```sh
 cd /path/you/want/to/crawl
@@ -146,13 +146,13 @@ You could also speed up the crawl by running multiple `diskover.py` processes an
 Here are some benchmarks running on my Macbook Pro, this includes time to crawl my local filesystem and index in Elasticsearch (in seconds) using the default of 2 threads and single `diskover.py` running.
 
 ```
-[2017-04-23 10:02:58] [info] Directories Crawled: 10001
-[2017-04-23 10:02:58] [info] Files Indexed: 10000
-[2017-04-23 10:02:58] [info] Elapsed time: 16.2423961163
+Directories Crawled: 10001
+Files Indexed: 10000
+Elapsed time: 16.2423961163
 
-[2017-04-23 10:46:24] [info] Directories Crawled: 100001
-[2017-04-23 10:46:24] [info] Files Indexed: 100000
-[2017-04-23 10:46:24] [info] Elapsed time: 167.5496099
+Directories Crawled: 100001
+Files Indexed: 100000
+Elapsed time: 167.5496099
 ```
 
 
@@ -180,10 +180,10 @@ diskover creates the following fields:
 
 |         Field        |                Description                  |                    Example                  |
 |----------------------|---------------------------------------------|---------------------------------------------|
-| `last_modified`      | Last modification date                      | `1389220808`                                |
-| `last_access`        | Last access date                            | `1482435694`                                |
-| `last_change`        | Last change date                            | `1389220808`                                |
-| `indexing_date`      | Indexing date                               | `1492612283`                                |
+| `last_modified`      | Last modification date                      | `2017-03-15T19:26:28`                       |
+| `last_access`        | Last access date                            | `2017-05-04T06:03:34`                       |
+| `last_change`        | Last change date                            | `2017-04-20T05:21:49`                       |
+| `indexing_date`      | Indexing date                               | `2017-05-17T06:09:12`                       |
 | `filesize`           | File size in bytes                          | `50502536`                                  |
 | `filename`           | Original file name                          | `"mypic.png"`                               |
 | `extension`          | Original file name extension                | `"png"`                                     |
@@ -194,6 +194,8 @@ diskover creates the following fields:
 | `hardlinks`          | Hardlink count                              | `1`                                         |
 | `inode`              | Inode number                                | `652490`                                    |
 | `filehash`           | MD5 hash of file                            | `3a6949b4b74846a482016d0779560327`          |
+
+**Note: All date fields are stored as UTC time in Elasticsearch. Kibana displays dates using your local timezone.**
 
 #### Filehash
 
