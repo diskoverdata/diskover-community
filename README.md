@@ -21,7 +21,7 @@ diskover is a multi-threaded filesystem crawler which uses [Elasticsearch](https
 
 #### Optional Install
 
-* `[X-Pack](https://www.elastic.co/downloads/x-pack)` (for graphs, reports, monitoring and http auth)
+* [X-Pack](https://www.elastic.co/downloads/x-pack) (for graphs, reports, monitoring and http auth)
 
 #### Download
 
@@ -93,7 +93,7 @@ optional arguments:
                         Elasticsearch index name (default: from config)
   -n, --nodelete        Do not delete existing index (default: delete index)
   --dupesindex          Create duplicate files index (default: don't create)
-  -v, --verbose         Run more verbose (default: not verbose)
+  -v, --verbose         Increase output verbosity
 ```
 
 
