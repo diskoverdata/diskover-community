@@ -1,5 +1,23 @@
 # Diskover Change Log
 
+## [1.0.11] - 2017-05-16
+### fixed
+- bug in calling printProgressBar when dircount is empty causing crash
+- bug indexing many dupes causing Elasticsearch to hang
+### added
+- check dircount before calling printProgressBar
+- better keyboard interrupt handling
+- printStats function
+- capture exceptions of crawling directory and indexing files
+### changed
+- reduced size limits for finding dupes
+- replaced printLog function with python logging module
+- verbose logging uses logging module for debug output
+- progressbar colors
+- cleaned up various code
+- times in ES indices are now stored as utc strings instead of unix time
+- ES index mappings for times
+- 0 byte empty files are no longer indexed when using flag -m 0
 
 ## [1.0.10] - 2017-05-13
 ### fixed
