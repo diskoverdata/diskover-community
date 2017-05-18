@@ -26,14 +26,14 @@ diskover is a multi-threaded filesystem crawler which uses [Elasticsearch](https
 #### Download
 
 ```sh
-git clone https://github.com/shirosaidev/diskover.git
-cd diskover
+$ git clone https://github.com/shirosaidev/diskover.git
+$ cd diskover
 ```
 
 You need to have at least **Python 2.7.** and have installed **Python client for Elasticsearch (elasticsearch-py)** using `pip`.
 
 ```sh
-sudo pip install -r requirements.txt
+$ sudo pip install -r requirements.txt
 ```
 
 ### User Guide
@@ -43,33 +43,31 @@ sudo pip install -r requirements.txt
 Start diskover as root user with:
 
 ```sh
-cd /path/you/want/to/crawl
-sudo python /path/to/diskover.py
+$ cd /path/you/want/to/crawl
+$ sudo python /path/to/diskover.py
 ```
 
 A successfull crawl should look like this:
 
 ```
-
    ___       ___       ___       ___       ___       ___       ___       ___
   /\  \     /\  \     /\  \     /\__\     /\  \     /\__\     /\  \     /\  \
  /::\  \   _\:\  \   /::\  \   /:/ _/_   /::\  \   /:/ _/_   /::\  \   /::\  \
 /:/\:\__\ /\/::\__\ /\:\:\__\ /::-"\__\ /:/\:\__\ |::L/\__\ /::\:\__\ /::\:\__\
 \:\/:/  / \::/\/__/ \:\:\/__/ \;:;-",-" \:\/:/  / |::::/  / \:\:\/  / \;:::/  /
  \::/  /   \:\__\    \::/  /   |:|  |    \::/  /   L;;/__/   \:\/  /   |:\/__/
-  \/__/     \/__/     \/__/     \|__|     \/__/    v1.0.11    \/__/     \|__|
+  \/__/     \/__/     \/__/     \|__|     \/__/    v1.0.12    \/__/     \|__|
                                       https://github.com/shirosaidev/diskover
 
-
-2017-05-16 23:09:11,937 [INFO][diskover] Connecting to Elasticsearch
-2017-05-16 23:09:11,942 [INFO][diskover] Checking for ES index: diskover-2017.05.16
-2017-05-16 23:09:11,944 [WARNING][diskover] ES index exists, deleting
-2017-05-16 23:09:12,039 [INFO][diskover] Creating ES index
-Crawling: [100%] |████████████████████████████████████████| 8593/8593
-2017-05-16 23:09:23,441 [INFO][diskover] Finished crawling
-2017-05-16 23:09:23,442 [INFO][diskover] Directories Crawled: 8593
-2017-05-16 23:09:23,442 [INFO][diskover] Files Indexed: 322
-2017-05-16 23:09:23,442 [INFO][diskover] Elapsed time: 11.5070669651
+2017-05-17 21:17:09,254 [INFO][diskover] Connecting to Elasticsearch
+2017-05-17 21:17:09,260 [INFO][diskover] Checking for ES index: diskover-2017.04.22
+2017-05-17 21:17:09,262 [WARNING][diskover] ES index exists, deleting
+2017-05-17 21:17:09,340 [INFO][diskover] Creating ES index
+Crawling: [100%] |########################################| 8570/8570
+2017-05-17 21:17:16,972 [INFO][diskover] Finished crawling
+2017-05-17 21:17:16,973 [INFO][diskover] Directories Crawled: 8570
+2017-05-17 21:17:16,973 [INFO][diskover] Files Indexed: 322
+2017-05-17 21:17:16,973 [INFO][diskover] Elapsed time: 7.72081303596
 ```
 
 
@@ -77,7 +75,7 @@ Crawling: [100%] |████████████████████�
 
 ```
 usage: diskover.py [-h] [-d TOPDIR] [-m MTIME] [-s MINSIZE] [-t THREADS]
-                   [-i INDEX] [-n] [--dupesindex] [-v]
+                   [-i INDEX] [-n] [--dupesindex] [--version] [-v] [--debug]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -93,7 +91,9 @@ optional arguments:
                         Elasticsearch index name (default: from config)
   -n, --nodelete        Do not delete existing index (default: delete index)
   --dupesindex          Create duplicate files index (default: don't create)
+  --version             Prints version and exits
   -v, --verbose         Increase output verbosity
+  --debug               Debug message output
 ```
 
 
@@ -133,8 +133,8 @@ diskover **skips empty directories and empty files** and will **only index files
 For example, if you wanted to find and index files that are >= 10 MB that have been modified >= 180 days ago, you could run diskover with:
 
 ```sh
-cd /path/you/want/to/crawl
-sudo python /path/to/diskover.py -m 180 -s 10
+$ cd /path/you/want/to/crawl
+$ sudo python /path/to/diskover.py -m 180 -s 10
 ```
 
 You could also speed up the crawl by running multiple `diskover.py` processes and bulk loading into the same `diskover-<name>` index in Elasticsearch. Below is a diagram showing this example.
