@@ -2,7 +2,7 @@
 
 ## [1.0.12] - 2017-05-17
 ### fixed
-- bug where directories were getting indexed (not just files) when using -m 0 flag
+- bug where directories were getting indexed (not just files) when using -s 0 flag
 ### added
 - debug and version cli arguments
 ### changed
@@ -25,7 +25,7 @@
 - cleaned up various code
 - times in ES indices are now stored as utc strings instead of unix time
 - ES index mappings for times
-- 0 byte empty files are no longer indexed when using flag -m 0
+- 0 byte empty files are no longer indexed when using flag -s 0
 
 ## [1.0.10] - 2017-05-13
 ### fixed
