@@ -1,5 +1,13 @@
 # Diskover Change Log
 
+## [1.0.12] - 2017-05-17
+### fixed
+- bug where directories were getting indexed (not just files) when using -m 0 flag
+### added
+- debug and version cli arguments
+### changed
+- banner and progressbar color to see easier on white terminals
+
 ## [1.0.11] - 2017-05-16
 ### fixed
 - bug in calling printProgressBar when dircount is empty causing crash

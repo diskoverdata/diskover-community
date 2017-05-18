@@ -19,29 +19,25 @@ from random import randint
 from datetime import datetime
 from elasticsearch import Elasticsearch, helpers, RequestsHttpConnection
 
-VERSION = '1.0.11'
+DISKOVER_VERSION = '1.0.12'
 
 def printBanner():
 	"""This is the print banner function.
 	It prints a random banner.
 	"""
 	b = randint(1,3)
-	# print banner
 	if b == 1:
-		banner = """
-\033[93m
+		banner = """\033[35m
   ________  .__        __
   \______ \ |__| _____|  | _________  __ ___________
    |    |  \|  |/  ___/  |/ /  _ \  \/ // __ \_  __ \\ /)___(\\
    |    `   \  |\___ \|    <  <_> )   /\  ___/|  | \/ (='.'=)
   /_______  /__/____  >__|_ \____/ \_/  \___  >__|   (\\")_(\\")
           \/        \/     \/   v%s     \/
-                      https://github.com/shirosaidev/diskover
-\033[0m
-""" % VERSION
+                      https://github.com/shirosaidev/diskover\033[0m
+""" % DISKOVER_VERSION
 	elif b == 2:
-		banner = """
-\033[93m
+		banner = """\033[35m
    ___       ___       ___       ___       ___       ___       ___       ___
   /\  \     /\  \     /\  \     /\__\     /\  \     /\__\     /\  \     /\  \\
  /::\  \   _\:\  \   /::\  \   /:/ _/_   /::\  \   /:/ _/_   /::\  \   /::\  \\
@@ -49,20 +45,17 @@ def printBanner():
 \:\/:/  / \::/\/__/ \:\:\/__/ \;:;-",-" \:\/:/  / |::::/  / \:\:\/  / \;:::/  /
  \::/  /   \:\__\    \::/  /   |:|  |    \::/  /   L;;/__/   \:\/  /   |:\/__/
   \/__/     \/__/     \/__/     \|__|     \/__/    v%s    \/__/     \|__|
-                                      https://github.com/shirosaidev/diskover
-\033[0m
-""" % VERSION
+                                      https://github.com/shirosaidev/diskover\033[0m
+""" % DISKOVER_VERSION
 	elif b == 3:
-		banner = """
-\033[93m
+		banner = """\033[35m
     _/_/_/    _/            _/
    _/    _/        _/_/_/  _/  _/      _/_/    _/      _/    _/_/    _/  _/_/
   _/    _/  _/  _/_/      _/_/      _/    _/  _/      _/  _/_/_/_/  _/_/
  _/    _/  _/      _/_/  _/  _/    _/    _/    _/  _/    _/        _/
 _/_/_/    _/  _/_/_/    _/    _/    _/_/        _/ v%s  _/_/_/  _/
-                              https://github.com/shirosaidev/diskover
-\033[0m
-""" % VERSION
+                              https://github.com/shirosaidev/diskover\033[0m
+""" % DISKOVER_VERSION
 	print(banner)
 	return
 
@@ -75,8 +68,8 @@ def printProgressBar(iteration, total, prefix='', suffix=''):
 	str_format = "{0:." + str(decimals) + "f}"
 	percents = str_format.format(100 * (iteration / float(total)))
 	filled_length = int(round(bar_length * iteration / float(total)))
-	bar = '\033[36m█\033[0m' * filled_length + '█' * (bar_length - filled_length)
-	sys.stdout.write('\r\033[36m%s [%s%s] |\033[0m%s\033[36m| %s\033[0m' \
+	bar = '#' * filled_length + '-' * (bar_length - filled_length)
+	sys.stdout.write('\r\033[1m%s [%s%s] |%s| %s\033[0m' \
 		% (prefix, percents, '%', bar, suffix))
 	sys.stdout.flush()
 	return
@@ -146,8 +139,12 @@ def parseCLIArgs(INDEXNAME):
 						help="Do not delete existing index (default: delete index)")
 	parser.add_argument("--dupesindex", action="store_true",
 						help="Create duplicate files index (default: don't create)")
+	parser.add_argument("--version", action="store_true",
+						help="Prints version and exits")
 	parser.add_argument("-v", "--verbose", action="store_true",
 						help="Increase output verbosity")
+	parser.add_argument("--debug", action="store_true",
+						help="Debug message output")
 	args = parser.parse_args()
 
 	# use index name from command line instead of config file
@@ -159,9 +156,9 @@ def parseCLIArgs(INDEXNAME):
 		sys.exit(0)
 
 	return args.topdir, args.mtime, args.minsize, args.threads, INDEXNAME, \
-		args.nodelete, args.dupesindex, args.verbose
+		args.nodelete, args.dupesindex, args.version, args.verbose, args.debug
 
-def crawlDirectories(TOPDIR, EXCLUDED_DIRS, DIRECTORY_QUEUE, LOGGER):
+def crawlDirectories(TOPDIR, EXCLUDED_DIRS, DIRECTORY_QUEUE, LOGGER, VERBOSE, DEBUG):
 	"""This is the walk directory tree function.
 	It crawls the tree top-down using find command
 	and adds directories to the Queue.
@@ -175,13 +172,15 @@ def crawlDirectories(TOPDIR, EXCLUDED_DIRS, DIRECTORY_QUEUE, LOGGER):
 		cmd.append('-not')
 		cmd.append('-path')
 		cmd.append('*%s*' % i)
-	LOGGER.debug('Finding directories to crawl')
+	if VERBOSE or DEBUG:
+		LOGGER.info('Finding directories to crawl')
 	p = subprocess.Popen(cmd,shell=False,stdin=subprocess.PIPE,
 					stdout=subprocess.PIPE,stderr=subprocess.PIPE)
 	for line in p.stdout:
 		# remove any newline chars
 		directory = line.rstrip('\r\n')
-		LOGGER.debug('Queuing directory: %s', directory)
+		if VERBOSE or DEBUG:
+			LOGGER.info('Queuing directory: %s', directory)
 		# add item to queue (directory)
 		DIRECTORY_QUEUE.put(directory)
 		total_num_dirs += 1
@@ -209,8 +208,8 @@ def crawlFiles(path, DATEEPOCH, DAYSOLD, MINSIZE, EXCLUDED_FILES, LOGGER):
 				filename_fullpath = os.path.join(abspath, name)
 				# try to index file
 				try:
-					# check if file is symbolic link
-					if not os.path.islink(filename_fullpath):
+					# check if regular file (not directory or symbolic link)
+					if os.path.isfile(filename_fullpath) and not os.path.islink(filename_fullpath):
 						size = os.path.getsize(filename_fullpath)
 						# Convert bytes to MB
 						size_mb = size / 1024 / 1024
@@ -292,21 +291,21 @@ def crawlFiles(path, DATEEPOCH, DAYSOLD, MINSIZE, EXCLUDED_FILES, LOGGER):
 	return
 
 def workerSetup(DIRECTORY_QUEUE, NUM_THREADS, ES, INDEXNAME, DATEEPOCH, \
-		DAYSOLD, MINSIZE, EXCLUDED_FILES, LOGGER, VERBOSE):
+		DAYSOLD, MINSIZE, EXCLUDED_FILES, LOGGER, VERBOSE, DEBUG):
 	"""This is the worker setup function.
 	It sets up the worker threads to process
 	the directory list Queue.
 	"""
 	for i in range(NUM_THREADS):
 		worker = threading.Thread(target=processDirectoryWorker, \
-			args=(i, DIRECTORY_QUEUE, ES, INDEXNAME, \
-				DATEEPOCH, DAYSOLD, MINSIZE, EXCLUDED_FILES, LOGGER, VERBOSE,))
+			args=(i, DIRECTORY_QUEUE, ES, INDEXNAME, DATEEPOCH, DAYSOLD, \
+				MINSIZE, EXCLUDED_FILES, LOGGER, VERBOSE, DEBUG,))
 		worker.setDaemon(True)
 		worker.start()
 	return
 
 def processDirectoryWorker(threadnum, DIRECTORY_QUEUE, ES, INDEXNAME, DATEEPOCH, \
-		DAYSOLD, MINSIZE, EXCLUDED_FILES, LOGGER, VERBOSE):
+		DAYSOLD, MINSIZE, EXCLUDED_FILES, LOGGER, VERBOSE, DEBUG):
 	"""This is the worker thread function.
 	It processes items in the Queue one after another.
 	These daemon threads go into an infinite loop,
@@ -316,19 +315,21 @@ def processDirectoryWorker(threadnum, DIRECTORY_QUEUE, ES, INDEXNAME, DATEEPOCH,
 	global total_num_dirs
 	filelist = []
 	while True:
-		LOGGER.debug('[thread-%s]: Looking for the next directory', threadnum)
+		if VERBOSE or DEBUG:
+			LOGGER.info('[thread-%s]: Looking for the next directory', threadnum)
 		# get an item (directory) from the queue
 		path = DIRECTORY_QUEUE.get()
-		LOGGER.debug('[thread-%s]: Crawling: %s', threadnum, path)
+		if VERBOSE or DEBUG:
+			LOGGER.info('[thread-%s]: Crawling: %s', threadnum, path)
 		# crawl the files in the directory
 		filelist = crawlFiles(path, DATEEPOCH, DAYSOLD, MINSIZE, \
 			EXCLUDED_FILES, LOGGER)
 		if filelist:
 			# add filelist to ES index
-			indexAdd(threadnum, ES, INDEXNAME, filelist, LOGGER)
+			indexAdd(threadnum, ES, INDEXNAME, filelist, LOGGER, VERBOSE, DEBUG)
 		# print progress bar
 		dircount = total_num_dirs - DIRECTORY_QUEUE.qsize()
-		if not VERBOSE and dircount > 0:
+		if dircount > 0 and not VERBOSE and not DEBUG:
 			printProgressBar(dircount, total_num_dirs, 'Crawling:', '%s/%s' \
 				% (dircount, total_num_dirs))
 		# task is done
@@ -427,17 +428,18 @@ def indexCreate(ES, INDEXNAME, NODELETE, LOGGER):
 	ES.indices.create(index=INDEXNAME, body=mappings)
 	return
 
-def indexAdd(threadnum, ES, INDEXNAME, filelist, LOGGER):
+def indexAdd(threadnum, ES, INDEXNAME, filelist, LOGGER, VERBOSE, DEBUG):
 	"""This is the ES index add function.
 	It bulk adds data from worker's crawl
 	results into ES.
 	"""
-	LOGGER.debug('[thread-%s]: Bulk loading to ES index', threadnum)
+	if VERBOSE or DEBUG:
+		LOGGER.info('[thread-%s]: Bulk adding to ES index', threadnum)
 	# bulk load data to Elasticsearch index
 	helpers.bulk(ES, filelist, index=INDEXNAME, doc_type='file')
 	return
 
-def indexCreateDupes(ES, INDEXNAME, NODELETE, LOGGER):
+def indexCreateDupes(ES, INDEXNAME, NODELETE, LOGGER, VERBOSE, DEBUG):
 	"""This is the duplicate file ES index creator.
 	It creates a new index of duplicate files from
 	an existing index.
@@ -450,7 +452,7 @@ def indexCreateDupes(ES, INDEXNAME, NODELETE, LOGGER):
 	# search ES for duplicate files
 	dupes_list = dupesFinder(ES, INDEXNAME, LOGGER)
 	# add dupes to new index
-	indexAdd(0, ES, indexname_dupes, dupes_list, LOGGER)
+	indexAdd(0, ES, indexname_dupes, dupes_list, LOGGER, VERBOSE, DEBUG)
 	return
 
 def dupesFinder(ES, INDEXNAME, LOGGER):
@@ -511,16 +513,11 @@ def main():
 	total_num_files = 0
 	total_num_dirs = 0
 
-	# check we are root
-	if os.geteuid():
-		print('\nPlease run as root using sudo')
-		sys.exit(1)
+	# Date calculation seconds since epoch
+	DATEEPOCH = time.time()
 
 	# print random banner
 	printBanner()
-
-	# Date calculation seconds since epoch
-	DATEEPOCH = time.time()
 
 	# load config file
 	AWS, ES_HOST, ES_PORT, ES_USER, ES_PASSWORD, INDEXNAME, \
@@ -528,7 +525,17 @@ def main():
 
 	# parse cli arguments
 	TOPDIR, DAYSOLD, MINSIZE, NUM_THREADS, INDEXNAME, NODELETE, \
-		DUPESINDEX, VERBOSE = parseCLIArgs(INDEXNAME)
+		DUPESINDEX, VERSION, VERBOSE, DEBUG = parseCLIArgs(INDEXNAME)
+
+	# check --version flag and exit
+	if VERSION:
+		print('diskover v%s' % DISKOVER_VERSION)
+		sys.exit(0)
+
+	# check we are root
+	if os.geteuid():
+		print('Please run as root using sudo')
+		sys.exit(1)
 
 	# set up logging
 	es_logger = logging.getLogger('elasticsearch')
@@ -544,6 +551,9 @@ def main():
 	logFormatter = '%(asctime)s [%(levelname)s][%(name)s] %(message)s'
 	loglevel = logging.INFO
 	if VERBOSE:
+		loglevel = logging.INFO
+		es_logger.setLevel(logging.INFO)
+	if DEBUG:
 		loglevel = logging.DEBUG
 		es_logger.setLevel(logging.DEBUG)
 	logging.basicConfig(format=logFormatter, level=loglevel)
@@ -554,7 +564,7 @@ def main():
 
 	# create duplicate file index if cli argument
 	if DUPESINDEX:
-		indexCreateDupes(ES, INDEXNAME, NODELETE, LOGGER)
+		indexCreateDupes(ES, INDEXNAME, NODELETE, LOGGER, VERBOSE, DEBUG)
 		printStats(DATEEPOCH, LOGGER)
 		sys.exit(0)
 
@@ -567,9 +577,9 @@ def main():
 	try:
 		# Set up worker threads
 		workerSetup(DIRECTORY_QUEUE, NUM_THREADS, ES, INDEXNAME, DATEEPOCH, \
-			DAYSOLD, MINSIZE, EXCLUDED_FILES, LOGGER, VERBOSE)
+			DAYSOLD, MINSIZE, EXCLUDED_FILES, LOGGER, VERBOSE, DEBUG)
 		# walk directory tree and start crawling
-		crawlDirectories(TOPDIR, EXCLUDED_DIRS, DIRECTORY_QUEUE, LOGGER)
+		crawlDirectories(TOPDIR, EXCLUDED_DIRS, DIRECTORY_QUEUE, LOGGER, VERBOSE, DEBUG)
 		# wait for all threads to finish
 		for i in range(NUM_THREADS):
 			DIRECTORY_QUEUE.join()
