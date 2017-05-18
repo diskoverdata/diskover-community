@@ -231,6 +231,7 @@ Here are some filter examples:
 * `extension:(asf OR avi OR flv OR m4v OR mov OR mp4 OR mpg OR rm OR vob OR wmv)` filters for video files
 * `extension:(cache OR tmp OR temp OR bak OR old)` filters for temp files
 * `extension:(7z OR deb OR gz OR pkg OR rar OR rpm OR tar OR zip OR zipx)` filters for compressed files
+* `filename:img*.dpx` filters for image sequence img001.dpx, img002.dpx, im003.dpx, etc.
 
 #### Tracking directory tree size over time
 
