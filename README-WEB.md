@@ -36,6 +36,7 @@ $ cd diskover_web
 $ composer install
 ```
 
+
 ### User Guide
 
 #### Getting Started
@@ -54,6 +55,13 @@ class Constants {
     const ES_USER = 'elastic';
     const ES_PASS = 'changeme';
 }
+```
+
+Create index.php symlink.
+
+```sh
+$ cd public
+$ ln -s simple.php index.php
 ```
 
 Start diskover web using PHP's built-in web server.
