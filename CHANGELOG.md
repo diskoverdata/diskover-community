@@ -1,5 +1,12 @@
 # Diskover Change Log
 
+## [1.0.13] - 2017-05-25
+### added
+- tag field to elasticsearch index
+- diskover web tag manager
+### changed
+- diskover dark dashboard in Kibana
+
 ## [1.0.12] - 2017-05-17
 ### fixed
 - bug where directories were getting indexed (not just files) when using -s 0 flag

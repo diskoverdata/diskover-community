@@ -19,7 +19,7 @@ from random import randint
 from datetime import datetime
 from elasticsearch import Elasticsearch, helpers, RequestsHttpConnection
 
-DISKOVER_VERSION = '1.0.12'
+DISKOVER_VERSION = '1.0.13'
 
 def printBanner():
 	"""This is the print banner function.
@@ -68,8 +68,8 @@ def printProgressBar(iteration, total, prefix='', suffix=''):
 	str_format = "{0:." + str(decimals) + "f}"
 	percents = str_format.format(100 * (iteration / float(total)))
 	filled_length = int(round(bar_length * iteration / float(total)))
-	bar = '#' * filled_length + '-' * (bar_length - filled_length)
-	sys.stdout.write('\r\033[1m%s [%s%s] |%s| %s\033[0m' \
+	bar = '#' * filled_length + '.' * (bar_length - filled_length)
+	sys.stdout.write('\r\033[42m\033[37m%s [%s%s]\033[0m |%s| %s' \
 		% (prefix, percents, '%', bar, suffix))
 	sys.stdout.flush()
 	return
@@ -278,6 +278,7 @@ def crawlFiles(path, DATEEPOCH, DAYSOLD, MINSIZE, EXCLUDED_FILES, LOGGER):
 									"hardlinks": hardlinks,
 									"inode": inode,
 									"filehash": "%s" % filehash,
+									"tag": "untagged",
 									"indexing_date": "%s" % indextime_utc
 									}
 								# add file metadata dictionary to filelist list
@@ -415,6 +416,9 @@ def indexCreate(ES, INDEXNAME, NODELETE, LOGGER):
 						"type": "long"
 					},
 					"filehash": {
+						"type": "keyword"
+					},
+					"tag": {
 						"type": "keyword"
 					},
 					"indexing_date": {

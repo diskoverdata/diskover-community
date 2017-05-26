@@ -40,13 +40,109 @@
       "title": "Diskover dark",
       "hits": 0,
       "description": "",
-      "panelsJSON": "[{\"col\":4,\"id\":\"Extension\",\"panelIndex\":1,\"row\":1,\"size_x\":3,\"size_y\":4,\"type\":\"visualization\"},{\"col\":1,\"id\":\"d53e3620-273a-11e7-8c8b-cd3a59e7992a\",\"panelIndex\":10,\"row\":1,\"size_x\":3,\"size_y\":4,\"type\":\"visualization\"},{\"col\":1,\"id\":\"06d89b00-290a-11e7-b1ac-ab6cbed4d1eb\",\"panelIndex\":13,\"row\":7,\"size_x\":12,\"size_y\":2,\"type\":\"visualization\"},{\"col\":1,\"id\":\"OldestModifiedFiles\",\"panelIndex\":14,\"row\":5,\"size_x\":12,\"size_y\":2,\"type\":\"visualization\"},{\"col\":10,\"id\":\"TotalsToDelete\",\"panelIndex\":15,\"row\":1,\"size_x\":3,\"size_y\":4,\"type\":\"visualization\"},{\"col\":7,\"id\":\"b86e5940-3607-11e7-b6c1-199a2de46f7d\",\"panelIndex\":16,\"row\":1,\"size_x\":3,\"size_y\":4,\"type\":\"visualization\"}]",
+      "panelsJSON": "[{\"col\":7,\"id\":\"Extension\",\"panelIndex\":1,\"row\":1,\"size_x\":3,\"size_y\":3,\"type\":\"visualization\"},{\"col\":1,\"id\":\"d53e3620-273a-11e7-8c8b-cd3a59e7992a\",\"panelIndex\":10,\"row\":1,\"size_x\":3,\"size_y\":3,\"type\":\"visualization\"},{\"col\":1,\"id\":\"06d89b00-290a-11e7-b1ac-ab6cbed4d1eb\",\"panelIndex\":13,\"row\":6,\"size_x\":7,\"size_y\":2,\"type\":\"visualization\"},{\"col\":1,\"id\":\"OldestModifiedFiles\",\"panelIndex\":14,\"row\":4,\"size_x\":7,\"size_y\":2,\"type\":\"visualization\"},{\"col\":10,\"id\":\"TotalsToDelete\",\"panelIndex\":15,\"row\":1,\"size_x\":3,\"size_y\":3,\"type\":\"visualization\"},{\"col\":8,\"id\":\"b86e5940-3607-11e7-b6c1-199a2de46f7d\",\"panelIndex\":16,\"row\":4,\"size_x\":5,\"size_y\":4,\"type\":\"visualization\"},{\"col\":4,\"id\":\"8a214f20-4174-11e7-b8b2-57af13a019c7\",\"panelIndex\":17,\"row\":1,\"size_x\":3,\"size_y\":3,\"type\":\"visualization\"}]",
       "optionsJSON": "{\"darkTheme\":true}",
-      "uiStateJSON": "{\"P-10\":{\"vis\":{\"legendOpen\":true}},\"P-13\":{\"vis\":{\"legendOpen\":false}},\"P-14\":{\"vis\":{\"legendOpen\":false}}}",
+      "uiStateJSON": "{\"P-10\":{\"vis\":{\"legendOpen\":true}},\"P-13\":{\"vis\":{\"legendOpen\":false}},\"P-14\":{\"vis\":{\"legendOpen\":false}},\"P-17\":{\"vis\":{\"legendOpen\":true}}}",
       "version": 1,
       "timeRestore": false,
       "kibanaSavedObjectMeta": {
         "searchSourceJSON": "{\"filter\":[{\"query\":{\"query_string\":{\"analyze_wildcard\":true,\"query\":\"*\"}}}]}"
+      }
+    }
+  },
+  {
+    "_id": "1c800320-305e-11e7-b2eb-1307fac824dc",
+    "_type": "search",
+    "_source": {
+      "title": "FileListDupes",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "filename",
+        "path_parent",
+        "filesize",
+        "last_modified",
+        "filehash"
+      ],
+      "sort": [
+        "filehash",
+        "desc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"diskover_dupes-*\",\"highlightAll\":true,\"query\":{\"query_string\":{\"analyze_wildcard\":true,\"query\":\"*\"}},\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "bec9f580-2d36-11e7-907c-e1628960d26b",
+    "_type": "search",
+    "_source": {
+      "title": "FileListVideoFiles",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "path_full",
+        "filesize",
+        "owner",
+        "last_modified",
+        "last_access"
+      ],
+      "sort": [
+        "last_modified",
+        "asc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"diskover-*\",\"highlightAll\":true,\"query\":{\"query_string\":{\"query\":\"extension:(asf OR avi OR flv OR m4v OR mov OR mp4 OR mpg OR rm OR vob OR wmv)\",\"analyze_wildcard\":true}},\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "f2c8cfa0-2d36-11e7-907c-e1628960d26b",
+    "_type": "search",
+    "_source": {
+      "title": "FileListCompressedFiles",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "path_full",
+        "filesize",
+        "owner",
+        "last_modified",
+        "last_access"
+      ],
+      "sort": [
+        "last_modified",
+        "asc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"diskover-*\",\"highlightAll\":true,\"query\":{\"query_string\":{\"query\":\"extension:(7z OR deb OR gz OR pkg OR rar OR rpm OR tar OR zip OR zipx)\",\"analyze_wildcard\":true}},\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "d8f7c590-2d36-11e7-907c-e1628960d26b",
+    "_type": "search",
+    "_source": {
+      "title": "FileListAudioFiles",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "path_full",
+        "filesize",
+        "owner",
+        "last_modified",
+        "last_access"
+      ],
+      "sort": [
+        "last_modified",
+        "asc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"diskover-*\",\"highlightAll\":true,\"query\":{\"query_string\":{\"query\":\"extension:(aif OR iff OR m3u OR m4a OR mid OR mp3 OR mpa OR wav OR wma)\",\"analyze_wildcard\":true}},\"filter\":[]}"
       }
     }
   },
@@ -99,126 +195,6 @@
     }
   },
   {
-    "_id": "bec9f580-2d36-11e7-907c-e1628960d26b",
-    "_type": "search",
-    "_source": {
-      "title": "FileListVideoFiles",
-      "description": "",
-      "hits": 0,
-      "columns": [
-        "path_full",
-        "filesize",
-        "owner",
-        "last_modified",
-        "last_access"
-      ],
-      "sort": [
-        "last_modified",
-        "asc"
-      ],
-      "version": 1,
-      "kibanaSavedObjectMeta": {
-        "searchSourceJSON": "{\"index\":\"diskover-*\",\"highlightAll\":true,\"query\":{\"query_string\":{\"query\":\"extension:(asf OR avi OR flv OR m4v OR mov OR mp4 OR mpg OR rm OR vob OR wmv)\",\"analyze_wildcard\":true}},\"filter\":[]}"
-      }
-    }
-  },
-  {
-    "_id": "d8f7c590-2d36-11e7-907c-e1628960d26b",
-    "_type": "search",
-    "_source": {
-      "title": "FileListAudioFiles",
-      "description": "",
-      "hits": 0,
-      "columns": [
-        "path_full",
-        "filesize",
-        "owner",
-        "last_modified",
-        "last_access"
-      ],
-      "sort": [
-        "last_modified",
-        "asc"
-      ],
-      "version": 1,
-      "kibanaSavedObjectMeta": {
-        "searchSourceJSON": "{\"index\":\"diskover-*\",\"highlightAll\":true,\"query\":{\"query_string\":{\"query\":\"extension:(aif OR iff OR m3u OR m4a OR mid OR mp3 OR mpa OR wav OR wma)\",\"analyze_wildcard\":true}},\"filter\":[]}"
-      }
-    }
-  },
-  {
-    "_id": "f2c8cfa0-2d36-11e7-907c-e1628960d26b",
-    "_type": "search",
-    "_source": {
-      "title": "FileListCompressedFiles",
-      "description": "",
-      "hits": 0,
-      "columns": [
-        "path_full",
-        "filesize",
-        "owner",
-        "last_modified",
-        "last_access"
-      ],
-      "sort": [
-        "last_modified",
-        "asc"
-      ],
-      "version": 1,
-      "kibanaSavedObjectMeta": {
-        "searchSourceJSON": "{\"index\":\"diskover-*\",\"highlightAll\":true,\"query\":{\"query_string\":{\"query\":\"extension:(7z OR deb OR gz OR pkg OR rar OR rpm OR tar OR zip OR zipx)\",\"analyze_wildcard\":true}},\"filter\":[]}"
-      }
-    }
-  },
-  {
-    "_id": "af592b70-2d36-11e7-907c-e1628960d26b",
-    "_type": "search",
-    "_source": {
-      "title": "FileListTempFiles",
-      "description": "",
-      "hits": 0,
-      "columns": [
-        "path_full",
-        "filesize",
-        "owner",
-        "last_modified",
-        "last_access"
-      ],
-      "sort": [
-        "last_modified",
-        "asc"
-      ],
-      "version": 1,
-      "kibanaSavedObjectMeta": {
-        "searchSourceJSON": "{\"index\":\"diskover-*\",\"highlightAll\":true,\"query\":{\"query_string\":{\"query\":\"extension:(cache OR tmp OR temp OR bak OR old)\",\"analyze_wildcard\":true}},\"filter\":[]}"
-      }
-    }
-  },
-  {
-    "_id": "1c800320-305e-11e7-b2eb-1307fac824dc",
-    "_type": "search",
-    "_source": {
-      "title": "FileListDupes",
-      "description": "",
-      "hits": 0,
-      "columns": [
-        "filename",
-        "path_parent",
-        "filesize",
-        "last_modified",
-        "filehash"
-      ],
-      "sort": [
-        "filehash",
-        "desc"
-      ],
-      "version": 1,
-      "kibanaSavedObjectMeta": {
-        "searchSourceJSON": "{\"index\":\"diskover_dupes-*\",\"highlightAll\":true,\"query\":{\"query_string\":{\"analyze_wildcard\":true,\"query\":\"*\"}},\"filter\":[]}"
-      }
-    }
-  },
-  {
     "_id": "c883bc50-2d36-11e7-907c-e1628960d26b",
     "_type": "search",
     "_source": {
@@ -267,198 +243,26 @@
     }
   },
   {
-    "_id": "LargestFiles",
-    "_type": "visualization",
+    "_id": "af592b70-2d36-11e7-907c-e1628960d26b",
+    "_type": "search",
     "_source": {
-      "title": "LargestFiles",
-      "visState": "{\"title\":\"LargestFiles\",\"type\":\"histogram\",\"params\":{\"shareYAxis\":true,\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"top\",\"scale\":\"linear\",\"mode\":\"stacked\",\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false,\"yAxis\":{},\"orderBucketsBySum\":false},\"aggs\":[{\"id\":\"2\",\"enabled\":true,\"type\":\"sum\",\"schema\":\"metric\",\"params\":{\"field\":\"filesize\",\"customLabel\":\"size\"}},{\"id\":\"3\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"segment\",\"params\":{\"field\":\"path_full\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"2\",\"customLabel\":\"file\"}}],\"listeners\":{}}",
-      "uiStateJSON": "{}",
+      "title": "FileListTempFiles",
       "description": "",
+      "hits": 0,
+      "columns": [
+        "path_full",
+        "filesize",
+        "owner",
+        "last_modified",
+        "last_access"
+      ],
+      "sort": [
+        "last_modified",
+        "asc"
+      ],
       "version": 1,
       "kibanaSavedObjectMeta": {
-        "searchSourceJSON": "{\"index\":\"diskover-*\",\"query\":{\"query_string\":{\"query\":\"*\",\"analyze_wildcard\":true}},\"filter\":[]}"
-      }
-    }
-  },
-  {
-    "_id": "e4dabca0-26a1-11e7-976a-7d83553d8876",
-    "_type": "visualization",
-    "_source": {
-      "title": "DirectoryMostFiles",
-      "visState": "{\"title\":\"DirectoryMostFiles\",\"type\":\"histogram\",\"params\":{\"shareYAxis\":true,\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"top\",\"scale\":\"linear\",\"mode\":\"stacked\",\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false,\"yAxis\":{}},\"aggs\":[{\"id\":\"2\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{\"customLabel\":\"files\"}},{\"id\":\"3\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"segment\",\"params\":{\"field\":\"path_parent\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"2\",\"customLabel\":\"directory\"}}],\"listeners\":{}}",
-      "uiStateJSON": "{}",
-      "description": "",
-      "version": 1,
-      "kibanaSavedObjectMeta": {
-        "searchSourceJSON": "{\"index\":\"diskover-*\",\"query\":{\"query_string\":{\"analyze_wildcard\":true,\"query\":\"*\"}},\"filter\":[]}"
-      }
-    }
-  },
-  {
-    "_id": "OldestModifiedFiles",
-    "_type": "visualization",
-    "_source": {
-      "title": "LastAccessCountPerMonth",
-      "visState": "{\"title\":\"LastAccessCountPerMonth\",\"type\":\"line\",\"params\":{\"shareYAxis\":true,\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"top\",\"showCircles\":true,\"smoothLines\":false,\"interpolate\":\"cardinal\",\"scale\":\"linear\",\"drawLinesBetweenPoints\":true,\"radiusRatio\":\"13\",\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false,\"yAxis\":{},\"orderBucketsBySum\":false},\"aggs\":[{\"id\":\"3\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"last_access\",\"interval\":\"M\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{}}},{\"id\":\"2\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{\"customLabel\":\"files\"}}],\"listeners\":{}}",
-      "uiStateJSON": "{\"spy\":{\"mode\":{\"name\":null,\"fill\":false}}}",
-      "description": "",
-      "version": 1,
-      "kibanaSavedObjectMeta": {
-        "searchSourceJSON": "{\"index\":\"diskover-*\",\"query\":{\"query_string\":{\"query\":\"*\",\"analyze_wildcard\":true}},\"filter\":[]}"
-      }
-    }
-  },
-  {
-    "_id": "06d89b00-290a-11e7-b1ac-ab6cbed4d1eb",
-    "_type": "visualization",
-    "_source": {
-      "title": "LastModifiedCountPerMonth",
-      "visState": "{\"title\":\"LastModifiedCountPerMonth\",\"type\":\"histogram\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"top\",\"scale\":\"linear\",\"mode\":\"stacked\",\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false,\"orderBucketsBySum\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{\"customLabel\":\"files\"}},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"last_modified\",\"interval\":\"M\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{}}}],\"listeners\":{}}",
-      "uiStateJSON": "{}",
-      "description": "",
-      "version": 1,
-      "kibanaSavedObjectMeta": {
-        "searchSourceJSON": "{\"index\":\"diskover-*\",\"query\":{\"query_string\":{\"query\":\"*\",\"analyze_wildcard\":true}},\"filter\":[]}"
-      }
-    }
-  },
-  {
-    "_id": "Extension",
-    "_type": "visualization",
-    "_source": {
-      "title": "ByExtension",
-      "visState": "{\"title\":\"ByExtension\",\"type\":\"pie\",\"params\":{\"shareYAxis\":true,\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"isDonut\":true},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"segment\",\"params\":{\"field\":\"extension\",\"size\":10,\"order\":\"desc\",\"orderBy\":\"1\",\"customLabel\":\"extension\"}}],\"listeners\":{}}",
-      "uiStateJSON": "{}",
-      "description": "",
-      "version": 1,
-      "kibanaSavedObjectMeta": {
-        "searchSourceJSON": "{\"index\":\"diskover-*\",\"query\":{\"query_string\":{\"query\":\"*\",\"analyze_wildcard\":true}},\"filter\":[]}"
-      }
-    }
-  },
-  {
-    "_id": "59157790-2c7e-11e7-b6ab-31946c4781b2",
-    "_type": "visualization",
-    "_source": {
-      "title": "LastModifiedPerMonthArea",
-      "visState": "{\"title\":\"LastModifiedPerMonthArea\",\"type\":\"area\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"top\",\"scale\":\"linear\",\"interpolate\":\"linear\",\"mode\":\"stacked\",\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"last_modified\",\"interval\":\"M\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{}}}],\"listeners\":{}}",
-      "uiStateJSON": "{}",
-      "description": "",
-      "version": 1,
-      "kibanaSavedObjectMeta": {
-        "searchSourceJSON": "{\"index\":\"diskover-*\",\"query\":{\"query_string\":{\"query\":\"*\",\"analyze_wildcard\":true}},\"filter\":[]}"
-      }
-    }
-  },
-  {
-    "_id": "TotalsToDelete",
-    "_type": "visualization",
-    "_source": {
-      "title": "Data",
-      "visState": "{\"title\":\"Data\",\"type\":\"metric\",\"params\":{\"handleNoResults\":true,\"fontSize\":\"32\"},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{\"customLabel\":\"files\"}},{\"id\":\"3\",\"enabled\":true,\"type\":\"cardinality\",\"schema\":\"metric\",\"params\":{\"field\":\"path_parent\",\"customLabel\":\"directories\"}},{\"id\":\"2\",\"enabled\":true,\"type\":\"sum\",\"schema\":\"metric\",\"params\":{\"field\":\"filesize\",\"customLabel\":\"total file size\"}},{\"id\":\"4\",\"enabled\":true,\"type\":\"max\",\"schema\":\"metric\",\"params\":{\"field\":\"filesize\",\"customLabel\":\"biggest file\"}},{\"id\":\"5\",\"enabled\":true,\"type\":\"min\",\"schema\":\"metric\",\"params\":{\"field\":\"filesize\",\"customLabel\":\"smallest file\"}},{\"id\":\"6\",\"enabled\":true,\"type\":\"avg\",\"schema\":\"metric\",\"params\":{\"field\":\"filesize\",\"customLabel\":\"avg file size\"}}],\"listeners\":{}}",
-      "uiStateJSON": "{}",
-      "description": "",
-      "version": 1,
-      "kibanaSavedObjectMeta": {
-        "searchSourceJSON": "{\"index\":\"diskover-*\",\"query\":{\"query_string\":{\"query\":\"*\",\"analyze_wildcard\":true}},\"filter\":[]}"
-      }
-    }
-  },
-  {
-    "_id": "UserMostFiles",
-    "_type": "visualization",
-    "_source": {
-      "title": "UserMostFiles",
-      "visState": "{\"title\":\"UserMostFiles\",\"type\":\"pie\",\"params\":{\"shareYAxis\":true,\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"isDonut\":true},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"segment\",\"params\":{\"field\":\"owner\",\"size\":10,\"order\":\"desc\",\"orderBy\":\"1\",\"customLabel\":\"user\"}}],\"listeners\":{}}",
-      "uiStateJSON": "{}",
-      "description": "",
-      "version": 1,
-      "kibanaSavedObjectMeta": {
-        "searchSourceJSON": "{\"index\":\"diskover-*\",\"query\":{\"query_string\":{\"query\":\"*\",\"analyze_wildcard\":true}},\"filter\":[]}"
-      }
-    }
-  },
-  {
-    "_id": "54130de0-2655-11e7-a7d0-89956a7ac111",
-    "_type": "visualization",
-    "_source": {
-      "title": "LargestDirectories",
-      "visState": "{\"title\":\"LargestDirectories\",\"type\":\"table\",\"params\":{\"perPage\":10,\"showMeticsAtAllLevels\":false,\"showPartialRows\":false,\"showTotal\":false,\"sort\":{\"columnIndex\":null,\"direction\":null},\"totalFunc\":\"sum\"},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"sum\",\"schema\":\"metric\",\"params\":{\"field\":\"filesize\",\"customLabel\":\"size\"}},{\"id\":\"3\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"bucket\",\"params\":{\"field\":\"path_parent\",\"size\":10,\"order\":\"desc\",\"orderBy\":\"1\",\"customLabel\":\"directory\"}}],\"listeners\":{}}",
-      "uiStateJSON": "{\"vis\":{\"params\":{\"sort\":{\"columnIndex\":2,\"direction\":\"desc\"}}}}",
-      "description": "",
-      "version": 1,
-      "kibanaSavedObjectMeta": {
-        "searchSourceJSON": "{\"index\":\"diskover-*\",\"query\":{\"query_string\":{\"analyze_wildcard\":true,\"query\":\"*\"}},\"filter\":[]}"
-      }
-    }
-  },
-  {
-    "_id": "e57439f0-2653-11e7-9c7e-376534115aac",
-    "_type": "visualization",
-    "_source": {
-      "title": "LargestFiles",
-      "visState": "{\"title\":\"LargestFiles\",\"type\":\"table\",\"params\":{\"perPage\":10,\"showMeticsAtAllLevels\":false,\"showPartialRows\":false,\"showTotal\":false,\"sort\":{\"columnIndex\":null,\"direction\":null},\"totalFunc\":\"sum\"},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"sum\",\"schema\":\"metric\",\"params\":{\"field\":\"filesize\",\"customLabel\":\"size\"}},{\"id\":\"4\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"bucket\",\"params\":{\"field\":\"path_full\",\"size\":10,\"order\":\"desc\",\"orderBy\":\"1\",\"customLabel\":\"file\"}}],\"listeners\":{}}",
-      "uiStateJSON": "{\"vis\":{\"params\":{\"sort\":{\"columnIndex\":2,\"direction\":null}}}}",
-      "description": "",
-      "version": 1,
-      "kibanaSavedObjectMeta": {
-        "searchSourceJSON": "{\"index\":\"diskover-*\",\"query\":{\"query_string\":{\"analyze_wildcard\":true,\"query\":\"*\"}},\"filter\":[]}"
-      }
-    }
-  },
-  {
-    "_id": "6d65ab70-269d-11e7-ae12-a1e6549ef24c",
-    "_type": "visualization",
-    "_source": {
-      "title": "MostFilesByUser",
-      "visState": "{\"title\":\"MostFilesByUser\",\"type\":\"tagcloud\",\"params\":{\"scale\":\"linear\",\"orientation\":\"single\",\"minFontSize\":18,\"maxFontSize\":48,\"hideLabel\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{\"customLabel\":\"\"}},{\"id\":\"2\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"segment\",\"params\":{\"field\":\"owner\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"1\",\"customLabel\":\"user\"}}],\"listeners\":{}}",
-      "uiStateJSON": "{}",
-      "description": "",
-      "version": 1,
-      "kibanaSavedObjectMeta": {
-        "searchSourceJSON": "{\"index\":\"diskover-*\",\"query\":{\"query_string\":{\"query\":\"*\",\"analyze_wildcard\":true}},\"filter\":[]}"
-      }
-    }
-  },
-  {
-    "_id": "d89c5dc0-2cf7-11e7-8011-032e2cd84e02",
-    "_type": "visualization",
-    "_source": {
-      "title": "LastModifiedPerMonthSumFileSize",
-      "visState": "{\"title\":\"LastModifiedPerMonthSumFileSize\",\"type\":\"histogram\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"top\",\"scale\":\"linear\",\"mode\":\"stacked\",\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"sum\",\"schema\":\"metric\",\"params\":{\"field\":\"filesize\"}},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"last_modified\",\"interval\":\"M\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{}}}],\"listeners\":{}}",
-      "uiStateJSON": "{}",
-      "description": "",
-      "version": 1,
-      "kibanaSavedObjectMeta": {
-        "searchSourceJSON": "{\"index\":\"diskover-*\",\"query\":{\"query_string\":{\"query\":\"*\",\"analyze_wildcard\":true}},\"filter\":[]}"
-      }
-    }
-  },
-  {
-    "_id": "3ae1b180-3061-11e7-b2eb-1307fac824dc",
-    "_type": "visualization",
-    "_source": {
-      "title": "MostDupes",
-      "visState": "{\"title\":\"MostDupes\",\"type\":\"histogram\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"top\",\"scale\":\"linear\",\"mode\":\"stacked\",\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"segment\",\"params\":{\"field\":\"filename\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"1\",\"customLabel\":\"filename\"}}],\"listeners\":{}}",
-      "uiStateJSON": "{}",
-      "description": "",
-      "version": 1,
-      "kibanaSavedObjectMeta": {
-        "searchSourceJSON": "{\"index\":\"diskover_dupes-*\",\"query\":{\"query_string\":{\"query\":\"*\",\"analyze_wildcard\":true}},\"filter\":[]}"
-      }
-    }
-  },
-  {
-    "_id": "c17e1230-2655-11e7-a7d0-89956a7ac111",
-    "_type": "visualization",
-    "_source": {
-      "title": "LargestDirectories",
-      "visState": "{\"title\":\"LargestDirectories\",\"type\":\"histogram\",\"params\":{\"shareYAxis\":true,\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"top\",\"scale\":\"linear\",\"mode\":\"stacked\",\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false,\"yAxis\":{}},\"aggs\":[{\"id\":\"2\",\"enabled\":true,\"type\":\"sum\",\"schema\":\"metric\",\"params\":{\"field\":\"filesize\",\"customLabel\":\"size\"}},{\"id\":\"3\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"segment\",\"params\":{\"field\":\"path_parent\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"2\",\"customLabel\":\"directory\"}}],\"listeners\":{}}",
-      "uiStateJSON": "{}",
-      "description": "",
-      "version": 1,
-      "kibanaSavedObjectMeta": {
-        "searchSourceJSON": "{\"index\":\"diskover-*\",\"query\":{\"query_string\":{\"analyze_wildcard\":true,\"query\":\"*\"}},\"filter\":[]}"
+        "searchSourceJSON": "{\"index\":\"diskover-*\",\"highlightAll\":true,\"query\":{\"query_string\":{\"query\":\"extension:(cache OR tmp OR temp OR bak OR old)\",\"analyze_wildcard\":true}},\"filter\":[]}"
       }
     }
   },
@@ -491,16 +295,156 @@
     }
   },
   {
-    "_id": "b86e5940-3607-11e7-b6c1-199a2de46f7d",
+    "_id": "3ae1b180-3061-11e7-b2eb-1307fac824dc",
     "_type": "visualization",
     "_source": {
-      "title": "LargestDirectoriesAndFiles",
-      "visState": "{\"title\":\"LargestDirectoriesAndFiles\",\"type\":\"pie\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"isDonut\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"sum\",\"schema\":\"metric\",\"params\":{\"field\":\"filesize\"}},{\"id\":\"2\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"segment\",\"params\":{\"field\":\"path_parent\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"1\"}},{\"id\":\"3\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"segment\",\"params\":{\"field\":\"filename\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"1\"}}],\"listeners\":{}}",
+      "title": "MostDupes",
+      "visState": "{\"title\":\"MostDupes\",\"type\":\"histogram\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"top\",\"scale\":\"linear\",\"mode\":\"stacked\",\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"segment\",\"params\":{\"field\":\"filename\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"1\",\"customLabel\":\"filename\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"diskover_dupes-*\",\"query\":{\"query_string\":{\"query\":\"*\",\"analyze_wildcard\":true}},\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "OldestModifiedFiles",
+    "_type": "visualization",
+    "_source": {
+      "title": "LastAccessCountPerMonth",
+      "visState": "{\"title\":\"LastAccessCountPerMonth\",\"type\":\"line\",\"params\":{\"shareYAxis\":true,\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"top\",\"showCircles\":true,\"smoothLines\":false,\"interpolate\":\"cardinal\",\"scale\":\"linear\",\"drawLinesBetweenPoints\":true,\"radiusRatio\":\"13\",\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false,\"yAxis\":{},\"orderBucketsBySum\":false},\"aggs\":[{\"id\":\"3\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"last_access\",\"interval\":\"M\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{}}},{\"id\":\"2\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{\"customLabel\":\"files\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{\"spy\":{\"mode\":{\"name\":null,\"fill\":false}}}",
+      "description": "",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"diskover-*\",\"query\":{\"query_string\":{\"query\":\"*\",\"analyze_wildcard\":true}},\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "06d89b00-290a-11e7-b1ac-ab6cbed4d1eb",
+    "_type": "visualization",
+    "_source": {
+      "title": "LastModifiedCountPerMonth",
+      "visState": "{\"title\":\"LastModifiedCountPerMonth\",\"type\":\"histogram\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"top\",\"scale\":\"linear\",\"mode\":\"stacked\",\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false,\"orderBucketsBySum\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{\"customLabel\":\"files\"}},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"last_modified\",\"interval\":\"M\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{}}}],\"listeners\":{}}",
       "uiStateJSON": "{}",
       "description": "",
       "version": 1,
       "kibanaSavedObjectMeta": {
         "searchSourceJSON": "{\"index\":\"diskover-*\",\"query\":{\"query_string\":{\"query\":\"*\",\"analyze_wildcard\":true}},\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "e4dabca0-26a1-11e7-976a-7d83553d8876",
+    "_type": "visualization",
+    "_source": {
+      "title": "DirectoryMostFiles",
+      "visState": "{\"title\":\"DirectoryMostFiles\",\"type\":\"histogram\",\"params\":{\"shareYAxis\":true,\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"top\",\"scale\":\"linear\",\"mode\":\"stacked\",\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false,\"yAxis\":{}},\"aggs\":[{\"id\":\"2\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{\"customLabel\":\"files\"}},{\"id\":\"3\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"segment\",\"params\":{\"field\":\"path_parent\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"2\",\"customLabel\":\"directory\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"diskover-*\",\"query\":{\"query_string\":{\"analyze_wildcard\":true,\"query\":\"*\"}},\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "59157790-2c7e-11e7-b6ab-31946c4781b2",
+    "_type": "visualization",
+    "_source": {
+      "title": "LastModifiedPerMonthArea",
+      "visState": "{\"title\":\"LastModifiedPerMonthArea\",\"type\":\"area\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"top\",\"scale\":\"linear\",\"interpolate\":\"linear\",\"mode\":\"stacked\",\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"last_modified\",\"interval\":\"M\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{}}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"diskover-*\",\"query\":{\"query_string\":{\"query\":\"*\",\"analyze_wildcard\":true}},\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "LargestFiles",
+    "_type": "visualization",
+    "_source": {
+      "title": "LargestFiles",
+      "visState": "{\"title\":\"LargestFiles\",\"type\":\"histogram\",\"params\":{\"shareYAxis\":true,\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"top\",\"scale\":\"linear\",\"mode\":\"stacked\",\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false,\"yAxis\":{},\"orderBucketsBySum\":false},\"aggs\":[{\"id\":\"2\",\"enabled\":true,\"type\":\"sum\",\"schema\":\"metric\",\"params\":{\"field\":\"filesize\",\"customLabel\":\"size\"}},{\"id\":\"3\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"segment\",\"params\":{\"field\":\"path_full\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"2\",\"customLabel\":\"file\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"diskover-*\",\"query\":{\"query_string\":{\"query\":\"*\",\"analyze_wildcard\":true}},\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "Extension",
+    "_type": "visualization",
+    "_source": {
+      "title": "ByExtension",
+      "visState": "{\"title\":\"ByExtension\",\"type\":\"pie\",\"params\":{\"shareYAxis\":true,\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"isDonut\":true},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"segment\",\"params\":{\"field\":\"extension\",\"size\":10,\"order\":\"desc\",\"orderBy\":\"1\",\"customLabel\":\"extension\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"diskover-*\",\"query\":{\"query_string\":{\"query\":\"*\",\"analyze_wildcard\":true}},\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "54130de0-2655-11e7-a7d0-89956a7ac111",
+    "_type": "visualization",
+    "_source": {
+      "title": "LargestDirectories",
+      "visState": "{\"title\":\"LargestDirectories\",\"type\":\"table\",\"params\":{\"perPage\":10,\"showMeticsAtAllLevels\":false,\"showPartialRows\":false,\"showTotal\":false,\"sort\":{\"columnIndex\":null,\"direction\":null},\"totalFunc\":\"sum\"},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"sum\",\"schema\":\"metric\",\"params\":{\"field\":\"filesize\",\"customLabel\":\"size\"}},{\"id\":\"3\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"bucket\",\"params\":{\"field\":\"path_parent\",\"size\":10,\"order\":\"desc\",\"orderBy\":\"1\",\"customLabel\":\"directory\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{\"vis\":{\"params\":{\"sort\":{\"columnIndex\":2,\"direction\":\"desc\"}}}}",
+      "description": "",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"diskover-*\",\"query\":{\"query_string\":{\"analyze_wildcard\":true,\"query\":\"*\"}},\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "d89c5dc0-2cf7-11e7-8011-032e2cd84e02",
+    "_type": "visualization",
+    "_source": {
+      "title": "LastModifiedPerMonthSumFileSize",
+      "visState": "{\"title\":\"LastModifiedPerMonthSumFileSize\",\"type\":\"histogram\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"top\",\"scale\":\"linear\",\"mode\":\"stacked\",\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"sum\",\"schema\":\"metric\",\"params\":{\"field\":\"filesize\"}},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"last_modified\",\"interval\":\"M\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{}}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"diskover-*\",\"query\":{\"query_string\":{\"query\":\"*\",\"analyze_wildcard\":true}},\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "c17e1230-2655-11e7-a7d0-89956a7ac111",
+    "_type": "visualization",
+    "_source": {
+      "title": "LargestDirectories",
+      "visState": "{\"title\":\"LargestDirectories\",\"type\":\"histogram\",\"params\":{\"shareYAxis\":true,\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"top\",\"scale\":\"linear\",\"mode\":\"stacked\",\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false,\"yAxis\":{}},\"aggs\":[{\"id\":\"2\",\"enabled\":true,\"type\":\"sum\",\"schema\":\"metric\",\"params\":{\"field\":\"filesize\",\"customLabel\":\"size\"}},{\"id\":\"3\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"segment\",\"params\":{\"field\":\"path_parent\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"2\",\"customLabel\":\"directory\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"diskover-*\",\"query\":{\"query_string\":{\"analyze_wildcard\":true,\"query\":\"*\"}},\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "e57439f0-2653-11e7-9c7e-376534115aac",
+    "_type": "visualization",
+    "_source": {
+      "title": "LargestFiles",
+      "visState": "{\"title\":\"LargestFiles\",\"type\":\"table\",\"params\":{\"perPage\":10,\"showMeticsAtAllLevels\":false,\"showPartialRows\":false,\"showTotal\":false,\"sort\":{\"columnIndex\":null,\"direction\":null},\"totalFunc\":\"sum\"},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"sum\",\"schema\":\"metric\",\"params\":{\"field\":\"filesize\",\"customLabel\":\"size\"}},{\"id\":\"4\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"bucket\",\"params\":{\"field\":\"path_full\",\"size\":10,\"order\":\"desc\",\"orderBy\":\"1\",\"customLabel\":\"file\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{\"vis\":{\"params\":{\"sort\":{\"columnIndex\":2,\"direction\":null}}}}",
+      "description": "",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"diskover-*\",\"query\":{\"query_string\":{\"analyze_wildcard\":true,\"query\":\"*\"}},\"filter\":[]}"
       }
     }
   },
@@ -519,11 +463,81 @@
     }
   },
   {
+    "_id": "b86e5940-3607-11e7-b6c1-199a2de46f7d",
+    "_type": "visualization",
+    "_source": {
+      "title": "LargestDirectoriesAndFiles",
+      "visState": "{\"title\":\"LargestDirectoriesAndFiles\",\"type\":\"pie\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"isDonut\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"sum\",\"schema\":\"metric\",\"params\":{\"field\":\"filesize\"}},{\"id\":\"2\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"segment\",\"params\":{\"field\":\"path_parent\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"1\"}},{\"id\":\"3\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"segment\",\"params\":{\"field\":\"filename\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"1\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"diskover-*\",\"query\":{\"query_string\":{\"query\":\"*\",\"analyze_wildcard\":true}},\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "6d65ab70-269d-11e7-ae12-a1e6549ef24c",
+    "_type": "visualization",
+    "_source": {
+      "title": "MostFilesByUser",
+      "visState": "{\"title\":\"MostFilesByUser\",\"type\":\"tagcloud\",\"params\":{\"scale\":\"linear\",\"orientation\":\"single\",\"minFontSize\":18,\"maxFontSize\":48,\"hideLabel\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{\"customLabel\":\"\"}},{\"id\":\"2\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"segment\",\"params\":{\"field\":\"owner\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"1\",\"customLabel\":\"user\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"diskover-*\",\"query\":{\"query_string\":{\"query\":\"*\",\"analyze_wildcard\":true}},\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "UserMostFiles",
+    "_type": "visualization",
+    "_source": {
+      "title": "UserMostFiles",
+      "visState": "{\"title\":\"UserMostFiles\",\"type\":\"pie\",\"params\":{\"shareYAxis\":true,\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"isDonut\":true},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"segment\",\"params\":{\"field\":\"owner\",\"size\":10,\"order\":\"desc\",\"orderBy\":\"1\",\"customLabel\":\"user\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"diskover-*\",\"query\":{\"query_string\":{\"query\":\"*\",\"analyze_wildcard\":true}},\"filter\":[]}"
+      }
+    }
+  },
+  {
     "_id": "130323a0-26ad-11e7-976a-7d83553d8876",
     "_type": "visualization",
     "_source": {
       "title": "LargestDirectories",
       "visState": "{\"title\":\"LargestDirectories\",\"type\":\"pie\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"isDonut\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"sum\",\"schema\":\"metric\",\"params\":{\"field\":\"filesize\",\"customLabel\":\"total filesize\"}},{\"id\":\"2\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"segment\",\"params\":{\"field\":\"path_parent\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"1\",\"customLabel\":\"directory\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"diskover-*\",\"query\":{\"query_string\":{\"query\":\"*\",\"analyze_wildcard\":true}},\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "8a214f20-4174-11e7-b8b2-57af13a019c7",
+    "_type": "visualization",
+    "_source": {
+      "title": "ByTag",
+      "visState": "{\"title\":\"ByTag\",\"type\":\"pie\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"isDonut\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"segment\",\"params\":{\"field\":\"tag\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"1\",\"customLabel\":\"\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"diskover-*\",\"query\":{\"query_string\":{\"query\":\"*\",\"analyze_wildcard\":true}},\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "TotalsToDelete",
+    "_type": "visualization",
+    "_source": {
+      "title": "Data",
+      "visState": "{\"title\":\"Data\",\"type\":\"metric\",\"params\":{\"handleNoResults\":true,\"fontSize\":\"24\"},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{\"customLabel\":\"files\"}},{\"id\":\"3\",\"enabled\":true,\"type\":\"cardinality\",\"schema\":\"metric\",\"params\":{\"field\":\"path_parent\",\"customLabel\":\"directories\"}},{\"id\":\"2\",\"enabled\":true,\"type\":\"sum\",\"schema\":\"metric\",\"params\":{\"field\":\"filesize\",\"customLabel\":\"\"}},{\"id\":\"4\",\"enabled\":true,\"type\":\"max\",\"schema\":\"metric\",\"params\":{\"field\":\"filesize\",\"customLabel\":\"\"}},{\"id\":\"5\",\"enabled\":true,\"type\":\"min\",\"schema\":\"metric\",\"params\":{\"field\":\"filesize\",\"customLabel\":\"\"}},{\"id\":\"6\",\"enabled\":true,\"type\":\"median\",\"schema\":\"metric\",\"params\":{\"field\":\"filesize\",\"percents\":[50],\"customLabel\":\"\"}}],\"listeners\":{}}",
       "uiStateJSON": "{}",
       "description": "",
       "version": 1,
