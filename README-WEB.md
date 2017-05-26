@@ -1,7 +1,6 @@
 # diskover web tag manager
 
-diskover web tag manager is a front-end for managing the tag field in diskover indices in Elasticsearch.
-It is written in PHP, [Bootstrap](http://getbootstrap.com/) and [jQuery](https://jquery.com/).
+diskover web tag manager is a front-end for changing diskover's tag field, allowing you to search and tag files for deletion, archival or keeping. It is written in PHP, [Bootstrap](http://getbootstrap.com/) and [jQuery](https://jquery.com/).
 
 ### Screenshots
 
