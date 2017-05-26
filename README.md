@@ -197,6 +197,7 @@ diskover creates the following fields:
 | `hardlinks`          | Hardlink count                              | `1`                                         |
 | `inode`              | Inode number                                | `652490`                                    |
 | `filehash`           | MD5 hash of file                            | `3a6949b4b74846a482016d0779560327`          |
+| `tag`                | File tag for diskover web                   | `untagged`                                  |
 
 **Note: All date fields are stored as UTC time in Elasticsearch. Kibana displays dates using your local timezone.**
 
