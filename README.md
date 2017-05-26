@@ -2,11 +2,14 @@
 
 ![diskover](docs/diskover.png?raw=True)
 
-diskover is a multi-threaded filesystem crawler which uses [Elasticsearch](https://www.elastic.co) and [Kibana](https://www.elastic.co/products/kibana) to index and visualize your data. It is designed to crawl your filesystem and analyze disk usage on a local or remote server using single or concurrent processes. File metadata is bulk added and streamed into Elasticsearch allowing you to visualize the results in Kibana without having to wait until the crawl is finished. diskover aims to be fast, simple and easy to use, and runs in Linux or OS X/macOS. 
+diskover is a multi-threaded filesystem crawler which uses [Elasticsearch](https://www.elastic.co) and [Kibana](https://www.elastic.co/products/kibana) to index and visualize your data. It is designed to crawl your filesystem and analyze disk usage on a local or remote server using single or concurrent processes. File metadata is bulk added and streamed into Elasticsearch allowing you to visualize the results in Kibana without having to wait until the crawl is finished. diskover aims to be fast, simple and easy to use, and runs in Linux or OS X/macOS.
 
-### Screenshot
+[diskover web tag manager](README-WEB.md) is a front-end of managing the diskover `tag` field, allowing you to search and tag files for deletion, archival or keeping.
+
+### Screenshots
 
 ![kibana-screenshot](docs/kibana-dashboarddark-screenshot.png?raw=True)
+![kibana-screenshot](docs/diskover-web-search-advanced-screenshot.png?raw=True)
 
 
 ### Installation Guide
