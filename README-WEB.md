@@ -5,9 +5,9 @@ It is written in PHP, [Bootstrap](http://getbootstrap.com/) and [jQuery](https:/
 
 ### Screenshots
 
-![diskover web search simple](docs/diskover-web-search-simple-screenshot?raw=True)
-![diskover web search simple](docs/diskover-web-search-advanced-screenshot?raw=True)
-![diskover web search simple](docs/diskover-web-fileview-screenshot?raw=True)
+![diskover web search simple](docs/diskover-web-search-simple-screenshot.png?raw=True)
+![diskover web search advanced](docs/diskover-web-search-advanced-screenshot.png?raw=True)
+![diskover web search file view](docs/diskover-web-fileview-screenshot.png?raw=True)
 
 ### Installation Guide
 
