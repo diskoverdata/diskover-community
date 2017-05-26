@@ -3,6 +3,6 @@
         "elasticsearch/elasticsearch": "~5.0"
     },
     "autoload": {
-        "psr-4": { "Diskover\\": "src/Diskover/" }
+        "psr-4": { "diskover\\": "src/diskover/" }
     }
 }
