@@ -22,7 +22,7 @@ It is written in PHP, [Bootstrap](http://getbootstrap.com/) and [jQuery](https:/
 
 #### Download
 
-Download diskover if you haven't already git cloned it.
+Download diskover if you haven't already.
 
 ```sh
 $ git clone https://github.com/shirosaidev/diskover.git
@@ -41,12 +41,12 @@ $ composer install
 
 #### Getting Started
 
-Edit diskover web settings in `src/Diskover/Constants.php`.
+Edit diskover web settings in `src/diskover/Constants.php`.
 
 ```
 <?php
 
-namespace Diskover;
+namespace diskover;
 
 class Constants {
     const ES_HOST = '192.168.1.72';
