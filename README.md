@@ -9,7 +9,7 @@ diskover is a multi-threaded filesystem crawler which uses [Elasticsearch](https
 ### Screenshots
 
 ![kibana-screenshot](docs/kibana-dashboarddark-screenshot.png?raw=True)
-![kibana-screenshot](docs/diskover-web-dashboard-screenshot.png?raw=True)
+![diskover-web-screenshot](docs/diskover-web-dashboard-screenshot.png?raw=True)
 
 
 ### Installation Guide
