@@ -19,7 +19,7 @@ from random import randint
 from datetime import datetime
 from elasticsearch import Elasticsearch, helpers, RequestsHttpConnection
 
-DISKOVER_VERSION = '1.0.13'
+DISKOVER_VERSION = '1.0.14'
 
 def printBanner():
 	"""This is the print banner function.
@@ -137,8 +137,8 @@ def parseCLIArgs(INDEXNAME):
 						help="Elasticsearch index name (default: from config)")
 	parser.add_argument("-n", "--nodelete", action="store_true",
 						help="Do not delete existing index (default: delete index)")
-	parser.add_argument("--dupesindex", action="store_true",
-						help="Create duplicate files index (default: don't create)")
+	parser.add_argument("--tagdupes", action="store_true",
+						help="Tags duplicate files (default: don't tag)")
 	parser.add_argument("--version", action="store_true",
 						help="Prints version and exits")
 	parser.add_argument("-v", "--verbose", action="store_true",
@@ -156,7 +156,7 @@ def parseCLIArgs(INDEXNAME):
 		sys.exit(0)
 
 	return args.topdir, args.mtime, args.minsize, args.threads, INDEXNAME, \
-		args.nodelete, args.dupesindex, args.version, args.verbose, args.debug
+		args.nodelete, args.tagdupes, args.version, args.verbose, args.debug
 
 def crawlDirectories(TOPDIR, EXCLUDED_DIRS, DIRECTORY_QUEUE, LOGGER, VERBOSE, DEBUG):
 	"""This is the walk directory tree function.
@@ -279,6 +279,7 @@ def crawlFiles(path, DATEEPOCH, DAYSOLD, MINSIZE, EXCLUDED_FILES, LOGGER):
 									"inode": inode,
 									"filehash": "%s" % filehash,
 									"tag": "untagged",
+									'is_dupe': "false",
 									"indexing_date": "%s" % indextime_utc
 									}
 								# add file metadata dictionary to filelist list
@@ -421,6 +422,9 @@ def indexCreate(ES, INDEXNAME, NODELETE, LOGGER):
 					"tag": {
 						"type": "keyword"
 					},
+					"is_dupe": {
+						"type": "boolean"
+					},
 					"indexing_date": {
 						"type": "date"
 					}
@@ -443,26 +447,41 @@ def indexAdd(threadnum, ES, INDEXNAME, filelist, LOGGER, VERBOSE, DEBUG):
 	helpers.bulk(ES, filelist, index=INDEXNAME, doc_type='file')
 	return
 
-def indexCreateDupes(ES, INDEXNAME, NODELETE, LOGGER, VERBOSE, DEBUG):
-	"""This is the duplicate file ES index creator.
-	It creates a new index of duplicate files from
-	an existing index.
+def indexUpdate(threadnum, ES, INDEXNAME, filelist, LOGGER, VERBOSE, DEBUG):
+	"""This is the ES index update function.
+	It updates data in ES.
 	"""
-	# get index suffix
-	INDEXSUFFIX = INDEXNAME.split('diskover-')[1].strip()
-	indexname_dupes='diskover_dupes-%s' % INDEXSUFFIX
-	# create new index for dupes
-	indexCreate(ES, indexname_dupes, NODELETE, LOGGER)
+	data = [];
+	if VERBOSE or DEBUG:
+		LOGGER.info('[thread-%s]: Bulk updating data in ES index', threadnum)
+	# bulk update data in Elasticsearch index
+	for file in filelist:
+		id = file['_id']
+		d = {
+	    '_op_type': 'update',
+	    '_index': INDEXNAME,
+	    '_type': 'file',
+	    '_id': id,
+	    'doc': {'is_dupe': 'true'}
+		}
+		data.append(d)
+	helpers.bulk(ES, data, index=INDEXNAME, doc_type='file')
+	return
+
+def tagDupes(ES, INDEXNAME, NODELETE, LOGGER, VERBOSE, DEBUG):
+	"""This is the duplicate file tagger.
+	It tags dupe files (same filehash) in an existing index.
+	"""
 	# search ES for duplicate files
 	dupes_list = dupesFinder(ES, INDEXNAME, LOGGER)
-	# add dupes to new index
-	indexAdd(0, ES, indexname_dupes, dupes_list, LOGGER, VERBOSE, DEBUG)
+	# update existing index and tag dupe files is_dupe field
+	indexUpdate(0, ES, INDEXNAME, dupes_list, LOGGER, VERBOSE, DEBUG)
 	return
 
 def dupesFinder(ES, INDEXNAME, LOGGER):
 	"""This is the duplicate file finder function.
 	It searches Elasticsearch for files that have the same filehash
-	and creates a new index containing those files.
+	and returns a list of those dupes.
 	"""
 	global total_num_files
 	dupes_list = []
@@ -492,20 +511,23 @@ def dupesFinder(ES, INDEXNAME, LOGGER):
 	res = ES.search(index=INDEXNAME, body=data)
 	for hit in res['aggregations']['duplicateCount']['buckets']:
 		for hit in hit['duplicateDocuments']['hits']['hits']:
-			dupes_list.append(hit['_source'])
+			dupes_list.append(hit)
 			dupe_count += 1
 	total_num_files = dupe_count
 	LOGGER.info('Found: %s dupes', dupe_count)
 	return dupes_list
 
-def printStats(DATEEPOCH, LOGGER):
+def printStats(DATEEPOCH, LOGGER, stats_type='indexing'):
 	"""This is the print stats function
 	It outputs stats at the end of runtime.
 	"""
 	elapsedtime = time.time() - DATEEPOCH
 	sys.stdout.flush()
-	LOGGER.info('Directories Crawled: %s', total_num_dirs)
-	LOGGER.info('Files Indexed: %s', total_num_files)
+	if stats_type is 'indexing':
+		LOGGER.info('Directories Crawled: %s', total_num_dirs)
+		LOGGER.info('Files Indexed: %s', total_num_files)
+	if stats_type is 'updating':
+		LOGGER.info('Files updated: %s', total_num_files)
 	LOGGER.info('Elapsed time: %s', elapsedtime)
 	return
 
@@ -529,7 +551,7 @@ def main():
 
 	# parse cli arguments
 	TOPDIR, DAYSOLD, MINSIZE, NUM_THREADS, INDEXNAME, NODELETE, \
-		DUPESINDEX, VERSION, VERBOSE, DEBUG = parseCLIArgs(INDEXNAME)
+		TAGDUPES, VERSION, VERBOSE, DEBUG = parseCLIArgs(INDEXNAME)
 
 	# check --version flag and exit
 	if VERSION:
@@ -566,12 +588,6 @@ def main():
 	# connect to Elasticsearch
 	ES = elasticsearchConnect(AWS, ES_HOST, ES_PORT, ES_USER, ES_PASSWORD, LOGGER)
 
-	# create duplicate file index if cli argument
-	if DUPESINDEX:
-		indexCreateDupes(ES, INDEXNAME, NODELETE, LOGGER, VERBOSE, DEBUG)
-		printStats(DATEEPOCH, LOGGER)
-		sys.exit(0)
-
 	# create Elasticsearch index
 	indexCreate(ES, INDEXNAME, NODELETE, LOGGER)
 
@@ -590,6 +606,12 @@ def main():
 		sys.stdout.write('\n')
 		LOGGER.info('Finished crawling')
 		printStats(DATEEPOCH, LOGGER)
+		# tag duplicate files if cli argument
+		if TAGDUPES:
+			timenow = time.time()
+			tagDupes(ES, INDEXNAME, NODELETE, LOGGER, VERBOSE, DEBUG)
+			printStats(timenow, LOGGER, stats_type='updating')
+		# exit, we're all done!
 		sys.exit(0)
 	except KeyboardInterrupt:
 		print('\nCtrl-c keyboard interrupt received, exiting')

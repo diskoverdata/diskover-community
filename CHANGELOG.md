@@ -1,5 +1,22 @@
 # Diskover Change Log
 
+## [1.0.14] - 2017-05-30
+### added
+- is_dupe field to elasticsearch index
+- tagDupes function
+- indexUpdate function for updating is_dupe field
+- kibana saved search FileListIsDuplicate
+- tagdupes runs after crawl if cli flag
+- printStats function stats_type for different output
+### changed
+- diskover web interface and many features
+- dupesindex cli flag to tagdupes
+- duplicate files can now be tagged true or false in is_dupe field rather than creating separate index
+- kibana dupes dashboard and all dupes visualizations to use is_dupe field
+### removed
+- indexCreateDupes function
+- ES_INDEX_DUPES in Constants.php
+
 ## [1.0.13] - 2017-05-25
 ### added
 - tag field to elasticsearch index
