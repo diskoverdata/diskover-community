@@ -4,12 +4,12 @@
 
 diskover is a multi-threaded filesystem crawler which uses [Elasticsearch](https://www.elastic.co) and [Kibana](https://www.elastic.co/products/kibana) to index and visualize your data. It is designed to crawl your filesystem and analyze disk usage on a local or remote server using single or concurrent processes. File metadata is bulk added and streamed into Elasticsearch allowing you to visualize the results in Kibana without having to wait until the crawl is finished. diskover aims to be fast, simple and easy to use, and runs in Linux or OS X/macOS.
 
-[diskover web tag manager](README-WEB.md) is a front-end for changing diskover's `tag` field, allowing you to search and tag files for deletion, archival or keeping.
+[diskover web](README-WEB.md) is a front-end for managing diskover's `tag` field, allowing you to search and tag files for deletion, archival or keeping.
 
 ### Screenshots
 
 ![kibana-screenshot](docs/kibana-dashboarddark-screenshot.png?raw=True)
-![kibana-screenshot](docs/diskover-web-search-advanced-screenshot.png?raw=True)
+![kibana-screenshot](docs/diskover-web-dashboard-screenshot.png?raw=True)
 
 
 ### Installation Guide
@@ -36,7 +36,7 @@ $ cd diskover
 You need to have at least **Python 2.7.** and have installed **Python client for Elasticsearch (elasticsearch-py)** using `pip`.
 
 ```sh
-$ sudo pip install -r requirements.txt
+$ sudo pip install elasticsearch
 ```
 
 ### User Guide
@@ -78,7 +78,7 @@ Crawling: [100%] |########################################| 8570/8570
 
 ```
 usage: diskover.py [-h] [-d TOPDIR] [-m MTIME] [-s MINSIZE] [-t THREADS]
-                   [-i INDEX] [-n] [--dupesindex] [--version] [-v] [--debug]
+                   [-i INDEX] [-n] [--tagdupes] [--version] [-v] [--debug]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -93,7 +93,7 @@ optional arguments:
   -i INDEX, --index INDEX
                         Elasticsearch index name (default: from config)
   -n, --nodelete        Do not delete existing index (default: delete index)
-  --dupesindex          Create duplicate files index (default: don't create)
+  --tagdupes            Tags duplicate files (default: don't tag)
   --version             Prints version and exits
   -v, --verbose         Increase output verbosity
   --debug               Debug message output
@@ -171,11 +171,11 @@ If you are doing crawls every week for example, you could name the indices disko
 
 If you are running concurrent `diskover.py` processes you will need to use the `-n or --nodelete` cli argument to append  data to an existing index. See above diagram for example.
 
-#### Duplicate files index
+#### Duplicate files
 
 ![kibana-screenshot](docs/kibana-dashboard-dupes-screenshot.png?raw=True)
 
-An index for duplicate files can also be created using the `--dupesindex` cli argument **after all crawls are finished**. If you named your index `diskover-2017.05.03`, the index for duplicate files will be named `diskover_dupes-2017.05.03`. See above diagram for example.
+If you run `diskover.py` using the `--tagdupes` flag, files which are duplicates (based on same filehash field) will have their `is_dupe` field set to `true`. Default for `is_dupe` is `false`.
 
 #### Generated fields
 
@@ -198,6 +198,7 @@ diskover creates the following fields:
 | `inode`              | Inode number                                | `652490`                                    |
 | `filehash`           | MD5 hash of file                            | `3a6949b4b74846a482016d0779560327`          |
 | `tag`                | File tag for diskover web                   | `untagged`                                  |
+| `is_dupe`            | Duplicate file                              | `false`                                     |
 
 **Note: All date fields are stored as UTC time in Elasticsearch. Kibana displays dates using your local timezone.**
 
@@ -207,7 +208,7 @@ In order to speed up crawl times, a md5 hash for each file is made from combinin
 
 ### Kibana
 
-For the index pattern use `diskover-*`. For the duplicate files use `diskover_dupes-*`. **Make sure the `Index contains time-based events` box is `unchecked`** when you create index patterns. You could also use `modified_time` as your timestamp if you want to filter using time ranges in Kibana. This could be useful if you didn't run the crawl using an old `-m` modified file time.
+For the index pattern use `diskover-*`. **Make sure the `Index contains time-based events` box is `unchecked`** when you create index patterns. You could also use `modified_time` as your timestamp if you want to filter using time ranges in Kibana. This could be useful if you didn't run the crawl using an old `-m` modified file time.
 
 #### diskover dashboard
 
@@ -236,6 +237,7 @@ Here are some filter examples:
 * `extension:(cache OR tmp OR temp OR bak OR old)` filters for temp files
 * `extension:(7z OR deb OR gz OR pkg OR rar OR rpm OR tar OR zip OR zipx)` filters for compressed files
 * `filename:img*.dpx` filters for image sequence img001.dpx, img002.dpx, im003.dpx, etc.
+* `is_dupe:true` filters for duplicate files
 
 #### Tracking directory tree size over time
 
@@ -257,12 +259,12 @@ To create graphs you need to install [X-Pack](https://www.elastic.co/downloads/x
 
 ![kibana-screenshot](docs/kibana-graph-dupes-screenshot.png?raw=True)
 
-* index pattern: `diskover_dupes-*`
+* index pattern: `diskover_-*`
 * verticies field source #1: `filehash` set to `50 max terms per hop`
 * verticies field source #2: `inode` set to `50 max terms per hop`
 * verticies field source #3: `path_parent` set to `50 max terms per hop`
 * settings: uncheck `Significant links` and set `Certainty to 1`
-* search filter: `hardlinks: 1`
+* search filter: `hardlinks: 1 AND is_dupe: true`
 
 #### Hardlinks graph
 
