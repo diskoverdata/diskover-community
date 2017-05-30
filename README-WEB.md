@@ -4,9 +4,9 @@ diskover web tag manager is a front-end for changing diskover's tag field, allow
 
 ### Screenshots
 
-![diskover web search simple](docs/diskover-web-search-simple-screenshot.png?raw=True)
-![diskover web search advanced](docs/diskover-web-search-advanced-screenshot.png?raw=True)
-![diskover web search file view](docs/diskover-web-fileview-screenshot.png?raw=True)
+![diskover web simple search](docs/diskover-web-simplesearch-screenshot.png?raw=True)
+![diskover web advanced file view](docs/diskover-web-advancedsearch-screenshot.png?raw=True)
+![diskover web file view](docs/diskover-web-fileview-screenshot.png?raw=True)
 
 ### Installation Guide
 
@@ -60,7 +60,7 @@ Create index.php symlink.
 
 ```sh
 $ cd public
-$ ln -s simple.php index.php
+$ ln -s dashboard.php index.php
 ```
 
 Start diskover web using PHP's built-in web server.
