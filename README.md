@@ -36,7 +36,7 @@ $ cd diskover
 You need to have at least **Python 2.7.** and have installed **Python client for Elasticsearch (elasticsearch-py)** using `pip`.
 
 ```sh
-$ sudo pip install elasticsearch
+$ sudo pip install -r requirements.txt
 ```
 
 ### User Guide
