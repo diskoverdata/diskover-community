@@ -88,34 +88,34 @@ def loadConfig():
 	config.read(configfile)
 	try:
 		d = config.get('excluded_dirs', 'dirs')
+		EXCLUDED_DIRS = d.split(',')
 	except:
-		d = None
+		d = ''
 		pass
 	try:
 		f = config.get('excluded_files', 'files')
+		EXCLUDED_FILES = f.split(',')
 	except:
-		f = None
+		f = ''
 		pass
 	try:
 		AWS = config.get('elasticsearch', 'aws')
 	except:
-		AWS = False
+		AWS = 'False'
 		pass
 	ES_HOST = config.get('elasticsearch', 'host')
 	ES_PORT = int(config.get('elasticsearch', 'port'))
 	try:
 		ES_USER = config.get('elasticsearch', 'user')
 	except:
-		ES_USER = None
+		ES_USER = ''
 		pass
 	try:
 		ES_PASSWORD = config.get('elasticsearch', 'password')
 	except:
-		ES_PASSWORD = None
+		ES_PASSWORD = ''
 		pass
 	INDEXNAME = config.get('elasticsearch', 'indexname')
-	EXCLUDED_DIRS = d.split(',')
-	EXCLUDED_FILES = f.split(',')
 
 	return AWS, ES_HOST, ES_PORT, ES_USER, ES_PASSWORD, INDEXNAME, \
 		EXCLUDED_DIRS, EXCLUDED_FILES
