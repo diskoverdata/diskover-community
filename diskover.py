@@ -358,7 +358,7 @@ def elasticsearchConnect(AWS, ES_HOST, ES_PORT, ES_USER, ES_PASSWORD, LOGGER):
 	LOGGER.info('Connecting to Elasticsearch')
 	# Ping check ES
 	if not ES.ping():
-		LOGGER.error('Unable to connect to Elasticsearch')
+		LOGGER.error('Unable to connect to Elasticsearch, check diskover.cfg and ES')
 		sys.exit(1)
 	return ES
 
