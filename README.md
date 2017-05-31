@@ -106,26 +106,31 @@ diskcover will read a local config file `diskover.cfg`. **It needs to be in the 
 
 Here you can exclude any directories and files you don't want to index separated by `,` (**spaces after comma are treated as part of file/directory name**).
 
-Elasticsearch hostname (endpoint), port and index name are also set here. If you are using AWS ES, set `aws = True` and `port = 443` and set the host to the endpoint in your AWS ES console. If you are running Elasticsearch on your localhost or lan, comment out or set `aws = False` and the default port is `9200`. **If you installed Elasticsearch X-Pack, uncomment and set user/password for http auth**.
+Elasticsearch hostname (endpoint), port and index name are also set here. If you are using AWS ES, set `aws = True` and `port = 443` and set the host to the endpoint in your AWS ES console. If you are running Elasticsearch on your localhost or lan, comment out or set `aws = False` and the default port is `9200`. **If you installed Elasticsearch X-Pack, uncomment and set user/password for http-auth**.
 
 Lines beginning with `;` are comments and ignored by diskover.
 
 ```
 [excluded_dirs]
+; directories you want to exclude from crawl
 dirs = .snapshot,DO_NOT_DELETE,Databases
 
 [excluded_files]
+; files you want to exclude from crawl
 files = Thumbs.db,.DS_Store,._.DS_Store,.localized,desktop.ini
 
 [elasticsearch]
-;aws = True
+; uncomment the below three lines if you are using AWS ES
+;aws = False
 ;host = search-diskover-es-cluster-eg3yztrvzb6qucroyyjk2vokza.ap-northeast-1.es.amazonaws.com
 ;port = 443
+; below two lines are for local ES, comment out if you are using AWS ES
 host = localhost
 port = 9200
-; http auth for X-Pack, uncomment the below two lines if you installed
+; uncomment the below two lines if you installed X-Pack, for http-auth
 ;user = elastic
 ;password = changeme
+; index name for ES, cli arg overwrites this
 indexname = diskover-2017.04.22
 ```
 
