@@ -3,6 +3,7 @@
 ## [1.0.15] - 2017-05-30
 ### fixed
 - bug reading config file for aws setting
+- bug reading config file for user and password
 ### added
 - elasticsearch and requests to requirements.txt for pip install
 
