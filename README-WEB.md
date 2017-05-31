@@ -50,7 +50,7 @@ Edit diskover web settings in `src/diskover/Constants.php`.
 namespace diskover;
 
 class Constants {
-    const ES_HOST = '192.168.1.72';
+    const ES_HOST = 'localhost';
     const ES_INDEX = 'diskover-*';
     const ES_TYPE = 'file';
     // below two lines for X-Pack http-auth
