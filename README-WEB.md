@@ -70,7 +70,7 @@ Start diskover web using PHP's built-in web server.
 
 ```sh
 $ cd public
-$ php -S <ip>:8000
+$ php -S <IP>:8000
 ```
 
 By default diskover web will communicate with the Elasticsearch API at `http://<ip>:9200`. If you are running ES 
@@ -78,10 +78,10 @@ on a different port than 9200, you will need to pass this information to diskove
 it up via an environment variable:
 
 ```sh
-$ APP_ES_PORT=<PORT> php -S <ip>:8000
+$ APP_ES_PORT=<PORT> php -S <IP>:8000
 ```
 
-Open your web browser and visit `http://<ip:8000`.
+Open your web browser and visit `http://<IP>:8000`.
 
 
 ## License
