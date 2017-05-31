@@ -118,7 +118,7 @@ dirs = .snapshot,DO_NOT_DELETE,Databases
 files = Thumbs.db,.DS_Store,._.DS_Store,.localized,desktop.ini
 
 [elasticsearch]
-;aws = False
+;aws = True
 ;host = search-diskover-es-cluster-eg3yztrvzb6qucroyyjk2vokza.ap-northeast-1.es.amazonaws.com
 ;port = 443
 host = localhost
