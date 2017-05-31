@@ -115,7 +115,11 @@ def loadConfig():
 	except:
 		ES_PASSWORD = ''
 		pass
-	INDEXNAME = config.get('elasticsearch', 'indexname')
+	try:
+		INDEXNAME = config.get('elasticsearch', 'indexname')
+	except:
+		INDEXNAME = ''
+		pass
 
 	return AWS, ES_HOST, ES_PORT, ES_USER, ES_PASSWORD, INDEXNAME, \
 		EXCLUDED_DIRS, EXCLUDED_FILES
