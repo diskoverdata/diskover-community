@@ -1,5 +1,11 @@
 # Diskover Change Log
 
+## [1.0.15] - 2017-05-30
+### fixed
+- bug reading config file for aws setting
+### added
+- elasticsearch and requests to requirements.txt for pip install
+
 ## [1.0.14] - 2017-05-30
 ### added
 - is_dupe field to elasticsearch index

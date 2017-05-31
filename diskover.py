@@ -19,7 +19,7 @@ from random import randint
 from datetime import datetime
 from elasticsearch import Elasticsearch, helpers, RequestsHttpConnection
 
-DISKOVER_VERSION = '1.0.14'
+DISKOVER_VERSION = '1.0.15'
 
 def printBanner():
 	"""This is the print banner function.
@@ -344,7 +344,7 @@ def elasticsearchConnect(AWS, ES_HOST, ES_PORT, ES_USER, ES_PASSWORD, LOGGER):
 	and checks if it can connect.
 	"""
 	# Check if we are using AWS ES
-	if AWS:
+	if AWS == 'True':
 		ES = Elasticsearch(hosts=[{'host': ES_HOST, 'port': ES_PORT}], \
 			use_ssl=True, verify_certs=True, connection_class=RequestsHttpConnection)
 	# Local connection to ES
