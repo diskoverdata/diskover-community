@@ -53,8 +53,9 @@ class Constants {
     const ES_HOST = '192.168.1.72';
     const ES_INDEX = 'diskover-*';
     const ES_TYPE = 'file';
-    const ES_USER = 'elastic';
-    const ES_PASS = 'changeme';
+    // below two lines for X-Pack http-auth
+    const ES_USER = '';
+    const ES_PASS = '';
 }
 ```
 
