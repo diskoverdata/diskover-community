@@ -50,10 +50,12 @@ Edit diskover web settings in `src/diskover/Constants.php`.
 namespace diskover;
 
 class Constants {
+    // set to your Elasticearch host or ip
     const ES_HOST = 'localhost';
+    // don't change following two lines
     const ES_INDEX = 'diskover-*';
     const ES_TYPE = 'file';
-    // below two lines for X-Pack http-auth
+    // set following two lines if using X-Pack http-auth
     const ES_USER = '';
     const ES_PASS = '';
 }
@@ -73,8 +75,8 @@ $ cd public
 $ php -S <IP>:8000
 ```
 
-By default diskover web will communicate with the Elasticsearch API at `http://<ip>:9200`. If you are running ES 
-on a different port than 9200, you will need to pass this information to diskover web when starting
+By default diskover web will communicate with the Elasticsearch API at `http://<ES_HOST>:9200`. If you are running ES 
+on a different port than default 9200, you will need to pass this information to diskover web when starting
 it up via an environment variable:
 
 ```sh
