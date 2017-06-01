@@ -4,11 +4,11 @@ diskover web is a front-end for changing diskover's tag field, allowing you to s
 
 ### Screenshots
 
-![diskover web dashboard](docs/diskover-web-dashboard-screenshot.png?raw=True)
-![diskover web simple search](docs/diskover-web-simplesearch-screenshot.png?raw=True)
-![diskover web advanced file view](docs/diskover-web-advancedsearch-screenshot.png?raw=True)
-![diskover web search results](docs/diskover-web-searchresults-screenshot.png?raw=True)
-![diskover web file view](docs/diskover-web-fileview-screenshot.png?raw=True)
+![diskover web dashboard](../docs/diskover-web-dashboard-screenshot.png?raw=True)
+![diskover web simple search](../docs/diskover-web-simplesearch-screenshot.png?raw=True)
+![diskover web advanced file view](../docs/diskover-web-advancedsearch-screenshot.png?raw=True)
+![diskover web search results](../docs/diskover-web-searchresults-screenshot.png?raw=True)
+![diskover web file view](../docs/diskover-web-fileview-screenshot.png?raw=True)
 
 ### Installation Guide
 
