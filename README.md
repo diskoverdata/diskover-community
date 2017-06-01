@@ -102,7 +102,7 @@ optional arguments:
 
 #### Config file
 
-diskcover will read a local config file `diskover.cfg`. **It needs to be in the same directory as `diskover.py`**.
+diskover will read a local config file `diskover.cfg`. **It needs to be in the same directory as `diskover.py`**.
 
 Here you can exclude any directories and files you don't want to index separated by `,` (**spaces after comma are treated as part of file/directory name**).
 
