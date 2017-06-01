@@ -4,11 +4,15 @@
 
 diskover is a multi-threaded filesystem crawler which uses [Elasticsearch](https://www.elastic.co) and [Kibana](https://www.elastic.co/products/kibana) to index and visualize your data. It is designed to crawl your filesystem and analyze disk usage on a local or remote server using single or concurrent processes. File metadata is bulk added and streamed into Elasticsearch allowing you to visualize the results in Kibana without having to wait until the crawl is finished. diskover is written in Python and aims to be fast, simple and easy to use, and runs in Linux or OS X/macOS.
 
+## diskover web 
+
 [diskover web](diskover_web/README.md) is a front-end for managing diskover's `tag` field, allowing you to search and tag files for deletion, archival or keeping.
 
 ### Screenshots
 
+Kibana dashboard
 ![kibana-screenshot](docs/kibana-dashboarddark-screenshot.png?raw=True)
+diskover web
 ![diskover-web-screenshot](docs/diskover-web-dashboard-screenshot.png?raw=True)
 
 
