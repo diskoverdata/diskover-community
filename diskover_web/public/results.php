@@ -19,7 +19,7 @@ if (count($results) > 0) {
         <tr>
           <th class="text-nowrap">#</th>
           <th class="text-nowrap">Filename</th>
-          <th class="text-nowrap">Directory</th>
+          <th class="text-nowrap">Parent Path</th>
           <th class="text-nowrap">Size(bytes)</th>
           <th class="text-nowrap">Owner</th>
           <th class="text-nowrap">Group</th>

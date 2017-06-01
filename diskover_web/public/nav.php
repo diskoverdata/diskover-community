@@ -22,17 +22,17 @@
           <li><a href="/advanced.php?submitted=true&amp;p=1&amp;tag=archive">All files tagged archive</a></li>
           <li><a href="/advanced.php?submitted=true&amp;p=1&amp;tag=keep">All files tagged keep</a></li>
           <li class="divider"></li>
-          <li><a href="/advanced.php?submitted=true&amp;p=1&amp;last_mod_time_high=<?php echo gmdate("Y-m-d\TH:i:s", strtotime("-3 months"));?>">All files not modified > 3 months</a></li>
-          <li><a href="/advanced.php?submitted=true&amp;p=1&amp;last_mod_time_high=<?php echo gmdate("Y-m-d\TH:i:s", strtotime("-6 months"));?>">All files not modified > 6 months</a></li>
-          <li><a href="/advanced.php?submitted=true&amp;p=1&amp;last_mod_time_high=<?php echo gmdate("Y-m-d\TH:i:s", strtotime("-12 months"));?>">All files not modified > 1 year</a></li>
+          <li><a href="/advanced.php?submitted=true&amp;p=1&amp;last_mod_time_high=<?php echo gmdate("Y-m-d\TH:i:s", strtotime("-3 months"));?>">All files last modified > 3 months</a></li>
+          <li><a href="/advanced.php?submitted=true&amp;p=1&amp;last_mod_time_high=<?php echo gmdate("Y-m-d\TH:i:s", strtotime("-6 months"));?>">All files last modified > 6 months</a></li>
+          <li><a href="/advanced.php?submitted=true&amp;p=1&amp;last_mod_time_high=<?php echo gmdate("Y-m-d\TH:i:s", strtotime("-12 months"));?>">All files last modified > 1 year</a></li>
           <li class="divider"></li>
-          <li><a href="/advanced.php?submitted=true&amp;p=1&amp;last_acces_time_high=<?php echo gmdate("Y-m-d\TH:i:s", strtotime("-3 months"));?>">All files not accessed > 3 months</a></li>
-          <li><a href="/advanced.php?submitted=true&amp;p=1&amp;last_acces_time_high=<?php echo gmdate("Y-m-d\TH:i:s", strtotime("-6 months"));?>">All files not accessed > 6 months</a></li>
-          <li><a href="/advanced.php?submitted=true&amp;p=1&amp;last_acces_time_high=<?php echo gmdate("Y-m-d\TH:i:s", strtotime("-12 months"));?>">All files not accessed > 1 year</a></li>
+          <li><a href="/advanced.php?submitted=true&amp;p=1&amp;last_acces_time_high=<?php echo gmdate("Y-m-d\TH:i:s", strtotime("-3 months"));?>">All files last accessed > 3 months</a></li>
+          <li><a href="/advanced.php?submitted=true&amp;p=1&amp;last_acces_time_high=<?php echo gmdate("Y-m-d\TH:i:s", strtotime("-6 months"));?>">All files last accessed > 6 months</a></li>
+          <li><a href="/advanced.php?submitted=true&amp;p=1&amp;last_acces_time_high=<?php echo gmdate("Y-m-d\TH:i:s", strtotime("-12 months"));?>">All files last accessed > 1 year</a></li>
           <li class="divider"></li>
-          <li><a href="/advanced.php?submitted=true&amp;p=1&amp;file_size_bytes_low=10485760">All files > 10 MB</a></li>
-          <li><a href="/advanced.php?submitted=true&amp;p=1&amp;file_size_bytes_low=104857600">All files > 100 MB</a></li>
-          <li><a href="/advanced.php?submitted=true&amp;p=1&amp;file_size_bytes_low=1048576000">All files > 1 GB</a></li>
+          <li><a href="/advanced.php?submitted=true&amp;p=1&amp;file_size_bytes_low=10485760">All files size > 10 MB</a></li>
+          <li><a href="/advanced.php?submitted=true&amp;p=1&amp;file_size_bytes_low=104857600">All files size > 100 MB</a></li>
+          <li><a href="/advanced.php?submitted=true&amp;p=1&amp;file_size_bytes_low=1048576000">All files size > 1 GB</a></li>
           <li class="divider"></li>
           <li><a href="/advanced.php?submitted=true&amp;p=1&amp;hardlinks_low=2">All files hardlinks > 1</a></li>
           <li><a href="/advanced.php?submitted=true&amp;p=1&amp;is_dupe=true">All duplicate files</a></li>
