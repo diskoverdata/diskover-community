@@ -2,7 +2,7 @@
 
 ![diskover](docs/diskover.png?raw=True)
 
-diskover is a multi-threaded filesystem crawler that indexes your data in [Elasticsearch](https://www.elastic.co) and visualizes your data in [Kibana](https://www.elastic.co/products/kibana). It crawls your filesystem and analyzes disk usage on a local or remote server using single or concurrent processes. File metadata is bulk added and streamed into Elasticsearch allowing you to visualize the results in Kibana without having to wait until the crawl is finished. diskover is written in Python and runs in Linux or OS X/macOS.
+diskover is a multi-threaded filesystem crawler that indexes your file's metadata in [Elasticsearch](https://www.elastic.co) and visualizes it in [Kibana](https://www.elastic.co/products/kibana). It crawls your filesystem and analyzes disk usage on a local or remote server using single or concurrent processes. The data is bulk added and streamed into Elasticsearch allowing you to visualize the results in Kibana without having to wait until the crawl is finished. diskover is written in Python and runs in Linux or OS X/macOS.
 
 ## diskover web 
 
