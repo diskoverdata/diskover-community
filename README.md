@@ -10,7 +10,7 @@ diskover is a multi-threaded file system crawler that indexes your file's metada
 Kibana dashboard
 ![kibana-screenshot](docs/kibana-dashboarddark-screenshot.png?raw=True)
 diskover web
-![diskover-web-screenshot](docs/diskover-web-dashboard-screenshot.png?raw=True)
+![diskover-web-screenshot](docs/diskover-web-simplesearch-screenshot.png?raw=True)
 
 
 ### diskover web
