@@ -1,4 +1,4 @@
-theme: jekyll-theme-minimal
+theme: jekyll-theme-leap-day
 title: diskover
 description: Elasticsearch file system crawler and Kibana disk usage analyzer.
 show_downloads: true
