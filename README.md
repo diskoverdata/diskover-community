@@ -15,7 +15,7 @@ diskover web
 
 ### diskover web
 
-[diskover web](diskover_web/README.md) is the front-end for diskover used for searching and tagging files in your Elasticsearch indices. It can help you to manage your files and tag them for deletion, archival or keeping.
+[diskover web](diskover_web/README.md) is the front-end for diskover used for searching and tagging files in your Elasticsearch indices.
 
 
 ### Installation Guide
