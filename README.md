@@ -270,7 +270,7 @@ To create graphs you need to install [X-Pack](https://www.elastic.co/downloads/x
 
 ![kibana-screenshot](docs/kibana-graph-dupes-screenshot.png?raw=True)
 
-* index pattern: `diskover_-*`
+* index pattern: `diskover-*`
 * verticies field source #1: `filehash` set to `50 max terms per hop`
 * verticies field source #2: `inode` set to `50 max terms per hop`
 * verticies field source #3: `path_parent` set to `50 max terms per hop`
