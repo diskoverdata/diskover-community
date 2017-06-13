@@ -1,6 +1,6 @@
 # diskover web
 
-diskover web is the front-end for [diskover](../README.md), allowing you to manage your files by searching and tagging files for deletion, archival or keeping. It is written in PHP, [Bootstrap](http://getbootstrap.com/) and [jQuery](https://jquery.com/).
+diskover web is the front-end for [diskover](../README.md), allowing you to search your indexed files and tag them for deletion, archival or keeping. It is written in PHP, [Bootstrap](http://getbootstrap.com/) and [jQuery](https://jquery.com/).
 
 ### Screenshots
 
