@@ -22,7 +22,7 @@ diskover web
 
 #### Requirements
 
-* `Linux or OS X/macOS` (tested on OS X 10.11.6, Ubuntu 16.04 and Windows 7)
+* `Linux, OS X/macOS or Windows` (tested on OS X 10.11.6, Ubuntu 16.04 and Windows 7)
 * `Python 2.7. or Python 3.5.` (tested on Python 2.7.10, 2.7.12, 3.5.3)
 * `Python client for Elasticsearch` (elasticsearch-py)
 * `Elasticsearch` (local or [AWS ES Service](https://aws.amazon.com/elasticsearch-service/), tested on Elasticsearch 5.3.0)
@@ -45,7 +45,7 @@ $ git clone https://github.com/shirosaidev/diskover.git
 $ cd diskover
 ```
 
-You need to have at least **Python 2.7.** and have installed required Python dependencies using `pip`.
+You need to have at least **Python 2.7. or Python 3.5.** and have installed required Python dependencies using `pip`.
 
 ```sh
 $ sudo pip install -r requirements.txt
