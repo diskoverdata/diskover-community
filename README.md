@@ -24,10 +24,11 @@ diskover web
 
 * `Linux, OS X/macOS or Windows` (tested on OS X 10.11.6, Ubuntu 16.04 and Windows 7)
 * `Python 2.7. or Python 3.5.` (tested on Python 2.7.10, 2.7.12, 3.5.3)
-* `Python client for Elasticsearch` (elasticsearch-py)
+* `Python elasticsearch client module` [elasticsearch](https://pypi.python.org/pypi/elasticsearch/5.3.0)
+* `Python requests module` [requests](https://pypi.python.org/pypi/requests)
+* `Python scandir module` [scandir](https://pypi.python.org/pypi/scandir) (included in Python 3.5.)
 * `Elasticsearch` (local or [AWS ES Service](https://aws.amazon.com/elasticsearch-service/), tested on Elasticsearch 5.3.0)
 * `Kibana` (tested on Kibana 5.3.0)
-* ** see requirements.txt **
 
 #### Windows Additional Requirements
 
