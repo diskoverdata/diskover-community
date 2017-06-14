@@ -1,5 +1,14 @@
 # Diskover Change Log
 
+## [1.1.0] = 2017-06-14
+### added
+- support for Windows (requires pywin32 and cygwin)
+- support for Python 3
+### changed
+- switched to scandir instead of os.listdir to process files in directory (faster)
+### fixed
+- app fatal error if config file had no items in exclude lists
+
 ## [1.0.15] - 2017-05-30
 ### fixed
 - bug reading config file for aws setting, user, password and indexname
