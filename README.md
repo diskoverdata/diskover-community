@@ -2,7 +2,7 @@
 
 ![diskover](docs/diskover.png?raw=True)
 
-diskover is a multi-threaded file system crawler that indexes your file's metadata in [Elasticsearch](https://www.elastic.co) and visualizes it in [Kibana](https://www.elastic.co/products/kibana). It crawls your filesystem and analyzes disk usage on a local or remote server using single or concurrent processes. The data is bulk added and streamed into Elasticsearch allowing you to visualize the results in Kibana without having to wait until the crawl is finished. diskover is written in Python and runs in Linux or OS X/macOS.
+diskover is a multi-threaded file system crawler that indexes your file's metadata in [Elasticsearch](https://www.elastic.co) and visualizes it in [Kibana](https://www.elastic.co/products/kibana). It crawls your filesystem and analyzes disk usage on a local or remote server using single or concurrent processes. The data is bulk added and streamed into Elasticsearch allowing you to visualize the results in Kibana without having to wait until the crawl is finished. diskover is written in Python and runs in Linux, OS X/macOS or Windows.
 
 
 ### Screenshots
@@ -22,11 +22,17 @@ diskover web
 
 #### Requirements
 
-* `Linux or OS X/macOS` (tested on OS X 10.11.6 and Ubuntu 16.04)
-* `Python 2.7.` (tested on Python 2.7.10 and 2.7.12)
+* `Linux or OS X/macOS` (tested on OS X 10.11.6, Ubuntu 16.04 and Windows 7)
+* `Python 2.7. or Python 3.5.` (tested on Python 2.7.10, 2.7.12, 3.5.3)
 * `Python client for Elasticsearch` (elasticsearch-py)
 * `Elasticsearch` (local or [AWS ES Service](https://aws.amazon.com/elasticsearch-service/), tested on Elasticsearch 5.3.0)
 * `Kibana` (tested on Kibana 5.3.0)
+* ** see requirements.txt **
+
+#### Windows Additional Requirements
+
+* [CygWin](http://cygwin.com)
+* [PyWin32](https://sourceforge.net/projects/pywin32/files/pywin32/)
 
 #### Optional Install
 
@@ -39,7 +45,7 @@ $ git clone https://github.com/shirosaidev/diskover.git
 $ cd diskover
 ```
 
-You need to have at least **Python 2.7.** and have installed **Python client for Elasticsearch (elasticsearch-py)** using `pip`.
+You need to have at least **Python 2.7.** and have installed required Python dependencies using `pip`.
 
 ```sh
 $ sudo pip install -r requirements.txt
