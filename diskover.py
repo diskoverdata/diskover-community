@@ -1,25 +1,48 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# diskover fs crawler
+# diskover - Elasticsearch file system crawler
 # https://github.com/shirosaidev/diskover
 
-import os
-import sys
-import subprocess
-import pwd
-import grp
-import time
-import argparse
-import Queue
-import threading
-import ConfigParser
-import hashlib
-import logging
 from random import randint
 from datetime import datetime
 from elasticsearch import Elasticsearch, helpers, RequestsHttpConnection
+try:
+	from os import scandir
+except ImportError:
+	from scandir import scandir
+import os
+import sys
+from sys import platform
+import subprocess
+import time
+import argparse
+try:
+	import queue as Queue
+except ImportError:
+	import Queue
+import threading
+try:
+	import configparser as ConfigParser
+except ImportError:
+	import ConfigParser
+import hashlib
+import logging
 
-DISKOVER_VERSION = '1.0.15'
+IS_PY3 = sys.version_info >= (3, 0)
+
+if IS_PY3:
+	unicode = str
+
+IS_WIN = platform == "win32"
+
+if not IS_WIN:
+	import pwd
+	import grp
+
+if IS_WIN:
+	import win32security
+
+DISKOVER_VERSION = '1.1.0'
 
 def printBanner():
 	"""This is the print banner function.
@@ -56,7 +79,9 @@ def printBanner():
 _/_/_/    _/  _/_/_/    _/    _/    _/_/        _/ v%s  _/_/_/  _/
                               https://github.com/shirosaidev/diskover\033[0m
 """ % DISKOVER_VERSION
-	print(banner)
+	sys.stdout.write(banner)
+	sys.stdout.write('\n')
+	sys.stdout.flush()
 	return
 
 def printProgressBar(iteration, total, prefix='', suffix=''):
@@ -69,7 +94,7 @@ def printProgressBar(iteration, total, prefix='', suffix=''):
 	percents = str_format.format(100 * (iteration / float(total)))
 	filled_length = int(round(bar_length * iteration / float(total)))
 	bar = '#' * filled_length + '.' * (bar_length - filled_length)
-	sys.stdout.write('\r\033[42m\033[37m%s [%s%s]\033[0m |%s| %s' \
+	sys.stdout.write('\r\033[44m\033[37m%s [%s%s]\033[0m |%s| %s' \
 		% (prefix, percents, '%', bar, suffix))
 	sys.stdout.flush()
 	return
@@ -90,13 +115,13 @@ def loadConfig():
 		d = config.get('excluded_dirs', 'dirs')
 		EXCLUDED_DIRS = d.split(',')
 	except:
-		d = ''
+		EXCLUDED_DIRS = ''
 		pass
 	try:
 		f = config.get('excluded_files', 'files')
 		EXCLUDED_FILES = f.split(',')
 	except:
-		f = ''
+		EXCLUDED_FILES = ''
 		pass
 	try:
 		AWS = config.get('elasticsearch', 'aws')
@@ -178,11 +203,18 @@ def crawlDirectories(TOPDIR, EXCLUDED_DIRS, DIRECTORY_QUEUE, LOGGER, VERBOSE, DE
 		cmd.append('*%s*' % i)
 	if VERBOSE or DEBUG:
 		LOGGER.info('Finding directories to crawl')
-	p = subprocess.Popen(cmd,shell=False,stdin=subprocess.PIPE,
-					stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+	if IS_WIN:
+		p = subprocess.Popen(cmd,shell=True,stdin=subprocess.PIPE,
+						stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+	else:
+		p = subprocess.Popen(cmd,shell=False,stdin=subprocess.PIPE,
+						stdout=subprocess.PIPE,stderr=subprocess.PIPE)
 	for line in p.stdout:
-		# remove any newline chars
-		directory = line.rstrip('\r\n')
+		# check python version and remove any newline chars
+		if IS_PY3:
+			directory = line.decode().rstrip('\r\n').encode('utf-8')
+		else:
+			directory = line.rstrip('\r\n')
 		if VERBOSE or DEBUG:
 			LOGGER.info('Queuing directory: %s', directory)
 		# add item to queue (directory)
@@ -192,7 +224,7 @@ def crawlDirectories(TOPDIR, EXCLUDED_DIRS, DIRECTORY_QUEUE, LOGGER, VERBOSE, DE
 
 def crawlFiles(path, DATEEPOCH, DAYSOLD, MINSIZE, EXCLUDED_FILES, LOGGER):
 	"""This is the list directory function.
-	It crawls for files using os.listdir.
+	It crawls for files using scandir.
 	Ignores files smaller than 'MINSIZE' MB, newer
 	than 'DAYSOLD' old and in 'EXCLUDED_FILES'.
 	Tries to reduce the amount of stat calls to the fs
@@ -202,45 +234,50 @@ def crawlFiles(path, DATEEPOCH, DAYSOLD, MINSIZE, EXCLUDED_FILES, LOGGER):
 	filelist = []
 	# try to crawl files in directory
 	try:
+		if IS_WIN:
+			path = str(path.decode())
 		# Crawl files in the directory
-		for name in os.listdir(path):
-			# Skip file if it's excluded
-			if name not in EXCLUDED_FILES:
+		for entry in scandir(path):
+			# check if file is in excluded list and regular file and don't follow symlinks
+			if not entry.name in EXCLUDED_FILES and entry.is_file(follow_symlinks=False):
 				# get absolute path (parent of file)
 				abspath = os.path.abspath(path)
 				# get full path to file
-				filename_fullpath = os.path.join(abspath, name)
+				filename_fullpath = os.path.join(abspath, entry.name)
 				# try to index file
 				try:
-					# check if regular file (not directory or symbolic link)
-					if os.path.isfile(filename_fullpath) and not os.path.islink(filename_fullpath):
-						size = os.path.getsize(filename_fullpath)
-						# Convert bytes to MB
-						size_mb = size / 1024 / 1024
-						# Skip files smaller than x MB and skip empty files
-						if size_mb >= MINSIZE and size > 0:
-							# Get file modified time
-							mtime_unix = os.path.getmtime(filename_fullpath)
-							mtime_utc = datetime.utcfromtimestamp(mtime_unix).strftime('%Y-%m-%dT%H:%M:%S')
-							# Convert time in days to seconds
-							time_sec = DAYSOLD * 86400
-							file_mtime_sec = DATEEPOCH - mtime_unix
-							# Only process files modified at least x days ago
-							if file_mtime_sec >= time_sec:
-								# get file extension
-								extension = os.path.splitext(filename_fullpath)[1][1:].strip().lower()
-								# get access time
-								atime_unix = os.path.getatime(filename_fullpath)
-								atime_utc = datetime.utcfromtimestamp(atime_unix).strftime('%Y-%m-%dT%H:%M:%S')
-								# get change time
-								ctime_unix = os.path.getctime(filename_fullpath)
-								ctime_utc = datetime.utcfromtimestamp(ctime_unix).strftime('%Y-%m-%dT%H:%M:%S')
-								# get number of hardlinks
-								hardlinks = os.stat(filename_fullpath).st_nlink
-								# get inode number
-								inode = os.stat(filename_fullpath).st_ino
-								# get owner name
+					size = os.path.getsize(filename_fullpath)
+					# Convert bytes to MB
+					size_mb = size / 1024 / 1024
+					# Skip files smaller than x MB and skip empty files
+					if size_mb >= MINSIZE and size > 0:
+						# Get file modified time
+						mtime_unix = os.path.getmtime(filename_fullpath)
+						mtime_utc = datetime.utcfromtimestamp(mtime_unix).strftime('%Y-%m-%dT%H:%M:%S')
+						# Convert time in days to seconds
+						time_sec = DAYSOLD * 86400
+						file_mtime_sec = DATEEPOCH - mtime_unix
+						# Only process files modified at least x days ago
+						if file_mtime_sec >= time_sec:
+							# get file extension
+							extension = os.path.splitext(filename_fullpath)[1][1:].strip().lower()
+							# get access time
+							atime_unix = os.path.getatime(filename_fullpath)
+							atime_utc = datetime.utcfromtimestamp(atime_unix).strftime('%Y-%m-%dT%H:%M:%S')
+							# get change time
+							ctime_unix = os.path.getctime(filename_fullpath)
+							ctime_utc = datetime.utcfromtimestamp(ctime_unix).strftime('%Y-%m-%dT%H:%M:%S')
+							if IS_WIN:
+								sd = win32security.GetFileSecurity(filename_fullpath, win32security.OWNER_SECURITY_INFORMATION)
+								owner_sid = sd.GetSecurityDescriptorOwner()
+								owner, domain, type = win32security.LookupAccountSid(None, owner_sid)
+								# placeholders for windows
+								group = "0"
+								inode = "0"
+							else:
+								# get user id of owner
 								uid = os.stat(filename_fullpath).st_uid
+								# try to get owner user name
 								try:
 									owner = pwd.getpwuid(uid).pw_name.split('\\')
 									# remove domain before owner
@@ -248,11 +285,12 @@ def crawlFiles(path, DATEEPOCH, DAYSOLD, MINSIZE, EXCLUDED_FILES, LOGGER):
 										owner = owner[1]
 									else:
 										owner = owner[0]
-								# if we can't find the owner name, get the uid number
+								# if we can't find the owner's user name, use the uid number
 								except KeyError:
-									owner = str(uid)
-								# get group
+									owner = uid
+								# get group id
 								gid = os.stat(filename_fullpath).st_gid
+								# try to get group name
 								try:
 									group = grp.getgrgid(gid).gr_name.split('\\')
 									# remove domain before group
@@ -260,39 +298,51 @@ def crawlFiles(path, DATEEPOCH, DAYSOLD, MINSIZE, EXCLUDED_FILES, LOGGER):
 										group = group[1]
 									else:
 										group = group[0]
-								# if we can't find the group name, get the gid number
+								# if we can't find the group name, use the gid number
 								except KeyError:
-									group = str(gid)
-								# get time
-								indextime_utc = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
-								# create md5 hash of file using metadata
-								filehash = hashlib.md5(name+str(size)+str(mtime_unix)).hexdigest()
-								# create file metadata dictionary
-								filemeta_dict = {
-									"filename": "%s" % name.decode('utf-8'),
-									"extension": "%s" % extension.decode('utf-8'),
-									"path_full": "%s" % filename_fullpath.decode('utf-8'),
-									"path_parent": "%s" % abspath.decode('utf-8'),
-									"filesize": size,
-									"owner": "%s" % owner.decode('utf-8'),
-									"group": "%s" % group.decode('utf-8'),
-									"last_modified": "%s" % mtime_utc,
-									"last_access": "%s" % atime_utc,
-									"last_change": "%s" % ctime_utc,
-									"hardlinks": hardlinks,
-									"inode": inode,
-									"filehash": "%s" % filehash,
-									"tag": "untagged",
-									'is_dupe': "false",
-									"indexing_date": "%s" % indextime_utc
-									}
-								# add file metadata dictionary to filelist list
-								filelist.append(filemeta_dict)
-								total_num_files += 1
-				except Exception, e:
+									group = gid
+								# get inode number
+								inode = os.stat(filename_fullpath).st_ino
+							# get number of hardlinks
+							hardlinks = os.stat(filename_fullpath).st_nlink
+							if IS_WIN:
+								name = entry.name
+							else:
+								name = entry.name.decode('utf-8')
+								extension = extension.decode('utf-8')
+								filename_fullpath = filename_fullpath.decode('utf-8')
+								abspath = abspath.decode('utf-8')
+							# create md5 hash of file using metadata
+							filestring = unicode(name) + str(size) + str(mtime_unix)
+							filehash = hashlib.md5(filestring.encode('utf-8')).hexdigest()
+							# get time
+							indextime_utc = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
+							# create file metadata dictionary
+							filemeta_dict = {
+								"filename": "%s" % name,
+								"extension": "%s" % extension,
+								"path_full": "%s" % filename_fullpath,
+								"path_parent": "%s" % abspath,
+								"filesize": size,
+								"owner": "%s" % owner,
+								"group": "%s" % group,
+								"last_modified": "%s" % mtime_utc,
+								"last_access": "%s" % atime_utc,
+								"last_change": "%s" % ctime_utc,
+								"hardlinks": hardlinks,
+								"inode": inode,
+								"filehash": "%s" % filehash,
+								"tag": "untagged",
+								'is_dupe': "false",
+								"indexing_date": "%s" % indextime_utc
+								}
+							# add file metadata dictionary to filelist list
+							filelist.append(filemeta_dict)
+							total_num_files += 1
+				except Exception:
 					LOGGER.error('Failed to index file', exc_info=True)
 		return filelist
-	except Exception, e:
+	except Exception:
 		LOGGER.error('Failed to crawl directory', exc_info=True)
 	return
 
@@ -562,10 +612,11 @@ def main():
 		print('diskover v%s' % DISKOVER_VERSION)
 		sys.exit(0)
 
-	# check we are root
-	if os.geteuid():
-		print('Please run as root using sudo')
-		sys.exit(1)
+	if not IS_WIN:
+		# check we are root
+		if os.geteuid():
+			print('Please run as root')
+			sys.exit(1)
 
 	# set up logging
 	es_logger = logging.getLogger('elasticsearch')
@@ -608,6 +659,7 @@ def main():
 		for i in range(NUM_THREADS):
 			DIRECTORY_QUEUE.join()
 		sys.stdout.write('\n')
+		sys.stdout.flush()
 		LOGGER.info('Finished crawling')
 		printStats(DATEEPOCH, LOGGER)
 		# tag duplicate files if cli argument
