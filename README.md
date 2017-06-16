@@ -10,7 +10,7 @@ Kibana dashboard
 ![kibana-screenshot](docs/kibana-dashboarddark-screenshot.png?raw=True)
 diskover web
 ![diskover-web-screenshot](docs/diskover-web-simplesearch-screenshot.png?raw=True)
-diskover v1.1.1 (next release) will include gource visualization support [youtube video of diskover using gource](https://youtu.be/InlfK8GQ-kM)
+diskover v1.1.1 (next release) will include gource visualization support. [Youtube video of diskover using gource](https://youtu.be/InlfK8GQ-kM)
 ![diskover-gource](docs/diskover-gource-screenshot.png?raw=True)
 
 
