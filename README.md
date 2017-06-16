@@ -83,7 +83,7 @@ Crawling: [100%] |########################################| 8570/8570
 
 ## Wiki
 
-[Read the wiki](https://github.com/shirosaidev/diskover/wiki) for more documentation.
+[Read the wiki](https://github.com/shirosaidev/diskover/wiki) for more documentation on how to use diskover.
 
 
 ## License
