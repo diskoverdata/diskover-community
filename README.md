@@ -8,10 +8,8 @@ diskover is a file system crawler that helps index your files in [Elasticsearch]
 
 Kibana dashboard (multiple dashboards are included in diskover git download)
 ![kibana-screenshot](docs/kibana-dashboarddark-screenshot.png?raw=True)
-diskover v1.1.1 (next release) will include gource visualization support.
+diskover v1.1.1 (next release) will include gource visualization support. [Watch Youtube video of diskover using gource](https://youtu.be/InlfK8GQ-kM)
 ![diskover-gource](docs/diskover-gource-screenshot.png?raw=True)
-[Watch Youtube video of diskover using gource](https://youtu.be/InlfK8GQ-kM)
-
 
 ## Installation Guide
 
@@ -46,7 +44,6 @@ You need to have at least **Python 2.7. or Python 3.5.** and have installed requ
 ```sh
 $ sudo pip install -r requirements.txt
 ```
-
 
 ## User Guide
 
