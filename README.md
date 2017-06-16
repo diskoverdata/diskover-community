@@ -8,15 +8,8 @@ diskover is a file system crawler that helps index your files in [Elasticsearch]
 
 Kibana dashboard (multiple dashboards are included in diskover git download)
 ![kibana-screenshot](docs/kibana-dashboarddark-screenshot.png?raw=True)
-diskover web (can be used to quickly search your storage and tag files for cleanup)
-![diskover-web-screenshot](https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-simplesearch-screenshot.png?raw=True)
 diskover v1.1.1 (next release) will include gource visualization support. [Youtube video of diskover using gource](https://youtu.be/InlfK8GQ-kM)
 ![diskover-gource](docs/diskover-gource-screenshot.png?raw=True)
-
-
-### diskover-web
-
-[diskover-web](https://github.com/shirosaidev/diskover-web) is the front-end for diskover used for searching and tagging files in your Elasticsearch indices. It is designed to help quickly search your storage servers and tag files for clean up.
 
 
 ### Installation Guide
@@ -229,7 +222,7 @@ In order to speed up crawl times, a md5 hash for each file is made from combinin
 
 For the index pattern use `diskover-*`. **Make sure the `Index contains time-based events` box is `unchecked`** when you create index patterns. You could also use `modified_time` as your timestamp if you want to filter using time ranges in Kibana. This could be useful if you didn't run the crawl using an old `-m` modified file time.
 
-#### diskover dashboard
+#### diskover dashboards
 
 ![kibana-screenshot](docs/kibana-dashboardlight-screenshot.png?raw=True)
 
@@ -267,6 +260,15 @@ Every week or month for example: diskover-PROJA-2017.05.10, diskover-PROJA-2017.
 Then create a new Kibana index pattern `diskover-PROJA-*` to filter to just those indices.
 
 To visualy see the change over time, create a line chart in Kibana using `sum of filesize` for `y-axis` and set `x-axis` to `date-histogram` using `indexing_date` field. Set `interval` to `weekly` or `monthly`.
+
+
+### diskover-web
+
+diskover-web (can be used to quickly search your storage and tag files for cleanup)
+![diskover-web-screenshot](https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-simplesearch-screenshot.png?raw=True)
+
+[diskover-web](https://github.com/shirosaidev/diskover-web) is the front-end for diskover used for searching and tagging files in your Elasticsearch indices. It is designed to help quickly search your storage servers and tag files for clean up.
+
 
 ### X-Pack
 
