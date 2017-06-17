@@ -10,9 +10,11 @@ Kibana dashboard (multiple dashboards are included in diskover git download)
 ![kibana-screenshot](docs/kibana-dashboarddark-screenshot.png?raw=True)
 diskover v1.1.1 (next release) will include gource visualization support.
 ![diskover-gource](docs/diskover-gource1-screenshot.png?raw=True)
-**diskover gource youtube videos**
-[File modifications over time](https://youtu.be/InlfK8GQ-kM)
-[Realtime file crawl using 8 threads](https://youtu.be/qKLJjZ0TMqA)
+
+### diskover gource youtube videos
+
+* [File modifications over time](https://youtu.be/InlfK8GQ-kM)
+* [Realtime file crawl using 8 threads](https://youtu.be/qKLJjZ0TMqA)
 
 ## Installation Guide
 
