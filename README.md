@@ -33,8 +33,9 @@ diskover v1.1.1 (next release) will include gource visualization support.
 * [CygWin](http://cygwin.com)
 * [PyWin32](https://sourceforge.net/projects/pywin32/files/pywin32/)
 
-### Optional Install
+### Optional Installs
 
+* [diskover-web](https://github.com/shirosaidev/diskover-web) (diskover's web panel for searching/tagging files)
 * [X-Pack](https://www.elastic.co/downloads/x-pack) (for graphs, reports, monitoring and http auth)
 
 ### Download
