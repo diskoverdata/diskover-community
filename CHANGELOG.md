@@ -1,5 +1,21 @@
 # Diskover Change Log
 
+## [1.1.1] = 2017-06-21
+### added
+- gource visualization support, --gourcert and --gourcemt cli options
+- diskover-gource.sh shell script for gource
+- gource section in config file
+- can now exclude files with no extension using NULLEXT
+- quiet cli option to run with no output
+- new elasticsearch field 'indexing_thread' (used by gource)
+### changed
+- better handling of exclude lists. find command now looks for exact exclude directory name and no longer adds wildcards to name by default
+- swtiched to version output of argparse
+- better handling of exceptions and log output for any errors crawling files or directories
+- indexing_date field now includes milliseconds
+### fixed
+- bug with using wildcards in exclude lists in config file
+
 ## [1.1.0] = 2017-06-14
 ### added
 - support for Windows (requires pywin32 and cygwin)
