@@ -62,6 +62,7 @@ Start diskover as root user with:
 $ cd /path/you/want/to/crawl
 $ sudo python /path/to/diskover.py
 ```
+For Windows, run cygwin terminal as administrator and then run diskover.
 
 A successfull crawl should look like this:
 
