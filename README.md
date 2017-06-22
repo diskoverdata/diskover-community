@@ -37,7 +37,7 @@ gource visualization support (see videos below)
 
 * [diskover-web](https://github.com/shirosaidev/diskover-web) (diskover's web panel for searching/tagging files)
 * [X-Pack](https://www.elastic.co/downloads/x-pack) (for graphs, reports, monitoring and http auth)
-* [gource](http://gource.io) (for gource visualizations of diskover Elasticsearch data)
+* [Gource](http://gource.io) (for Gource visualizations of diskover Elasticsearch data)
 
 ### Download
 
@@ -62,7 +62,7 @@ Start diskover as root user with:
 $ cd /path/you/want/to/crawl
 $ sudo python /path/to/diskover.py
 ```
-For Windows, run cygwin terminal as administrator and then run diskover.
+For Windows, run CygWin terminal as administrator and then run diskover.
 
 A successfull crawl should look like this:
 
