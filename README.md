@@ -1,8 +1,10 @@
-# diskover - File system crawler that uses Elasticsearch and Kibana for disk space analysis
+# diskover - Elasticsearch file system crawler and disk space analyzer using Kibana
 
 ![diskover](docs/diskover.png?raw=True)
 
-diskover is a file system crawler that helps index your files in [Elasticsearch](https://www.elastic.co) and allows you to visualize your disk usage in [Kibana](https://www.elastic.co/products/kibana). It crawls and indexes your files on a local computer or remote server using nfs or cifs. File metadata is bulk added and streamed into Elasticsearch allowing you to **visualize your data in Kibana without having to wait until the crawl is finished**. diskover is written in Python and runs on Linux, OS X/macOS and Windows.
+diskover is a file system crawler that indexes your files metadata in [Elasticsearch](https://www.elastic.co) and visualizes your disk usage in [Kibana](https://www.elastic.co/products/kibana). It crawls and indexes your files on a local computer or remote server using nfs or cifs.
+
+File metadata is bulk added and streamed into Elasticsearch, allowing you to **search and visualize your files in Kibana without having to wait until the crawl is finished**. diskover is written in Python and runs on Linux, OS X/macOS and Windows.
 
 ## Screenshots
 
