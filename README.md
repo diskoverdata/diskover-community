@@ -1,6 +1,6 @@
 # diskover - Elasticsearch file system crawler and disk space analyzer using Kibana
 
-![diskover](docs/diskover.png?raw=True)
+![diskover](https://raw.githubusercontent.com/shirosaidev/diskover/master/docs/diskover.png)
 
 diskover is a file system crawler that indexes your files metadata in [Elasticsearch](https://www.elastic.co) and visualizes your disk usage in [Kibana](https://www.elastic.co/products/kibana). It crawls and indexes your files on a local computer or remote server using nfs or cifs.
 
@@ -9,9 +9,9 @@ File metadata is bulk added and streamed into Elasticsearch, allowing you to **s
 ## Screenshots
 
 Kibana dashboard (multiple dashboards are included in diskover download)
-![kibana-screenshot](docs/kibana-dashboarddark-screenshot.png?raw=True)
+![kibana-screenshot](https://raw.githubusercontent.com/shirosaidev/diskover/master/docs/kibana-dashboarddark-screenshot.png)
 Gource visualization support (see videos below)
-![diskover-gource](docs/diskover-gource1-screenshot.png?raw=True)
+![diskover-gource](https://raw.githubusercontent.com/shirosaidev/diskover/master/docs/diskover-gource1-screenshot.png)
 
 ### diskover Gource videos
 
