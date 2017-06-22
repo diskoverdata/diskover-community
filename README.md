@@ -8,7 +8,7 @@ diskover is a file system crawler that helps index your files in [Elasticsearch]
 
 Kibana dashboard (multiple dashboards are included in diskover git download)
 ![kibana-screenshot](docs/kibana-dashboarddark-screenshot.png?raw=True)
-gource visualization support (see videos below)
+Gource visualization support (see videos below)
 ![diskover-gource](docs/diskover-gource1-screenshot.png?raw=True)
 
 ### diskover gource youtube videos
