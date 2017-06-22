@@ -8,11 +8,14 @@
 - can now exclude files with no extension using NULLEXT
 - quiet cli option to run with no output
 - new elasticsearch field 'indexing_thread' (used by gource)
+- tested on es/kibana 5.4.2 and es client 5.4.0
 ### changed
 - better handling of exclude lists. find command now looks for exact exclude directory name and no longer adds wildcards to name by default
 - swtiched to version output of argparse
 - better handling of exceptions and log output for any errors crawling files or directories
 - indexing_date field now includes milliseconds
+- cleaned up logging code
+- -v or --version to display version, --verbose to run in verbose mode
 ### fixed
 - bug with using wildcards in exclude lists in config file
 
