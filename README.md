@@ -1,17 +1,17 @@
-# diskover - Elasticsearch file system crawler and Kibana disk usage analyzer
+# diskover - File system crawler that uses Elasticsearch and Kibana for disk space analysis
 
 ![diskover](docs/diskover.png?raw=True)
 
-diskover is a file system crawler that helps index your files in [Elasticsearch](https://www.elastic.co) and visualize your disk usage in [Kibana](https://www.elastic.co/products/kibana). It crawls and indexes your files on a local or remote server using nfs or cifs. File metadata is bulk added and streamed into Elasticsearch allowing you to **visualize your data in Kibana without having to wait until the crawl is finished**. diskover is written in Python and runs in Linux, OS X/macOS and Windows.
+diskover is a file system crawler that helps index your files in [Elasticsearch](https://www.elastic.co) and allows you to visualize your disk usage in [Kibana](https://www.elastic.co/products/kibana). It crawls and indexes your files on a local computer or remote server using nfs or cifs. File metadata is bulk added and streamed into Elasticsearch allowing you to **visualize your data in Kibana without having to wait until the crawl is finished**. diskover is written in Python and runs on Linux, OS X/macOS and Windows.
 
 ## Screenshots
 
-Kibana dashboard (multiple dashboards are included in diskover git download)
+Kibana dashboard (multiple dashboards are included in diskover download)
 ![kibana-screenshot](docs/kibana-dashboarddark-screenshot.png?raw=True)
 Gource visualization support (see videos below)
 ![diskover-gource](docs/diskover-gource1-screenshot.png?raw=True)
 
-### diskover gource youtube videos
+### diskover Gource videos
 
 * [File modifications over time](https://youtu.be/InlfK8GQ-kM)
 * [Realtime file crawl using 8 threads](https://youtu.be/qKLJjZ0TMqA)
