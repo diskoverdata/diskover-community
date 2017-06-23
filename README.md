@@ -66,6 +66,8 @@ $ sudo python /path/to/diskover.py
 ```
 For Windows, run CygWin terminal as administrator and then run diskover.
 
+**Defaults for crawl with no flags is to only index files 5+ MB and 30+ days modified time. Use -h to see cli options.**
+
 A successfull crawl should look like this:
 
 ```
