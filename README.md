@@ -95,9 +95,13 @@ Crawling: [100%] |########################################| 8570/8570
 
 [Read the wiki](https://github.com/shirosaidev/diskover/wiki) for more documentation on how to use diskover.
 
-## Comments/Bugs
+## Discussions/Questions
 
-For bugs/comments/feedback about diskover, please use the [issues page](https://github.com/shirosaidev/diskover/issues).
+For discussions or questions about diskover, please ask on [Google Group](https://groups.google.com/forum/?hl=en#!forum/diskover).
+
+## Bugs
+
+For bugs about diskover, please use the [issues page](https://github.com/shirosaidev/diskover/issues).
 
 ## License
 
