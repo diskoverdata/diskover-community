@@ -54,9 +54,7 @@ You need to have at least **Python 2.7. or Python 3.5.** and have installed requ
 $ sudo pip install -r requirements.txt
 ```
 
-## User Guide
-
-### Getting Started
+## Getting Started
 
 Start diskover as root user with:
 
@@ -91,7 +89,7 @@ Crawling: [100%] |########################################| 8570/8570
 2017-05-17 21:17:16,973 [INFO][diskover] Elapsed time: 7.72081303596
 ```
 
-## Wiki
+## User Guide
 
 [Read the wiki](https://github.com/shirosaidev/diskover/wiki) for more documentation on how to use diskover.
 
