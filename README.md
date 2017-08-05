@@ -6,6 +6,8 @@ diskover is a file system crawler that indexes your files metadata in [Elasticse
 
 File metadata is bulk added and streamed into Elasticsearch, allowing you to **search and visualize your files in Kibana without having to wait until the crawl is finished**. diskover is written in Python and runs on Linux, OS X/macOS and Windows.
 
+diskover aims to help manage your storage by helping you identify old and unsued files and give better insights into file duplication and wasted space.
+
 ## Screenshots
 
 Kibana dashboard (multiple dashboards are included in diskover download)
