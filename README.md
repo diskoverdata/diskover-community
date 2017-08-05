@@ -12,7 +12,7 @@ diskover aims to help manage your storage by identify old and unused files and g
 
 Kibana dashboard (multiple dashboards are included in diskover download)
 ![kibana-screenshot](docs/kibana-dashboarddark2-screenshot.png?raw=true)
-diskover-web (web admin)
+[diskover-web](https://github.com/shirosaidev/diskover-web) (diskover's web file manager)
 ![diskover-web](https://github.com/shirosaidev/diskover-web/raw/master/docs/diskover-web-sunburst-screenshot.png?raw=true)
 Gource visualization support (see videos below)
 ![diskover-gource](docs/diskover-gource1-screenshot.png?raw=true)
