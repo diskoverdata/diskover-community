@@ -10,6 +10,8 @@ File metadata is bulk added and streamed into Elasticsearch, allowing you to **s
 
 Kibana dashboard (multiple dashboards are included in diskover download)
 ![kibana-screenshot](docs/kibana-dashboarddark2-screenshot.png?raw=true)
+diskover-web (web admin)
+![diskover-web](https://github.com/shirosaidev/diskover-web/raw/master/docs/diskover-web-sunburst-screenshot.png?raw=true)
 Gource visualization support (see videos below)
 ![diskover-gource](docs/diskover-gource1-screenshot.png?raw=true)
 
