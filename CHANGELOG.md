@@ -1,5 +1,9 @@
 # Diskover Change Log
 
+## [1.1.2] = 2017-08-05
+### changed
+- removed path_full field from es mapping
+
 ## [1.1.1] = 2017-06-21
 ### added
 - gource visualization support, --gourcert and --gourcemt cli options

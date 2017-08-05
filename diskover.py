@@ -327,7 +327,6 @@ def crawlFiles(path, DATEEPOCH, DAYSOLD, MINSIZE, EXCLUDED_FILES, LOGGER, thread
 						else:
 							name = entry.name.decode('utf-8')
 							extension = extension.decode('utf-8')
-							filename_fullpath = filename_fullpath.decode('utf-8')
 							abspath = abspath.decode('utf-8')
 						# create md5 hash of file using metadata
 						filestring = unicode(name) + str(size) + str(mtime_unix)
@@ -338,7 +337,6 @@ def crawlFiles(path, DATEEPOCH, DAYSOLD, MINSIZE, EXCLUDED_FILES, LOGGER, thread
 						filemeta_dict = {
 							"filename": "%s" % name,
 							"extension": "%s" % extension,
-							"path_full": "%s" % filename_fullpath,
 							"path_parent": "%s" % abspath,
 							"filesize": size,
 							"owner": "%s" % owner,
@@ -459,9 +457,6 @@ def indexCreate(ES, INDEXNAME, NODELETE, LOGGER):
 						"type": "keyword"
 					},
 					"extension": {
-						"type": "keyword"
-					},
-					"path_full": {
 						"type": "keyword"
 					},
 					"path_parent": {
@@ -647,7 +642,7 @@ def gource(ES, INDEXNAME, LOGGER, GOURCE_REALTIME, GOURCE_MTIME, GOURCE_MAXFILEL
 				d = str(int(time.mktime(datetime.strptime(hit['_source']['last_modified'], '%Y-%m-%dT%H:%M:%S').timetuple())))
 				u = hit['_source']['owner']
 				t = 'M'
-			f = unicode(hit['_source']['path_full'])
+			f = unicode(hit['_source']['path_parent']) + "/" + unicode(hit['_source']['filename'])
 			output = unicode(d+'|'+u+'|'+t+'|'+f)
 			try:
 				# output for gource
