@@ -42,7 +42,7 @@ if not IS_WIN:
 if IS_WIN:
 	import win32security
 
-DISKOVER_VERSION = '1.1.1'
+DISKOVER_VERSION = '1.1.2'
 
 def printBanner():
 	"""This is the print banner function.
