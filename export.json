@@ -91,150 +91,6 @@
     }
   },
   {
-    "_id": "bec9f580-2d36-11e7-907c-e1628960d26b",
-    "_type": "search",
-    "_source": {
-      "title": "FileListVideoFiles",
-      "description": "",
-      "hits": 0,
-      "columns": [
-        "path_full",
-        "filesize",
-        "owner",
-        "last_modified",
-        "last_access"
-      ],
-      "sort": [
-        "last_modified",
-        "asc"
-      ],
-      "version": 1,
-      "kibanaSavedObjectMeta": {
-        "searchSourceJSON": "{\"index\":\"diskover-*\",\"highlightAll\":true,\"query\":{\"query_string\":{\"query\":\"extension:(asf OR avi OR flv OR m4v OR mov OR mp4 OR mpg OR rm OR vob OR wmv)\",\"analyze_wildcard\":true}},\"filter\":[]}"
-      }
-    }
-  },
-  {
-    "_id": "f2c8cfa0-2d36-11e7-907c-e1628960d26b",
-    "_type": "search",
-    "_source": {
-      "title": "FileListCompressedFiles",
-      "description": "",
-      "hits": 0,
-      "columns": [
-        "path_full",
-        "filesize",
-        "owner",
-        "last_modified",
-        "last_access"
-      ],
-      "sort": [
-        "last_modified",
-        "asc"
-      ],
-      "version": 1,
-      "kibanaSavedObjectMeta": {
-        "searchSourceJSON": "{\"index\":\"diskover-*\",\"highlightAll\":true,\"query\":{\"query_string\":{\"query\":\"extension:(7z OR deb OR gz OR pkg OR rar OR rpm OR tar OR zip OR zipx)\",\"analyze_wildcard\":true}},\"filter\":[]}"
-      }
-    }
-  },
-  {
-    "_id": "d8f7c590-2d36-11e7-907c-e1628960d26b",
-    "_type": "search",
-    "_source": {
-      "title": "FileListAudioFiles",
-      "description": "",
-      "hits": 0,
-      "columns": [
-        "path_full",
-        "filesize",
-        "owner",
-        "last_modified",
-        "last_access"
-      ],
-      "sort": [
-        "last_modified",
-        "asc"
-      ],
-      "version": 1,
-      "kibanaSavedObjectMeta": {
-        "searchSourceJSON": "{\"index\":\"diskover-*\",\"highlightAll\":true,\"query\":{\"query_string\":{\"query\":\"extension:(aif OR iff OR m3u OR m4a OR mid OR mp3 OR mpa OR wav OR wma)\",\"analyze_wildcard\":true}},\"filter\":[]}"
-      }
-    }
-  },
-  {
-    "_id": "16cd70c0-2cfd-11e7-ab8c-9b1687d6e68c",
-    "_type": "search",
-    "_source": {
-      "title": "FileListWithFilter6MonthsOld",
-      "description": "",
-      "hits": 0,
-      "columns": [
-        "path_full",
-        "filesize",
-        "owner",
-        "last_modified",
-        "last_access"
-      ],
-      "sort": [
-        "last_modified",
-        "asc"
-      ],
-      "version": 1,
-      "kibanaSavedObjectMeta": {
-        "searchSourceJSON": "{\"index\":\"diskover-*\",\"highlightAll\":true,\"query\":{\"query_string\":{\"query\":\"last_modified:[now-5y TO now-6M] AND last_access:[now-5y TO now-6M]\",\"analyze_wildcard\":true}},\"filter\":[]}"
-      }
-    }
-  },
-  {
-    "_id": "33f85430-2cfd-11e7-ab8c-9b1687d6e68c",
-    "_type": "search",
-    "_source": {
-      "title": "FileListWithFilter1YearOld",
-      "description": "",
-      "hits": 0,
-      "columns": [
-        "path_full",
-        "filesize",
-        "owner",
-        "last_modified",
-        "last_access"
-      ],
-      "sort": [
-        "last_modified",
-        "asc"
-      ],
-      "version": 1,
-      "kibanaSavedObjectMeta": {
-        "searchSourceJSON": "{\"index\":\"diskover-*\",\"highlightAll\":true,\"query\":{\"query_string\":{\"query\":\"last_modified:[now-5y TO now-1y] AND last_access:[now-5y TO now-1y]\",\"analyze_wildcard\":true}},\"filter\":[]}"
-      }
-    }
-  },
-  {
-    "_id": "6fad6310-2651-11e7-9c7e-376534115aac",
-    "_type": "search",
-    "_source": {
-      "title": "FileList",
-      "description": "",
-      "hits": 0,
-      "columns": [
-        "path_full",
-        "filesize",
-        "owner",
-        "last_modified",
-        "last_access"
-      ],
-      "sort": [
-        "last_modified",
-        "asc"
-      ],
-      "version": 1,
-      "kibanaSavedObjectMeta": {
-        "searchSourceJSON": "{\"index\":\"diskover-*\",\"highlightAll\":true,\"query\":{\"query_string\":{\"query\":\"*\",\"analyze_wildcard\":true}},\"filter\":[]}"
-      }
-    }
-  },
-  {
     "_id": "c883bc50-2d36-11e7-907c-e1628960d26b",
     "_type": "search",
     "_source": {
@@ -259,14 +115,15 @@
     }
   },
   {
-    "_id": "af592b70-2d36-11e7-907c-e1628960d26b",
+    "_id": "6fad6310-2651-11e7-9c7e-376534115aac",
     "_type": "search",
     "_source": {
-      "title": "FileListTempFiles",
+      "title": "FileList",
       "description": "",
       "hits": 0,
       "columns": [
-        "path_full",
+        "filename",
+        "path_parent",
         "filesize",
         "owner",
         "last_modified",
@@ -278,7 +135,157 @@
       ],
       "version": 1,
       "kibanaSavedObjectMeta": {
-        "searchSourceJSON": "{\"index\":\"diskover-*\",\"highlightAll\":true,\"query\":{\"query_string\":{\"query\":\"extension:(cache OR tmp OR temp OR bak OR old)\",\"analyze_wildcard\":true}},\"filter\":[]}"
+        "searchSourceJSON": "{\"index\":\"diskover-*\",\"highlightAll\":true,\"query\":{\"query_string\":{\"query\":\"*\",\"analyze_wildcard\":true}},\"filter\":[],\"version\":true}"
+      }
+    }
+  },
+  {
+    "_id": "bec9f580-2d36-11e7-907c-e1628960d26b",
+    "_type": "search",
+    "_source": {
+      "title": "FileListVideoFiles",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "filename",
+        "path_parent",
+        "filesize",
+        "owner",
+        "last_modified",
+        "last_access"
+      ],
+      "sort": [
+        "last_modified",
+        "asc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"diskover-*\",\"highlightAll\":true,\"query\":{\"query_string\":{\"query\":\"extension:(asf OR avi OR flv OR m4v OR mov OR mp4 OR mpg OR rm OR vob OR wmv)\",\"analyze_wildcard\":true}},\"filter\":[],\"version\":true}"
+      }
+    }
+  },
+  {
+    "_id": "f2c8cfa0-2d36-11e7-907c-e1628960d26b",
+    "_type": "search",
+    "_source": {
+      "title": "FileListCompressedFiles",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "filename",
+        "path_parent",
+        "filesize",
+        "owner",
+        "last_modified",
+        "last_access"
+      ],
+      "sort": [
+        "last_modified",
+        "asc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"diskover-*\",\"highlightAll\":true,\"query\":{\"query_string\":{\"query\":\"extension:(7z OR deb OR gz OR pkg OR rar OR rpm OR tar OR zip OR zipx)\",\"analyze_wildcard\":true}},\"filter\":[],\"version\":true}"
+      }
+    }
+  },
+  {
+    "_id": "d8f7c590-2d36-11e7-907c-e1628960d26b",
+    "_type": "search",
+    "_source": {
+      "title": "FileListAudioFiles",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "filename",
+        "path_parent",
+        "filesize",
+        "owner",
+        "last_modified",
+        "last_access"
+      ],
+      "sort": [
+        "last_modified",
+        "asc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"diskover-*\",\"highlightAll\":true,\"query\":{\"query_string\":{\"query\":\"extension:(aif OR iff OR m3u OR m4a OR mid OR mp3 OR mpa OR wav OR wma)\",\"analyze_wildcard\":true}},\"filter\":[],\"version\":true}"
+      }
+    }
+  },
+  {
+    "_id": "16cd70c0-2cfd-11e7-ab8c-9b1687d6e68c",
+    "_type": "search",
+    "_source": {
+      "title": "FileListWithFilter6MonthsOld",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "filename",
+        "path_parent",
+        "filesize",
+        "owner",
+        "last_modified",
+        "last_access"
+      ],
+      "sort": [
+        "last_modified",
+        "asc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"diskover-*\",\"highlightAll\":true,\"query\":{\"query_string\":{\"query\":\"last_modified:[now-5y TO now-6M] AND last_access:[now-5y TO now-6M]\",\"analyze_wildcard\":true}},\"filter\":[],\"version\":true}"
+      }
+    }
+  },
+  {
+    "_id": "33f85430-2cfd-11e7-ab8c-9b1687d6e68c",
+    "_type": "search",
+    "_source": {
+      "title": "FileListWithFilter1YearOld",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "filename",
+        "path_parent",
+        "filesize",
+        "owner",
+        "last_modified",
+        "last_access"
+      ],
+      "sort": [
+        "last_modified",
+        "asc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"diskover-*\",\"highlightAll\":true,\"query\":{\"query_string\":{\"query\":\"last_modified:[now-5y TO now-1y] AND last_access:[now-5y TO now-1y]\",\"analyze_wildcard\":true}},\"filter\":[],\"version\":true}"
+      }
+    }
+  },
+  {
+    "_id": "af592b70-2d36-11e7-907c-e1628960d26b",
+    "_type": "search",
+    "_source": {
+      "title": "FileListTempFiles",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "filename",
+        "path_parent",
+        "filesize",
+        "owner",
+        "last_modified",
+        "last_access"
+      ],
+      "sort": [
+        "last_modified",
+        "asc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"diskover-*\",\"highlightAll\":true,\"query\":{\"query_string\":{\"query\":\"extension:(cache OR tmp OR temp OR bak OR old)\",\"analyze_wildcard\":true}},\"filter\":[],\"version\":true}"
       }
     }
   },
@@ -367,20 +374,6 @@
     }
   },
   {
-    "_id": "LargestFiles",
-    "_type": "visualization",
-    "_source": {
-      "title": "LargestFiles",
-      "visState": "{\"title\":\"LargestFiles\",\"type\":\"histogram\",\"params\":{\"shareYAxis\":true,\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"top\",\"scale\":\"linear\",\"mode\":\"stacked\",\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false,\"yAxis\":{},\"orderBucketsBySum\":false},\"aggs\":[{\"id\":\"2\",\"enabled\":true,\"type\":\"sum\",\"schema\":\"metric\",\"params\":{\"field\":\"filesize\",\"customLabel\":\"size\"}},{\"id\":\"3\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"segment\",\"params\":{\"field\":\"path_full\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"2\",\"customLabel\":\"file\"}}],\"listeners\":{}}",
-      "uiStateJSON": "{}",
-      "description": "",
-      "version": 1,
-      "kibanaSavedObjectMeta": {
-        "searchSourceJSON": "{\"index\":\"diskover-*\",\"query\":{\"query_string\":{\"query\":\"*\",\"analyze_wildcard\":true}},\"filter\":[]}"
-      }
-    }
-  },
-  {
     "_id": "Extension",
     "_type": "visualization",
     "_source": {
@@ -401,20 +394,6 @@
       "title": "LargestDirectories",
       "visState": "{\"title\":\"LargestDirectories\",\"type\":\"histogram\",\"params\":{\"shareYAxis\":true,\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"top\",\"scale\":\"linear\",\"mode\":\"stacked\",\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false,\"yAxis\":{}},\"aggs\":[{\"id\":\"2\",\"enabled\":true,\"type\":\"sum\",\"schema\":\"metric\",\"params\":{\"field\":\"filesize\",\"customLabel\":\"size\"}},{\"id\":\"3\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"segment\",\"params\":{\"field\":\"path_parent\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"2\",\"customLabel\":\"directory\"}}],\"listeners\":{}}",
       "uiStateJSON": "{}",
-      "description": "",
-      "version": 1,
-      "kibanaSavedObjectMeta": {
-        "searchSourceJSON": "{\"index\":\"diskover-*\",\"query\":{\"query_string\":{\"analyze_wildcard\":true,\"query\":\"*\"}},\"filter\":[]}"
-      }
-    }
-  },
-  {
-    "_id": "e57439f0-2653-11e7-9c7e-376534115aac",
-    "_type": "visualization",
-    "_source": {
-      "title": "LargestFiles",
-      "visState": "{\"title\":\"LargestFiles\",\"type\":\"table\",\"params\":{\"perPage\":10,\"showMeticsAtAllLevels\":false,\"showPartialRows\":false,\"showTotal\":false,\"sort\":{\"columnIndex\":null,\"direction\":null},\"totalFunc\":\"sum\"},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"sum\",\"schema\":\"metric\",\"params\":{\"field\":\"filesize\",\"customLabel\":\"size\"}},{\"id\":\"4\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"bucket\",\"params\":{\"field\":\"path_full\",\"size\":10,\"order\":\"desc\",\"orderBy\":\"1\",\"customLabel\":\"file\"}}],\"listeners\":{}}",
-      "uiStateJSON": "{\"vis\":{\"params\":{\"sort\":{\"columnIndex\":2,\"direction\":null}}}}",
       "description": "",
       "version": 1,
       "kibanaSavedObjectMeta": {
@@ -549,11 +528,39 @@
     }
   },
   {
+    "_id": "baeecc40-592a-11e7-bff4-7721fd7578df",
+    "_type": "visualization",
+    "_source": {
+      "title": "LastModifiedCountExtensionPerWeek",
+      "visState": "{\"title\":\"LastModifiedCountExtensionPerWeek\",\"type\":\"histogram\",\"params\":{\"addLegend\":true,\"addTimeMarker\":false,\"addTooltip\":true,\"categoryAxes\":[{\"id\":\"CategoryAxis-1\",\"labels\":{\"show\":true,\"truncate\":100},\"position\":\"bottom\",\"scale\":{\"type\":\"linear\"},\"show\":true,\"style\":{},\"title\":{\"text\":\"last_modified per week\"},\"type\":\"category\"}],\"defaultYExtents\":false,\"drawLinesBetweenPoints\":true,\"grid\":{\"categoryLines\":false,\"style\":{\"color\":\"#eee\"}},\"interpolate\":\"linear\",\"legendPosition\":\"right\",\"mode\":\"stacked\",\"orderBucketsBySum\":false,\"radiusRatio\":9,\"scale\":\"linear\",\"seriesParams\":[{\"data\":{\"id\":\"1\",\"label\":\"Count\"},\"drawLinesBetweenPoints\":true,\"interpolate\":\"cardinal\",\"mode\":\"stacked\",\"show\":\"true\",\"showCircles\":true,\"type\":\"histogram\",\"valueAxis\":\"ValueAxis-1\"}],\"setYExtents\":false,\"showCircles\":true,\"times\":[],\"valueAxes\":[{\"id\":\"ValueAxis-1\",\"labels\":{\"filter\":false,\"rotate\":0,\"show\":true,\"truncate\":100},\"name\":\"LeftAxis-1\",\"position\":\"left\",\"scale\":{\"mode\":\"normal\",\"type\":\"linear\"},\"show\":true,\"style\":{},\"title\":{\"text\":\"Count\"},\"type\":\"value\"}]},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"last_modified\",\"interval\":\"w\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{}}},{\"id\":\"3\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"group\",\"params\":{\"field\":\"extension\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"1\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{\"vis\":{\"legendOpen\":true}}",
+      "description": "",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"diskover-*\",\"query\":{\"query_string\":{\"query\":\"*\",\"analyze_wildcard\":true}},\"filter\":[]}"
+      }
+    }
+  },
+  {
     "_id": "a535e480-5914-11e7-97a6-4f80198f3f8f",
     "_type": "visualization",
     "_source": {
       "title": "BubbleFileSizeExtensionCount",
       "visState": "{\"title\":\"BubbleFileSizeExtensionCount\",\"type\":\"line\",\"params\":{\"addLegend\":true,\"addTimeMarker\":false,\"addTooltip\":true,\"categoryAxes\":[{\"id\":\"CategoryAxis-1\",\"labels\":{\"show\":true,\"truncate\":100},\"position\":\"bottom\",\"scale\":{\"type\":\"linear\"},\"show\":true,\"style\":{},\"title\":{\"text\":\"last_modified per week\"},\"type\":\"category\"}],\"defaultYExtents\":false,\"drawLinesBetweenPoints\":true,\"grid\":{\"categoryLines\":false,\"style\":{\"color\":\"#eee\"}},\"interpolate\":\"linear\",\"legendPosition\":\"right\",\"radiusRatio\":\"17\",\"scale\":\"linear\",\"seriesParams\":[{\"data\":{\"id\":\"1\",\"label\":\"Count\"},\"drawLinesBetweenPoints\":false,\"interpolate\":\"linear\",\"lineWidth\":0,\"mode\":\"normal\",\"show\":true,\"showCircles\":true,\"type\":\"line\",\"valueAxis\":\"ValueAxis-1\"}],\"setYExtents\":false,\"showCircles\":true,\"times\":[],\"valueAxes\":[{\"id\":\"ValueAxis-1\",\"labels\":{\"filter\":false,\"rotate\":0,\"show\":true,\"truncate\":100},\"name\":\"LeftAxis-1\",\"position\":\"left\",\"scale\":{\"mode\":\"normal\",\"type\":\"linear\"},\"show\":true,\"style\":{},\"title\":{\"text\":\"Count\"},\"type\":\"value\"}]},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"last_modified\",\"interval\":\"w\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{}}},{\"id\":\"3\",\"enabled\":true,\"type\":\"sum\",\"schema\":\"radius\",\"params\":{\"field\":\"filesize\"}},{\"id\":\"4\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"group\",\"params\":{\"field\":\"extension\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"1\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"diskover-*\",\"query\":{\"query_string\":{\"analyze_wildcard\":true,\"query\":\"*\"}},\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "d53e3620-273a-11e7-8c8b-cd3a59e7992a",
+    "_type": "visualization",
+    "_source": {
+      "title": "ByFileSize",
+      "visState": "{\"title\":\"ByFileSize\",\"type\":\"pie\",\"params\":{\"addLegend\":true,\"addTooltip\":true,\"isDonut\":false,\"legendPosition\":\"right\"},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"range\",\"schema\":\"segment\",\"params\":{\"field\":\"filesize\",\"ranges\":[{\"from\":524288000,\"to\":1073741824},{\"from\":104857600,\"to\":524288000},{\"from\":52428800,\"to\":104857600},{\"from\":26214400,\"to\":52428800},{\"to\":26214400,\"from\":10485760},{\"from\":1,\"to\":1048576},{\"from\":1073741824,\"to\":null},{\"to\":5242880,\"from\":1048576},{\"to\":10485760,\"from\":5242880}],\"customLabel\":\"size\"}}],\"listeners\":{}}",
       "uiStateJSON": "{}",
       "description": "",
       "version": 1,
@@ -577,30 +584,30 @@
     }
   },
   {
-    "_id": "baeecc40-592a-11e7-bff4-7721fd7578df",
+    "_id": "e57439f0-2653-11e7-9c7e-376534115aac",
     "_type": "visualization",
     "_source": {
-      "title": "LastModifiedCountExtensionPerWeek",
-      "visState": "{\"title\":\"LastModifiedCountExtensionPerWeek\",\"type\":\"histogram\",\"params\":{\"addLegend\":true,\"addTimeMarker\":false,\"addTooltip\":true,\"categoryAxes\":[{\"id\":\"CategoryAxis-1\",\"labels\":{\"show\":true,\"truncate\":100},\"position\":\"bottom\",\"scale\":{\"type\":\"linear\"},\"show\":true,\"style\":{},\"title\":{\"text\":\"last_modified per week\"},\"type\":\"category\"}],\"defaultYExtents\":false,\"drawLinesBetweenPoints\":true,\"grid\":{\"categoryLines\":false,\"style\":{\"color\":\"#eee\"}},\"interpolate\":\"linear\",\"legendPosition\":\"right\",\"mode\":\"stacked\",\"orderBucketsBySum\":false,\"radiusRatio\":9,\"scale\":\"linear\",\"seriesParams\":[{\"data\":{\"id\":\"1\",\"label\":\"Count\"},\"drawLinesBetweenPoints\":true,\"interpolate\":\"cardinal\",\"mode\":\"stacked\",\"show\":\"true\",\"showCircles\":true,\"type\":\"histogram\",\"valueAxis\":\"ValueAxis-1\"}],\"setYExtents\":false,\"showCircles\":true,\"times\":[],\"valueAxes\":[{\"id\":\"ValueAxis-1\",\"labels\":{\"filter\":false,\"rotate\":0,\"show\":true,\"truncate\":100},\"name\":\"LeftAxis-1\",\"position\":\"left\",\"scale\":{\"mode\":\"normal\",\"type\":\"linear\"},\"show\":true,\"style\":{},\"title\":{\"text\":\"Count\"},\"type\":\"value\"}]},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"last_modified\",\"interval\":\"w\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{}}},{\"id\":\"3\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"group\",\"params\":{\"field\":\"extension\",\"size\":5,\"order\":\"desc\",\"orderBy\":\"1\"}}],\"listeners\":{}}",
-      "uiStateJSON": "{\"vis\":{\"legendOpen\":true}}",
+      "title": "LargestFiles",
+      "visState": "{\n  \"title\": \"LargestFiles\",\n  \"type\": \"table\",\n  \"params\": {\n    \"perPage\": 10,\n    \"showMeticsAtAllLevels\": false,\n    \"showPartialRows\": false,\n    \"showTotal\": false,\n    \"sort\": {\n      \"columnIndex\": null,\n      \"direction\": null\n    },\n    \"totalFunc\": \"sum\"\n  },\n  \"aggs\": [\n    {\n      \"id\": \"1\",\n      \"enabled\": true,\n      \"type\": \"sum\",\n      \"schema\": \"metric\",\n      \"params\": {\n        \"field\": \"filesize\",\n        \"customLabel\": \"size\"\n      }\n    },\n    {\n      \"id\": \"4\",\n      \"enabled\": true,\n      \"type\": \"terms\",\n      \"schema\": \"bucket\",\n      \"params\": {\n        \"field\": \"filename\",\n        \"size\": 10,\n        \"order\": \"desc\",\n        \"orderBy\": \"1\",\n        \"customLabel\": \"file\"\n      }\n    }\n  ],\n  \"listeners\": {}\n}",
+      "uiStateJSON": "{\n  \"vis\": {\n    \"params\": {\n      \"sort\": {\n        \"columnIndex\": 2,\n        \"direction\": null\n      }\n    }\n  }\n}",
       "description": "",
       "version": 1,
       "kibanaSavedObjectMeta": {
-        "searchSourceJSON": "{\"index\":\"diskover-*\",\"query\":{\"query_string\":{\"query\":\"*\",\"analyze_wildcard\":true}},\"filter\":[]}"
+        "searchSourceJSON": "{\n  \"index\": \"diskover-*\",\n  \"query\": {\n    \"query_string\": {\n      \"analyze_wildcard\": true,\n      \"query\": \"*\"\n    }\n  },\n  \"filter\": []\n}"
       }
     }
   },
   {
-    "_id": "d53e3620-273a-11e7-8c8b-cd3a59e7992a",
+    "_id": "LargestFiles",
     "_type": "visualization",
     "_source": {
-      "title": "ByFileSize",
-      "visState": "{\"title\":\"ByFileSize\",\"type\":\"pie\",\"params\":{\"addLegend\":true,\"addTooltip\":true,\"isDonut\":false,\"legendPosition\":\"right\"},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"range\",\"schema\":\"segment\",\"params\":{\"field\":\"filesize\",\"ranges\":[{\"from\":524288000,\"to\":1073741824},{\"from\":104857600,\"to\":524288000},{\"from\":52428800,\"to\":104857600},{\"from\":26214400,\"to\":52428800},{\"to\":26214400,\"from\":10485760},{\"from\":1,\"to\":1048576},{\"from\":1073741824,\"to\":null},{\"to\":5242880,\"from\":1048576},{\"to\":10485760,\"from\":5242880}],\"customLabel\":\"size\"}}],\"listeners\":{}}",
+      "title": "LargestFiles",
+      "visState": "{\n  \"title\": \"LargestFiles\",\n  \"type\": \"histogram\",\n  \"params\": {\n    \"shareYAxis\": true,\n    \"addTooltip\": true,\n    \"addLegend\": true,\n    \"legendPosition\": \"top\",\n    \"scale\": \"linear\",\n    \"mode\": \"stacked\",\n    \"times\": [],\n    \"addTimeMarker\": false,\n    \"defaultYExtents\": false,\n    \"setYExtents\": false,\n    \"yAxis\": {},\n    \"orderBucketsBySum\": false\n  },\n  \"aggs\": [\n    {\n      \"id\": \"2\",\n      \"enabled\": true,\n      \"type\": \"sum\",\n      \"schema\": \"metric\",\n      \"params\": {\n        \"field\": \"filesize\",\n        \"customLabel\": \"size\"\n      }\n    },\n    {\n      \"id\": \"3\",\n      \"enabled\": true,\n      \"type\": \"terms\",\n      \"schema\": \"segment\",\n      \"params\": {\n        \"field\": \"filename\",\n        \"size\": 5,\n        \"order\": \"desc\",\n        \"orderBy\": \"2\",\n        \"customLabel\": \"file\"\n      }\n    }\n  ],\n  \"listeners\": {}\n}",
       "uiStateJSON": "{}",
       "description": "",
       "version": 1,
       "kibanaSavedObjectMeta": {
-        "searchSourceJSON": "{\"index\":\"diskover-*\",\"query\":{\"query_string\":{\"analyze_wildcard\":true,\"query\":\"*\"}},\"filter\":[]}"
+        "searchSourceJSON": "{\n  \"index\": \"diskover-*\",\n  \"query\": {\n    \"query_string\": {\n      \"query\": \"*\",\n      \"analyze_wildcard\": true\n    }\n  },\n  \"filter\": []\n}"
       }
     }
   }
