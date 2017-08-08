@@ -10,7 +10,7 @@ diskover aims to help manage your storage by identify old and unused files and g
 
 ## Screenshots
 
-Kibana dashboard (multiple dashboards and saved searches/visualizations)
+Kibana dashboards / saved searches and visualizations (included in diskover download)
 ![kibana-screenshot](docs/kibana-dashboarddark2-screenshot.png?raw=true)
 [diskover-web](https://github.com/shirosaidev/diskover-web) (diskover's web file manager)
 ![diskover-web](https://github.com/shirosaidev/diskover-web/raw/master/docs/diskover-web-sunburst-screenshot.png?raw=true)
