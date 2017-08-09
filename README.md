@@ -1,4 +1,4 @@
-# diskover - Elasticsearch file system crawler and disk space analyzer using Kibana
+# diskover - File system crawler and disk space analyzer using Elasticsearch and Kibana
 
 ![diskover](docs/diskover.png?raw=true)
 
