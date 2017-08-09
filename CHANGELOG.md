@@ -1,8 +1,12 @@
 # Diskover Change Log
 
+## [1.1.3] = 2017-08-09
+### fixed
+- tagdupes cli flag will now only update existing index and will not overwrite any existing index
+
 ## [1.1.2] = 2017-08-05
 ### changed
-- removed path_full field and es mapping. duplicate data in path_parent and filename.
+- removed path_full field and es mapping. duplicate data in path_parent and filename
 
 ## [1.1.1] = 2017-06-21
 ### added

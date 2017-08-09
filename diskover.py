@@ -42,7 +42,7 @@ if not IS_WIN:
 if IS_WIN:
 	import win32security
 
-DISKOVER_VERSION = '1.1.2'
+DISKOVER_VERSION = '1.1.3'
 
 def printBanner():
 	"""This is the print banner function.
@@ -520,13 +520,13 @@ def indexAdd(threadnum, ES, INDEXNAME, filelist, LOGGER, VERBOSE, DEBUG):
 	helpers.bulk(ES, filelist, index=INDEXNAME, doc_type='file')
 	return
 
-def indexUpdate(threadnum, ES, INDEXNAME, filelist, LOGGER, VERBOSE, DEBUG):
+def indexUpdate(ES, INDEXNAME, filelist, LOGGER, VERBOSE, DEBUG):
 	"""This is the ES index update function.
 	It updates data in ES.
 	"""
 	data = [];
 	if VERBOSE or DEBUG:
-		LOGGER.info('[thread-%s]: Bulk updating data in ES index', threadnum)
+		LOGGER.info('Bulk updating data in ES index')
 	# bulk update data in Elasticsearch index
 	for file in filelist:
 		id = file['_id']
@@ -541,14 +541,14 @@ def indexUpdate(threadnum, ES, INDEXNAME, filelist, LOGGER, VERBOSE, DEBUG):
 	helpers.bulk(ES, data, index=INDEXNAME, doc_type='file')
 	return
 
-def tagDupes(ES, INDEXNAME, NODELETE, LOGGER, VERBOSE, DEBUG):
+def tagDupes(ES, INDEXNAME, LOGGER, VERBOSE, DEBUG):
 	"""This is the duplicate file tagger.
 	It tags dupe files (same filehash) in an existing index.
 	"""
 	# search ES for duplicate files
 	dupes_list = dupesFinder(ES, INDEXNAME, LOGGER)
 	# update existing index and tag dupe files is_dupe field
-	indexUpdate(0, ES, INDEXNAME, dupes_list, LOGGER, VERBOSE, DEBUG)
+	indexUpdate(ES, INDEXNAME, dupes_list, LOGGER, VERBOSE, DEBUG)
 	return
 
 def dupesFinder(ES, INDEXNAME, LOGGER):
@@ -739,7 +739,17 @@ def main():
 			print('\nCtrl-c keyboard interrupt received, exiting')
 		sys.exit(0)
 
-	# create Elasticsearch index
+	# tag duplicate files if cli argument
+	if TAGDUPES:
+		try:
+			timenow = time.time()
+			tagDupes(ES, INDEXNAME, LOGGER, VERBOSE, DEBUG)
+			printStats(timenow, LOGGER, stats_type='updating')
+		except KeyboardInterrupt:
+			print('\nCtrl-c keyboard interrupt received, exiting')
+		sys.exit(0)
+
+    # create Elasticsearch index
 	indexCreate(ES, INDEXNAME, NODELETE, LOGGER)
 
 	# Set up directory queue
@@ -758,11 +768,6 @@ def main():
 			sys.stdout.flush()
 			LOGGER.info('Finished crawling')
 			printStats(DATEEPOCH, LOGGER)
-		# tag duplicate files if cli argument
-		if TAGDUPES:
-			timenow = time.time()
-			tagDupes(ES, INDEXNAME, NODELETE, LOGGER, VERBOSE, DEBUG)
-			printStats(timenow, LOGGER, stats_type='updating')
 		# exit, we're all done!
 		sys.exit(0)
 	except KeyboardInterrupt:
