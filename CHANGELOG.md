@@ -1,5 +1,9 @@
 # Diskover Change Log
 
+## [1.1.4] = 2017-08-12
+### added
+- tag_custom field and es keyword mapping
+
 ## [1.1.3] = 2017-08-09
 ### fixed
 - tagdupes cli flag will now only update existing index and will not overwrite any existing index

@@ -42,7 +42,7 @@ if not IS_WIN:
 if IS_WIN:
 	import win32security
 
-DISKOVER_VERSION = '1.1.3'
+DISKOVER_VERSION = '1.1.4'
 
 def printBanner():
 	"""This is the print banner function.
@@ -348,6 +348,7 @@ def crawlFiles(path, DATEEPOCH, DAYSOLD, MINSIZE, EXCLUDED_FILES, LOGGER, thread
 							"inode": inode,
 							"filehash": "%s" % filehash,
 							"tag": "untagged",
+							"tag_custom": "",
 							'is_dupe': "false",
 							"indexing_date": "%s" % indextime_utc,
 							"indexing_thread": "%s" % threadnum
@@ -490,6 +491,9 @@ def indexCreate(ES, INDEXNAME, NODELETE, LOGGER):
 						"type": "keyword"
 					},
 					"tag": {
+						"type": "keyword"
+					},
+					"tag_custom": {
 						"type": "keyword"
 					},
 					"is_dupe": {
