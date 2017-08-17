@@ -1,5 +1,9 @@
 # Diskover Change Log
 
+## [1.1.5] = 2017-08-17
+### added
+- improved duplicate file finding using multi-pass detection 1) filehash (mtime/filesize) 2) first and last few bytes 3) md5 sums
+
 ## [1.1.4] = 2017-08-12
 ### added
 - tag_custom field and es keyword mapping

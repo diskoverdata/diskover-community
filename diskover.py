@@ -42,7 +42,7 @@ if not IS_WIN:
 if IS_WIN:
 	import win32security
 
-DISKOVER_VERSION = '1.1.4'
+DISKOVER_VERSION = '1.1.5'
 
 def printBanner():
 	"""This is the print banner function.
@@ -264,14 +264,14 @@ def crawlFiles(path, DATEEPOCH, DAYSOLD, MINSIZE, EXCLUDED_FILES, LOGGER, thread
 				# get absolute path (parent of file)
 				abspath = os.path.abspath(path)
 				# get full path to file
-				filename_fullpath = os.path.join(abspath, entry.name)
-				size = os.path.getsize(filename_fullpath)
+				filename_fullpath = entry.path
+				size = entry.stat().st_size
 				# Convert bytes to MB
 				size_mb = size / 1024 / 1024
 				# Skip files smaller than x MB and skip empty files
 				if size_mb >= MINSIZE and size > 0:
 					# Get file modified time
-					mtime_unix = int(os.path.getmtime(filename_fullpath))
+					mtime_unix = int(entry.stat().st_mtime)
 					mtime_utc = datetime.utcfromtimestamp(mtime_unix).strftime('%Y-%m-%dT%H:%M:%S')
 					# Convert time in days to seconds
 					time_sec = DAYSOLD * 86400
@@ -279,10 +279,10 @@ def crawlFiles(path, DATEEPOCH, DAYSOLD, MINSIZE, EXCLUDED_FILES, LOGGER, thread
 					# Only process files modified at least x days ago
 					if file_mtime_sec >= time_sec:
 						# get access time
-						atime_unix = int(os.path.getatime(filename_fullpath))
+						atime_unix = int(entry.stat().st_atime)
 						atime_utc = datetime.utcfromtimestamp(atime_unix).strftime('%Y-%m-%dT%H:%M:%S')
 						# get change time
-						ctime_unix = int(os.path.getctime(filename_fullpath))
+						ctime_unix = int(entry.stat().st_ctime)
 						ctime_utc = datetime.utcfromtimestamp(ctime_unix).strftime('%Y-%m-%dT%H:%M:%S')
 						if IS_WIN:
 							sd = win32security.GetFileSecurity(filename_fullpath, win32security.OWNER_SECURITY_INFORMATION)
@@ -293,7 +293,7 @@ def crawlFiles(path, DATEEPOCH, DAYSOLD, MINSIZE, EXCLUDED_FILES, LOGGER, thread
 							inode = "0"
 						else:
 							# get user id of owner
-							uid = os.stat(filename_fullpath).st_uid
+							uid = entry.stat().st_uid
 							# try to get owner user name
 							try:
 								owner = pwd.getpwuid(uid).pw_name.split('\\')
@@ -306,7 +306,7 @@ def crawlFiles(path, DATEEPOCH, DAYSOLD, MINSIZE, EXCLUDED_FILES, LOGGER, thread
 							except KeyError:
 								owner = uid
 							# get group id
-							gid = os.stat(filename_fullpath).st_gid
+							gid = entry.stat().st_gid
 							# try to get group name
 							try:
 								group = grp.getgrgid(gid).gr_name.split('\\')
@@ -319,17 +319,17 @@ def crawlFiles(path, DATEEPOCH, DAYSOLD, MINSIZE, EXCLUDED_FILES, LOGGER, thread
 							except KeyError:
 								group = gid
 							# get inode number
-							inode = os.stat(filename_fullpath).st_ino
+							inode = entry.stat().st_ino
 						# get number of hardlinks
-						hardlinks = os.stat(filename_fullpath).st_nlink
+						hardlinks = entry.stat().st_nlink
 						if IS_WIN:
 							name = entry.name
 						else:
 							name = entry.name.decode('utf-8')
 							extension = extension.decode('utf-8')
 							abspath = abspath.decode('utf-8')
-						# create md5 hash of file using metadata
-						filestring = unicode(name) + str(size) + str(mtime_unix)
+						# create md5 hash of file using metadata filesize and mtime
+						filestring = str(size) + str(mtime_unix)
 						filehash = hashlib.md5(filestring.encode('utf-8')).hexdigest()
 						# get time
 						indextime_utc = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
@@ -547,10 +547,116 @@ def indexUpdate(ES, INDEXNAME, filelist, LOGGER, VERBOSE, DEBUG):
 
 def tagDupes(ES, INDEXNAME, LOGGER, VERBOSE, DEBUG):
 	"""This is the duplicate file tagger.
-	It tags dupe files (same filehash) in an existing index.
+	It find files with same filehash in an existing index.
+	The first few bytes at beginning and end of files are
+	compared and if same, a md5 check is run on the files.
+	If the files are duplicate, their is_dupe field 
+	is set to true.
 	"""
-	# search ES for duplicate files
+	global total_num_files
+	dupe_count = 0
+	
+	# search ES for duplicate files (same filehash)
 	dupes_list = dupesFinder(ES, INDEXNAME, LOGGER)
+	
+	dupe_count = len(dupes_list)
+	
+	# create a dictionary with unique file hashes
+	dupes_list_filehash = {}
+	for i in dupes_list:
+		dupes_list_filehash[i['_source']['filehash']] = []
+	# add files with matching hash to dictionary
+	for i in dupes_list:
+		dupes_list_filehash[i['_source']['filehash']].append(i['_source']['path_parent']+"/"+i['_source']['filename'])
+	
+	LOGGER.info('Found %s unique filehashes', len(dupes_list_filehash))
+	LOGGER.info('Comparing bytes')
+	# compare the first and last few bytes of files with same hash
+	for key, value in dupes_list_filehash.items():
+		if VERBOSE or DEBUG:
+			LOGGER.info('Analyzing filehash: %s', key)
+		i = 0
+		for file in value:
+			store_bytes = 1
+			if VERBOSE or DEBUG:
+				LOGGER.info('Checking bytes: %s', file)
+			f = open(file, 'rb')
+			bytes_f = f.read(2)
+			f.seek(-2, os.SEEK_END)
+			bytes_l = f.read(2)
+			f.close()
+			
+			# skip if first file
+			if i > 0:
+				# compare previous file bytes with current file
+				same_f = bytes_f == bytes_f0
+				same_l = bytes_l == bytes_l0
+				# remove file if bytes different
+				if not same_f or not same_l:
+					if VERBOSE or DEBUG:
+						LOGGER.info('Bytes diff, removing: %s', file)
+					# remove from filehash list
+					del dupes_list_filehash[key][dupes_list_filehash[key].index(file)]
+					# remove from dupes list
+					for i in range(len(dupes_list)):
+						if dupes_list[i]['_source']['path_parent'] == os.path.abspath(os.path.join(file, os.pardir)) and dupes_list[i]['_source']['filename'] == os.path.basename(file):
+							del dupes_list[i]
+							break
+					dupe_count -= 1
+					store_bytes = 0
+			
+			if store_bytes:
+				# store bytes for use next iteration
+				bytes_f0 = bytes_f
+				bytes_l0 = bytes_l
+			i += 1
+	
+	# check if any hashes have only one file and then remove it
+	for key, value in dupes_list_filehash.items():
+		if len(value) == 1:
+			# remove filehash from dictionary
+			del dupes_list_filehash[key]
+	
+	LOGGER.info('Comparing MD5 sums')
+	# do md5 check on files with same file hashes
+	for key, value in dupes_list_filehash.items():
+		if VERBOSE or DEBUG:
+			LOGGER.info('Analyzing filehash: %s', key)
+		i = 0
+		for file in value:
+			store_bytes = 1
+			if VERBOSE or DEBUG:
+				LOGGER.info('Checking MD5: %s', file)
+			# get md5 sum
+			md5 = hashlib.md5(open(file, 'rb').read()).hexdigest()
+			
+			# skip if first file
+			if i > 0:
+				# compare previous md5 sum with current file's md5
+				same_md5 = md5 == md50
+				# remove file if md5 different
+				if not same_md5:
+					if VERBOSE or DEBUG:
+						LOGGER.info('MD5 diff, removing: %s', file)
+					# remove from filehash list
+					del dupes_list_filehash[key][dupes_list_filehash[key].index(file)]
+					# remove from dupes list
+					for i in range(len(dupes_list)):
+						if dupes_list[i]['_source']['path_parent'] == os.path.abspath(os.path.join(file, os.pardir)) and dupes_list[i]['_source']['filename'] == os.path.basename(file):
+							del dupes_list[i]
+							break
+					dupe_count -= 1
+					store_bytes = 0
+				
+			if store_bytes:
+				# store md5 for use next iteration
+				md50 = md5
+			i += 1
+			
+	LOGGER.info('Found %s duplicate files', dupe_count)
+	
+	total_num_files = dupe_count
+	
 	# update existing index and tag dupe files is_dupe field
 	indexUpdate(ES, INDEXNAME, dupes_list, LOGGER, VERBOSE, DEBUG)
 	return
@@ -560,7 +666,6 @@ def dupesFinder(ES, INDEXNAME, LOGGER):
 	It searches Elasticsearch for files that have the same filehash
 	and returns a list of those dupes.
 	"""
-	global total_num_files
 	dupes_list = []
 	dupe_count = 0
 	data = {
@@ -590,8 +695,7 @@ def dupesFinder(ES, INDEXNAME, LOGGER):
 		for hit in hit['duplicateDocuments']['hits']['hits']:
 			dupes_list.append(hit)
 			dupe_count += 1
-	total_num_files = dupe_count
-	LOGGER.info('Found: %s dupes', dupe_count)
+	LOGGER.info('Found %s files with similiar filehash', dupe_count)
 	return dupes_list
 
 def printStats(DATEEPOCH, LOGGER, stats_type='indexing'):
