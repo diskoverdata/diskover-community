@@ -499,7 +499,7 @@ def indexCreate(ES, INDEXNAME, NODELETE, LOGGER):
 						"type": "keyword"
 					},
 					"path_parent": {
-						"type": "text"
+						"type": "keyword"
 					},
 					"filesize": {
 						"type": "long"
