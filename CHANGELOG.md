@@ -1,5 +1,16 @@
 # Diskover Change Log
 
+## [1.1.6] = 2017-08-29
+### added
+- multi-threaded duplicate file checking
+### changed
+- bytes are stored in base64 when doing duplicate file byte comparison
+### fixed
+- some duplicate files not being found in ES
+- ES connection timeout issue when searching for a lot of duplicate files
+- fatal error and crash when searching for duplicate files that no longer existed
+- fatal error and crash when duplicate file only 1 byte and running byte check
+
 ## [1.1.5] = 2017-08-17
 ### added
 - improved duplicate file finding using multi-pass detection 1) filehash (mtime/filesize) 2) first and last few bytes 3) md5 sums

@@ -27,6 +27,7 @@ except ImportError:
 	import ConfigParser
 import hashlib
 import logging
+import base64
 
 IS_PY3 = sys.version_info >= (3, 0)
 
@@ -42,7 +43,7 @@ if not IS_WIN:
 if IS_WIN:
 	import win32security
 
-DISKOVER_VERSION = '1.1.5'
+DISKOVER_VERSION = '1.1.6'
 
 def printBanner():
 	"""This is the print banner function.
@@ -356,12 +357,12 @@ def crawlFiles(path, DATEEPOCH, DAYSOLD, MINSIZE, EXCLUDED_FILES, LOGGER, thread
 						# add file metadata dictionary to filelist list
 						filelist.append(filemeta_dict)
 						total_num_files += 1
-			except:
+			except IOError:
 				if DEBUG or VERBOSE:
 					LOGGER.error('Failed to index file', exc_info=True)
 				pass
 		return filelist
-	except:
+	except IOError:
 		if DEBUG or VERBOSE:
 			LOGGER.error('Failed to crawl directory', exc_info=True)
 		pass
@@ -369,9 +370,8 @@ def crawlFiles(path, DATEEPOCH, DAYSOLD, MINSIZE, EXCLUDED_FILES, LOGGER, thread
 
 def workerSetup(DIRECTORY_QUEUE, NUM_THREADS, ES, INDEXNAME, DATEEPOCH, \
 		DAYSOLD, MINSIZE, EXCLUDED_FILES, LOGGER, QUIET, VERBOSE, DEBUG):
-	"""This is the worker setup function.
-	It sets up the worker threads to process
-	the directory list Queue.
+	"""This is the worker setup function for directory crawling.
+	It sets up the worker threads to process the directory list Queue.
 	"""
 	for i in range(NUM_THREADS):
 		worker = threading.Thread(target=processDirectoryWorker, \
@@ -379,6 +379,19 @@ def workerSetup(DIRECTORY_QUEUE, NUM_THREADS, ES, INDEXNAME, DATEEPOCH, \
 				MINSIZE, EXCLUDED_FILES, LOGGER, QUIET, VERBOSE, DEBUG,))
 		worker.daemon = True
 		worker.start()
+	return
+
+def workerSetupDupes(DUPES_QUEUE, NUM_THREADS, ES, INDEXNAME, DATEEPOCH, \
+		LOGGER, QUIET, VERBOSE, DEBUG):
+	"""This is the duplicate file worker setup function.
+	It sets up the worker threads to process the duplicate file list Queue.
+	"""
+	for i in range(NUM_THREADS):
+		worker_dupes = threading.Thread(target=processDupesWorker, \
+			args=(i, DUPES_QUEUE, ES, INDEXNAME, DATEEPOCH, LOGGER, QUIET, \
+					VERBOSE, DEBUG,))
+		worker_dupes.daemon = True
+		worker_dupes.start()
 	return
 
 def processDirectoryWorker(threadnum, DIRECTORY_QUEUE, ES, INDEXNAME, DATEEPOCH, \
@@ -411,6 +424,31 @@ def processDirectoryWorker(threadnum, DIRECTORY_QUEUE, ES, INDEXNAME, DATEEPOCH,
 				% (dircount, total_num_dirs))
 		# task is done
 		DIRECTORY_QUEUE.task_done()
+
+def processDupesWorker(threadnum, DUPES_QUEUE, ES, INDEXNAME, DATEEPOCH, \
+		LOGGER, QUIET, VERBOSE, DEBUG):
+	"""This is the duplicate file worker thread function.
+	It processes items in the duplicate files Queue one after another.
+	"""
+	global total_num_files
+	dupelist = []
+	while True:
+		if VERBOSE or DEBUG:
+			LOGGER.info('[thread-%s]: Looking for the next filehash group', threadnum)
+		# get an item (hashgroup) from the queue
+		hashgroup = DUPES_QUEUE.get()
+		# process the duplicate files in hashgroup
+		dupelist = tagDupes(ES, INDEXNAME, hashgroup, LOGGER, VERBOSE, DEBUG)
+		if dupelist:
+			# update existing index and tag dupe files is_dupe field
+			indexUpdate(ES, INDEXNAME, dupelist, LOGGER, VERBOSE, DEBUG)
+		# print progress bar
+		dupecount = total_num_files - DUPES_QUEUE.qsize()
+		if dupecount > 0 and not VERBOSE and not DEBUG and not QUIET:
+			printProgressBar(dupecount, total_num_files, 'Checking:', '%s/%s' \
+				% (dupecount, total_num_files))
+		# task is done
+		DUPES_QUEUE.task_done()
 
 def elasticsearchConnect(AWS, ES_HOST, ES_PORT, ES_USER, ES_PASSWORD, LOGGER):
 	"""This is the ES function.
@@ -461,7 +499,7 @@ def indexCreate(ES, INDEXNAME, NODELETE, LOGGER):
 						"type": "keyword"
 					},
 					"path_parent": {
-						"type": "keyword"
+						"type": "text"
 					},
 					"filesize": {
 						"type": "long"
@@ -524,15 +562,15 @@ def indexAdd(threadnum, ES, INDEXNAME, filelist, LOGGER, VERBOSE, DEBUG):
 	helpers.bulk(ES, filelist, index=INDEXNAME, doc_type='file')
 	return
 
-def indexUpdate(ES, INDEXNAME, filelist, LOGGER, VERBOSE, DEBUG):
-	"""This is the ES index update function.
-	It updates data in ES.
+def indexUpdate(ES, INDEXNAME, dupelist, LOGGER, VERBOSE, DEBUG):
+	"""This is the ES is_dupe tag update function.
+	It updates a file's is_dupe field to true.
 	"""
 	data = [];
 	if VERBOSE or DEBUG:
 		LOGGER.info('Bulk updating data in ES index')
 	# bulk update data in Elasticsearch index
-	for file in filelist:
+	for file in dupelist:
 		id = file['_id']
 		d = {
 	    '_op_type': 'update',
@@ -545,22 +583,18 @@ def indexUpdate(ES, INDEXNAME, filelist, LOGGER, VERBOSE, DEBUG):
 	helpers.bulk(ES, data, index=INDEXNAME, doc_type='file')
 	return
 
-def tagDupes(ES, INDEXNAME, LOGGER, VERBOSE, DEBUG):
+def tagDupes(ES, INDEXNAME, dupes_list, LOGGER, VERBOSE, DEBUG):
 	"""This is the duplicate file tagger.
-	It find files with same filehash in an existing index.
+	It processes files in hashgroup to verify if they are duplicate.
 	The first few bytes at beginning and end of files are
 	compared and if same, a md5 check is run on the files.
-	If the files are duplicate, their is_dupe field 
+	If the files are duplicate, their is_dupe field
 	is set to true.
 	"""
 	global total_num_files
-	dupe_count = 0
-	
-	# search ES for duplicate files (same filehash)
-	dupes_list = dupesFinder(ES, INDEXNAME, LOGGER)
-	
+
 	dupe_count = len(dupes_list)
-	
+
 	# create a dictionary with unique file hashes
 	dupes_list_filehash = {}
 	for i in dupes_list:
@@ -568,135 +602,145 @@ def tagDupes(ES, INDEXNAME, LOGGER, VERBOSE, DEBUG):
 	# add files with matching hash to dictionary
 	for i in dupes_list:
 		dupes_list_filehash[i['_source']['filehash']].append(i['_source']['path_parent']+"/"+i['_source']['filename'])
-	
-	LOGGER.info('Found %s unique filehashes', len(dupes_list_filehash))
-	LOGGER.info('Comparing bytes')
-	# compare the first and last few bytes of files with same hash
-	for key, value in dupes_list_filehash.items():
-		if VERBOSE or DEBUG:
-			LOGGER.info('Analyzing filehash: %s', key)
-		i = 0
-		for file in value:
-			store_bytes = 1
-			if VERBOSE or DEBUG:
-				LOGGER.info('Checking bytes: %s', file)
-			f = open(file, 'rb')
-			bytes_f = f.read(2)
-			f.seek(-2, os.SEEK_END)
-			bytes_l = f.read(2)
-			f.close()
-			
-			# skip if first file
-			if i > 0:
-				# compare previous file bytes with current file
-				same_f = bytes_f == bytes_f0
-				same_l = bytes_l == bytes_l0
-				# remove file if bytes different
-				if not same_f or not same_l:
-					if VERBOSE or DEBUG:
-						LOGGER.info('Bytes diff, removing: %s', file)
-					# remove from filehash list
-					del dupes_list_filehash[key][dupes_list_filehash[key].index(file)]
-					# remove from dupes list
-					for i in range(len(dupes_list)):
-						if dupes_list[i]['_source']['path_parent'] == os.path.abspath(os.path.join(file, os.pardir)) and dupes_list[i]['_source']['filename'] == os.path.basename(file):
-							del dupes_list[i]
-							break
-					dupe_count -= 1
-					store_bytes = 0
-			
-			if store_bytes:
-				# store bytes for use next iteration
-				bytes_f0 = bytes_f
-				bytes_l0 = bytes_l
-			i += 1
-	
-	# check if any hashes have only one file and then remove it
-	for key, value in dupes_list_filehash.items():
-		if len(value) == 1:
-			# remove filehash from dictionary
-			del dupes_list_filehash[key]
-	
-	LOGGER.info('Comparing MD5 sums')
-	# do md5 check on files with same file hashes
-	for key, value in dupes_list_filehash.items():
-		if VERBOSE or DEBUG:
-			LOGGER.info('Analyzing filehash: %s', key)
-		i = 0
-		for file in value:
-			store_bytes = 1
-			if VERBOSE or DEBUG:
-				LOGGER.info('Checking MD5: %s', file)
-			# get md5 sum
-			md5 = hashlib.md5(open(file, 'rb').read()).hexdigest()
-			
-			# skip if first file
-			if i > 0:
-				# compare previous md5 sum with current file's md5
-				same_md5 = md5 == md50
-				# remove file if md5 different
-				if not same_md5:
-					if VERBOSE or DEBUG:
-						LOGGER.info('MD5 diff, removing: %s', file)
-					# remove from filehash list
-					del dupes_list_filehash[key][dupes_list_filehash[key].index(file)]
-					# remove from dupes list
-					for i in range(len(dupes_list)):
-						if dupes_list[i]['_source']['path_parent'] == os.path.abspath(os.path.join(file, os.pardir)) and dupes_list[i]['_source']['filename'] == os.path.basename(file):
-							del dupes_list[i]
-							break
-					dupe_count -= 1
-					store_bytes = 0
-				
-			if store_bytes:
-				# store md5 for use next iteration
-				md50 = md5
-			i += 1
-			
-	LOGGER.info('Found %s duplicate files', dupe_count)
-	
-	total_num_files = dupe_count
-	
-	# update existing index and tag dupe files is_dupe field
-	indexUpdate(ES, INDEXNAME, dupes_list, LOGGER, VERBOSE, DEBUG)
-	return
 
-def dupesFinder(ES, INDEXNAME, LOGGER):
+	if VERBOSE or DEBUG:
+		LOGGER.info('Found %s unique filehashes', len(dupes_list_filehash))
+
+	# Add first and last few bytes for each file to dictionary
+	if VERBOSE or DEBUG:
+		LOGGER.info('Comparing bytes')
+	dupes_list_bytes = {}
+	for key, value in list(dupes_list_filehash.items()):
+		if VERBOSE or DEBUG:
+			LOGGER.info('Analyzing filehash: %s', key)
+		# create a new dictionary with files that have same byte hash
+		for filename in value:
+			if VERBOSE or DEBUG:
+				LOGGER.info('Checking bytes: %s', filename)
+			try:
+				f = open(filename, 'rb')
+			except IOError:
+				if DEBUG or VERBOSE:
+					LOGGER.error('Error checking file', exc_info=True)
+				continue
+			# check if files is only 1 byte
+			try:
+				bytes_f = base64.b64encode(f.read(2))
+			except IOError:
+				bytes_f = base64.b64encode(f.read(1))
+			try:
+				f.seek(-2, os.SEEK_END)
+				bytes_l = base64.b64encode(f.read(2))
+			except IOError:
+				f.seek(-1, os.SEEK_END)
+				bytes_l = base64.b64encode(f.read(1))
+			f.close()
+
+			# create hash of bytes
+			bytestring = str(bytes_f) + str(bytes_l)
+			bytehash = hashlib.md5(bytestring.encode('utf-8')).hexdigest()
+
+			# create new key for each bytehash and set value as new list and add file
+			dupes_list_bytes.setdefault(bytehash,[]).append(filename)
+
+	# remove any bytehash key that only has 1 item (no duplicate)
+	for key, value in list(dupes_list_bytes.items()):
+		if len(value) < 2:
+			filename = value[0]
+			if VERBOSE or DEBUG:
+				LOGGER.info('Unique file (bytes diff), removing: %s', filename)
+			del dupes_list_bytes[key]
+			# remove file from dupes list
+			for i in range(len(dupes_list)):
+				if dupes_list[i]['_source']['path_parent'] == os.path.abspath(os.path.join(filename, os.pardir)) \
+						and dupes_list[i]['_source']['filename'] == os.path.basename(filename):
+					del dupes_list[i]
+					break
+			dupe_count -= 1
+	
+	if VERBOSE or DEBUG:
+		LOGGER.info('Comparing MD5 sums')
+	dupes_list_md5 = {}
+	# do md5 check on files with same byte hashes
+	for key, value in list(dupes_list_bytes.items()):
+		if VERBOSE or DEBUG:
+			LOGGER.info('Analyzing filehash: %s', key)
+		for filename in value:
+			if VERBOSE or DEBUG:
+				LOGGER.info('Checking MD5: %s', filename)
+			# get md5 sum
+			try:
+				md5sum = hashlib.md5(open(filename, 'rb').read()).hexdigest()
+			except IOError:
+				if DEBUG or VERBOSE:
+					LOGGER.error('Error checking file', exc_info=True)
+				continue
+
+			# create new key for each md5sum and set value as new list and add file
+			dupes_list_md5.setdefault(md5sum,[]).append(filename)
+
+	# remove any md5sum key that only has 1 item (no duplicate)
+	for key, value in list(dupes_list_md5.items()):
+		if len(value) < 2:
+			filename = value[0]
+			if VERBOSE or DEBUG:
+				LOGGER.info('Unique file (MD5 diff), removing: %s', filename)
+			del dupes_list_md5[key]
+			# remove file from dupes list
+			for i in range(len(dupes_list)):
+				if dupes_list[i]['_source']['path_parent'] == os.path.abspath(os.path.join(filename, os.pardir)) \
+						and dupes_list[i]['_source']['filename'] == os.path.basename(filename):
+					del dupes_list[i]
+					break
+			dupe_count -= 1
+
+	if VERBOSE or DEBUG:
+		LOGGER.info('Found %s duplicate files', dupe_count)
+
+	total_num_files += dupe_count
+
+	return dupes_list
+
+def dupesFinder(ES, DUPES_QUEUE, INDEXNAME, LOGGER):
 	"""This is the duplicate file finder function.
 	It searches Elasticsearch for files that have the same filehash
-	and returns a list of those dupes.
+	and add the list to the dupes queue.
 	"""
-	dupes_list = []
 	dupe_count = 0
 	data = {
-	"size": 0,
-	"aggs": {
-	  "duplicateCount": {
-	    "terms": {
-	    "field": "filehash",
-	      "min_doc_count": 2,
-		  "size": 1000
-	    },
-	    "aggs": {
-	      "duplicateDocuments": {
-	        "top_hits": {
-			"size": 1000
+			"size": 0,
+			"aggs": {
+			  "duplicateCount": {
+			    "terms": {
+			      "field": "filehash",
+			      "min_doc_count": 2,
+						"size": 10000
+			    },
+				"aggs": {
+				  "duplicateDocuments": {
+				    "top_hits": {
+							"size": 100
+						}
+				  }
+				}
+			  }
 			}
-	      }
-	    }
-	  }
-	}
-	}
+		  }
+	# search ES and return results
 	LOGGER.info('Refreshing ES index')
 	ES.indices.refresh(index=INDEXNAME)
-	LOGGER.info('Searching index for duplicate files')
-	res = ES.search(index=INDEXNAME, body=data)
+	LOGGER.info('Searching index for duplicate file hashes')
+	res = ES.search(index=INDEXNAME, doc_type='file', body=data)
+		
 	for hit in res['aggregations']['duplicateCount']['buckets']:
+		hashgroup_list = []
 		for hit in hit['duplicateDocuments']['hits']['hits']:
-			dupes_list.append(hit)
-			dupe_count += 1
+				hashgroup_list.append(hit)
+				dupe_count += 1
+		# add hashgroup to duplicate file worker queue
+		DUPES_QUEUE.put(hashgroup_list)
 	LOGGER.info('Found %s files with similiar filehash', dupe_count)
-	return dupes_list
+	return
 
 def printStats(DATEEPOCH, LOGGER, stats_type='indexing'):
 	"""This is the print stats function
@@ -707,8 +751,8 @@ def printStats(DATEEPOCH, LOGGER, stats_type='indexing'):
 	if stats_type is 'indexing':
 		LOGGER.info('Directories Crawled: %s', total_num_dirs)
 		LOGGER.info('Files Indexed: %s', total_num_files)
-	if stats_type is 'updating':
-		LOGGER.info('Files updated: %s', total_num_files)
+	if stats_type is 'updating_dupe':
+		LOGGER.info('Duplicate Files: %s', total_num_files)
 	LOGGER.info('Elapsed time: %s', elapsedtime)
 	return
 
@@ -850,9 +894,20 @@ def main():
 	# tag duplicate files if cli argument
 	if TAGDUPES:
 		try:
-			timenow = time.time()
-			tagDupes(ES, INDEXNAME, LOGGER, VERBOSE, DEBUG)
-			printStats(timenow, LOGGER, stats_type='updating')
+			# Set up duplicate file checker queue
+			DUPES_QUEUE = Queue.Queue()
+			# look in ES for duplicate files (same filehash) and add to queue
+			dupesFinder(ES, DUPES_QUEUE, INDEXNAME, LOGGER)
+			# Set up worker threads for duplicate file checker queue
+			workerSetupDupes(DUPES_QUEUE, NUM_THREADS, ES, INDEXNAME, DATEEPOCH, \
+					LOGGER, QUIET, VERBOSE, DEBUG)
+			# wait for all threads to finish
+			DUPES_QUEUE.join()
+			if not QUIET:
+				sys.stdout.write('\n')
+				sys.stdout.flush()
+				LOGGER.info('Finished checking for dupes')
+				printStats(DATEEPOCH, LOGGER, stats_type='updating_dupe')
 		except KeyboardInterrupt:
 			print('\nCtrl-c keyboard interrupt received, exiting')
 		sys.exit(0)
