@@ -357,12 +357,12 @@ def crawlFiles(path, DATEEPOCH, DAYSOLD, MINSIZE, EXCLUDED_FILES, LOGGER, thread
 						# add file metadata dictionary to filelist list
 						filelist.append(filemeta_dict)
 						total_num_files += 1
-			except IOError:
+			except (IOError, OSError):
 				if DEBUG or VERBOSE:
 					LOGGER.error('Failed to index file', exc_info=True)
 				pass
 		return filelist
-	except IOError:
+	except (IOError, OSError):
 		if DEBUG or VERBOSE:
 			LOGGER.error('Failed to crawl directory', exc_info=True)
 		pass
@@ -619,19 +619,19 @@ def tagDupes(ES, INDEXNAME, dupes_list, LOGGER, VERBOSE, DEBUG):
 				LOGGER.info('Checking bytes: %s', filename)
 			try:
 				f = open(filename, 'rb')
-			except IOError:
+			except (IOError, OSError):
 				if DEBUG or VERBOSE:
 					LOGGER.error('Error checking file', exc_info=True)
 				continue
 			# check if files is only 1 byte
 			try:
 				bytes_f = base64.b64encode(f.read(2))
-			except IOError:
+			except (IOError, OSError):
 				bytes_f = base64.b64encode(f.read(1))
 			try:
 				f.seek(-2, os.SEEK_END)
 				bytes_l = base64.b64encode(f.read(2))
-			except IOError:
+			except (IOError, OSError):
 				f.seek(-1, os.SEEK_END)
 				bytes_l = base64.b64encode(f.read(1))
 			f.close()
@@ -671,7 +671,7 @@ def tagDupes(ES, INDEXNAME, dupes_list, LOGGER, VERBOSE, DEBUG):
 			# get md5 sum
 			try:
 				md5sum = hashlib.md5(open(filename, 'rb').read()).hexdigest()
-			except IOError:
+			except (IOError, OSError):
 				if DEBUG or VERBOSE:
 					LOGGER.error('Error checking file', exc_info=True)
 				continue
