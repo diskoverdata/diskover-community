@@ -13,9 +13,12 @@ diskover aims to help manage your storage by identifying old and unused files an
 Kibana dashboards / saved searches and visualizations (included in diskover download)
 ![kibana-screenshot](docs/kibana-dashboarddark2-screenshot.png?raw=true)
 [diskover-web](https://github.com/shirosaidev/diskover-web) (diskover's web file manager and file system search engine)
-![diskover-web](https://github.com/shirosaidev/diskover-web/raw/master/docs/diskover-web-sunburst-screenshot.png?raw=true)
+![diskover-web](https://github.com/shirosaidev/diskover-web/raw/master/docs/diskover-web-filetree-screenshot.png?raw=true)
 Gource visualization support (see videos below)
 ![diskover-gource](docs/diskover-gource1-screenshot.png?raw=true)
+
+### diskover-web video
+* [File tree](https://youtu.be/7l37xHl0R7Y)
 
 ### diskover Gource videos
 
