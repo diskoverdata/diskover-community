@@ -1,5 +1,21 @@
 # Diskover Change Log
 
+## [1.2.0] = 2017-09-10
+### added
+- path_parent is now multi field, keyword and also path_parent.tree text field
+- path_parent.tree uses ES path hierarchy tokenizer
+- all directories are now indexed (ES type is directory) with fields path, last_access, last_modified, last_change, indexing_date
+- path field is multi field both keyword and text, path.tree text field uses ES path hierarchy tokenizer
+- nice cli flag to reduce cpu/disk io
+- stats output at end of crawl/dupe check
+### changed
+- removed find command for building directory queue and replaced with python scandir
+- set default crawl threads to 4
+### fixed
+- tagdupes would occasionaly hang if file couldn't be opened for byte check
+- files are not marked as duplicate if hardlink count > 1
+- better handling of keyboard interupts and killing threads
+
 ## [1.1.6] = 2017-08-29
 ### added
 - multi-threaded duplicate file checking
