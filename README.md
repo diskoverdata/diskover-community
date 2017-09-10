@@ -55,6 +55,10 @@ $ git clone https://github.com/shirosaidev/diskover.git
 $ cd diskover
 ```
 
+[Download latest version](https://github.com/shirosaidev/diskover/releases/latest)
+
+### Requirements
+
 You need to have at least **Python 2.7. or Python 3.5.** and have installed required Python dependencies using `pip`.
 
 ```sh
@@ -76,24 +80,27 @@ For Windows, run CygWin terminal as administrator and then run diskover.
 A successfull crawl should look like this:
 
 ```
-   ___       ___       ___       ___       ___       ___       ___       ___
-  /\  \     /\  \     /\  \     /\__\     /\  \     /\__\     /\  \     /\  \
- /::\  \   _\:\  \   /::\  \   /:/ _/_   /::\  \   /:/ _/_   /::\  \   /::\  \
-/:/\:\__\ /\/::\__\ /\:\:\__\ /::-"\__\ /:/\:\__\ |::L/\__\ /::\:\__\ /::\:\__\
-\:\/:/  / \::/\/__/ \:\:\/__/ \;:;-",-" \:\/:/  / |::::/  / \:\:\/  / \;:::/  /
- \::/  /   \:\__\    \::/  /   |:|  |    \::/  /   L;;/__/   \:\/  /   |:\/__/
-  \/__/     \/__/     \/__/     \|__|     \/__/    v1.0.12    \/__/     \|__|
-                                      https://github.com/shirosaidev/diskover
+  ________  .__        __
+  \______ \ |__| _____|  | _________  __ ___________
+   |    |  \|  |/  ___/  |/ /  _ \  \/ // __ \_  __ \ /)___(\
+   |    `   \  |\___ \|    <  <_> )   /\  ___/|  | \/ (='.'=)
+  /_______  /__/____  >__|_ \____/ \_/  \___  >__|   (\")_(\")
+          \/        \/     \/   v1.2.0      \/
+                      https://github.com/shirosaidev/diskover
 
-2017-05-17 21:17:09,254 [INFO][diskover] Connecting to Elasticsearch
-2017-05-17 21:17:09,260 [INFO][diskover] Checking for ES index: diskover-2017.04.22
-2017-05-17 21:17:09,262 [WARNING][diskover] ES index exists, deleting
-2017-05-17 21:17:09,340 [INFO][diskover] Creating ES index
-Crawling: [100%] |########################################| 8570/8570
-2017-05-17 21:17:16,972 [INFO][diskover] Finished crawling
-2017-05-17 21:17:16,973 [INFO][diskover] Directories Crawled: 8570
-2017-05-17 21:17:16,973 [INFO][diskover] Files Indexed: 322
-2017-05-17 21:17:16,973 [INFO][diskover] Elapsed time: 7.72081303596
+2017-09-10 13:23:53,385 [INFO][diskover] Connecting to Elasticsearch
+2017-09-10 13:23:53,437 [INFO][diskover] Checking ES index: diskover-2017.04.22
+2017-09-10 13:23:53,581 [WARNING][diskover] ES index exists, deleting
+2017-09-10 13:23:53,823 [INFO][diskover] Creating ES index
+2017-09-10 13:23:54,055 [INFO][diskover] Crawling using 4 threads
+Crawling: [100%] |########################################| 10684/10684
+2017-09-10 13:24:37,443 [INFO][diskover] Finished crawling
+
+********************************* CRAWL STATS *********************************
+ Directories: 10684 / Skipped: 0
+ Files: 68818 (56.99 GB) / Skipped: 899 (0B)
+ Elapsed time: 0h:00m:44s
+*******************************************************************************
 ```
 
 ## User Guide
