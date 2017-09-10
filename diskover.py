@@ -168,7 +168,7 @@ def parseCLIArgs(indexname):
 	parser.add_argument("-s", "--minsize", default=5, type=int,
 						help="Minimum file size in MB (default: 5)")
 	parser.add_argument("-t", "--threads", default=4, type=int,
-						help="Number of threads to use (default: 2)")
+						help="Number of threads to use (default: 4)")
 	parser.add_argument("-i", "--index", default=indexname, type=str,
 						help="Elasticsearch index name (default: from config)")
 	parser.add_argument("-n", "--nodelete", action="store_true",
