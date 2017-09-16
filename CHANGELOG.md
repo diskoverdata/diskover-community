@@ -1,5 +1,11 @@
 # Diskover Change Log
 
+## [1.2.1] = 2017-09-17
+### changed
+- progress bar for tagdupes now more accurately reflects check progress
+### fixed
+- bugs with unicode text causing indexing errors
+
 ## [1.2.0] = 2017-09-10
 ### added
 - path_parent is now multi field, keyword and also path_parent.tree text field

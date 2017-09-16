@@ -43,7 +43,7 @@ if not IS_WIN:
 if IS_WIN:
 	import win32security
 
-DISKOVER_VERSION = '1.2.0'
+DISKOVER_VERSION = '1.2.1'
 
 def printBanner():
 	"""This is the print banner function.
@@ -372,9 +372,6 @@ def crawlFiles(path, threadnum, CLIARGS, excluded_files, LOGGER):
 					hardlinks = entry.stat().st_nlink
 					# get absolute path of parent directory
 					parentdir = os.path.abspath(path)
-					if not IS_WIN:
-						name = unicode(entry.name)
-						parentdir = unicode(parentdir)
 					# create md5 hash of file using metadata filesize and mtime
 					filestring = str(size) + str(mtime_unix)
 					filehash = hashlib.md5(filestring.encode('utf-8')).hexdigest()
@@ -382,7 +379,7 @@ def crawlFiles(path, threadnum, CLIARGS, excluded_files, LOGGER):
 					indextime_utc = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
 					# create file metadata dictionary
 					filemeta_dict = {
-						"filename": "%s" % name,
+						"filename": "%s" % entry.name,
 						"extension": "%s" % extension,
 						"path_parent": "%s" % parentdir,
 						"filesize": size,
@@ -786,7 +783,7 @@ def tagDupes(ES, CLIARGS, dupes_list, LOGGER):
 	If the files are duplicate, their is_dupe field
 	is set to true.
 	"""
-	global total_num_files
+	global total_num_dupes
 
 	dupe_count = len(dupes_list)
 
@@ -912,7 +909,7 @@ def tagDupes(ES, CLIARGS, dupes_list, LOGGER):
 	if CLIARGS['verbose'] or CLIARGS['debug']:
 		LOGGER.info('Found %s duplicate files', dupe_count)
 
-	total_num_files += dupe_count
+	total_num_dupes += dupe_count
 
 	return dupes_list
 
@@ -921,6 +918,7 @@ def dupesFinder(ES, WORKER_QUEUE, indexname, LOGGER):
 	It searches Elasticsearch for files that have the same filehash
 	and add the list to the dupes queue.
 	"""
+	global total_num_files
 	dupe_count = 0
 	data = {
 			"size": 0,
@@ -963,7 +961,8 @@ def dupesFinder(ES, WORKER_QUEUE, indexname, LOGGER):
 				dupe_count += 1
 		# add hashgroup to duplicate file worker queue
 		WORKER_QUEUE.put(hashgroup_list)
-	LOGGER.info('Found %s files with similiar filehash', dupe_count)
+		total_num_files += 1
+	LOGGER.info('Found %s files with similiar filehash (%s groups)', dupe_count, total_num_files)
 	return
 
 def getTime(seconds):
@@ -996,7 +995,7 @@ def printStats(DATEEPOCH, LOGGER, stats_type='indexing'):
 	
 	if stats_type is 'updating_dupe':
 		sys.stdout.write("\n\033[35m********************************* DUPES STATS *********************************\033[0m\n")
-		sys.stdout.write("\033[35m Duplicates: %s\033[0m\n" % total_num_files)
+		sys.stdout.write("\033[35m Duplicates: %s\033[0m\n" % total_num_dupes)
 		
 	sys.stdout.write("\033[35m Elapsed time: %s\033[0m\n" % getTime(elapsedtime))
 	sys.stdout.write("\033[35m*******************************************************************************\033[0m\n\n")
@@ -1103,6 +1102,7 @@ def main():
 	global total_num_dirs_skipped
 	global total_file_size
 	global total_file_size_skipped
+	global total_num_dupes
 
 	# initialize file and directory counts
 	total_num_files = 0
@@ -1111,6 +1111,7 @@ def main():
 	total_num_dirs_skipped = 0
 	total_file_size = 0
 	total_file_size_skipped = 0
+	total_num_dupes = 0
 
 	# get seconds since epoch used for elapsed time
 	DATEEPOCH = time.time()
