@@ -1,24 +1,21 @@
-# diskover - File system crawler and disk space analyzer using Elasticsearch and Kibana
+# diskover - Elasticsearch file system crawler and storage analytics
 
-![diskover](docs/diskover.png?raw=true)
+<img align="left" width="249" height="189" src="docs/diskover.png?raw=true">
 
-diskover is a file system crawler that indexes your file metadata in [Elasticsearch](https://www.elastic.co) and visualizes your disk usage in [Kibana](https://www.elastic.co/products/kibana). It crawls and indexes your files on a local computer or remote server using nfs or cifs.
+diskover is a file system crawler that uses [Elasticsearch](https://www.elastic.co) and [Kibana](https://www.elastic.co/products/kibana) to index your file metadata and visualize your storage analytics. diskover crawls and indexes your files on a local computer or remote server using NFS or SMB.
 
 File metadata is bulk added and streamed into Elasticsearch, allowing you to **search and visualize your files in Kibana without having to wait until the crawl is finished**. diskover is written in Python and runs on Linux, OS X/macOS and Windows.
 
-diskover aims to help manage your storage by identifying old and unused files and give better insights into file duplication and wasted space. It is designed to help deal with managing large amounts of data growth.
+diskover aims to help manage your storage by identifying old and unused files and give better insights into file duplication and wasted space. It is designed to help deal with managing large amounts of data growth and provide detailed storage analytics.
 
 ## Screenshots
 
 Kibana dashboards / saved searches and visualizations (included in diskover download)
 ![kibana-screenshot](docs/kibana-dashboarddark2-screenshot.png?raw=true)
-[diskover-web](https://github.com/shirosaidev/diskover-web) (diskover's web file manager and file system search engine)
+[diskover-web](https://shirosaidev.github.io/diskover-web/) (diskover's web file manager and file system search engine)
 ![diskover-web](https://github.com/shirosaidev/diskover-web/raw/master/docs/diskover-web-filetree-screenshot.png?raw=true)
 Gource visualization support (see videos below)
 ![diskover-gource](docs/diskover-gource1-screenshot.png?raw=true)
-
-### diskover-web video
-* [File tree](https://youtu.be/7l37xHl0R7Y)
 
 ### diskover Gource videos
 
@@ -44,7 +41,7 @@ Gource visualization support (see videos below)
 
 ### Optional Installs
 
-* [diskover-web](https://github.com/shirosaidev/diskover-web) (diskover's web file manager for searching/tagging files)
+* [diskover-web](https://shirosaidev.github.io/diskover-web/) (diskover's web file manager for searching/tagging files)
 * [X-Pack](https://www.elastic.co/downloads/x-pack) (for graphs, reports, monitoring and http auth)
 * [Gource](http://gource.io) (for Gource visualizations of diskover Elasticsearch data)
 
