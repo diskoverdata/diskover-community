@@ -17,9 +17,6 @@ Kibana dashboards / saved searches and visualizations (included in diskover down
 Gource visualization support (see videos below)
 ![diskover-gource](docs/diskover-gource1-screenshot.png?raw=true)
 
-### diskover-web video
-* [File tree](https://youtu.be/7l37xHl0R7Y)
-
 ### diskover Gource videos
 
 * [File modifications over time](https://youtu.be/InlfK8GQ-kM)
