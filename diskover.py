@@ -43,7 +43,7 @@ if not IS_WIN:
 if IS_WIN:
 	import win32security
 
-DISKOVER_VERSION = '1.2.1'
+DISKOVER_VERSION = '1.2.2'
 
 def printBanner():
 	"""This is the print banner function.
@@ -118,12 +118,12 @@ def loadConfig():
 		d = config.get('excluded_dirs', 'dirs')
 		configsettings['excluded_dirs'] = d.split(',')
 	except:
-		configsettings['excluded_dirs'] = ''
+		configsettings['excluded_dirs'] = []
 	try:
 		f = config.get('excluded_files', 'files')
 		configsettings['excluded_files']  = f.split(',')
 	except:
-		configsettings['excluded_files'] = ''
+		configsettings['excluded_files'] = []
 	try:
 		configsettings['aws'] = config.get('elasticsearch', 'aws')
 	except:
@@ -163,10 +163,10 @@ def parseCLIArgs(indexname):
 	parser = argparse.ArgumentParser()
 	parser.add_argument("-d", "--rootdir", default=".", type=str,
 						help="Directory to start crawling from (default: .)")
-	parser.add_argument("-m", "--mtime", default=30, type=int,
-						help="Minimum days ago for modified time (default: 30)")
-	parser.add_argument("-s", "--minsize", default=5, type=int,
-						help="Minimum file size in MB (default: 5)")
+	parser.add_argument("-m", "--mtime", default=0, type=int,
+						help="Minimum days ago for modified time (default: 0)")
+	parser.add_argument("-s", "--minsize", default=0, type=int,
+						help="Minimum file size in MB (default: >0MB)")
 	parser.add_argument("-t", "--threads", default=4, type=int,
 						help="Number of threads to use (default: 4)")
 	parser.add_argument("-i", "--index", default=indexname, type=str,
@@ -179,8 +179,6 @@ def parseCLIArgs(indexname):
 						help="Get realtime crawl data from ES for gource")
 	parser.add_argument("--gourcemt", action="store_true",
 						help="Get file mtime data from ES for gource")
-	parser.add_argument("-v", "--version", action="version", version="diskover v%s"%(DISKOVER_VERSION),
-						help="Prints version and exits")
 	parser.add_argument("--nice", action="store_true",
 						help="Runs in nice mode (less cpu/disk io)")
 	parser.add_argument("-q", "--quiet", action="store_true",
@@ -189,38 +187,70 @@ def parseCLIArgs(indexname):
 						help="Increase output verbosity")
 	parser.add_argument("--debug", action="store_true",
 						help="Debug message output")
+	parser.add_argument("-v", "--version", action="version", version="diskover v%s"%(DISKOVER_VERSION),
+						help="Prints version and exits")
 	args = parser.parse_args()
 	return args
 
-def crawlDirectories(path, dirlist, ES, CLIARGS, CONFIG, WORKER_QUEUE, LOGGER):
-	"""This is the walk directory tree function.
+def crawlDirectories(path, dirlist, ES, CLIARGS, CONFIG, WORKER_QUEUE, \
+										 LOGGER, VERBOSE):
+	"""This is the crawl directory tree function.
 	It crawls the tree top-down using scandir
 	and adds directories to the worker queue.
 	Ignores directories that are in
-	CONFIG['excluded_dirs'].
+	'excluded_dirs' and modified less than 'mtime'.
 	"""
-	global total_num_dirs
-	global total_num_dirs_skipped
+	global totals_dirs
+	
+	# once dirlist contains 1000 or more items, add dirlist to ES and empty it
+	if len(dirlist) >= 1000:
+		indexAddDir(ES, CLIARGS['index'], dirlist, LOGGER, VERBOSE)
+		del dirlist[:]
 	
 	try:
-		# queue directory for worker threads to crawl files
+		# skip any dirs in excluded dirs
+		if path.split('/')[-1] in CONFIG['excluded_dirs'] or path in CONFIG['excluded_dirs']:
+			if VERBOSE:
+				LOGGER.info('Skipping (excluded dir) %s' % path)
+			totals_dirs['num_dirs_skipped'] += 1
+			return dirlist
+					
+		# skip any dirs which start with . and in excluded dirs
+		if path != '.' and path.split('/')[-1].startswith('.') and '.*' in CONFIG['excluded_dirs']:
+			if VERBOSE:
+				LOGGER.info('Skipping (.* dir) %s' % path)
+			totals_dirs['num_dirs_skipped'] += 1
+			return dirlist
+		
+		stat = os.stat(unicode(path))
+		# check directory modified time
+		mtime_unix = stat.st_mtime
+		# Convert time in days to seconds
+		time_sec = CLIARGS['mtime'] * 86400
+		dir_mtime_sec = time.time() - mtime_unix
+		# Only add directories modified at least x days ago to queue
+		if dir_mtime_sec < time_sec:
+			if VERBOSE:
+				LOGGER.info('Skipping (mtime) %s' % path)
+			totals_dirs['num_dirs_skipped'] += 1
+		else:
+			# queue directory for worker threads to crawl files
+			if VERBOSE:
+				LOGGER.info('Queuing directory: %s', path)
+			# add directory path to worker queue
+			WORKER_QUEUE.put(unicode(path))
+			totals_dirs['num_dirs'] += 1
+		# add directory info to dirlist
 		dirinfo_dict = {}
-		if CLIARGS['verbose'] or CLIARGS['debug']:
-			LOGGER.info('Queuing directory: %s', path)
-		# add directory path to worker queue
-		WORKER_QUEUE.put(path)
-		total_num_dirs += 1
 		# Get directory info and store in dirinfo_dict
-		if not IS_WIN:
-			path = unicode(path)
-		dirinfo_dict['path'] = os.path.abspath(path)
-		mtime_unix = int(os.stat(path).st_mtime)
+		dirinfo_dict['path'] = unicode(os.path.abspath(unicode(path)))
+		mtime_unix = stat.st_mtime
 		mtime_utc = datetime.utcfromtimestamp(mtime_unix).strftime('%Y-%m-%dT%H:%M:%S')
 		dirinfo_dict['last_modified'] = mtime_utc
-		atime_unix = int(os.stat(path).st_atime)
+		atime_unix = stat.st_atime
 		atime_utc = datetime.utcfromtimestamp(atime_unix).strftime('%Y-%m-%dT%H:%M:%S')
 		dirinfo_dict['last_access'] = atime_utc
-		ctime_unix = int(os.stat(path).st_ctime)
+		ctime_unix = stat.st_ctime
 		ctime_utc = datetime.utcfromtimestamp(ctime_unix).strftime('%Y-%m-%dT%H:%M:%S')
 		dirinfo_dict['last_change'] = ctime_utc
 		indextime_utc = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
@@ -228,109 +258,96 @@ def crawlDirectories(path, dirlist, ES, CLIARGS, CONFIG, WORKER_QUEUE, LOGGER):
 		# add dirinfo to dirlist
 		dirlist.append(dirinfo_dict)
 	except (IOError, OSError):
-		if CLIARGS['verbose'] or CLIARGS['debug']:
+		if VERBOSE:
 			LOGGER.error('Failed to crawl directory', exc_info=True)
 		pass
 	
 	try:
-		for entry in scandir(path):
+		for entry in scandir(unicode(path)):
 			if entry.is_dir(follow_symlinks=False):
-				# skip any dirs in excluded dirs
-				if entry.name in CONFIG['excluded_dirs']:
-					if CLIARGS['verbose'] or CLIARGS['debug']:
-						LOGGER.info('Skipping (excluded dir) %s' % entry.path)
-					total_num_dirs_skipped += 1
-					continue
-					
-				# skip any dirs which start with . and in excluded dirs
-				if entry.name.startswith('.') and '.*' in CONFIG['excluded_dirs']:
-					if CLIARGS['verbose'] or CLIARGS['debug']:
-						LOGGER.info('Skipping (.* dir) %s' % entry.path)
-					total_num_dirs_skipped += 1
-					continue
 					
 				# crawl directory (recursive)
-				crawlDirectories(entry.path, dirlist, ES, CLIARGS, CONFIG, WORKER_QUEUE, LOGGER)
+				dirlist = crawlDirectories(entry.path, dirlist, ES, CLIARGS, CONFIG, \
+												 WORKER_QUEUE, LOGGER, VERBOSE)
 	
 	except (IOError, OSError):
-		if CLIARGS['verbose'] or CLIARGS['debug']:
+		if VERBOSE:
 			LOGGER.error('Failed to crawl directory', exc_info=True)
 		pass
 	return dirlist
 
-def crawlFiles(path, threadnum, CLIARGS, excluded_files, LOGGER):
+def crawlFiles(path, filelist, ES, threadnum, CLIARGS, excluded_files, \
+							 LOGGER, VERBOSE):
 	"""This is the list directory function.
 	It crawls for files using scandir.
-	Ignores files smaller than 'MINSIZE' MB, newer
-	than 'DAYSOLD' old and in 'EXCLUDED_FILES'.
+	Once filelist reaches 1000 or more items or Queue is empty,
+	it is bulk added to Elasticsearch and emptied.
+	Ignores files smaller than 'minsize' MB, newer
+	than 'daysold' old and in 'excluded_files'.
 	Tries to reduce the amount of stat calls to the fs
 	to help speed up crawl times.
 	"""
-	global total_num_files
-	global total_num_files_skipped
-	global total_file_size
-	global total_file_size_skipped
+	global totals
 	
-	filelist = []
 	# try to crawl files in directory
 	try:
-		for entry in scandir(path):
+		for entry in scandir(unicode(path)):
 			# check if is file and not in excluded files
 			if entry.is_file(follow_symlinks=False) and not entry.is_symlink():
 				if entry.name in excluded_files \
 				or (entry.name.startswith('.') and '.*' in excluded_files):
-					if CLIARGS['verbose'] or CLIARGS['debug']:
+					if VERBOSE:
 						LOGGER.info('Skipping (excluded file) %s' % entry.path)
-					total_num_files_skipped += 1
-					total_file_size_skipped += entry.stat().st_size
+					totals[threadnum]['num_files_skipped'] += 1
+					totals[threadnum]['file_size_skipped'] += entry.stat().st_size
 					continue
 					
 				# get file extension and check excluded_files
 				extension = os.path.splitext(entry.name)[1][1:].strip().lower()
 				if (not extension and 'NULLEXT' in excluded_files) \
 				or '*.'+str(extension) in excluded_files:
-					if CLIARGS['verbose'] or CLIARGS['debug']:
+					if VERBOSE:
 						LOGGER.info('Skipping (excluded file) %s' % entry.path)
-					total_num_files_skipped += 1
-					total_file_size_skipped += entry.stat().st_size
+					totals[threadnum]['num_files_skipped'] += 1
+					totals[threadnum]['file_size_skipped'] += entry.stat().st_size
 					continue
 				
 				try:
-					# check file size
-					size = entry.stat().st_size
+					# get file stat
+					stat = entry.stat()
+					# file size (bytes)
+					size = stat.st_size
 					# Convert bytes to MB
-					size_mb = size / 1024 / 1024
+					size_mb = int(size / 1024 / 1024)
 					# Skip files smaller than x MB and skip empty files
 					if size_mb < CLIARGS['minsize'] or size == 0:
-						if CLIARGS['verbose'] or CLIARGS['debug']:
+						if VERBOSE:
 							LOGGER.info('Skipping (size) %s' % entry.path)
-						total_num_files_skipped += 1
-						total_file_size_skipped += size
+						totals[threadnum]['num_files_skipped'] += 1
+						totals[threadnum]['file_size_skipped'] += size
 						continue
 					
 					# check file modified time
-					mtime_unix = int(entry.stat().st_mtime)
+					mtime_unix = stat.st_mtime
 					mtime_utc = datetime.utcfromtimestamp(mtime_unix).strftime('%Y-%m-%dT%H:%M:%S')
 					# Convert time in days to seconds
 					time_sec = CLIARGS['mtime'] * 86400
 					file_mtime_sec = time.time() - mtime_unix
 					# Only process files modified at least x days ago
 					if file_mtime_sec < time_sec:
-						if CLIARGS['verbose'] or CLIARGS['debug']:
+						if VERBOSE:
 							LOGGER.info('Skipping (mtime) %s' % entry.path)
-						total_num_files_skipped += 1
-						total_file_size_skipped += size
+						totals[threadnum]['num_files_skipped'] += 1
+						totals[threadnum]['file_size_skipped'] += size
 						continue
-					
-					# start grabbing file meta data
 					
 					# get full path to file
 					filename_fullpath = entry.path
 					# get access time
-					atime_unix = int(entry.stat().st_atime)
+					atime_unix = stat.st_atime
 					atime_utc = datetime.utcfromtimestamp(atime_unix).strftime('%Y-%m-%dT%H:%M:%S')
 					# get change time
-					ctime_unix = int(entry.stat().st_ctime)
+					ctime_unix = stat.st_ctime
 					ctime_utc = datetime.utcfromtimestamp(ctime_unix).strftime('%Y-%m-%dT%H:%M:%S')
 					if IS_WIN:
 						sd = win32security.GetFileSecurity(filename_fullpath, win32security.OWNER_SECURITY_INFORMATION)
@@ -341,7 +358,7 @@ def crawlFiles(path, threadnum, CLIARGS, excluded_files, LOGGER):
 						inode = "0"
 					else:
 						# get user id of owner
-						uid = entry.stat().st_uid
+						uid = stat.st_uid
 						# try to get owner user name
 						try:
 							owner = pwd.getpwuid(uid).pw_name.split('\\')
@@ -354,7 +371,7 @@ def crawlFiles(path, threadnum, CLIARGS, excluded_files, LOGGER):
 						except KeyError:
 							owner = uid
 						# get group id
-						gid = entry.stat().st_gid
+						gid = stat.st_gid
 						# try to get group name
 						try:
 							group = grp.getgrgid(gid).gr_name.split('\\')
@@ -367,11 +384,11 @@ def crawlFiles(path, threadnum, CLIARGS, excluded_files, LOGGER):
 						except KeyError:
 							group = gid
 						# get inode number
-						inode = entry.stat().st_ino
+						inode = stat.st_ino
 					# get number of hardlinks
-					hardlinks = entry.stat().st_nlink
+					hardlinks = stat.st_nlink
 					# get absolute path of parent directory
-					parentdir = os.path.abspath(path)
+					parentdir = os.path.abspath(unicode(path))
 					# create md5 hash of file using metadata filesize and mtime
 					filestring = str(size) + str(mtime_unix)
 					filehash = hashlib.md5(filestring.encode('utf-8')).hexdigest()
@@ -379,12 +396,12 @@ def crawlFiles(path, threadnum, CLIARGS, excluded_files, LOGGER):
 					indextime_utc = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
 					# create file metadata dictionary
 					filemeta_dict = {
-						"filename": "%s" % entry.name,
-						"extension": "%s" % extension,
-						"path_parent": "%s" % parentdir,
+						"filename": u"%s" % unicode(entry.name),
+						"extension": u"%s" % unicode(extension),
+						"path_parent": u"%s" % unicode(parentdir),
 						"filesize": size,
-						"owner": "%s" % owner,
-						"group": "%s" % group,
+						"owner": u"%s" % unicode(owner),
+						"group": u"%s" % unicode(group),
 						"last_modified": "%s" % mtime_utc,
 						"last_access": "%s" % atime_utc,
 						"last_change": "%s" % ctime_utc,
@@ -399,192 +416,166 @@ def crawlFiles(path, threadnum, CLIARGS, excluded_files, LOGGER):
 						}
 					# add file metadata dictionary to filelist list
 					filelist.append(filemeta_dict)
-					total_num_files += 1
-					total_file_size += size
+					totals[threadnum]['num_files'] += 1
+					totals[threadnum]['file_size'] += size
+					# when filelist has 1000 or more items, bulk add to ES and empty it
+					if len(filelist) >= 1000:
+						indexAddFiles(threadnum, ES, CLIARGS['index'], filelist, LOGGER, VERBOSE)
+						del filelist[:]
 				except (IOError, OSError):
-					if CLIARGS['verbose'] or CLIARGS['debug']:
+					if VERBOSE:
 						LOGGER.error('Failed to index file', exc_info=True)
 					pass
 		return filelist
 	except (IOError, OSError):
-		if CLIARGS['verbose'] or CLIARGS['debug']:
+		if VERBOSE:
 			LOGGER.error('Failed to crawl directory', exc_info=True)
 		pass
-	return
+	return filelist
 
-def workerSetup(WORKER_QUEUE, CLIARGS, CONFIG, ES, LOGGER):
+def workerSetupCrawl(WORKER_QUEUE, CLIARGS, CONFIG, ES, LOGGER, VERBOSE):
 	"""This is the worker setup function for directory crawling.
 	It sets up the worker threads to process the directory list Queue.
 	"""
+	global totals
+	
 	# threading event to handle stopping threads
 	run_event = threading.Event()
 	run_event.set()
+	
 	# create worker threads and start them
-	workers = {}
 	for i in range(CLIARGS['threads']):
-		workers[i] = threading.Thread(target=crawlDirWorker, \
-			args=(i, run_event, WORKER_QUEUE, ES, CLIARGS, CONFIG, LOGGER))
-		workers[i].daemon = True
-		workers[i].start()
+		# totals for each thread
+		totals.append({'num_files': 0, 'num_files_skipped': 0, \
+				 'file_size': 0, 'file_size_skipped': 0})
+		worker_thread = threading.Thread(target=crawlDirWorker, \
+			args=(i, run_event, WORKER_QUEUE, ES, CLIARGS, CONFIG, LOGGER, VERBOSE))
+		worker_thread.daemon = True
+		worker_thread.start()
 		if CLIARGS['nice']:
 			time.sleep(0.5)
 	
+	dirlist = []
 	dirs_queued = False
 	while run_event.is_set():
 		try:
 			if not dirs_queued:
-				# walk directory tree and start crawling
-				if not CLIARGS['quiet']:
-					LOGGER.info('Crawling using %s threads' % CLIARGS['threads'])
-				dirlist = []
-				dirlist = crawlDirectories(CLIARGS['rootdir'], dirlist, ES, CLIARGS, CONFIG, WORKER_QUEUE, LOGGER)
-				# add dirlist to ES
-				indexAddDir(ES, CLIARGS, dirlist, LOGGER)
+				# crawl directory tree and get dirlist
+				LOGGER.info('Crawling using %s threads' % CLIARGS['threads'])
+				dirlist = crawlDirectories(unicode(CLIARGS['rootdir']), dirlist, ES, CLIARGS, \
+																	 CONFIG, WORKER_QUEUE, LOGGER, VERBOSE)
+				if len(dirlist) > 0:
+					# add any remaining dirs to ES
+					indexAddDir(ES, CLIARGS['index'], dirlist, LOGGER, VERBOSE)
 				dirs_queued = True
-			
-			time.sleep(.1)
-			
-			try:
-				if WORKER_QUEUE.qsize() < 1:
-					run_event.clear()
-					for x in range(CLIARGS['threads']):	
-						workers[x].join(3)
-					WORKER_QUEUE.join()
-					break
-			except Queue.Empty:
-				pass
-				
+				break
 		except KeyboardInterrupt:
 			LOGGER.disabled = True
 			print('\nCtrl-c keyboard interrupt received')
 			print("\nAttempting to close worker threads")
 			run_event.clear()
-			for x in range(CLIARGS['threads']):	
-				workers[x].join(3)
 			print("\nThreads successfully closed, sayonara!")
 			sys.exit(0)
-	return
 	
-def workerSetupDupes(WORKER_QUEUE, CLIARGS, CONFIG, ES, LOGGER):
+def workerSetupDupes(WORKER_QUEUE, CLIARGS, CONFIG, ES, LOGGER, VERBOSE):
 	"""This is the duplicate file worker setup function.
 	It sets up the worker threads to process the duplicate file list Queue.
 	"""
+	global totals
+	
 	# threading event to handle stopping threads
 	run_event = threading.Event()
 	run_event.set()
 	
-	if not CLIARGS['quiet']:
-		LOGGER.info('Running with %s threads' % CLIARGS['threads'])
-	worker = {}
-	for x in range(CLIARGS['threads']):
-		worker[x] = threading.Thread(target=dupesWorker, \
-			args=(x, run_event, WORKER_QUEUE, ES, CLIARGS, CONFIG, LOGGER))
-		worker[x].daemon = True
-		worker[x].start()
+	LOGGER.info('Running with %s threads' % CLIARGS['threads'])
+	for i in range(CLIARGS['threads']):
+		# totals for each thread
+		totals.append({'num_dupes': 0})
+		worker_thread = threading.Thread(target=dupesWorker, \
+			args=(i, run_event, WORKER_QUEUE, ES, CLIARGS, CONFIG, LOGGER, VERBOSE))
+		worker_thread.daemon = True
+		worker_thread.start()
 		if CLIARGS['nice']:
 			time.sleep(0.5)
-	
+			
 	dupes_queued = False
 	while run_event.is_set():
 		try:
 			if not dupes_queued:
 				# look in ES for duplicate files (same filehash) and add to queue
-				dupesFinder(ES, WORKER_QUEUE, CLIARGS['index'], LOGGER)
+				dupesFinder(ES, WORKER_QUEUE, CLIARGS, LOGGER)
 				dupes_queued = True
-			
-			time.sleep(.1)
-			
-			try:
-				if WORKER_QUEUE.qsize() < 1:
-					run_event.clear()
-					for x in range(CLIARGS['threads']):	
-						workers[x].join(3)
-					WORKER_QUEUE.join()
-					break
-			except:
-					pass
-				
+				# wait for all threads to finish
+				WORKER_QUEUE.join()
+				break
 		except KeyboardInterrupt:
 			LOGGER.disabled = True
 			print('\nCtrl-c keyboard interrupt received')
 			print("Attempting to close worker threads")
 			run_event.clear()
-			for x in range(CLIARGS['threads']):
-					worker[x].join(3)
 			print("\nThreads successfully closed, sayonara!")
 			sys.exit(0)
-
-def crawlDirWorker(threadnum, run_event, WORKER_QUEUE, ES, CLIARGS, CONFIG, LOGGER):
+			
+def crawlDirWorker(threadnum, run_event, WORKER_QUEUE, ES, CLIARGS, \
+									 CONFIG, LOGGER, VERBOSE):
 	"""This is the worker thread function.
 	It processes items in the Queue one after another.
 	These daemon threads go into an infinite loop,
 	and only exit when run_event is cleared.
 	"""
-	global total_num_dirs
-
-	while run_event.is_set():
-		try:
-			if CLIARGS['nice']:
-				time.sleep(0.01)
-			if CLIARGS['verbose'] or CLIARGS['debug']:
-				LOGGER.info('[thread-%s]: Looking for the next directory', threadnum)
-			# get an item (directory) from the queue
-			path = WORKER_QUEUE.get_nowait()
-			if CLIARGS['verbose'] or CLIARGS['debug']:
-				LOGGER.info('[thread-%s]: Crawling: %s', threadnum, path.decode('utf-8'))
-			# crawl the files in the directory
-			filelist = []
-			filelist = crawlFiles(path, threadnum, CLIARGS, CONFIG['excluded_files'], LOGGER)
-			if filelist:
-				# add filelist to ES index
-				indexAdd(threadnum, ES, CLIARGS, filelist, LOGGER)
-			# print progress bar
-			dircount = total_num_dirs - WORKER_QUEUE.qsize()
-			if dircount > 0 and not CLIARGS['verbose'] and not CLIARGS['debug'] and not CLIARGS['quiet']:
-				printProgressBar(dircount, total_num_dirs, 'Crawling:', '%s/%s' \
-					% (dircount, total_num_dirs))
-			# task is done
-			WORKER_QUEUE.task_done()
-		except Queue.Empty:
-			# sleep until queue has some items
-			time.sleep(.1)
-			pass
-	return
-
-def dupesWorker(threadnum, run_event, WORKER_QUEUE, ES, CLIARGS, CONFIG, LOGGER):
-	"""This is the duplicate file worker thread function.
-	It processes items in the Queue one after another.
-	These daemon threads go into an infinite loop,
-	and only exit when run_event is cleared or queue empty.
-	"""
-	global total_num_files
 	
+	filelist = []
 	while run_event.is_set():
-		try:
-			if CLIARGS['nice']:
-				time.sleep(0.01)
-			if CLIARGS['verbose'] or CLIARGS['debug']:
-				LOGGER.info('[thread-%s]: Looking for the next filehash group', threadnum)
-			# get an item (hashgroup) from the queue
-			hashgroup = WORKER_QUEUE.get_nowait()
-			# process the duplicate files in hashgroup
-			dupelist = []
-			dupelist = tagDupes(ES, CLIARGS, hashgroup, LOGGER)
-			if dupelist:
-				# update existing index and tag dupe files is_dupe field
-				indexUpdate(ES, CLIARGS, dupelist, LOGGER)
-			# print progress bar
-			dupecount = total_num_files - WORKER_QUEUE.qsize()
-			if dupecount > 0 and not CLIARGS['verbose'] and not CLIARGS['debug'] and not CLIARGS['quiet']:
-				printProgressBar(dupecount, total_num_files, 'Checking:', '%s/%s' \
-					% (dupecount, total_num_files))
-			# task is done
-			WORKER_QUEUE.task_done()
-		except Queue.Empty:
-			# sleep until queue has some items
-			time.sleep(.1)
-			pass
-	return
+		if CLIARGS['nice']:
+			time.sleep(.01)
+		if VERBOSE:
+			LOGGER.info('[thread-%s]: Looking for the next directory', threadnum)
+		# if queue empty bulk add filelist to ES and empty it
+		if len(filelist) > 0 and WORKER_QUEUE.qsize() == 0:
+			indexAddFiles(threadnum, ES, CLIARGS['index'], filelist, LOGGER, VERBOSE)
+			del filelist[:]
+		# get an item (directory) from the queue
+		path = WORKER_QUEUE.get()
+		if VERBOSE:
+			LOGGER.info('[thread-%s]: Crawling: %s', threadnum, path)
+		# crawl the files in the directory
+		filelist = crawlFiles(path, filelist, ES, threadnum, CLIARGS, \
+													CONFIG['excluded_files'], LOGGER, VERBOSE)
+		# print progress bar
+		dircount = totals_dirs['num_dirs'] - WORKER_QUEUE.qsize()
+		if dircount > 0 and not VERBOSE and not CLIARGS['quiet']:
+			printProgressBar(dircount, totals_dirs['num_dirs'], 'Crawling:', '%s/%s' \
+				% (dircount, totals_dirs['num_dirs']))
+		# task is done
+		WORKER_QUEUE.task_done()
+
+def dupesWorker(threadnum, run_event, WORKER_QUEUE, ES, CLIARGS, CONFIG, LOGGER, VERBOSE):
+	"""This is the duplicate file worker thread function.
+	It processes items in the dupes group Queue one after another.
+	"""
+	
+	dupelist = []
+	while run_event.is_set():
+		if CLIARGS['nice']:
+			time.sleep(.01)
+		if VERBOSE:
+			LOGGER.info('[thread-%s]: Looking for the next filehash group', threadnum)
+		# add any remaining to ES
+		if len(dupelist) > 0 and WORKER_QUEUE.qsize() == 0:
+			# update existing index and tag dupe files is_dupe field
+			indexTagDupe(threadnum, ES, CLIARGS['index'], dupelist, LOGGER, VERBOSE)
+			del dupelist[:]
+		# get an item (hashgroup) from the queue
+		hashgroup = WORKER_QUEUE.get()
+		# process the duplicate files in hashgroup and return dupelist
+		dupelist = tagDupes(threadnum, run_event, ES, hashgroup, dupelist, CLIARGS['index'], LOGGER, VERBOSE)
+		# print progress bar
+		dupecount = total_hash_groups - WORKER_QUEUE.qsize()
+		if dupecount > 0 and not VERBOSE and not CLIARGS['quiet']:
+			printProgressBar(dupecount, total_hash_groups, 'Checking:', '%s/%s' \
+				% (dupecount, total_hash_groups))
+		# task is done
+		WORKER_QUEUE.task_done()
 
 def elasticsearchConnect(CONFIG, LOGGER):
 	"""This is the ES function.
@@ -592,7 +583,7 @@ def elasticsearchConnect(CONFIG, LOGGER):
 	and checks if it can connect.
 	"""
 	# Check if we are using AWS ES
-	if CONFIG['aws'] == "True" or CONFIG['aws'] == 1:
+	if CONFIG['aws'] == "True":
 		ES = Elasticsearch(hosts=[{'host': CONFIG['es_host'], 'port': CONFIG['es_port']}], \
 			use_ssl=True, verify_certs=True, connection_class=RequestsHttpConnection)
 	# Local connection to ES
@@ -732,50 +723,50 @@ def indexCreate(ES, CLIARGS, LOGGER):
 	ES.indices.create(index=CLIARGS['index'], body=mappings)
 	return
 
-def indexAdd(threadnum, ES, CLIARGS, filelist, LOGGER):
+def indexAddFiles(threadnum, ES, indexname, filelist, LOGGER, VERBOSE):
 	"""This is the ES index add function.
 	It bulk adds data from worker's crawl
 	results into ES.
 	"""
-	if CLIARGS['verbose'] or CLIARGS['debug']:
+	if VERBOSE:
 		LOGGER.info('[thread-%s]: Bulk adding files to ES index', threadnum)
 	# bulk load data to Elasticsearch index
-	helpers.bulk(ES, filelist, index=CLIARGS['index'], doc_type='file')
+	helpers.bulk(ES, filelist, index=indexname, doc_type='file')
 	return
 
-def indexAddDir(ES, CLIARGS, dirlist, LOGGER):
+def indexAddDir(ES, indexname, dirlist, LOGGER, VERBOSE):
 	"""This is the ES index add function.
 	It bulk adds data from worker's crawl
 	results into ES.
 	"""
-	if CLIARGS['verbose'] or CLIARGS['debug']:
+	if VERBOSE:
 		LOGGER.info('Adding directories to ES index')
 	# bulk load data to Elasticsearch index
-	helpers.bulk(ES, dirlist, index=CLIARGS['index'], doc_type='directory')
+	helpers.bulk(ES, dirlist, index=indexname, doc_type='directory')
 	return
 
-def indexUpdate(ES, CLIARGS, dupelist, LOGGER):
+def indexTagDupe(threadnum, ES, indexname, dupelist, LOGGER, VERBOSE):
 	"""This is the ES is_dupe tag update function.
 	It updates a file's is_dupe field to true.
 	"""
-	data = [];
-	if CLIARGS['verbose'] or CLIARGS['debug']:
-		LOGGER.info('Bulk updating data in ES index')
+	file_id_list = [];
 	# bulk update data in Elasticsearch index
-	for file in dupelist:
-		id = file['_id']
-		d = {
-	    '_op_type': 'update',
-	    '_index': CLIARGS['index'],
-	    '_type': 'file',
-	    '_id': id,
-	    'doc': {'is_dupe': 'true'}
-		}
-		data.append(d)
-	helpers.bulk(ES, data, index=CLIARGS['index'], doc_type='file')
+	for item in dupelist:
+		for file in item['files']:
+			d = {
+				'_op_type': 'update',
+				'_index': indexname,
+				'_type': 'file',
+				'_id': file['id'],
+				'doc': {'is_dupe': 'true'}
+			}
+			file_id_list.append(d)
+	if VERBOSE:
+		LOGGER.info('[thread-%s]: Bulk updating files in ES index', threadnum)
+	helpers.bulk(ES, file_id_list, index=indexname, doc_type='file')
 	return
 
-def tagDupes(ES, CLIARGS, dupes_list, LOGGER):
+def tagDupes(threadnum, run_event, ES, hashgroup, dupelist, indexname, LOGGER, VERBOSE):
 	"""This is the duplicate file tagger.
 	It processes files in hashgroup to verify if they are duplicate.
 	The first few bytes at beginning and end of files are
@@ -783,67 +774,56 @@ def tagDupes(ES, CLIARGS, dupes_list, LOGGER):
 	If the files are duplicate, their is_dupe field
 	is set to true.
 	"""
-	global total_num_dupes
+	global totals
+	
+	while run_event.is_set():
+		if VERBOSE:
+			LOGGER.info('[thread-%s] Processing %s files in hashgroup: %s' % (threadnum, len(hashgroup['files']), hashgroup['filehash']))
 
-	dupe_count = len(dupes_list)
-
-	# create a dictionary with unique file hashes
-	dupes_list_filehash = {}
-	for i in dupes_list:
-		dupes_list_filehash[i['_source']['filehash']] = []
-	# add files with matching hash to dictionary
-	for i in dupes_list:
-		dupes_list_filehash[i['_source']['filehash']].append(i['_source']['path_parent']+"/"+i['_source']['filename'])
-
-	if CLIARGS['verbose'] or CLIARGS['debug']:
-		LOGGER.info('Found %s unique filehashes', len(dupes_list_filehash))
-
-	# Add first and last few bytes for each file to dictionary
-	if CLIARGS['verbose'] or CLIARGS['debug']:
-		LOGGER.info('Comparing bytes')
-	dupes_list_bytes = {}
-	for key, value in list(dupes_list_filehash.items()):
-		if CLIARGS['verbose'] or CLIARGS['debug']:
-			LOGGER.info('Analyzing filehash: %s', key)
+		# Add first and last few bytes for each file to dictionary
+		if VERBOSE:
+			LOGGER.info('[thread-%s] Comparing bytes', threadnum)
+		
 		# create a new dictionary with files that have same byte hash
-		for filename in value:
-			if CLIARGS['verbose'] or CLIARGS['debug']:
-				LOGGER.info('Checking bytes: %s', filename)
+		hashgroup_bytes = {}
+		for file in hashgroup['files']:
+			if VERBOSE:
+				LOGGER.info('[thread-%s] Checking bytes: %s' % (threadnum, file['filename']))
 			try:
-				f = open(filename, 'rb')
+				f = open(file['filename'], 'rb')
 			except (IOError, OSError):
-				if CLIARGS['verbose'] or CLIARGS['debug']:
+				if VERBOSE:
 					LOGGER.error('Error opening file', exc_info=True)
 				continue
 			except:
-				if CLIARGS['verbose'] or CLIARGS['debug']:
+				if VERBOSE:
 					LOGGER.error('Error opening file', exc_info=True)
 				continue
 			# check if files is only 1 byte
 			try:
 				bytes_f = base64.b64encode(f.read(2))
 			except (IOError, OSError):
-				if CLIARGS['verbose'] or CLIARGS['debug']:
+				if VERBOSE:
 					LOGGER.error('Can\'t read first 2 bytes, trying first byte', exc_info=True)
 				pass
 			try:
 					bytes_f = base64.b64encode(f.read(1))
 			except:
-				if CLIARGS['verbose'] or CLIARGS['debug']:
+				if VERBOSE:
 					LOGGER.error('Error reading bytes, giving up', exc_info=True)
 				continue
 			try:
 				f.seek(-2, os.SEEK_END)
 				bytes_l = base64.b64encode(f.read(2))
 			except (IOError, OSError):
-				if CLIARGS['verbose'] or CLIARGS['debug']:
+				if VERBOSE:
 					LOGGER.error('Can\'t read last 2 bytes, trying last byte', exc_info=True)
 				pass
 			try:
 				f.seek(-1, os.SEEK_END)
 				bytes_l = base64.b64encode(f.read(1))
 			except:
-				if CLIARGS['verbose'] or CLIARGS['debug']:
+				if VERBOSE:
 					LOGGER.error('Error reading bytes, giving up', exc_info=True)
 				continue
 			f.close()
@@ -852,154 +832,194 @@ def tagDupes(ES, CLIARGS, dupes_list, LOGGER):
 			bytestring = str(bytes_f) + str(bytes_l)
 			bytehash = hashlib.md5(bytestring.encode('utf-8')).hexdigest()
 
+			if VERBOSE:
+				LOGGER.info('[thread-%s] Byte hash: %s' % (threadnum, bytehash))
+
 			# create new key for each bytehash and set value as new list and add file
-			dupes_list_bytes.setdefault(bytehash,[]).append(filename)
+			hashgroup_bytes.setdefault(bytehash,[]).append(file['filename'])
 
-	# remove any bytehash key that only has 1 item (no duplicate)
-	for key, value in list(dupes_list_bytes.items()):
-		if len(value) < 2:
-			filename = value[0]
-			if CLIARGS['verbose'] or CLIARGS['debug']:
-				LOGGER.info('Unique file (bytes diff), removing: %s', filename)
-			del dupes_list_bytes[key]
-			# remove file from dupes list
-			for i in range(len(dupes_list)):
-				if dupes_list[i]['_source']['path_parent'] == os.path.abspath(os.path.join(filename, os.pardir)) \
-						and dupes_list[i]['_source']['filename'] == os.path.basename(filename):
-					del dupes_list[i]
-					break
-			dupe_count -= 1
-	
-	if CLIARGS['verbose'] or CLIARGS['debug']:
-		LOGGER.info('Comparing MD5 sums')
-	dupes_list_md5 = {}
-	# do md5 check on files with same byte hashes
-	for key, value in list(dupes_list_bytes.items()):
-		if CLIARGS['verbose'] or CLIARGS['debug']:
-			LOGGER.info('Analyzing filehash: %s', key)
-		for filename in value:
-			if CLIARGS['verbose'] or CLIARGS['debug']:
-				LOGGER.info('Checking MD5: %s', filename)
-			# get md5 sum
-			try:
-				md5sum = hashlib.md5(open(filename, 'rb').read()).hexdigest()
-			except (IOError, OSError):
-				if CLIARGS['verbose'] or CLIARGS['debug']:
-					LOGGER.error('Error checking file', exc_info=True)
-				continue
+		# remove any bytehash key that only has 1 item (no duplicate)
+		for key, value in list(hashgroup_bytes.items()):
+			if len(value) < 2:
+				filename = value[0]
+				if VERBOSE:
+					LOGGER.info('[thread-%s] Unique file (bytes diff), removing: %s' % (threadnum, filename))
+				del hashgroup_bytes[key]
+				# remove file from hashgroup
+				for i in range(len(hashgroup['files'])):
+					if hashgroup['files'][i]['filename'] == filename:
+						del hashgroup['files'][i]
+						break
 
-			# create new key for each md5sum and set value as new list and add file
-			dupes_list_md5.setdefault(md5sum,[]).append(filename)
+		# run md5 sum check if bytes were same
+		hashgroup_md5 = {}
+		# do md5 check on files with same byte hashes
+		for key, value in list(hashgroup_bytes.items()):
+			if VERBOSE:
+				LOGGER.info('[thread-%s] Comparing MD5 sums for filehash: %s' % (threadnum, key))
+			for filename in value:
+				if VERBOSE:
+					LOGGER.info('[thread-%s] Checking MD5: %s' % (threadnum, filename))
+				# get md5 sum
+				try:
+					md5sum = hashlib.md5(open(filename, 'rb').read()).hexdigest()
+					if VERBOSE:
+						LOGGER.info('[thread-%s] MD5: %s' % (threadnum, md5sum))
+				except (IOError, OSError):
+					if VERBOSE:
+						LOGGER.error('Error checking file', exc_info=True)
+					continue
 
-	# remove any md5sum key that only has 1 item (no duplicate)
-	for key, value in list(dupes_list_md5.items()):
-		if len(value) < 2:
-			filename = value[0]
-			if CLIARGS['verbose'] or CLIARGS['debug']:
-				LOGGER.info('Unique file (MD5 diff), removing: %s', filename)
-			del dupes_list_md5[key]
-			# remove file from dupes list
-			for i in range(len(dupes_list)):
-				if dupes_list[i]['_source']['path_parent'] == os.path.abspath(os.path.join(filename, os.pardir)) \
-						and dupes_list[i]['_source']['filename'] == os.path.basename(filename):
-					del dupes_list[i]
-					break
-			dupe_count -= 1
+				# create new key for each md5sum and set value as new list and add file
+				hashgroup_md5.setdefault(md5sum,[]).append(filename)
 
-	if CLIARGS['verbose'] or CLIARGS['debug']:
-		LOGGER.info('Found %s duplicate files', dupe_count)
+		# remove any md5sum key that only has 1 item (no duplicate)
+		for key, value in list(hashgroup_md5.items()):
+			if len(value) < 2:
+				filename = value[0]
+				if VERBOSE:
+					LOGGER.info('[thread-%s] Unique file (MD5 diff), removing: %s' % (threadnum, filename))
+				del hashgroup_md5[key]
+				# remove file from hashgroup
+				for i in range(len(hashgroup['files'])):
+					if hashgroup['files'][i]['filename'] == filename:
+						del hashgroup['files'][i]
+						break
 
-	total_num_dupes += dupe_count
+		if VERBOSE:
+			LOGGER.info('[thread-%s] Found %s dupes in hashgroup' % (threadnum, len(hashgroup['files'])))
 
-	return dupes_list
+		# add dupe_count to totals
+		totals[threadnum]['num_dupes'] += len(hashgroup['files'])
 
-def dupesFinder(ES, WORKER_QUEUE, indexname, LOGGER):
+		if len(hashgroup['files']) >= 2:
+			# add hashgroup to dupelist
+			dupelist.append(hashgroup)
+
+		# bulk add to ES once we reach 1000 or more items
+		if len(dupelist) >= 1000:
+			# update existing index and tag dupe files is_dupe field
+			indexTagDupe(threadnum, ES, indexname, dupelist, LOGGER, VERBOSE)
+			del dupelist[:]
+
+		return dupelist
+
+def dupesFinder(ES, WORKER_QUEUE, CLIARGS, LOGGER):
 	"""This is the duplicate file finder function.
 	It searches Elasticsearch for files that have the same filehash
 	and add the list to the dupes queue.
 	"""
-	global total_num_files
+	global total_hash_groups
+	
+	hashgroups = {}
+	dupe_list = []
+	size = int(CLIARGS['minsize']) * 1024 * 1024 # convert to bytes
 	dupe_count = 0
+	
 	data = {
-			"size": 0,
+			"_source": ["filehash","path_parent","filename"],
 			"query": {
 				"bool": {
+					"filter": {
+						"term": { "hardlinks": 1 }
+					},
 					"must": {
-						"term": {
-							"hardlinks": 1
+						"range": {
+							"filesize": { "gte": size }
 						}
-					}	
+					}
 				}
-			},
-			"aggs": {
-			  "duplicateCount": {
-			    "terms": {
-			      "field": "filehash",
-			      "min_doc_count": 2,
-						"size": 10000
-			    },
-				"aggs": {
-				  "duplicateDocuments": {
-				    "top_hits": {
-							"size": 100
-						}
-				  }
-				}
-			  }
 			}
-		  }
-	# search ES and return results
-	LOGGER.info('Refreshing ES index')
-	ES.indices.refresh(index=indexname)
-	LOGGER.info('Searching for duplicate file hashes')
-	res = ES.search(index=indexname, doc_type='file', body=data)
+		  }	
+	# search ES and start scroll
+	LOGGER.info('Searching %s for duplicate file hashes (might take a while)', CLIARGS['index'])
+	res = ES.search(index=CLIARGS['index'], doc_type='file', scroll='1m', size=100, body=data)
 	
-	for hit in res['aggregations']['duplicateCount']['buckets']:
-		hashgroup_list = []
-		for hit in hit['duplicateDocuments']['hits']['hits']:
-				hashgroup_list.append(hit)
-				dupe_count += 1
-		# add hashgroup to duplicate file worker queue
-		WORKER_QUEUE.put(hashgroup_list)
-		total_num_files += 1
-	LOGGER.info('Found %s files with similiar filehash (%s groups)', dupe_count, total_num_files)
+	while res['hits']['hits'] and len(res['hits']['hits']) > 0:
+		for hit in res['hits']['hits']:
+			key = hit['_source']['filehash']
+			if key not in hashgroups:
+				hashgroups[key] = []
+			hashgroups[hit['_source']['filehash']].append({'id': hit['_id'], 'filename': hit['_source']['path_parent']+"/"+hit['_source']['filename']})
+
+		# get ES scroll id
+		scroll_id = res['_scroll_id']
+
+		# use ES scroll api
+		res = ES.scroll(scroll_id=scroll_id, scroll='1m')
+	
+	# find hashgroups with 2 or more items and add to dupe_list
+	for key, value in list(hashgroups.items()):
+		if len(value) >= 2: # minimum 2 dupes
+			dupe_count += len(value)
+			dupe_list.append({'filehash': key, 'files': value})
+			total_hash_groups += 1
+			
+	LOGGER.info('Found %s possible duplicate files (%s filehash groups)', dupe_count, total_hash_groups)
+	LOGGER.info('Adding hashgroups to queue')
+	# add dupes to queue
+	for i in dupe_list:
+		WORKER_QUEUE.put(i)
+	
 	return
 
 def getTime(seconds):
+	"""This is the get time function
+	It returns human readable time format for stats.
+	"""
 	m, s = divmod(seconds, 60)
 	h, m = divmod(m, 60)
 	return "%dh:%02dm:%02ds" % (h, m, s)
 
 def convertSize(size_bytes):
-   if size_bytes == 0:
-       return "0B"
-   size_name = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
-   i = int(math.floor(math.log(size_bytes, 1024)))
-   p = math.pow(1024, i)
-   s = round(size_bytes / p, 2)
-   return "%s %s" % (s, size_name[i])
+	"""This is the convert size function
+	It returns human readable file sizes.
+	"""
+	if size_bytes == 0:
+		return "0B"
+	size_name = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
+	i = int(math.floor(math.log(size_bytes, 1024)))
+	p = math.pow(1024, i)
+	s = round(size_bytes / p, 2)
+	return "%s %s" % (s, size_name[i])
 
-def printStats(DATEEPOCH, LOGGER, stats_type='indexing'):
+def printStats(DATEEPOCH, LOGGER, stats_type):
 	"""This is the print stats function
 	It outputs stats at the end of runtime.
 	"""
 	elapsedtime = time.time() - DATEEPOCH
 	sys.stdout.flush()
 	
-	if stats_type is 'indexing':
+	total_num_files = 0
+	total_num_files_skipped = 0
+	total_file_size = 0
+	total_file_size_skipped = 0
+	total_num_dupes = 0
+	
+	if stats_type is 'crawl':
+		# sum totals from all threads
+		for i in totals:
+			total_num_files += i['num_files']
+			total_num_files_skipped += i['num_files_skipped']
+			total_file_size += i['file_size']
+			total_file_size_skipped += i['file_size_skipped']
 		sys.stdout.write("\n\033[35m********************************* CRAWL STATS *********************************\033[0m\n")
-		sys.stdout.write("\033[35m Directories: %s\033[0m" % total_num_dirs)
-		sys.stdout.write("\033[35m / Skipped: %s\n" % total_num_dirs_skipped)
+		sys.stdout.write("\033[35m Directories: %s\033[0m" % totals_dirs['num_dirs'] )
+		sys.stdout.write("\033[35m / Skipped: %s\n" % totals_dirs['num_dirs_skipped'])
 		sys.stdout.write("\033[35m Files: %s (%s)\033[0m" % (total_num_files, convertSize(total_file_size)))
 		sys.stdout.write("\033[35m / Skipped: %s (%s)\n" % (total_num_files_skipped, convertSize(total_file_size_skipped)))
 	
-	if stats_type is 'updating_dupe':
+	elif stats_type is 'updating_dupe':
+		# sum totals from all threads
+		for i in totals:
+			total_num_dupes += i['num_dupes']
 		sys.stdout.write("\n\033[35m********************************* DUPES STATS *********************************\033[0m\n")
 		sys.stdout.write("\033[35m Duplicates: %s\033[0m\n" % total_num_dupes)
 		
 	sys.stdout.write("\033[35m Elapsed time: %s\033[0m\n" % getTime(elapsedtime))
 	sys.stdout.write("\033[35m*******************************************************************************\033[0m\n\n")
 	sys.stdout.flush()
+	
 	return
 
 def gource(ES, CLIARGS, CONFIG, LOGGER):
@@ -1026,13 +1046,12 @@ def gource(ES, CLIARGS, CONFIG, LOGGER):
   		}
 
 	# search ES and start scroll
-	ES.indices.refresh(index=CLIARGS['index'])
 	res = ES.search(index=CLIARGS['index'], doc_type='file', scroll='1m', size=100, body=data)
 
 	while res['hits']['hits'] and len(res['hits']['hits']) > 0:
 		for hit in res['hits']['hits']:
 			if CLIARGS['gourcert']:
-				# convert data to unix time
+				# convert date to unix time
 				d = str(int(time.mktime(datetime.strptime(hit['_source']['indexing_date'], '%Y-%m-%dT%H:%M:%S.%f').timetuple())))
 				u = hit['_source']['indexing_thread']
 				t = 'A'
@@ -1093,26 +1112,23 @@ def logSetup(CLIARGS):
 		diskover_logger.disabled = True
 		es_logger.disabled = True
 		urllib3_logger.disabled = True
-	return diskover_logger
+		
+	# check if we want to run with verbose logging
+	verbose = False
+	if CLIARGS['verbose'] or CLIARGS['debug']:
+		verbose = True
+		
+	return diskover_logger, verbose
 
 def main():
-	global total_num_files
-	global total_num_files_skipped
-	global total_num_dirs
-	global total_num_dirs_skipped
-	global total_file_size
-	global total_file_size_skipped
-	global total_num_dupes
-
-	# initialize file and directory counts
-	total_num_files = 0
-	total_num_files_skipped = 0
-	total_num_dirs = 0
-	total_num_dirs_skipped = 0
-	total_file_size = 0
-	total_file_size_skipped = 0
-	total_num_dupes = 0
-
+	# totals for crawl stats output
+	global totals
+	totals = []
+	global totals_dirs
+	totals_dirs = {'num_dirs': 0, 'num_dirs_skipped': 0}
+	global total_hash_groups
+	total_hash_groups = 0
+	
 	# get seconds since epoch used for elapsed time
 	DATEEPOCH = time.time()
 
@@ -1140,7 +1156,7 @@ def main():
 			sys.exit(1)
 	
 	# set up logging
-	LOGGER = logSetup(CLIARGS)
+	LOGGER, VERBOSE = logSetup(CLIARGS)
 
 	# connect to Elasticsearch
 	ES = elasticsearchConnect(CONFIG, LOGGER)
@@ -1155,11 +1171,11 @@ def main():
 
 	# Set up thread worker queue
 	WORKER_QUEUE = Queue.Queue()
-		
+
 	# tag duplicate files if cli argument
 	if CLIARGS['tagdupes']:
 		# Set up worker threads for duplicate file checker queue
-		workerSetupDupes(WORKER_QUEUE, CLIARGS, CONFIG, ES, LOGGER)
+		workerSetupDupes(WORKER_QUEUE, CLIARGS, CONFIG, ES, LOGGER, VERBOSE)
 		if not CLIARGS['quiet']:
 			sys.stdout.write('\n')
 			sys.stdout.flush()
@@ -1172,16 +1188,16 @@ def main():
 	indexCreate(ES, CLIARGS, LOGGER)
 	
 	# Set up worker threads
-	workerSetup(WORKER_QUEUE, CLIARGS, CONFIG, ES, LOGGER)
+	workerSetupCrawl(WORKER_QUEUE, CLIARGS, CONFIG, ES, LOGGER, VERBOSE)
 	
-	# wait for the queue to empty
-	#WORKER_QUEUE.join()
+	# wait for all threads to finish
+	WORKER_QUEUE.join()
 
 	if not CLIARGS['quiet']:
 		sys.stdout.write('\n')
 		sys.stdout.flush()
 		LOGGER.info('Finished crawling')
-		printStats(DATEEPOCH, LOGGER)
+		printStats(DATEEPOCH, LOGGER, stats_type='crawl')
 	# exit, we're all done!
 	sys.exit(0)
 

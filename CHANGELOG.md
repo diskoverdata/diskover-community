@@ -1,5 +1,23 @@
 # Diskover Change Log
 
+## [1.2.2] = 2017-09-22
+### added
+- can now set minimum file size using '-s' or '--minsize' for duplicate file finding '--tagdupes'
+- '--mtime' cli option for modified time now also checks directory mtime and skips adding to queue
+### changed
+- decreased crawl times by modifying Elasticsearch bulk item size, reducing file stat calls, reducing queue wait sleep time
+- filelist and dirlist now gets bulk added to ES and emptied when at 1000 or more items, previously dirlist would get bulk added after all directories were crawled and filelist was bulk added after each directory
+- reduced file stat calls by storing entry.stat() and os.stat(path) into stat var and using it for different stat
+- tagdupes duplicate finder will now search ES for all results and dupe finding is done in php rather than ES aggregate buckets tophits. This allows to find all dupes and not limit of 10000 hashgroups.
+- excluded_dirs can have absolute paths as well as just directory names
+- improved code for duplicate file detection
+- default is now >0MB for cli option '--minsize' (min file size)
+- default is now 0 for cli option '--mtime' (min days old)
+- removed global variables for total file counts and replaced with local for each thread, totals are calculated at end of crawl stats output
+### fixed
+- better handling of unicode, unicode was causing Exception errors
+- crawl stats not reporting correct file count in python 2
+
 ## [1.2.1] = 2017-09-17
 ### changed
 - progress bar for tagdupes now more accurately reflects check progress
