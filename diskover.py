@@ -43,7 +43,7 @@ if not IS_WIN:
 if IS_WIN:
 	import win32security
 
-DISKOVER_VERSION = '1.2.2'
+DISKOVER_VERSION = '1.2.3'
 
 def printBanner():
 	"""This is the print banner function.
@@ -97,7 +97,7 @@ def printProgressBar(iteration, total, prefix='', suffix=''):
 	bar = '#' * filled_length + '.' * (bar_length - filled_length)
 	sys.stdout.write('\r\033[44m\033[37m%s [%s%s]\033[0m |%s| %s' \
 		% (prefix, percents, '%', bar, suffix))
-	sys.stdout.flush()
+	#sys.stdout.flush()
 	return
 
 def loadConfig():
@@ -192,89 +192,118 @@ def parseCLIArgs(indexname):
 	args = parser.parse_args()
 	return args
 
-def crawlDirectories(path, dirlist, ES, CLIARGS, CONFIG, WORKER_QUEUE, \
-										 LOGGER, VERBOSE):
-	"""This is the crawl directory tree function.
+def crawlTreeWorker(threadnum, run_event, WORKER_QUEUE, WORKER_TREE_QUEUE, ES, \
+										CLIARGS, CONFIG, LOGGER, VERBOSE):
+	"""This is the crawl directory tree worker function.
 	It crawls the tree top-down using scandir
-	and adds directories to the worker queue.
+	and adds directories to the file crawl worker queue.
 	Ignores directories that are in
 	'excluded_dirs' and modified less than 'mtime'.
 	"""
-	global totals_dirs
+	global totals
 	
-	# once dirlist contains 1000 or more items, add dirlist to ES and empty it
-	if len(dirlist) >= 1000:
-		indexAddDir(ES, CLIARGS['index'], dirlist, LOGGER, VERBOSE)
-		del dirlist[:]
-	
-	try:
-		# skip any dirs in excluded dirs
-		if path.split('/')[-1] in CONFIG['excluded_dirs'] or path in CONFIG['excluded_dirs']:
-			if VERBOSE:
-				LOGGER.info('Skipping (excluded dir) %s' % path)
-			totals_dirs['num_dirs_skipped'] += 1
-			return dirlist
-					
-		# skip any dirs which start with . and in excluded dirs
-		if path != '.' and path.split('/')[-1].startswith('.') and '.*' in CONFIG['excluded_dirs']:
-			if VERBOSE:
-				LOGGER.info('Skipping (.* dir) %s' % path)
-			totals_dirs['num_dirs_skipped'] += 1
-			return dirlist
+	dirlist = []
+	while run_event.is_set():
+		if CLIARGS['nice']:
+			time.sleep(.01)
+		if VERBOSE:
+			LOGGER.info('[thread-%s]: Looking for the next directory', threadnum)
+		# get a directory from the Queue
+		path = WORKER_TREE_QUEUE.get()
 		
-		stat = os.stat(unicode(path))
-		# check directory modified time
-		mtime_unix = stat.st_mtime
-		# Convert time in days to seconds
-		time_sec = CLIARGS['mtime'] * 86400
-		dir_mtime_sec = time.time() - mtime_unix
-		# Only add directories modified at least x days ago to queue
-		if dir_mtime_sec < time_sec:
+		def addToDirList(path, dirlist, stat):
+			# add directory info to dirlist
+			dirinfo_dict = {}
+			# Get directory info and store in dirinfo_dict
+			dirinfo_dict['path'] = unicode(os.path.abspath(unicode(path)))
+			mtime_unix = stat.st_mtime
+			mtime_utc = datetime.utcfromtimestamp(mtime_unix).strftime('%Y-%m-%dT%H:%M:%S')
+			dirinfo_dict['last_modified'] = mtime_utc
+			atime_unix = stat.st_atime
+			atime_utc = datetime.utcfromtimestamp(atime_unix).strftime('%Y-%m-%dT%H:%M:%S')
+			dirinfo_dict['last_access'] = atime_utc
+			ctime_unix = stat.st_ctime
+			ctime_utc = datetime.utcfromtimestamp(ctime_unix).strftime('%Y-%m-%dT%H:%M:%S')
+			dirinfo_dict['last_change'] = ctime_utc
+			indextime_utc = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
+			dirinfo_dict['indexing_date'] = indextime_utc
+			# add dirinfo to dirlist
+			dirlist.append(dirinfo_dict)
+			return dirlist
+
+		try:
+			# skip any dirs in excluded dirs
+			if path.split('/')[-1] in CONFIG['excluded_dirs'] or path in CONFIG['excluded_dirs']:
+				if VERBOSE:
+					LOGGER.info('Skipping (excluded dir) %s' % path)
+				totals[threadnum]['num_dirs_skipped'] += 1
+				# task is done
+				WORKER_TREE_QUEUE.task_done()
+				continue
+
+			# skip any dirs which start with . and in excluded dirs
+			if path != '.' and path.split('/')[-1].startswith('.') and '.*' in CONFIG['excluded_dirs']:
+				if VERBOSE:
+					LOGGER.info('Skipping (.* dir) %s' % path)
+				totals[threadnum]['num_dirs_skipped'] += 1
+				# task is done
+				WORKER_TREE_QUEUE.task_done()
+				continue
+			
+			# get dir stat
+			stat = os.stat(unicode(path))
+			# check directory modified time
+			mtime_unix = stat.st_mtime
+			# Convert time in days to seconds
+			time_sec = CLIARGS['mtime'] * 86400
+			dir_mtime_sec = time.time() - mtime_unix
+			# Only add directories modified at least x days ago to queue
+			if dir_mtime_sec < time_sec:
+				if VERBOSE:
+					LOGGER.info('Skipping (mtime) %s' % path)
+				totals[threadnum]['num_dirs_skipped'] += 1
+			else:
+				# add dir info to dirlist
+				dirlist = addToDirList(unicode(path), dirlist, stat)
+				totals[threadnum]['num_dirs'] += 1
+				# once dirlist contains 1000 or more items, add dirlist to ES and empty it
+				if len(dirlist) >= 1000:
+					indexAddDir(ES, CLIARGS['index'], dirlist, LOGGER, VERBOSE)
+					del dirlist[:]
+				
+		except (IOError, OSError):
 			if VERBOSE:
-				LOGGER.info('Skipping (mtime) %s' % path)
-			totals_dirs['num_dirs_skipped'] += 1
-		else:
-			# queue directory for worker threads to crawl files
+				LOGGER.error('Failed to crawl directory', exc_info=True)
+			pass
+		
+		# check if rootdir path and only Queue it's files
+		if path == CLIARGS['rootdir']:
 			if VERBOSE:
 				LOGGER.info('Queuing directory: %s', path)
-			# add directory path to worker queue
+			# add directory path to file crawler worker queue
 			WORKER_QUEUE.put(unicode(path))
-			totals_dirs['num_dirs'] += 1
-		# add directory info to dirlist
-		dirinfo_dict = {}
-		# Get directory info and store in dirinfo_dict
-		dirinfo_dict['path'] = unicode(os.path.abspath(unicode(path)))
-		mtime_unix = stat.st_mtime
-		mtime_utc = datetime.utcfromtimestamp(mtime_unix).strftime('%Y-%m-%dT%H:%M:%S')
-		dirinfo_dict['last_modified'] = mtime_utc
-		atime_unix = stat.st_atime
-		atime_utc = datetime.utcfromtimestamp(atime_unix).strftime('%Y-%m-%dT%H:%M:%S')
-		dirinfo_dict['last_access'] = atime_utc
-		ctime_unix = stat.st_ctime
-		ctime_utc = datetime.utcfromtimestamp(ctime_unix).strftime('%Y-%m-%dT%H:%M:%S')
-		dirinfo_dict['last_change'] = ctime_utc
-		indextime_utc = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
-		dirinfo_dict['indexing_date'] = indextime_utc
-		# add dirinfo to dirlist
-		dirlist.append(dirinfo_dict)
-	except (IOError, OSError):
-		if VERBOSE:
-			LOGGER.error('Failed to crawl directory', exc_info=True)
-		pass
-	
-	try:
-		for entry in scandir(unicode(path)):
-			if entry.is_dir(follow_symlinks=False):
-					
-				# crawl directory (recursive)
-				dirlist = crawlDirectories(entry.path, dirlist, ES, CLIARGS, CONFIG, \
-												 WORKER_QUEUE, LOGGER, VERBOSE)
-	
-	except (IOError, OSError):
-		if VERBOSE:
-			LOGGER.error('Failed to crawl directory', exc_info=True)
-		pass
-	return dirlist
+		else:
+			# get sub directories of path and add to Queue
+			try:
+				for entry in scandir(unicode(path)):
+					if entry.is_dir(follow_symlinks=False):
+						# queue directory for file worker threads to crawl files in path
+						if VERBOSE:
+							LOGGER.info('Queuing directory: %s', path)
+						# add directory path to dir tree crawler worker queue
+						WORKER_TREE_QUEUE.put(entry.path)
+						# add directory path to file crawler worker queue
+						WORKER_QUEUE.put(entry.path)
+			except (IOError, OSError):
+				if VERBOSE:
+					LOGGER.error('Failed to crawl directory', exc_info=True)
+				pass
+		# if queue empty bulk add dirlist to ES and empty it
+		if len(dirlist) > 0 and WORKER_TREE_QUEUE.qsize() == 0:
+			indexAddDir(ES, CLIARGS['index'], dirlist, LOGGER, VERBOSE)
+			del dirlist[:]
+		# task is done
+		WORKER_TREE_QUEUE.task_done()
 
 def crawlFiles(path, filelist, ES, threadnum, CLIARGS, excluded_files, \
 							 LOGGER, VERBOSE):
@@ -292,10 +321,12 @@ def crawlFiles(path, filelist, ES, threadnum, CLIARGS, excluded_files, \
 	# try to crawl files in directory
 	try:
 		for entry in scandir(unicode(path)):
+			LOGGER.debug('Filename: <%s>', entry.name)
+			LOGGER.debug('Path: <%s>', entry.path)
 			# check if is file and not in excluded files
 			if entry.is_file(follow_symlinks=False) and not entry.is_symlink():
 				if entry.name in excluded_files \
-				or (entry.name.startswith('.') and '.*' in excluded_files):
+				or (entry.name.startswith(u'.') and u'.*' in excluded_files):
 					if VERBOSE:
 						LOGGER.info('Skipping (excluded file) %s' % entry.path)
 					totals[threadnum]['num_files_skipped'] += 1
@@ -304,8 +335,9 @@ def crawlFiles(path, filelist, ES, threadnum, CLIARGS, excluded_files, \
 					
 				# get file extension and check excluded_files
 				extension = os.path.splitext(entry.name)[1][1:].strip().lower()
-				if (not extension and 'NULLEXT' in excluded_files) \
-				or '*.'+str(extension) in excluded_files:
+				LOGGER.debug('Extension: <%s>', extension)
+				if (not extension and u'NULLEXT' in excluded_files) \
+				or u'*.'+unicode(extension) in excluded_files:
 					if VERBOSE:
 						LOGGER.info('Skipping (excluded file) %s' % entry.path)
 					totals[threadnum]['num_files_skipped'] += 1
@@ -433,46 +465,56 @@ def crawlFiles(path, filelist, ES, threadnum, CLIARGS, excluded_files, \
 		pass
 	return filelist
 
-def workerSetupCrawl(WORKER_QUEUE, CLIARGS, CONFIG, ES, LOGGER, VERBOSE):
+def workerSetupCrawl(WORKER_QUEUE, WORKER_TREE_QUEUE, CLIARGS, \
+										 CONFIG, ES, LOGGER, VERBOSE):
 	"""This is the worker setup function for directory crawling.
 	It sets up the worker threads to process the directory list Queue.
 	"""
-	global totals
 	
 	# threading event to handle stopping threads
 	run_event = threading.Event()
 	run_event.set()
 	
-	# create worker threads and start them
-	for i in range(CLIARGS['threads']):
+	for i in range(CLIARGS['threads']/2):
 		# totals for each thread
 		totals.append({'num_files': 0, 'num_files_skipped': 0, \
-				 'file_size': 0, 'file_size_skipped': 0})
+				 'file_size': 0, 'file_size_skipped': 0, 'num_dirs': 0, \
+				 'num_dirs_skipped': 0})
+		# create worker threads for file crawling and start them
 		worker_thread = threading.Thread(target=crawlDirWorker, \
 			args=(i, run_event, WORKER_QUEUE, ES, CLIARGS, CONFIG, LOGGER, VERBOSE))
 		worker_thread.daemon = True
 		worker_thread.start()
+		
+		# create worker threads for directory tree crawling and start them
+		worker_thread_tree = threading.Thread(target=crawlTreeWorker, \
+			args=(i, run_event, WORKER_QUEUE, WORKER_TREE_QUEUE, ES, CLIARGS, \
+						CONFIG, LOGGER, VERBOSE))
+		worker_thread_tree.daemon = True
+		worker_thread_tree.start()
 		if CLIARGS['nice']:
 			time.sleep(0.5)
 	
-	dirlist = []
 	dirs_queued = False
 	while run_event.is_set():
 		try:
 			if not dirs_queued:
-				# crawl directory tree and get dirlist
 				LOGGER.info('Crawling using %s threads' % CLIARGS['threads'])
-				dirlist = crawlDirectories(unicode(CLIARGS['rootdir']), dirlist, ES, CLIARGS, \
-																	 CONFIG, WORKER_QUEUE, LOGGER, VERBOSE)
-				if len(dirlist) > 0:
-					# add any remaining dirs to ES
-					indexAddDir(ES, CLIARGS['index'], dirlist, LOGGER, VERBOSE)
+				# put rootdir into Queue
+				WORKER_TREE_QUEUE.put(unicode(CLIARGS['rootdir']))
+				# for each directory in rootdir, add to WORKER_TREE_QUEUE
+				for entry in scandir(CLIARGS['rootdir']):
+					if entry.is_dir(follow_symlinks=False):
+						WORKER_TREE_QUEUE.put(entry.path)
 				dirs_queued = True
+				# wait for all threads to finish
+				WORKER_TREE_QUEUE.join()
+				WORKER_QUEUE.join()
 				break
 		except KeyboardInterrupt:
 			LOGGER.disabled = True
 			print('\nCtrl-c keyboard interrupt received')
-			print("\nAttempting to close worker threads")
+			print("Attempting to close worker threads")
 			run_event.clear()
 			print("\nThreads successfully closed, sayonara!")
 			sys.exit(0)
@@ -518,8 +560,8 @@ def workerSetupDupes(WORKER_QUEUE, CLIARGS, CONFIG, ES, LOGGER, VERBOSE):
 			
 def crawlDirWorker(threadnum, run_event, WORKER_QUEUE, ES, CLIARGS, \
 									 CONFIG, LOGGER, VERBOSE):
-	"""This is the worker thread function.
-	It processes items in the Queue one after another.
+	"""This is the crawl directory worker thread function.
+	It processes items (directories) in the Queue one after another.
 	These daemon threads go into an infinite loop,
 	and only exit when run_event is cleared.
 	"""
@@ -530,10 +572,6 @@ def crawlDirWorker(threadnum, run_event, WORKER_QUEUE, ES, CLIARGS, \
 			time.sleep(.01)
 		if VERBOSE:
 			LOGGER.info('[thread-%s]: Looking for the next directory', threadnum)
-		# if queue empty bulk add filelist to ES and empty it
-		if len(filelist) > 0 and WORKER_QUEUE.qsize() == 0:
-			indexAddFiles(threadnum, ES, CLIARGS['index'], filelist, LOGGER, VERBOSE)
-			del filelist[:]
 		# get an item (directory) from the queue
 		path = WORKER_QUEUE.get()
 		if VERBOSE:
@@ -542,10 +580,17 @@ def crawlDirWorker(threadnum, run_event, WORKER_QUEUE, ES, CLIARGS, \
 		filelist = crawlFiles(path, filelist, ES, threadnum, CLIARGS, \
 													CONFIG['excluded_files'], LOGGER, VERBOSE)
 		# print progress bar
-		dircount = totals_dirs['num_dirs'] - WORKER_QUEUE.qsize()
+		total_dirs = 0
+		for i in totals:
+			total_dirs += i['num_dirs']	
+		dircount = total_dirs - WORKER_QUEUE.qsize()
 		if dircount > 0 and not VERBOSE and not CLIARGS['quiet']:
-			printProgressBar(dircount, totals_dirs['num_dirs'], 'Crawling:', '%s/%s' \
-				% (dircount, totals_dirs['num_dirs']))
+			printProgressBar(dircount, total_dirs, 'Crawling:', '%s/%s' \
+				% (dircount, total_dirs))
+		# if queue empty bulk add filelist to ES and empty it
+		if len(filelist) > 0 and WORKER_QUEUE.qsize() == 0:
+			indexAddFiles(threadnum, ES, CLIARGS['index'], filelist, LOGGER, VERBOSE)
+			del filelist[:]
 		# task is done
 		WORKER_QUEUE.task_done()
 
@@ -560,11 +605,6 @@ def dupesWorker(threadnum, run_event, WORKER_QUEUE, ES, CLIARGS, CONFIG, LOGGER,
 			time.sleep(.01)
 		if VERBOSE:
 			LOGGER.info('[thread-%s]: Looking for the next filehash group', threadnum)
-		# add any remaining to ES
-		if len(dupelist) > 0 and WORKER_QUEUE.qsize() == 0:
-			# update existing index and tag dupe files is_dupe field
-			indexTagDupe(threadnum, ES, CLIARGS['index'], dupelist, LOGGER, VERBOSE)
-			del dupelist[:]
 		# get an item (hashgroup) from the queue
 		hashgroup = WORKER_QUEUE.get()
 		# process the duplicate files in hashgroup and return dupelist
@@ -574,6 +614,11 @@ def dupesWorker(threadnum, run_event, WORKER_QUEUE, ES, CLIARGS, CONFIG, LOGGER,
 		if dupecount > 0 and not VERBOSE and not CLIARGS['quiet']:
 			printProgressBar(dupecount, total_hash_groups, 'Checking:', '%s/%s' \
 				% (dupecount, total_hash_groups))
+		# add any remaining to ES
+		if len(dupelist) > 0 and WORKER_QUEUE.qsize() == 0:
+			# update existing index and tag dupe files is_dupe field
+			indexTagDupe(threadnum, ES, CLIARGS['index'], dupelist, LOGGER, VERBOSE)
+			del dupelist[:]
 		# task is done
 		WORKER_QUEUE.task_done()
 
@@ -994,6 +1039,8 @@ def printStats(DATEEPOCH, LOGGER, stats_type):
 	total_num_files_skipped = 0
 	total_file_size = 0
 	total_file_size_skipped = 0
+	total_num_dirs = 0
+	total_num_dirs_skipped = 0
 	total_num_dupes = 0
 	
 	if stats_type is 'crawl':
@@ -1003,9 +1050,11 @@ def printStats(DATEEPOCH, LOGGER, stats_type):
 			total_num_files_skipped += i['num_files_skipped']
 			total_file_size += i['file_size']
 			total_file_size_skipped += i['file_size_skipped']
+			total_num_dirs += i['num_dirs']
+			total_num_dirs_skipped += i['num_dirs_skipped']
 		sys.stdout.write("\n\033[35m********************************* CRAWL STATS *********************************\033[0m\n")
-		sys.stdout.write("\033[35m Directories: %s\033[0m" % totals_dirs['num_dirs'] )
-		sys.stdout.write("\033[35m / Skipped: %s\n" % totals_dirs['num_dirs_skipped'])
+		sys.stdout.write("\033[35m Directories: %s\033[0m" % total_num_dirs)
+		sys.stdout.write("\033[35m / Skipped: %s\n" % total_num_dirs_skipped)
 		sys.stdout.write("\033[35m Files: %s (%s)\033[0m" % (total_num_files, convertSize(total_file_size)))
 		sys.stdout.write("\033[35m / Skipped: %s (%s)\n" % (total_num_files_skipped, convertSize(total_file_size_skipped)))
 	
@@ -1124,8 +1173,6 @@ def main():
 	# totals for crawl stats output
 	global totals
 	totals = []
-	global totals_dirs
-	totals_dirs = {'num_dirs': 0, 'num_dirs_skipped': 0}
 	global total_hash_groups
 	total_hash_groups = 0
 	
@@ -1169,8 +1216,12 @@ def main():
 			print('\nCtrl-c keyboard interrupt received, exiting')
 		sys.exit(0)
 
-	# Set up thread worker queue
-	WORKER_QUEUE = Queue.Queue()
+	# Set up thread worker queues
+	WORKER_QUEUE = Queue.Queue() # file crawling/dupe checking
+	WORKER_TREE_QUEUE = Queue.Queue() # dir tree crawling
+	
+	LOGGER.debug('Excluded files: %s', CONFIG['excluded_files'])
+	LOGGER.debug('Excluded dirs: %s', CONFIG['excluded_dirs'])
 
 	# tag duplicate files if cli argument
 	if CLIARGS['tagdupes']:
@@ -1188,10 +1239,8 @@ def main():
 	indexCreate(ES, CLIARGS, LOGGER)
 	
 	# Set up worker threads
-	workerSetupCrawl(WORKER_QUEUE, CLIARGS, CONFIG, ES, LOGGER, VERBOSE)
-	
-	# wait for all threads to finish
-	WORKER_QUEUE.join()
+	workerSetupCrawl(WORKER_QUEUE, WORKER_TREE_QUEUE, CLIARGS, CONFIG, \
+									 ES, LOGGER, VERBOSE)
 
 	if not CLIARGS['quiet']:
 		sys.stdout.write('\n')

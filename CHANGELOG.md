@@ -1,5 +1,15 @@
 # Diskover Change Log
 
+## [1.2.3] = 2017-09-24
+### added
+- more debug output for file and excludes
+### changed
+- decreased crawl time by creating Queue for subdirs in rootdir and using half the threads to recursively crawl down those paths. Previously only the main thread was used to crawl down tree from rootdir
+- reduced cpu usage by removing stdout flush for progress bar
+### fixed
+- occasionally at end of crawl few remaining files in Queue would not get bulk added to ES
+- unicode issues
+
 ## [1.2.2] = 2017-09-22
 ### added
 - can now set minimum file size using '-s' or '--minsize' for duplicate file finding '--tagdupes'
