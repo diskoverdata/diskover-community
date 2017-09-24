@@ -475,7 +475,7 @@ def workerSetupCrawl(WORKER_QUEUE, WORKER_TREE_QUEUE, CLIARGS, \
 	run_event = threading.Event()
 	run_event.set()
 	
-	for i in range(CLIARGS['threads']/2):
+	for i in range(int(CLIARGS['threads']/2)):
 		# totals for each thread
 		totals.append({'num_files': 0, 'num_files_skipped': 0, \
 				 'file_size': 0, 'file_size_skipped': 0, 'num_dirs': 0, \
