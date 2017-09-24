@@ -283,6 +283,8 @@ def crawlTreeWorker(threadnum, run_event, WORKER_QUEUE, WORKER_TREE_QUEUE, ES, \
 			# add directory path to file crawler worker queue
 			WORKER_QUEUE.put(unicode(path))
 		else:
+			# add directory path to file crawler worker queue
+			WORKER_QUEUE.put(unicode(path))
 			# get sub directories of path and add to Queue
 			try:
 				for entry in scandir(unicode(path)):
@@ -292,8 +294,6 @@ def crawlTreeWorker(threadnum, run_event, WORKER_QUEUE, WORKER_TREE_QUEUE, ES, \
 							LOGGER.info('Queuing directory: %s', path)
 						# add directory path to dir tree crawler worker queue
 						WORKER_TREE_QUEUE.put(entry.path)
-						# add directory path to file crawler worker queue
-						WORKER_QUEUE.put(entry.path)
 			except (IOError, OSError):
 				if VERBOSE:
 					LOGGER.error('Failed to crawl directory', exc_info=True)
