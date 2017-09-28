@@ -512,39 +512,43 @@ def workerSetupCrawl(WORKER_QUEUE, WORKER_TREE_QUEUE, CLIARGS, \
 	run_event = threading.Event()
 	run_event.set()
 	
+	worker_thread = []
+	# set up the threads
 	for i in range(int(CLIARGS['threads']/2)):
 		# totals for each thread
 		totals.append({'num_files': 0, 'num_files_skipped': 0, \
 				 'file_size': 0, 'file_size_skipped': 0, 'num_dirs': 0, \
 				 'num_dirs_skipped': 0})
 		# create worker threads for file crawling and start them
-		worker_thread = threading.Thread(target=crawlDirWorker, \
-			args=(i, run_event, WORKER_QUEUE, ES, CLIARGS, CONFIG, LOGGER, VERBOSE))
-		worker_thread.daemon = True
-		worker_thread.start()
-		
+		worker_thread.append(threading.Thread(target=crawlDirWorker, \
+			args=(i, run_event, WORKER_QUEUE, ES, CLIARGS, CONFIG, LOGGER, VERBOSE)))
 		# create worker threads for directory tree crawling and start them
-		worker_thread_tree = threading.Thread(target=crawlTreeWorker, \
+		worker_thread.append(threading.Thread(target=crawlTreeWorker, \
 			args=(i, run_event, WORKER_QUEUE, WORKER_TREE_QUEUE, ES, CLIARGS, \
-						CONFIG, LOGGER, VERBOSE))
-		worker_thread_tree.daemon = True
-		worker_thread_tree.start()
+						CONFIG, LOGGER, VERBOSE)))
 		if CLIARGS['nice']:
 			time.sleep(0.5)
 	
+	# start the threads
+	for i in range(int(CLIARGS['threads'])):
+		worker_thread[i].daemon = True
+		worker_thread[i].start()
+	
 	dirs_queued = False
-	while run_event.is_set():
+	while True:
 		try:
 			if not dirs_queued:
 				LOGGER.info('Crawling using %s threads' % CLIARGS['threads'])
 				# put rootdir into Queue
 				WORKER_TREE_QUEUE.put(unicode(CLIARGS['rootdir']))
 				# for each directory in rootdir, add to WORKER_TREE_QUEUE
-				for entry in scandir(CLIARGS['rootdir']):
+				for entry in scandir(unicode(CLIARGS['rootdir'])):
 					if entry.is_dir(follow_symlinks=False):
 						WORKER_TREE_QUEUE.put(entry.path)
 				dirs_queued = True
-				# wait for all threads to finish
+				# wait for threads to finish
+				for i in range(int(CLIARGS['threads'])):
+					worker_thread[i].join(10)
 				WORKER_TREE_QUEUE.join()
 				WORKER_QUEUE.join()
 				break
@@ -553,6 +557,8 @@ def workerSetupCrawl(WORKER_QUEUE, WORKER_TREE_QUEUE, CLIARGS, \
 			print('\nCtrl-c keyboard interrupt received')
 			print("Attempting to close worker threads")
 			run_event.clear()
+			for i in range(int(CLIARGS['threads'])):
+				worker_thread[i].join(10)
 			print("\nThreads successfully closed, sayonara!")
 			sys.exit(0)
 	
@@ -1267,10 +1273,15 @@ if __name__ == "__main__":
 		sys.exit(0)
 		
 	# check if directory exists
-	if not os.path.exists(CLIARGS['rootdir']) or \
-			not os.path.exists(CLIARGS['file']):
-		LOGGER.error("Path not found, exiting")
-		sys.exit(1)
+	if CLIARGS['rootdir']:
+		if not os.path.exists(CLIARGS['rootdir']):
+			LOGGER.error("Path not found, exiting")
+			sys.exit(1)
+	elif CLIARGS['file']:
+		# check if file exists
+		if not os.path.exists(CLIARGS['file']):
+			LOGGER.error("File not found, exiting")
+			sys.exit(1)
 		
 	LOGGER.debug('Excluded files: %s', CONFIG['excluded_files'])
 	LOGGER.debug('Excluded dirs: %s', CONFIG['excluded_dirs'])
