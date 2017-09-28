@@ -1,5 +1,10 @@
 # Diskover Change Log
 
+## [1.2.4] = 2017-09-28
+### added
+- check if path exists before crawling
+- index single file using "-f or --file" cli argument
+
 ## [1.2.3] = 2017-09-24
 ### added
 - more debug output for file and excludes
