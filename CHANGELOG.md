@@ -4,6 +4,8 @@
 ### added
 - check if path exists before crawling
 - index single file using "-f or --file" cli argument
+### changed
+- no longer using python 3 built in os scandir, requires scandir module same as python 2
 
 ## [1.2.3] = 2017-09-24
 ### added

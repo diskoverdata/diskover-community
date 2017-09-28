@@ -10,11 +10,7 @@ LICENSE.TXT for the full license text.
 """
 
 from elasticsearch import Elasticsearch, helpers, RequestsHttpConnection
-try:
-	from os import scandir
-except ImportError:
-	from scandir import scandir
-from scandir import GenericDirEntry
+from scandir import scandir, GenericDirEntry
 from random import randint
 from datetime import datetime
 try:
