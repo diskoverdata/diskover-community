@@ -47,14 +47,13 @@ if IS_WIN:
 	import win32security
 
 # version
-DISKOVER_VERSION = '1.2.4'
+DISKOVER_VERSION = '1.2.5'
 __version__ = DISKOVER_VERSION
 # totals for crawl stats output
 totals = []
 total_hash_groups = 0
 # get seconds since epoch used for elapsed time
 DATEEPOCH = time.time()
-
 
 def printBanner():
 	"""This is the print banner function.
@@ -126,12 +125,12 @@ def loadConfig():
 		sys.exit(1)
 	config.read(configfile)
 	try:
-		d = config.get('excluded_dirs', 'dirs')
+		d = config.get('excludes', 'dirs')
 		configsettings['excluded_dirs'] = d.split(',')
 	except:
 		configsettings['excluded_dirs'] = []
 	try:
-		f = config.get('excluded_files', 'files')
+		f = config.get('excludes', 'files')
 		configsettings['excluded_files']  = f.split(',')
 	except:
 		configsettings['excluded_files'] = []
@@ -159,6 +158,10 @@ def loadConfig():
 		configsettings['index'] = config.get('elasticsearch', 'indexname')
 	except:
 		configsettings['index'] = ''
+	try:
+		configsettings['es_timeout'] = int(config.get('elasticsearch', 'timeout'))
+	except:
+		configsettings['es_timeout'] = 10
 	try:
 		configsettings['gource_maxfilelag'] = float(config.get('gource', 'maxfilelag'))
 	except:
@@ -666,22 +669,21 @@ def dupesWorker(threadnum, run_event, WORKER_QUEUE, ES, CLIARGS, CONFIG, LOGGER,
 		WORKER_QUEUE.task_done()
 
 def elasticsearchConnect(CONFIG, LOGGER):
-	"""This is the ES function.
-	It creates the connection to Elasticsearch
-	and checks if it can connect.
+	"""This is the Elasticsearch connect function.
+	It creates the connection to Elasticsearch and returns ES instance.
 	"""
+	LOGGER.info('Connecting to Elasticsearch')
 	# Check if we are using AWS ES
 	if CONFIG['aws'] == "True":
 		ES = Elasticsearch(hosts=[{'host': CONFIG['es_host'], 'port': CONFIG['es_port']}], \
-			use_ssl=True, verify_certs=True, connection_class=RequestsHttpConnection)
+			use_ssl=True, verify_certs=True, connection_class=RequestsHttpConnection, timeout=CONFIG['es_timeout'])
 	# Local connection to ES
 	else:
 		ES = Elasticsearch(hosts=[{'host': CONFIG['es_host'], 'port': CONFIG['es_port']}], \
-			http_auth=(CONFIG['es_user'], CONFIG['es_password']))
-	LOGGER.info('Connecting to Elasticsearch')
-	# Ping check ES
+			http_auth=(CONFIG['es_user'], CONFIG['es_password']), timeout=CONFIG['es_timeout'])
+	# ping check Elasticsearch
 	if not ES.ping():
-		LOGGER.error('Unable to connect to Elasticsearch, check diskover.cfg and ES')
+		LOGGER.error('Connection failed to Elasticsearch, check diskover.cfg and Elasticsearch logs')
 		sys.exit(1)
 	return ES
 
@@ -848,7 +850,7 @@ def indexDeleteFile(file_dict, ES, indexname, LOGGER, VERBOSE):
     }
 
 	# search ES
-	res = ES.search(index=indexname, doc_type='file', body=data)
+	res = ES.search(index=indexname, doc_type='file', body=data, request_timeout=CONFIG['es_timeout'])
 	
 	for hit in res['hits']['hits']:
 		# delete the file in ES
@@ -1044,7 +1046,7 @@ def dupesFinder(ES, WORKER_QUEUE, CLIARGS, LOGGER):
 		  }	
 	# search ES and start scroll
 	LOGGER.info('Searching %s for duplicate file hashes (might take a while)', CLIARGS['index'])
-	res = ES.search(index=CLIARGS['index'], doc_type='file', scroll='1m', size=100, body=data)
+	res = ES.search(index=CLIARGS['index'], doc_type='file', scroll='1m', size=100, body=data, request_timeout=CONFIG['es_timeout'])
 	
 	while res['hits']['hits'] and len(res['hits']['hits']) > 0:
 		for hit in res['hits']['hits']:
@@ -1057,7 +1059,7 @@ def dupesFinder(ES, WORKER_QUEUE, CLIARGS, LOGGER):
 		scroll_id = res['_scroll_id']
 
 		# use ES scroll api
-		res = ES.scroll(scroll_id=scroll_id, scroll='1m')
+		res = ES.scroll(scroll_id=scroll_id, scroll='1m', request_timeout=CONFIG['es_timeout'])
 	
 	# find hashgroups with 2 or more items and add to dupe_list
 	for key, value in list(hashgroups.items()):
@@ -1161,7 +1163,7 @@ def gource(ES, CLIARGS, CONFIG, LOGGER):
   		}
 
 	# search ES and start scroll
-	res = ES.search(index=CLIARGS['index'], doc_type='file', scroll='1m', size=100, body=data)
+	res = ES.search(index=CLIARGS['index'], doc_type='file', scroll='1m', size=100, body=data, request_timeout=CONFIG['es_timeout'])
 
 	while res['hits']['hits'] and len(res['hits']['hits']) > 0:
 		for hit in res['hits']['hits']:
@@ -1191,7 +1193,7 @@ def gource(ES, CLIARGS, CONFIG, LOGGER):
 		scroll_id = res['_scroll_id']
 
 		# use ES scroll api
-		res = ES.scroll(scroll_id=scroll_id, scroll='1m')
+		res = ES.scroll(scroll_id=scroll_id, scroll='1m', request_timeout=CONFIG['es_timeout'])
 	return
 
 def logSetup(CLIARGS):
