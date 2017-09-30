@@ -5,6 +5,7 @@
 - elasticsearch timeout setting in config diskover.cfg
 ### fixed
 - increased timeout to 30 secconds for finding dupes using scroll api, default for Elasticsearch python client is 10 sec which was causing crash searching index containing many duplicate hashes
+- bug causing directory's to get indexed as file type documents in Elasticsearch and also excludes being ignored (due to changes in v1.2.4)
 ### changed
 - combined excludes (dirs/files) into one group "excludes" in config diskover.cfg
 - increased timeout from 10 seconds (default) to 30 seconds for Elasticsearch transport class in elasticsearchConnect function
