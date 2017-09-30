@@ -1,5 +1,13 @@
 # Diskover Change Log
 
+## [1.2.5] = 2017-09-30
+### added
+- elasticsearch timeout setting in config diskover.cfg
+### fixed
+- increased timeout to 30 secconds for finding dupes using scroll api, default for Elasticsearch python client is 10 sec which was causing crash searching index containing many duplicate hashes
+### changed
+- increased timeout from 10 seconds (default) to 30 seconds for Elasticsearch transport class in elasticsearchConnect function
+
 ## [1.2.4] = 2017-09-28
 ### added
 - check if path exists before crawling
