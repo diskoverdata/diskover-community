@@ -121,7 +121,7 @@ def loadConfig():
 	configfile = '%s/diskover.cfg'% dir_path
 	# Check for config file
 	if not os.path.isfile(configfile):
-		print('Config file not found')
+		print('Config file diskover.cfg not found')
 		sys.exit(1)
 	config.read(configfile)
 	try:
@@ -258,7 +258,7 @@ def crawlTreeWorker(threadnum, run_event, WORKER_QUEUE, WORKER_TREE_QUEUE, ES, \
 				continue
 
 			# skip any dirs which start with . and in excluded dirs
-			if path != '.' and path.split('/')[-1].startswith('.') and '.*' in CONFIG['excluded_dirs']:
+			if path != '.' and path.split('/')[-1].startswith(u'.') and u'.*' in CONFIG['excluded_dirs']:
 				if VERBOSE:
 					LOGGER.info('Skipping (.* dir) %s' % path)
 				totals[threadnum]['num_dirs_skipped'] += 1
@@ -284,7 +284,7 @@ def crawlTreeWorker(threadnum, run_event, WORKER_QUEUE, WORKER_TREE_QUEUE, ES, \
 				totals[threadnum]['num_dirs'] += 1
 				# once dirlist contains 1000 or more items, add dirlist to ES and empty it
 				if len(dirlist) >= 1000:
-					indexAddDir(ES, CLIARGS['index'], dirlist, LOGGER, VERBOSE)
+					indexAddDir(threadnum, ES, CLIARGS['index'], dirlist, LOGGER, VERBOSE)
 					del dirlist[:]
 				
 		except (IOError, OSError):
@@ -316,7 +316,7 @@ def crawlTreeWorker(threadnum, run_event, WORKER_QUEUE, WORKER_TREE_QUEUE, ES, \
 				pass
 		# if queue empty bulk add dirlist to ES and empty it
 		if len(dirlist) > 0 and WORKER_TREE_QUEUE.qsize() == 0:
-			indexAddDir(ES, CLIARGS['index'], dirlist, LOGGER, VERBOSE)
+			indexAddDir(threadnum, ES, CLIARGS['index'], dirlist, LOGGER, VERBOSE)
 			del dirlist[:]
 		# task is done
 		WORKER_TREE_QUEUE.task_done()
@@ -324,156 +324,173 @@ def crawlTreeWorker(threadnum, run_event, WORKER_QUEUE, WORKER_TREE_QUEUE, ES, \
 def addFileToES(fileobj, ES, filelist, excluded_files, threadnum, CLIARGS, \
 							 LOGGER, VERBOSE):
 	"""This is the add file to Elasticsearch function.
-	It gets file meta info and adds to Elasticsearch
+	It gets file meta info and adds to Elasticsearch.
+	Once filelist reaches 1000 or more items or Queue is empty,
+	it is bulk added to Elasticsearch and emptied.
+	Ignores files smaller than 'minsize' MB, newer
+	than 'daysold' old and in 'excluded_files'.
+	Tries to reduce the amount of stat calls to the fs
+	to help speed up crawl times.
 	"""
 	global totals
 	
 	try:
 		LOGGER.debug('Filename: <%s>', fileobj.name)
 		LOGGER.debug('Path: <%s>', fileobj.path)
-		# check if is file and not in excluded files
+		
+		# check if fileobj is file and not directory item from scandir
+		# skip if file is a symlink
 		if fileobj.is_file(follow_symlinks=False) and not fileobj.is_symlink():
+			
+			# check if file is in exluded_files list
 			if fileobj.name in excluded_files \
 			or (fileobj.name.startswith(u'.') and u'.*' in excluded_files):
+				
 				if VERBOSE:
 					LOGGER.info('Skipping (excluded file) %s' % fileobj.path)
+					
 				totals[threadnum]['num_files_skipped'] += 1
 				totals[threadnum]['file_size_skipped'] += fileobj.stat().st_size
+				
 				return filelist
 					
-		# get file extension and check excluded_files
-		extension = os.path.splitext(fileobj.name)[1][1:].strip().lower()
-		LOGGER.debug('Extension: <%s>', extension)
-		if (not extension and u'NULLEXT' in excluded_files) \
-		or u'*.'+unicode(extension) in excluded_files:
-			if VERBOSE:
-				LOGGER.info('Skipping (excluded file) %s' % entry.path)
-			totals[threadnum]['num_files_skipped'] += 1
-			totals[threadnum]['file_size_skipped'] += fileobj.stat().st_size
-			return filelist
+			# get file extension and check excluded_files
+			extension = os.path.splitext(fileobj.name)[1][1:].strip().lower()
+			LOGGER.debug('Extension: <%s>', extension)
+
+			if (not extension and u'NULLEXT' in excluded_files) \
+			or u'*.'+unicode(extension) in excluded_files:
+
+				if VERBOSE:
+					LOGGER.info('Skipping (excluded file) %s' % entry.path)
+
+				totals[threadnum]['num_files_skipped'] += 1
+				totals[threadnum]['file_size_skipped'] += fileobj.stat().st_size
+
+				return filelist
 		
-		# get file stat
-		stat = fileobj.stat()
-		# file size (bytes)
-		size = stat.st_size
-		# Convert bytes to MB
-		size_mb = int(size / 1024 / 1024)
-		# Skip files smaller than x MB and skip empty files
-		if size_mb < CLIARGS['minsize'] or size == 0:
-			if VERBOSE:
-				LOGGER.info('Skipping (size) %s' % fileobj.path)
-			totals[threadnum]['num_files_skipped'] += 1
-			totals[threadnum]['file_size_skipped'] += size
-			return filelist
+			# get file stat
+			stat = fileobj.stat()
+			# file size (bytes)
+			size = stat.st_size
+			# Convert bytes to MB
+			size_mb = int(size / 1024 / 1024)
+			# Skip files smaller than x MB and skip empty files
+			if size_mb < CLIARGS['minsize'] or size == 0:
+				if VERBOSE:
+					LOGGER.info('Skipping (size) %s' % fileobj.path)
+				totals[threadnum]['num_files_skipped'] += 1
+				totals[threadnum]['file_size_skipped'] += size
+				return filelist
 
-		# check file modified time
-		mtime_unix = stat.st_mtime
-		mtime_utc = datetime.utcfromtimestamp(mtime_unix).strftime('%Y-%m-%dT%H:%M:%S')
-		# Convert time in days to seconds
-		time_sec = CLIARGS['mtime'] * 86400
-		file_mtime_sec = time.time() - mtime_unix
-		# Only process files modified at least x days ago
-		if file_mtime_sec < time_sec:
-			if VERBOSE:
-				LOGGER.info('Skipping (mtime) %s' % fileobj.path)
-			totals[threadnum]['num_files_skipped'] += 1
-			totals[threadnum]['file_size_skipped'] += size
-			return filelist
+			# check file modified time
+			mtime_unix = stat.st_mtime
+			mtime_utc = datetime.utcfromtimestamp(mtime_unix).strftime('%Y-%m-%dT%H:%M:%S')
+			# Convert time in days to seconds
+			time_sec = CLIARGS['mtime'] * 86400
+			file_mtime_sec = time.time() - mtime_unix
+			# Only process files modified at least x days ago
+			if file_mtime_sec < time_sec:
+				if VERBOSE:
+					LOGGER.info('Skipping (mtime) %s' % fileobj.path)
+				totals[threadnum]['num_files_skipped'] += 1
+				totals[threadnum]['file_size_skipped'] += size
+				return filelist
 
-		# get full path to file
-		filename_fullpath = fileobj.path
-		# get access time
-		atime_unix = stat.st_atime
-		atime_utc = datetime.utcfromtimestamp(atime_unix).strftime('%Y-%m-%dT%H:%M:%S')
-		# get change time
-		ctime_unix = stat.st_ctime
-		ctime_utc = datetime.utcfromtimestamp(ctime_unix).strftime('%Y-%m-%dT%H:%M:%S')
-		if IS_WIN:
-			sd = win32security.GetFileSecurity(filename_fullpath, win32security.OWNER_SECURITY_INFORMATION)
-			owner_sid = sd.GetSecurityDescriptorOwner()
-			owner, domain, type = win32security.LookupAccountSid(None, owner_sid)
-			# placeholders for windows
-			group = "0"
-			inode = "0"
-		else:
-			# get user id of owner
-			uid = stat.st_uid
-			# try to get owner user name
-			try:
-				owner = pwd.getpwuid(uid).pw_name.split('\\')
-				# remove domain before owner
-				if len(owner) == 2:
-					owner = owner[1]
-				else:
-					owner = owner[0]
-			# if we can't find the owner's user name, use the uid number
-			except KeyError:
-				owner = uid
-			# get group id
-			gid = stat.st_gid
-			# try to get group name
-			try:
-				group = grp.getgrgid(gid).gr_name.split('\\')
-				# remove domain before group
-				if len(group) == 2:
-					group = group[1]
-				else:
-					group = group[0]
-			# if we can't find the group name, use the gid number
-			except KeyError:
-				group = gid
-			# get inode number
-			inode = stat.st_ino
-		# get number of hardlinks
-		hardlinks = stat.st_nlink
-		# get absolute path of parent directory
-		parentdir = os.path.abspath(unicode(os.path.join(fileobj.path, os.pardir)))
-		# create md5 hash of file using metadata filesize and mtime
-		filestring = str(size) + str(mtime_unix)
-		filehash = hashlib.md5(filestring.encode('utf-8')).hexdigest()
-		# get time
-		indextime_utc = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
-		# create file metadata dictionary
-		filemeta_dict = {
-			"filename": u"%s" % unicode(fileobj.name),
-			"extension": u"%s" % unicode(extension),
-			"path_parent": u"%s" % unicode(parentdir),
-			"filesize": size,
-			"owner": u"%s" % unicode(owner),
-			"group": u"%s" % unicode(group),
-			"last_modified": "%s" % mtime_utc,
-			"last_access": "%s" % atime_utc,
-			"last_change": "%s" % ctime_utc,
-			"hardlinks": hardlinks,
-			"inode": inode,
-			"filehash": "%s" % filehash,
-			"tag": "untagged",
-			"tag_custom": "",
-			'is_dupe': "false",
-			"indexing_date": "%s" % indextime_utc,
-			"indexing_thread": "%s" % threadnum
-			}
-		# add file metadata dictionary to filelist list
-		filelist.append(filemeta_dict)
-		# check if we are just indexing one file
-		if CLIARGS['file']:
-			# check if file exists already in index
-			if not CLIARGS['quiet']:
-				LOGGER.info('Removing any existing same file from index')
-			indexDeleteFile(filemeta_dict, ES, CLIARGS['index'], LOGGER, VERBOSE)
-			if not CLIARGS['quiet']:
-				LOGGER.info('Adding file to index: %s' % CLIARGS['index'])
-			indexAddFiles(threadnum, ES, CLIARGS['index'], filelist, LOGGER, VERBOSE)
-			if not CLIARGS['quiet']:
-				LOGGER.info('File added to Elasticsearch')
-			return True
-		else:
-			totals[threadnum]['num_files'] += 1
-			totals[threadnum]['file_size'] += size
-			# when filelist has 1000 or more items, bulk add to ES and empty it
-			if len(filelist) >= 1000:
+			# get full path to file
+			filename_fullpath = fileobj.path
+			# get access time
+			atime_unix = stat.st_atime
+			atime_utc = datetime.utcfromtimestamp(atime_unix).strftime('%Y-%m-%dT%H:%M:%S')
+			# get change time
+			ctime_unix = stat.st_ctime
+			ctime_utc = datetime.utcfromtimestamp(ctime_unix).strftime('%Y-%m-%dT%H:%M:%S')
+			if IS_WIN:
+				sd = win32security.GetFileSecurity(filename_fullpath, win32security.OWNER_SECURITY_INFORMATION)
+				owner_sid = sd.GetSecurityDescriptorOwner()
+				owner, domain, type = win32security.LookupAccountSid(None, owner_sid)
+				# placeholders for windows
+				group = "0"
+				inode = "0"
+			else:
+				# get user id of owner
+				uid = stat.st_uid
+				# try to get owner user name
+				try:
+					owner = pwd.getpwuid(uid).pw_name.split('\\')
+					# remove domain before owner
+					if len(owner) == 2:
+						owner = owner[1]
+					else:
+						owner = owner[0]
+				# if we can't find the owner's user name, use the uid number
+				except KeyError:
+					owner = uid
+				# get group id
+				gid = stat.st_gid
+				# try to get group name
+				try:
+					group = grp.getgrgid(gid).gr_name.split('\\')
+					# remove domain before group
+					if len(group) == 2:
+						group = group[1]
+					else:
+						group = group[0]
+				# if we can't find the group name, use the gid number
+				except KeyError:
+					group = gid
+				# get inode number
+				inode = stat.st_ino
+			# get number of hardlinks
+			hardlinks = stat.st_nlink
+			# get absolute path of parent directory
+			parentdir = os.path.abspath(unicode(os.path.join(fileobj.path, os.pardir)))
+			# create md5 hash of file using metadata filesize and mtime
+			filestring = str(size) + str(mtime_unix)
+			filehash = hashlib.md5(filestring.encode('utf-8')).hexdigest()
+			# get time
+			indextime_utc = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
+			# create file metadata dictionary
+			filemeta_dict = {
+				"filename": u"%s" % unicode(fileobj.name),
+				"extension": u"%s" % unicode(extension),
+				"path_parent": u"%s" % unicode(parentdir),
+				"filesize": size,
+				"owner": u"%s" % unicode(owner),
+				"group": u"%s" % unicode(group),
+				"last_modified": "%s" % mtime_utc,
+				"last_access": "%s" % atime_utc,
+				"last_change": "%s" % ctime_utc,
+				"hardlinks": hardlinks,
+				"inode": inode,
+				"filehash": "%s" % filehash,
+				"tag": "untagged",
+				"tag_custom": "",
+				'is_dupe': "false",
+				"indexing_date": "%s" % indextime_utc,
+				"indexing_thread": "%s" % threadnum
+				}
+			# add file metadata dictionary to filelist list
+			filelist.append(filemeta_dict)
+			# check if we are just indexing one file
+			if CLIARGS['file']:
+				# check if file exists already in index
+				if not CLIARGS['quiet']:
+					LOGGER.info('Removing any existing same file from index')
+				indexDeleteFile(filemeta_dict, ES, CLIARGS['index'], LOGGER, VERBOSE)
+				if not CLIARGS['quiet']:
+					LOGGER.info('Adding file to index: %s' % CLIARGS['index'])
 				indexAddFiles(threadnum, ES, CLIARGS['index'], filelist, LOGGER, VERBOSE)
-				del filelist[:]
+				if not CLIARGS['quiet']:
+					LOGGER.info('File added to Elasticsearch')
+				return True
+			else:
+				totals[threadnum]['num_files'] += 1
+				totals[threadnum]['file_size'] += size
+				# when filelist has 1000 or more items, bulk add to ES and empty it
+				if len(filelist) >= 1000:
+					indexAddFiles(threadnum, ES, CLIARGS['index'], filelist, LOGGER, VERBOSE)
+					del filelist[:]
 	
 	except (IOError, OSError):
 		if VERBOSE:
@@ -485,13 +502,9 @@ def addFileToES(fileobj, ES, filelist, excluded_files, threadnum, CLIARGS, \
 def crawlFiles(path, filelist, ES, threadnum, CLIARGS, excluded_files, \
 							 LOGGER, VERBOSE):
 	"""This is the list directory function.
-	It crawls for files using scandir.
-	Once filelist reaches 1000 or more items or Queue is empty,
-	it is bulk added to Elasticsearch and emptied.
-	Ignores files smaller than 'minsize' MB, newer
-	than 'daysold' old and in 'excluded_files'.
-	Tries to reduce the amount of stat calls to the fs
-	to help speed up crawl times.
+	It crawls the directory using scandir.
+	It calls addFileToES function to process
+	files in the directory.
 	"""
 	# try to crawl files in directory
 	try:
@@ -824,13 +837,13 @@ def indexAddFiles(threadnum, ES, indexname, filelist, LOGGER, VERBOSE):
 	helpers.bulk(ES, filelist, index=indexname, doc_type='file')
 	return
 
-def indexAddDir(ES, indexname, dirlist, LOGGER, VERBOSE):
+def indexAddDir(threadnum, ES, indexname, dirlist, LOGGER, VERBOSE):
 	"""This is the ES index add function.
 	It bulk adds data from worker's crawl
 	results into ES.
 	"""
 	if VERBOSE:
-		LOGGER.info('Adding directories to ES index')
+		LOGGER.info('[thread-%s]: Bulk adding directories to ES index', threadnum)
 	# bulk load data to Elasticsearch index
 	helpers.bulk(ES, dirlist, index=indexname, doc_type='directory')
 	return
