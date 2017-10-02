@@ -1,5 +1,12 @@
 # Diskover Change Log
 
+## [1.2.6] = 2017-10-02
+### fixed
+- absolute paths in excluded directory list not being skipped in crawl
+- crawl sometimes hanging at end when using more than default number of threads
+- duplicates count at end of tagdupes showing wrong number of dupes tagged in Elasticsearch
+- keyboard interupt sometimes not working when stopping tagdupes
+
 ## [1.2.5] = 2017-09-30
 ### added
 - elasticsearch timeout setting in config diskover.cfg

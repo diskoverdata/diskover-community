@@ -47,7 +47,7 @@ if IS_WIN:
 	import win32security
 
 # version
-DISKOVER_VERSION = '1.2.5'
+DISKOVER_VERSION = '1.2.6'
 __version__ = DISKOVER_VERSION
 # totals for crawl stats output
 totals = []
@@ -249,7 +249,8 @@ def crawlTreeWorker(threadnum, run_event, WORKER_QUEUE, WORKER_TREE_QUEUE, ES, \
 
 		try:
 			# skip any dirs in excluded dirs
-			if path.split('/')[-1] in CONFIG['excluded_dirs'] or path in CONFIG['excluded_dirs']:
+			if path.split('/')[-1] in CONFIG['excluded_dirs'] or \
+			os.path.abspath(path) in CONFIG['excluded_dirs']:
 				if VERBOSE:
 					LOGGER.info('Skipping (excluded dir) %s' % path)
 				totals[threadnum]['num_dirs_skipped'] += 1
@@ -335,12 +336,12 @@ def addFileToES(fileobj, ES, filelist, excluded_files, threadnum, CLIARGS, \
 	global totals
 	
 	try:
-		LOGGER.debug('Filename: <%s>', fileobj.name)
-		LOGGER.debug('Path: <%s>', fileobj.path)
-		
 		# check if fileobj is file and not directory item from scandir
 		# skip if file is a symlink
 		if fileobj.is_file(follow_symlinks=False) and not fileobj.is_symlink():
+			
+			LOGGER.debug('Filename: <%s>', fileobj.name)
+			LOGGER.debug('Path: <%s>', fileobj.path)
 			
 			# check if file is in exluded_files list
 			if fileobj.name in excluded_files \
@@ -564,7 +565,7 @@ def workerSetupCrawl(WORKER_QUEUE, WORKER_TREE_QUEUE, CLIARGS, \
 				dirs_queued = True
 				# wait for threads to finish
 				for i in range(int(CLIARGS['threads'])):
-					worker_thread[i].join(10)
+					worker_thread[i].join(1)
 				WORKER_TREE_QUEUE.join()
 				WORKER_QUEUE.join()
 				break
@@ -574,7 +575,7 @@ def workerSetupCrawl(WORKER_QUEUE, WORKER_TREE_QUEUE, CLIARGS, \
 			print("Attempting to close worker threads")
 			run_event.clear()
 			for i in range(int(CLIARGS['threads'])):
-				worker_thread[i].join(10)
+				worker_thread[i].join(1)
 			print("\nThreads successfully closed, sayonara!")
 			sys.exit(0)
 	
@@ -588,25 +589,32 @@ def workerSetupDupes(WORKER_QUEUE, CLIARGS, CONFIG, ES, LOGGER, VERBOSE):
 	run_event = threading.Event()
 	run_event.set()
 	
+	# set up the threads
+	worker_thread = []
 	LOGGER.info('Running with %s threads' % CLIARGS['threads'])
 	for i in range(CLIARGS['threads']):
 		# totals for each thread
 		totals.append({'num_dupes': 0})
-		worker_thread = threading.Thread(target=dupesWorker, \
-			args=(i, run_event, WORKER_QUEUE, ES, CLIARGS, CONFIG, LOGGER, VERBOSE))
-		worker_thread.daemon = True
-		worker_thread.start()
+		worker_thread.append(threading.Thread(target=dupesWorker, \
+			args=(i, run_event, WORKER_QUEUE, ES, CLIARGS, CONFIG, LOGGER, VERBOSE)))
+	
+	# start the threads
+	for i in range(CLIARGS['threads']):
+		worker_thread[i].daemon = True
+		worker_thread[i].start()
 		if CLIARGS['nice']:
 			time.sleep(0.5)
 			
 	dupes_queued = False
-	while run_event.is_set():
+	while True:
 		try:
 			if not dupes_queued:
 				# look in ES for duplicate files (same filehash) and add to queue
 				dupesFinder(ES, WORKER_QUEUE, CLIARGS, LOGGER)
 				dupes_queued = True
 				# wait for all threads to finish
+				for i in range(int(CLIARGS['threads'])):
+					worker_thread[i].join(1)
 				WORKER_QUEUE.join()
 				break
 		except KeyboardInterrupt:
@@ -614,6 +622,8 @@ def workerSetupDupes(WORKER_QUEUE, CLIARGS, CONFIG, ES, LOGGER, VERBOSE):
 			print('\nCtrl-c keyboard interrupt received')
 			print("Attempting to close worker threads")
 			run_event.clear()
+			for i in range(int(CLIARGS['threads'])):
+				worker_thread[i].join(1)
 			print("\nThreads successfully closed, sayonara!")
 			sys.exit(0)
 			
@@ -1012,15 +1022,14 @@ def tagDupes(threadnum, run_event, ES, hashgroup, dupelist, indexname, LOGGER, V
 						del hashgroup['files'][i]
 						break
 
-		if VERBOSE:
-			LOGGER.info('[thread-%s] Found %s dupes in hashgroup' % (threadnum, len(hashgroup['files'])))
-
-		# add dupe_count to totals
-		totals[threadnum]['num_dupes'] += len(hashgroup['files'])
-
 		if len(hashgroup['files']) >= 2:
+			if VERBOSE:
+				LOGGER.info('[thread-%s] Found %s dupes in hashgroup' % (threadnum, len(hashgroup['files'])))
 			# add hashgroup to dupelist
 			dupelist.append(hashgroup)
+				
+			# add dupe_count to totals
+			totals[threadnum]['num_dupes'] += len(hashgroup['files'])
 
 		# bulk add to ES once we reach 1000 or more items
 		if len(dupelist) >= 1000:
