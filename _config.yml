@@ -1,4 +1,4 @@
-theme: jekyll-theme-hacker
+theme: jekyll-theme-modernist
 title: diskover
 description: Elasticsearch file system crawler and disk space analyzer.
 show_downloads: true
