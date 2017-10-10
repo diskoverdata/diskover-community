@@ -1,5 +1,23 @@
 # Diskover Change Log
 
+## [1.3.0] = 2017-10-10
+### added
+- --listen cli option for opening listen socket for remote commands
+- improved progress bar now shows directories per second and eta
+- --progress cli option to only output progress in json format
+- --reindex (non-recursive) and --reindexrecurs (recursive) cli options to reindex (freshen) existing directory
+- cacheing of owner/group names
+- --maxdepth cli option for setting maximum directory depth to crawl
+- diskover-mp.sh shell script to help run parallel diskover.py processes
+### changed
+- optimized crawler by not adding empty directories to Queue
+- set to bulk load data to ES when file/dir list sizes at 500 (previously was 1000)
+- set default threads to 8
+- code cleanup
+### fixed
+- occassionaly at end of crawl remaining files in filelist would not get indexed in ES
+- file exists check when indexing single file
+
 ## [1.2.6] = 2017-10-02
 ### fixed
 - absolute paths in excluded directory list not being skipped in crawl
