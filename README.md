@@ -1,6 +1,6 @@
 # diskover - Elasticsearch file system crawler and storage analytics
 
-<img align="left" width="249" height="189" src="docs/diskover.png?raw=true">
+<img align="left" width="249" height="189" src="docs/diskover.png?raw=true" hspace="5" vspace="5">
 
 diskover is a multi-threaded file system crawler that uses [Elasticsearch](https://www.elastic.co) and [Kibana](https://www.elastic.co/products/kibana) to index your file metadata and visualize your storage analytics. diskover crawls and indexes your files on a local computer or remote server using NFS or SMB.
 
