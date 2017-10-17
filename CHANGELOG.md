@@ -1,5 +1,11 @@
 # Diskover Change Log
 
+## [1.3.1] = 2017-10-17
+### changed
+- dupesFinder function now searches for the 10000 hashgroups with largest files, 1000 dupe files per hashgroup
+### fixed
+- tagdupes causing crash with fatal error "Killed" when searching index with a lot of file hashes
+
 ## [1.3.0] = 2017-10-10
 ### added
 - --listen cli option for opening listen socket for remote commands

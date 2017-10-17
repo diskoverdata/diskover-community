@@ -50,13 +50,14 @@ if IS_WIN:
 	import win32security
 
 # version
-DISKOVER_VERSION = '1.3.0'
+DISKOVER_VERSION = '1.3.1'
 __version__ = DISKOVER_VERSION
 # totals for crawl stats output
 totals = []
 total_dirs = 0
 total_dirs_skipped = 0
 total_hash_groups = 0
+dupe_count = 0
 # cache uid/gid to owner/group name mappings
 uid_owner = []
 gid_group = []
@@ -112,7 +113,7 @@ def printProgressBar(iteration, total, prefix='', suffix='', it_name='it'):
 	eta = getTime((total - iteration) / it_per_sec)
 	
 	decimals = 0
-	bar_length = 30
+	bar_length = 20
 	str_format = "{0:." + str(decimals) + "f}"
 	percents = str_format.format(100 * (iteration / float(total)))
 	filled_length = int(round(bar_length * iteration / float(total)))
@@ -1179,15 +1180,39 @@ def dupesFinder():
 	It searches Elasticsearch for files that have the same filehash
 	and add the list to the dupes queue.
 	"""
-	global total_hash_groups
-	
 	hashgroups = {}
-	dupe_list = []
-	size = int(CLIARGS['minsize']) * 1024 * 1024 # convert to bytes
-	dupe_count = 0
 	
+	def populateHashgroups(key):
+		global total_hash_groups
+		global dupe_count
+	
+		data = {
+				"_source": ["path_parent", "filename"],
+				"query": {
+					"bool": {
+						"filter": {
+							"term": { "filehash": key }
+						}
+					}
+				}
+			}
+		res = ES.search(index=CLIARGS['index'], doc_type='file', size="1000", body=data, request_timeout=CONFIG['es_timeout'])
+
+		# add any hits to hashgroups
+		for hit in res['hits']['hits']:
+			hashgroups[key].append({'id': hit['_id'], 'filename': hit['_source']['path_parent']+"/"+hit['_source']['filename']})
+			dupe_count += 1
+		
+		# add filehash group to queue
+		fhg = {'filehash': key, 'files': hashgroups[key]}
+		q.put(fhg)
+		total_hash_groups += 1
+	
+	size = int(CLIARGS['minsize']) * 1024 * 1024 # convert to bytes
+	
+	# find the filehashes with largest files and add filehash keys to hashgroups
 	data = {
-			"_source": ["filehash","path_parent","filename"],
+			"size": 0,
 			"query": {
 				"bool": {
 					"filter": {
@@ -1199,37 +1224,35 @@ def dupesFinder():
 						}
 					}
 				}
+			},
+			"aggs": {
+				"dupe_filehash": {
+					"terms": {
+						"field": "filehash",
+						"min_doc_count": 2,
+						"size": 10000,
+						"order": { "max_file_size": "desc" }
+					},
+					"aggs": {
+						"max_file_size": { "max": { "field": "filesize" } }
+					}
+				}
 			}
-		  }	
-	# search ES and start scroll
-	LOGGER.info('Searching %s for duplicate file hashes (might take a while)', CLIARGS['index'])
-	res = ES.search(index=CLIARGS['index'], doc_type='file', scroll='1m', size=1000, body=data, request_timeout=CONFIG['es_timeout'])
+		  }
 	
-	while res['hits']['hits'] and len(res['hits']['hits']) > 0:
-		for hit in res['hits']['hits']:
-			key = hit['_source']['filehash']
-			if key not in hashgroups:
-				hashgroups[key] = []
-			hashgroups[hit['_source']['filehash']].append({'id': hit['_id'], 'filename': hit['_source']['path_parent']+"/"+hit['_source']['filename']})
-
-		# get ES scroll id
-		scroll_id = res['_scroll_id']
-
-		# use ES scroll api
-		res = ES.scroll(scroll_id=scroll_id, scroll='1m', request_timeout=CONFIG['es_timeout'])
+	LOGGER.info('Searching %s for duplicate file hashes', CLIARGS['index'])
+	res = ES.search(index=CLIARGS['index'], doc_type='file', body=data, request_timeout=CONFIG['es_timeout'])
 	
-	# find hashgroups with 2 or more items and add to dupe_list
-	for key, value in list(hashgroups.items()):
-		if len(value) >= 2: # minimum 2 dupes
-			dupe_count += len(value)
-			dupe_list.append({'filehash': key, 'files': value})
-			total_hash_groups += 1
-			
-	LOGGER.info('Found %s possible duplicate files (%s filehash groups)', dupe_count, total_hash_groups)
-	LOGGER.info('Adding hashgroups to queue')
-	# add dupes to queue
-	for i in dupe_list:
-		q.put(i)
+	for bucket in res['aggregations']['dupe_filehash']['buckets']:
+		hashgroups[bucket['key']] = []
+	
+	# search ES for files that have hashgroup key
+	if IS_PY3:
+		for key, value in hashgroups.items():
+			populateHashgroups(key)		
+	else:
+		for key, value in hashgroups.iteritems():
+			populateHashgroups(key)
 		
 def getTime(seconds):
 	"""This is the get time function
@@ -1283,7 +1306,8 @@ def printStats(stats_type):
 		for i in totals:
 			total_dupes += i['num_dupes']
 		sys.stdout.write("\n\033[35m********************************* DUPES STATS *********************************\033[0m\n")
-		sys.stdout.write("\033[35m Duplicates: %s\033[0m\n" % total_dupes)
+		sys.stdout.write("\033[35m Files checked: %s (%s filehash groups)\033[0m\n" % (dupe_count, total_hash_groups))
+		sys.stdout.write("\033[35m Duplicates tagged: %s\033[0m\n" % total_dupes)
 		
 	sys.stdout.write("\033[35m Elapsed time: %s\033[0m\n" % getTime(elapsedtime))
 	sys.stdout.write("\033[35m*******************************************************************************\033[0m\n\n")
