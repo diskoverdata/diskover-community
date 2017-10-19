@@ -50,7 +50,7 @@ if IS_WIN:
 	import win32security
 
 # version
-DISKOVER_VERSION = '1.3.1'
+DISKOVER_VERSION = '1.3.2'
 __version__ = DISKOVER_VERSION
 # totals for crawl stats output
 totals = []
@@ -205,6 +205,10 @@ def loadConfig():
 		configsettings['listener_python_path'] = config.get('socketlistener', 'pythonpath')
 	except:
 		configsettings['listener_python_path'] = "python"
+	try:
+		configsettings['md5_readsize'] = int(config.get('dupescheck', 'readsize'))
+	except:
+		configsettings['md5_readsize'] = 65536
 	try:
 		configsettings['gource_maxfilelag'] = float(config.get('gource', 'maxfilelag'))
 	except:
@@ -1048,132 +1052,138 @@ def tagDupes(threadnum, hashgroup, dupelist):
 	is set to true.
 	"""
 	
-	while True:
+	if VERBOSE:
+		LOGGER.info('[thread-%s] Processing %s files in hashgroup: %s' % (threadnum, len(hashgroup['files']), hashgroup['filehash']))
+
+	# Add first and last few bytes for each file to dictionary
+	if VERBOSE:
+		LOGGER.info('[thread-%s] Comparing bytes', threadnum)
+
+	# create a new dictionary with files that have same byte hash
+	hashgroup_bytes = {}
+	for file in hashgroup['files']:
 		if VERBOSE:
-			LOGGER.info('[thread-%s] Processing %s files in hashgroup: %s' % (threadnum, len(hashgroup['files']), hashgroup['filehash']))
+			LOGGER.info('[thread-%s] Checking bytes: %s' % (threadnum, file['filename']))
+		try:
+			f = open(file['filename'], 'rb')
+		except (IOError, OSError):
+			if VERBOSE:
+				LOGGER.error('Error opening file', exc_info=True)
+			continue
+		except:
+			if VERBOSE:
+				LOGGER.error('Error opening file', exc_info=True)
+			continue
+		# check if files is only 1 byte
+		try:
+			bytes_f = base64.b64encode(f.read(2))
+		except (IOError, OSError):
+			if VERBOSE:
+				LOGGER.error('Can\'t read first 2 bytes, trying first byte', exc_info=True)
+			pass
+		try:
+				bytes_f = base64.b64encode(f.read(1))
+		except:
+			if VERBOSE:
+				LOGGER.error('Error reading bytes, giving up', exc_info=True)
+			continue
+		try:
+			f.seek(-2, os.SEEK_END)
+			bytes_l = base64.b64encode(f.read(2))
+		except (IOError, OSError):
+			if VERBOSE:
+				LOGGER.error('Can\'t read last 2 bytes, trying last byte', exc_info=True)
+			pass
+		try:
+			f.seek(-1, os.SEEK_END)
+			bytes_l = base64.b64encode(f.read(1))
+		except:
+			if VERBOSE:
+				LOGGER.error('Error reading bytes, giving up', exc_info=True)
+			continue
+		f.close()
 
-		# Add first and last few bytes for each file to dictionary
+		# create hash of bytes
+		bytestring = str(bytes_f) + str(bytes_l)
+		bytehash = hashlib.md5(bytestring.encode('utf-8')).hexdigest()
+
 		if VERBOSE:
-			LOGGER.info('[thread-%s] Comparing bytes', threadnum)
-		
-		# create a new dictionary with files that have same byte hash
-		hashgroup_bytes = {}
-		for file in hashgroup['files']:
+			LOGGER.info('[thread-%s] Byte hash: %s' % (threadnum, bytehash))
+
+		# create new key for each bytehash and set value as new list and add file
+		hashgroup_bytes.setdefault(bytehash,[]).append(file['filename'])
+
+	# remove any bytehash key that only has 1 item (no duplicate)
+	for key, value in list(hashgroup_bytes.items()):
+		if len(value) < 2:
+			filename = value[0]
 			if VERBOSE:
-				LOGGER.info('[thread-%s] Checking bytes: %s' % (threadnum, file['filename']))
+				LOGGER.info('[thread-%s] Unique file (bytes diff), removing: %s' % (threadnum, filename))
+			del hashgroup_bytes[key]
+			# remove file from hashgroup
+			for i in range(len(hashgroup['files'])):
+				if hashgroup['files'][i]['filename'] == filename:
+					del hashgroup['files'][i]
+					break
+
+	# run md5 sum check if bytes were same
+	hashgroup_md5 = {}
+	# do md5 check on files with same byte hashes
+	for key, value in list(hashgroup_bytes.items()):
+		if VERBOSE:
+			LOGGER.info('[thread-%s] Comparing MD5 sums for filehash: %s' % (threadnum, key))
+		for filename in value:
+			if VERBOSE:
+				LOGGER.info('[thread-%s] Checking MD5: %s' % (threadnum, filename))
+			# get md5 sum, don't load whole file into memory, load in x KB at a time
 			try:
-				f = open(file['filename'], 'rb')
+				read_size = CONFIG['md5_readsize']
+				md5sum = hashlib.md5()
+				with open(filename, 'rb') as f:
+					data = f.read(read_size)
+					while data:
+						md5sum.update(data)
+						data = f.read(read_size)
+				md5sum = md5sum.hexdigest()
+				if VERBOSE:
+					LOGGER.info('[thread-%s] MD5: %s' % (threadnum, md5sum))
 			except (IOError, OSError):
 				if VERBOSE:
-					LOGGER.error('Error opening file', exc_info=True)
+					LOGGER.error('Error checking file', exc_info=True)
 				continue
-			except:
-				if VERBOSE:
-					LOGGER.error('Error opening file', exc_info=True)
-				continue
-			# check if files is only 1 byte
-			try:
-				bytes_f = base64.b64encode(f.read(2))
-			except (IOError, OSError):
-				if VERBOSE:
-					LOGGER.error('Can\'t read first 2 bytes, trying first byte', exc_info=True)
-				pass
-			try:
-					bytes_f = base64.b64encode(f.read(1))
-			except:
-				if VERBOSE:
-					LOGGER.error('Error reading bytes, giving up', exc_info=True)
-				continue
-			try:
-				f.seek(-2, os.SEEK_END)
-				bytes_l = base64.b64encode(f.read(2))
-			except (IOError, OSError):
-				if VERBOSE:
-					LOGGER.error('Can\'t read last 2 bytes, trying last byte', exc_info=True)
-				pass
-			try:
-				f.seek(-1, os.SEEK_END)
-				bytes_l = base64.b64encode(f.read(1))
-			except:
-				if VERBOSE:
-					LOGGER.error('Error reading bytes, giving up', exc_info=True)
-				continue
-			f.close()
 
-			# create hash of bytes
-			bytestring = str(bytes_f) + str(bytes_l)
-			bytehash = hashlib.md5(bytestring.encode('utf-8')).hexdigest()
+			# create new key for each md5sum and set value as new list and add file
+			hashgroup_md5.setdefault(md5sum,[]).append(filename)
 
+	# remove any md5sum key that only has 1 item (no duplicate)
+	for key, value in list(hashgroup_md5.items()):
+		if len(value) < 2:
+			filename = value[0]
 			if VERBOSE:
-				LOGGER.info('[thread-%s] Byte hash: %s' % (threadnum, bytehash))
+				LOGGER.info('[thread-%s] Unique file (MD5 diff), removing: %s' % (threadnum, filename))
+			del hashgroup_md5[key]
+			# remove file from hashgroup
+			for i in range(len(hashgroup['files'])):
+				if hashgroup['files'][i]['filename'] == filename:
+					del hashgroup['files'][i]
+					break
 
-			# create new key for each bytehash and set value as new list and add file
-			hashgroup_bytes.setdefault(bytehash,[]).append(file['filename'])
+	if len(hashgroup['files']) >= 2:
+		if VERBOSE:
+			LOGGER.info('[thread-%s] Found %s dupes in hashgroup' % (threadnum, len(hashgroup['files'])))
+		# add hashgroup to dupelist
+		dupelist.append(hashgroup)
 
-		# remove any bytehash key that only has 1 item (no duplicate)
-		for key, value in list(hashgroup_bytes.items()):
-			if len(value) < 2:
-				filename = value[0]
-				if VERBOSE:
-					LOGGER.info('[thread-%s] Unique file (bytes diff), removing: %s' % (threadnum, filename))
-				del hashgroup_bytes[key]
-				# remove file from hashgroup
-				for i in range(len(hashgroup['files'])):
-					if hashgroup['files'][i]['filename'] == filename:
-						del hashgroup['files'][i]
-						break
+		# add dupe_count to totals
+		totals[threadnum]['num_dupes'] += len(hashgroup['files'])
 
-		# run md5 sum check if bytes were same
-		hashgroup_md5 = {}
-		# do md5 check on files with same byte hashes
-		for key, value in list(hashgroup_bytes.items()):
-			if VERBOSE:
-				LOGGER.info('[thread-%s] Comparing MD5 sums for filehash: %s' % (threadnum, key))
-			for filename in value:
-				if VERBOSE:
-					LOGGER.info('[thread-%s] Checking MD5: %s' % (threadnum, filename))
-				# get md5 sum
-				try:
-					md5sum = hashlib.md5(open(filename, 'rb').read()).hexdigest()
-					if VERBOSE:
-						LOGGER.info('[thread-%s] MD5: %s' % (threadnum, md5sum))
-				except (IOError, OSError):
-					if VERBOSE:
-						LOGGER.error('Error checking file', exc_info=True)
-					continue
+	# bulk add to ES once we reach 500 or more items
+	if len(dupelist) >= 500:
+		# update existing index and tag dupe files is_dupe field
+		indexTagDupe(threadnum, dupelist)
+		del dupelist[:]
 
-				# create new key for each md5sum and set value as new list and add file
-				hashgroup_md5.setdefault(md5sum,[]).append(filename)
-
-		# remove any md5sum key that only has 1 item (no duplicate)
-		for key, value in list(hashgroup_md5.items()):
-			if len(value) < 2:
-				filename = value[0]
-				if VERBOSE:
-					LOGGER.info('[thread-%s] Unique file (MD5 diff), removing: %s' % (threadnum, filename))
-				del hashgroup_md5[key]
-				# remove file from hashgroup
-				for i in range(len(hashgroup['files'])):
-					if hashgroup['files'][i]['filename'] == filename:
-						del hashgroup['files'][i]
-						break
-
-		if len(hashgroup['files']) >= 2:
-			if VERBOSE:
-				LOGGER.info('[thread-%s] Found %s dupes in hashgroup' % (threadnum, len(hashgroup['files'])))
-			# add hashgroup to dupelist
-			dupelist.append(hashgroup)
-				
-			# add dupe_count to totals
-			totals[threadnum]['num_dupes'] += len(hashgroup['files'])
-
-		# bulk add to ES once we reach 500 or more items
-		if len(dupelist) >= 500:
-			# update existing index and tag dupe files is_dupe field
-			indexTagDupe(threadnum, dupelist)
-			del dupelist[:]
-
-		return dupelist
+	return dupelist
 
 def dupesFinder():
 	"""This is the duplicate file finder function.

@@ -1,5 +1,13 @@
 # Diskover Change Log
 
+## [1.3.2] = 2017-10-19
+### added
+- dupescheck section in config file to modify readsize for md5 sum file check
+### changed
+- tagDupes function now loads in file x KB at at time when doing md5 sum check, previously loaded whole file into memory
+### fixed
+- tagdupes causing python memmoryerror crash when loading large file into memory when doing md5 sum check
+
 ## [1.3.1] = 2017-10-17
 ### changed
 - dupesFinder function now searches for the 10000 hashgroups with largest files, 1000 dupe files per hashgroup
