@@ -1,5 +1,14 @@
 # Diskover Change Log
 
+## [1.3.3] = 2017-10-20
+### added
+- maxretries to config file for changing the amount of retries for ES operations (default is 0)
+- chunksize to config file for changing the max amount of documents before ES bulk operation (default is 500)
+- added check before ES bulk operations to wait for yellow status of ES health
+- added request_timeout to helpers.bulk operations
+### changed
+- code cleanup/refactoring
+
 ## [1.3.2] = 2017-10-19
 ### added
 - dupescheck section in config file to modify readsize for md5 sum file check
