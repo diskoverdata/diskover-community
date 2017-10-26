@@ -77,26 +77,28 @@ For Windows, run CygWin terminal as administrator and then run diskover.
 A successfull crawl should look like this:
 
 ```
-  ________  .__        __
-  \______ \ |__| _____|  | _________  __ ___________
-   |    |  \|  |/  ___/  |/ /  _ \  \/ // __ \_  __ \ /)___(\
-   |    `   \  |\___ \|    <  <_> )   /\  ___/|  | \/ (='.'=)
-  /_______  /__/____  >__|_ \____/ \_/  \___  >__|   (\")_(\")
-          \/        \/     \/   v1.2.0      \/
-                      https://github.com/shirosaidev/diskover
 
-2017-09-10 13:23:53,385 [INFO][diskover] Connecting to Elasticsearch
-2017-09-10 13:23:53,437 [INFO][diskover] Checking ES index: diskover-2017.04.22
-2017-09-10 13:23:53,581 [WARNING][diskover] ES index exists, deleting
-2017-09-10 13:23:53,823 [INFO][diskover] Creating ES index
-2017-09-10 13:23:54,055 [INFO][diskover] Crawling using 4 threads
-Crawling: [100%] |########################################| 10684/10684
-2017-09-10 13:24:37,443 [INFO][diskover] Finished crawling
+   ___       ___       ___       ___       ___       ___       ___       ___
+  /\  \     /\  \     /\  \     /\__\     /\  \     /\__\     /\  \     /\  \
+ /::\  \   _\:\  \   /::\  \   /:/ _/_   /::\  \   /:/ _/_   /::\  \   /::\  \
+/:/\:\__\ /\/::\__\ /\:\:\__\ /::-"\__\ /:/\:\__\ |::L/\__\ /::\:\__\ /::\:\__\
+\:\/:/  / \::/\/__/ \:\:\/__/ \;:;-",-" \:\/:/  / |::::/  / \:\:\/  / \;:::/  /
+ \::/  /   \:\__\    \::/  /   |:|  |    \::/  /   L;;/__/   \:\/  /   |:\/__/
+  \/__/     \/__/     \/__/     \|__|     \/__/    v1.3.3     \/__/     \|__|
+                                      https://github.com/shirosaidev/diskover
+
+2017-10-20 18:36:44,749 [INFO][diskover] Connecting to Elasticsearch
+2017-10-20 18:36:44,764 [INFO][diskover] Checking ES index: diskover-2017.04.22
+2017-10-20 18:36:44,779 [WARNING][diskover] ES index exists, deleting
+2017-10-20 18:36:44,958 [INFO][diskover] Creating ES index
+2017-10-20 18:36:45,060 [INFO][diskover] Crawling using 8 threads
+Crawling: 100%|████████████████████| 10995/10995 [0h:00m:00s, 265.9 dir/s]
+2017-10-20 18:37:27,071 [INFO][diskover] Finished crawling
 
 ********************************* CRAWL STATS *********************************
- Directories: 10684 / Skipped: 0
- Files: 68818 (56.99 GB) / Skipped: 899 (0B)
- Elapsed time: 0h:00m:44s
+ Directories: 10995 / Skipped: 93
+ Files: 83295 (57.47 GB) / Skipped: 1275 (2.8 MB)
+ Elapsed time: 0h:00m:42s
 *******************************************************************************
 ```
 
