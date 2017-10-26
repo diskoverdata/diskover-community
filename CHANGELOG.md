@@ -1,5 +1,16 @@
 # Diskover Change Log
 
+## [1.3.4] = 2017-10-26
+### added
+- -b or --breadthfirst cli option to crawl breadth-first rather than depth-first (default)
+### changed
+- empty directory meta data is no longer indexed. Previously if a directory was empty, the directory meta data would still get indexed.
+- moved file size check above excludes check in get_file_meta function
+- renamed function add_file_to_es to get_file_meta
+- renamed function index_add_dir to index_add_dirs
+- switched to entry.inode() to get inode number. Previously was entry.stat().st_ino
+- only thread 0 updates progress bar
+
 ## [1.3.3] = 2017-10-20
 ### added
 - maxretries to config file for changing the amount of retries for ES operations (default is 0)
