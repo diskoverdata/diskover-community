@@ -8,6 +8,8 @@ File metadata is bulk added and streamed into Elasticsearch, allowing you to **s
 
 diskover aims to help manage your storage by identifying old and unused files and give better insights into file duplication and wasted space. It is designed to help deal with managing large amounts of data growth and provide detailed storage analytics.
 
+diskover includes a built-in udp socket server for listening for remote commands and also a plug-in system for expanding diskover's indexing capabilities.
+
 ## Screenshots
 
 Kibana dashboards / saved searches and visualizations (included in diskover download)
