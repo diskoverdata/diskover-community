@@ -26,6 +26,7 @@ except ImportError:
     import ConfigParser
 import os
 import sys
+import imp
 import time
 import argparse
 import hashlib
@@ -50,7 +51,7 @@ if IS_WIN:
     import win32security
 
 # version
-DISKOVER_VERSION = '1.3.4'
+DISKOVER_VERSION = '1.3.5'
 __version__ = DISKOVER_VERSION
 # totals for crawl stats output
 totals = []
@@ -63,6 +64,34 @@ uid_owner = []
 gid_group = []
 # get seconds since epoch used for elapsed time
 DATEEPOCH = time.time()
+
+# plugins
+plugin_dir = os.path.dirname(os.path.realpath(__file__)) + "/plugins"
+main_module = "__init__"
+
+
+def get_plugins():
+    """This is the get plugin function.
+    It gets a list of python plugins (modules) in
+    the plugins directory and returns the plugins.
+    """
+    plugins = []
+    possible_plugins = os.listdir(plugin_dir)
+    for i in possible_plugins:
+        location = os.path.join(plugin_dir, i)
+        if not os.path.isdir(location) or not main_module + ".py" \
+                in os.listdir(location):
+                continue
+        info = imp.find_module(main_module, [location])
+        plugins.append({"name": i, "info": info})
+    return plugins
+
+
+def load_plugin(plugin):
+    """This is the load plugin function.
+    It returns the python plugin (module).
+    """
+    return imp.load_module(main_module, *plugin["info"])
 
 
 def print_banner():
@@ -288,6 +317,8 @@ def parse_cli_args(indexname):
                         help="Increase output verbosity")
     parser.add_argument("--debug", action="store_true",
                         help="Debug message output")
+    parser.add_argument("--listplugins", action="store_true",
+                        help="List plugins")
     parser.add_argument("-v", "--version", action="version",
                         version="diskover v%s" % DISKOVER_VERSION,
                         help="Prints version and exits")
@@ -555,6 +586,12 @@ def get_file_meta(entry, filelist=None, threadnum=0):
             "indexing_date": "%s" % indextime_utc,
             "indexing_thread": "%s" % threadnum
         }
+
+        # check plugins for adding extra meta data to filemeta_dict
+        for i in get_plugins():
+            plugin = load_plugin(i)
+            filemeta_dict.update(plugin.add_meta(filename_fullpath))
+
         # add file metadata dictionary to filelist list
         filelist.append(filemeta_dict)
 
@@ -952,6 +989,12 @@ def index_create():
             }
         }
     }
+
+    # check plugins for additional mappings
+    for i in get_plugins():
+        plugin = load_plugin(i)
+        mappings.update(plugin.add_mappings())
+
     LOGGER.info('Creating ES index')
     ES.indices.create(index=CLIARGS['index'], body=mappings)
 
@@ -1748,6 +1791,13 @@ if __name__ == "__main__":
     # parse cli arguments into CLIARGS dictionary
     CLIARGS = vars(parse_cli_args(CONFIG['index']))
 
+    # list plugins
+    if CLIARGS['listplugins']:
+        print("diskover plugins:")
+        for i in get_plugins():
+            print(i["name"])
+        sys.exit(0)
+
     # check index name
     if CLIARGS['index'] == "diskover" or \
             CLIARGS['index'].split('-')[0] != "diskover":
@@ -1772,6 +1822,13 @@ if __name__ == "__main__":
     if CLIARGS['listen']:
         open_socket()
         sys.exit(0)
+
+    # print plugins
+    plugins = ""
+    for i in get_plugins():
+        plugins = plugins + i["name"] + " "
+    if plugins:
+        LOGGER.info("Plugins loaded: %s", plugins)
 
     # connect to Elasticsearch
     ES = elasticsearch_connect()

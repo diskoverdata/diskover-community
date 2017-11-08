@@ -1,5 +1,10 @@
 # Diskover Change Log
 
+## [1.3.5] = 2017-11-08
+### added
+- ability to add additional diskover index mappings (file meta data fields) using diskover plugins
+
+
 ## [1.3.4] = 2017-10-26
 ### added
 - -b or --breadthfirst cli option to crawl breadth-first rather than depth-first (default)
