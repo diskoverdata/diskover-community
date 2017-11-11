@@ -8,11 +8,13 @@ File metadata is bulk added and streamed into Elasticsearch, allowing you to **s
 
 diskover aims to help manage your storage by identifying old and unused files and give better insights into file duplication and wasted space. It is designed to help deal with managing large amounts of data growth and provide detailed storage analytics.
 
+diskover includes a built-in UDP socket server for remote commands and also has plug-in support for expanding diskover's indexing capabilities.
+
 ## Screenshots
 
 Kibana dashboards / saved searches and visualizations (included in diskover download)
 ![kibana-screenshot](docs/kibana-dashboarddark2-screenshot.png?raw=true)
-[diskover-web](https://shirosaidev.github.io/diskover-web/) (diskover's web file manager and file system search engine)
+[diskover-web](https://shirosaidev.github.io/diskover-web/) (diskover's web file manager, file system search engine, rest-api)
 ![diskover-web](https://github.com/shirosaidev/diskover-web/raw/master/docs/diskover-web-filetree-screenshot.png?raw=true)
 Gource visualization support (see videos below)
 ![diskover-gource](docs/diskover-gource1-screenshot.png?raw=true)
