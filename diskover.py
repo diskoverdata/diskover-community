@@ -993,7 +993,7 @@ def index_create():
     # check plugins for additional mappings
     for i in get_plugins():
         plugin = load_plugin(i)
-        mappings.update(plugin.add_mappings())
+        mappings = (plugin.add_mappings(mappings))
 
     LOGGER.info('Creating ES index')
     ES.indices.create(index=CLIARGS['index'], body=mappings)
