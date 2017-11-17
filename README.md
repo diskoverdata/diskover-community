@@ -2,11 +2,11 @@
 
 <img align="left" width="249" height="189" src="docs/diskover.png?raw=true" hspace="5" vspace="5">
 
-diskover is a multi-threaded file system crawler that uses [Elasticsearch](https://www.elastic.co) and [Kibana](https://www.elastic.co/products/kibana) to index your file metadata and visualize your disk usage. diskover crawls and indexes your files on a local computer or remote server using NFS or SMB.
+diskover is a file system analytics application that includes a multi-threaded disk crawler that uses [Elasticsearch](https://www.elastic.co) to index your file metadata. diskover crawls and indexes your files on a local computer or remote server using NFS or SMB.
 
-File metadata is bulk added and streamed into Elasticsearch, allowing you to **search and visualize your files in Kibana without having to wait until the crawl is finished**. diskover is written in Python and runs on Linux, OS X/macOS and Windows.
+File metadata is bulk added and streamed into Elasticsearch, allowing you to search and visualize your files in [diskover-web](https://github.com/shirosaidev/diskover-web) or [Kibana](https://www.elastic.co/products/kibana) without having to wait until the crawl is finished. diskover is written in Python and runs on Linux, OS X/macOS and Windows.
 
-diskover aims to help manage your storage by identifying old and unused files and give better insights into file duplication and wasted space. It is designed to help deal with managing large amounts of data growth and provide detailed storage analytics.
+diskover aims to help manage your storage by identifying old and unused files and give better insights into data change, file duplication, "hotfiles" (diskover-web heatmap) and wasted space. It is designed to help deal with managing large amounts of data growth and provide detailed storage analytics.
 
 diskover includes a built-in UDP socket server for remote commands and also has plug-in support for expanding diskover's indexing capabilities.
 
@@ -14,8 +14,8 @@ diskover includes a built-in UDP socket server for remote commands and also has 
 
 Kibana dashboards / saved searches and visualizations (included in diskover download)
 ![kibana-screenshot](docs/kibana-dashboarddark2-screenshot.png?raw=true)
-[diskover-web](https://shirosaidev.github.io/diskover-web/) (diskover's web file manager, file system search engine, rest-api)
-![diskover-web](https://github.com/shirosaidev/diskover-web/raw/master/docs/diskover-web-filetree-screenshot.png?raw=true)
+[diskover-web](https://github.com/shirosaidev/diskover-web) (diskover's web file manager, analytics app, file system search engine, rest-api)
+![diskover-web](https://github.com/shirosaidev/diskover-web/raw/master/docs/diskover-web-heatmap-screenshot.png?raw=true)
 Gource visualization support (see videos below)
 ![diskover-gource](docs/diskover-gource1-screenshot.png?raw=true)
 
@@ -43,7 +43,8 @@ Gource visualization support (see videos below)
 
 ### Optional Installs
 
-* [diskover-web](https://shirosaidev.github.io/diskover-web/) (diskover's web file manager for searching/tagging files)
+* [diskover-web](https://github.com/shirosaidev/diskover-web) (diskover's web file manager and analytics app)
+* [Kibana](https://www.elastic.co/products/kibana) (for visualizing Elasticsearch data)
 * [X-Pack](https://www.elastic.co/downloads/x-pack) (for graphs, reports, monitoring and http auth)
 * [Gource](http://gource.io) (for Gource visualizations of diskover Elasticsearch data)
 
