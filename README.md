@@ -1,5 +1,8 @@
 # diskover - Elasticsearch file system crawler and storage analytics
 
+[![License](https://img.shields.io/github/license/shirosaidev/diskover.svg?label=License&maxAge=86400)](./LICENSE.txt)
+[![Release](https://img.shields.io/github/release/shirosaidev/diskover.svg?label=Release&maxAge=60)](https://github.com/shirosaidev/diskover/releases/latest)
+
 <img align="left" width="249" height="189" src="docs/diskover.png?raw=true" hspace="5" vspace="5">
 
 diskover is a file system analytics application that includes a multi-threaded disk crawler that uses [Elasticsearch](https://www.elastic.co) to index your file metadata. diskover crawls and indexes your files on a local computer or remote server using NFS or SMB.
