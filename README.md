@@ -7,7 +7,7 @@
 
 diskover is a file system analytics application that includes a multi-threaded disk crawler that uses [Elasticsearch](https://www.elastic.co) to index your file metadata. diskover crawls and indexes your files on a local computer or remote server using NFS or SMB.
 
-File metadata is bulk added and streamed into Elasticsearch, allowing you to search and visualize your files in [diskover-web](https://github.com/shirosaidev/diskover-web) or [Kibana](https://www.elastic.co/products/kibana) without having to wait until the crawl is finished. diskover is written in Python and runs on Linux, OS X/macOS and Windows.
+File metadata is bulk added and streamed into Elasticsearch, allowing you to search and visualize your files in [diskover-web](https://github.com/shirosaidev/diskover-web) or [Kibana](https://www.elastic.co/products/kibana) without having to wait until the crawl is finished. diskover is written in Python and runs on Linux and OS X/macOS.
 
 diskover aims to help manage your storage by identifying old and unused files and give better insights into data change, file duplication, "hotfiles" (diskover-web heatmap) and wasted space. It is designed to help deal with managing large amounts of data growth and provide detailed storage analytics.
 
@@ -31,18 +31,13 @@ Gource visualization support (see videos below)
 
 ### Requirements
 
-* `Linux, OS X/macOS or Windows` (tested on OS X 10.11.6, Ubuntu 16.04 and Windows 7)
+* `Linux or OS X/macOS` (tested on OS X 10.11.6, Ubuntu 16.04)
 * `Python 2.7. or Python 3.5.` (tested on Python 2.7.14, 3.5.3)
 * `Python elasticsearch client module` [elasticsearch](https://pypi.python.org/pypi/elasticsearch) (tested on 5.4.0, 5.5.1)
 * `Python requests module` [requests](https://pypi.python.org/pypi/requests)
 * `Python scandir module` [scandir](https://pypi.python.org/pypi/scandir)
 * `Elasticsearch` (local or [AWS ES Service](https://aws.amazon.com/elasticsearch-service/), tested on Elasticsearch 5.4.2, 5.6.4)
 * `Kibana` (tested on Kibana 5.4.2, 5.6.4)
-
-### Windows Additional Requirements
-
-* [CygWin](http://cygwin.com)
-* [PyWin32](https://sourceforge.net/projects/pywin32/files/pywin32/)
 
 ### Optional Installs
 
@@ -76,7 +71,6 @@ Start diskover as root user with:
 $ cd /path/you/want/to/crawl
 $ sudo python /path/to/diskover.py
 ```
-For Windows, run CygWin terminal as administrator and then run diskover.
 
 **Defaults for crawl with no flags is to index from . (current directory) and files >0 MB and 0 days modified time. Empty files are skipped. Use -h to see cli options.**
 
