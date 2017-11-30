@@ -16,7 +16,7 @@ diskover includes a built-in UDP socket server for remote commands and also has 
 ## Screenshots
 
 [diskover-web](https://github.com/shirosaidev/diskover-web) (diskover's web file manager, analytics app, file system search engine, rest-api)
-![diskover-web](https://github.com/shirosaidev/diskover-web/raw/master/docs/diskover-web-heatmap-screenshot.png?raw=true)
+![diskover-web](https://github.com/shirosaidev/diskover-web/raw/master/docs/diskover-web-dashboard-screenshot.png?raw=true)
 Kibana dashboards / saved searches and visualizations (included in diskover download)
 ![kibana-screenshot](docs/kibana-dashboarddark2-screenshot.png?raw=true)
 Gource visualization support (see videos below)
