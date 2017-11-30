@@ -1,9 +1,34 @@
 # Diskover Change Log
 
+## [1.4.0] = 2017-12-01
+### notice
+- required by diskover-web v1.4.0
+### added
+- Elasticsearch/Kibana v5.6.4 support
+- scandir python module v1.6 support
+- maxsize to config file to adjust the maximum connections open to ES when crawling
+- add_diskspace function to add disk space info (path, total, free, available disk space) to elasticsearch
+- additional mappings and fields for disk space info (fields: path, total, free, available), new es document type is named 'diskspace'
+- additional mappings and fields for directory doc type: filename, path_parent, filesize, user, group, tag, tag_custom
+- add_crawl_stats function to add crawl stat info (start/stop/elapsed time) to elasticsearch
+- additional mappings and fields for crawlstats doc type: path, start_time, stop_time, elapsed_time
+- additional banner and random color for banner and stats
+
+### changed
+- removed Windows support
+- path field in directory doc type to filename (keyword type)
+- removed type=str from argparse
+- added try condition to import elasticsearch5 (for elasticsearch 5.6.)
+- imported Urllib3HttpConnection from Elasticsearch
+### fixed
+- empty directories not getting indexed causing diskover-web filetree to not show all subfolders/files
+- unicode issues in python2.7
+- rootpath is stored as directory name instead of . in ES
+- Connection pool is full, discarding connection warning messages in log output when crawling using a high number of threads (new maxsize setting in config file)
+
 ## [1.3.5] = 2017-11-08
 ### added
 - ability to add additional diskover index mappings (file meta data fields) using diskover plugins
-
 
 ## [1.3.4] = 2017-10-26
 ### added

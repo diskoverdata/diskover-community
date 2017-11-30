@@ -10,7 +10,12 @@ diskover is released under the Apache 2.0 license. See
 LICENSE.TXT for the full license text.
 """
 
-from elasticsearch import Elasticsearch, helpers, RequestsHttpConnection
+try:
+    from elasticsearch5 import Elasticsearch, helpers, RequestsHttpConnection,\
+        Urllib3HttpConnection
+except ImportError:
+    from elasticsearch import Elasticsearch, helpers, RequestsHttpConnection,\
+        Urllib3HttpConnection
 from scandir import scandir, GenericDirEntry
 from random import randint
 from datetime import datetime
@@ -35,24 +40,16 @@ import base64
 import math
 import json
 import socket
+import re
+import pwd
+import grp
 
 IS_PY3 = sys.version_info >= (3, 0)
 
-if IS_PY3:
-    unicode = str
-
-IS_WIN = sys.platform == "win32"
-
-if not IS_WIN:
-    import pwd
-    import grp
-
-if IS_WIN:
-    import win32security
-
 # version
-DISKOVER_VERSION = '1.3.5'
+DISKOVER_VERSION = '1.4.0'
 __version__ = DISKOVER_VERSION
+BANNER_COLOR = '35m'
 # totals for crawl stats output
 totals = []
 total_dirs = 0
@@ -94,13 +91,74 @@ def load_plugin(plugin):
     return imp.load_module(main_module, *plugin["info"])
 
 
+def add_diskspace(path):
+    """This is the add disk space function.
+    It adds total, used, free and available
+    disk space for a path to ES.
+    """
+    statvfs = os.statvfs(path)
+    # Size of filesystem in bytes
+    total = statvfs.f_frsize * statvfs.f_blocks
+    # Actual number of free bytes
+    free = statvfs.f_frsize * statvfs.f_bfree
+    # Number of free bytes that ordinary users are allowed
+    # to use (excl. reserved space)
+    available = statvfs.f_frsize * statvfs.f_bavail
+    used = total - free
+    indextime_utc = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
+    data = {
+        "path": os.path.abspath(path),
+        "total": total,
+        "used": used,
+        "free": free,
+        "available": available,
+        "indexing_date": indextime_utc
+    }
+    # add to ES
+    LOGGER.info('Adding disk space info to ES index')
+    ES.index(index=CLIARGS['index'], doc_type='diskspace', body=data)
+
+
+def add_crawl_stats(start, stop=None, elapsed=None):
+    """This is the add crawl stats function.
+    It adds start, end, elapsed time info to ES.
+    """
+    if stop:
+        stop = datetime.utcfromtimestamp(stop).strftime('%Y-%m-%dT%H:%M:%S.%f')
+        data = {
+            "path": os.path.abspath(CLIARGS['rootdir']),
+            "stop_time": stop,
+            "elapsed_time": elapsed,
+            "indexing_date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
+        }
+        ES.index(index=CLIARGS['index'], doc_type='crawlstat_stop', body=data)
+    else:
+        start = datetime.utcfromtimestamp(start).strftime('%Y-%m-%dT%H:%M:%S.%f')
+        data = {
+            "path": os.path.abspath(CLIARGS['rootdir']),
+            "start_time": start,
+            "indexing_date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
+        }
+        ES.index(index=CLIARGS['index'], doc_type='crawlstat_start', body=data)
+
+
 def print_banner():
     """This is the print banner function.
     It prints a random banner.
     """
-    b = randint(1, 3)
+    global BANNER_COLOR
+    c = randint(1, 4)
+    if c == 1:
+        BANNER_COLOR = '31m'
+    elif c == 2:
+        BANNER_COLOR = '32m'
+    elif c == 3:
+        BANNER_COLOR = '33m'
+    elif c == 4:
+        BANNER_COLOR = '35m'
+    b = randint(1, 4)
     if b == 1:
-        banner = """\033[35m
+        banner = """\033[%s
   ________  .__        __
   \______ \ |__| _____|  | _________  __ ___________
    |    |  \|  |/  ___/  |/ /  _ \  \/ // __ \_  __ \\ /)___(\\
@@ -108,9 +166,9 @@ def print_banner():
   /_______  /__/____  >__|_ \____/ \_/  \___  >__|   (\\")_(\\")
           \/        \/     \/   v%s      \/
                       https://github.com/shirosaidev/diskover\033[0m
-""" % DISKOVER_VERSION
+""" % (BANNER_COLOR, DISKOVER_VERSION)
     elif b == 2:
-        banner = """\033[35m
+        banner = """\033[%s
    ___       ___       ___       ___       ___       ___       ___       ___
   /\  \     /\  \     /\  \     /\__\     /\  \     /\__\     /\  \     /\  \\
  /::\  \   _\:\  \   /::\  \   /:/ _/_   /::\  \   /:/ _/_   /::\  \   /::\  \\
@@ -119,16 +177,27 @@ def print_banner():
  \::/  /   \:\__\    \::/  /   |:|  |    \::/  /   L;;/__/   \:\/  /   |:\/__/
   \/__/     \/__/     \/__/     \|__|     \/__/    v%s     \/__/     \|__|
                                       https://github.com/shirosaidev/diskover\033[0m
-""" % DISKOVER_VERSION
+""" % (BANNER_COLOR, DISKOVER_VERSION)
     elif b == 3:
-        banner = """\033[35m
+        banner = """\033[%s
     _/_/_/    _/            _/
    _/    _/        _/_/_/  _/  _/      _/_/    _/      _/    _/_/    _/  _/_/
   _/    _/  _/  _/_/      _/_/      _/    _/  _/      _/  _/_/_/_/  _/_/
  _/    _/  _/      _/_/  _/  _/    _/    _/    _/  _/    _/        _/
 _/_/_/    _/  _/_/_/    _/    _/    _/_/        _/ v%s _/_/_/  _/
                               https://github.com/shirosaidev/diskover\033[0m
-""" % DISKOVER_VERSION
+""" % (BANNER_COLOR, DISKOVER_VERSION)
+    elif b == 4:
+        banner = """\033[%s
+  __               __
+ /\ \  __         /\ \\
+ \_\ \/\_\    ____\ \ \/'\\     ___   __  __     __   _ __     //
+ /'_` \/\ \  /',__\\\ \ , <    / __`\/\ \/\ \  /'__`\/\`'__\\  ('>
+/\ \L\ \ \ \/\__, `\\\ \ \\\`\ /\ \L\ \ \ \_/ |/\  __/\ \ \/   /rr
+\ \___,_\ \_\/\____/ \ \_\ \_\ \____/\ \___/ \ \____\\\ \\_\\  *\))_
+ \/__,_ /\/_/\/___/   \/_/\/_/\/___/  \/__/   \/____/ \\/_/ v%s
+                  https://github.com/shirosaidev/diskover\033[0m
+""" % (BANNER_COLOR, DISKOVER_VERSION)
     sys.stdout.write(banner)
     sys.stdout.write('\n')
     sys.stdout.flush()
@@ -179,7 +248,7 @@ def load_config():
     the config settings.
     """
     configsettings = {}
-    config = ConfigParser.RawConfigParser()
+    config = ConfigParser.ConfigParser()
     dir_path = os.path.dirname(os.path.realpath(__file__))
     configfile = '%s/diskover.cfg' % dir_path
     # Check for config file
@@ -226,6 +295,11 @@ def load_config():
             int(config.get('elasticsearch', 'timeout'))
     except Exception:
         configsettings['es_timeout'] = 10
+    try:
+        configsettings['es_maxsize'] = \
+            int(config.get('elasticsearch', 'maxsize'))
+    except Exception:
+        configsettings['es_maxsize'] = 10
     try:
         configsettings['es_max_retries'] = \
             int(config.get('elasticsearch', 'maxretries'))
@@ -275,7 +349,7 @@ def parse_cli_args(indexname):
     """
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-d", "--rootdir", default=".", type=str,
+    parser.add_argument("-d", "--rootdir", default=".",
                         help="Directory to start crawling from (default: .)")
     parser.add_argument("-m", "--mtime", default=0, type=int,
                         help="Minimum days ago for modified time (default: 0)")
@@ -283,7 +357,7 @@ def parse_cli_args(indexname):
                         help="Minimum file size in MB (default: >0MB)")
     parser.add_argument("-t", "--threads", default=8, type=int,
                         help="Number of threads to use (default: 8)")
-    parser.add_argument("-i", "--index", default=indexname, type=str,
+    parser.add_argument("-i", "--index", default=indexname,
                         help="Elasticsearch index name (default: from config)")
     parser.add_argument("-n", "--nodelete", action="store_true",
                         help="Add data to existing index (default: overwrite \
@@ -293,8 +367,8 @@ def parse_cli_args(indexname):
     parser.add_argument("-R", "--reindexrecurs", action="store_true",
                         help="Reindex directory and all subdirs (recursive)")
     parser.add_argument("--tagdupes", action="store_true",
-                        help="Tags duplicate files (default: don't tag)")
-    parser.add_argument("-f", "--file", type=str,
+                        help="Tag duplicate files in existing index")
+    parser.add_argument("-f", "--file",
                         help="Index single file")
     parser.add_argument("-l", "--listen", action="store_true",
                         help="Open socket and listen for remote commands")
@@ -345,6 +419,7 @@ def crawl_dir_worker(threadnum):
 
         # get a directory from the Queue
         path = q.get()
+
         if path is None:
             # add filelist to ES and empty it
             if len(filelist) > 0:
@@ -362,41 +437,88 @@ def crawl_dir_worker(threadnum):
 
         # crawl files in directory
         try:
-            dirempty = True
-            for entry in scandir(unicode(path)):
-                dirempty = False
+            for entry in scandir(path):
                 if entry.is_file(follow_symlinks=False) and \
                         not entry.is_symlink():
                     # get file meta info and add to Elasticsearch
                     filelist = get_file_meta(entry, filelist, threadnum)
-            # add directory meta data to dirlist list if directory not empty
-            if not dirempty:
-                dirinfo_dict = {}
-                dirinfo_dict['path'] = unicode(os.path.abspath(unicode(path)))
-                # Get directory info and store in dirinfo_dict
-                mtime_unix = os.stat(unicode(path)).st_mtime
-                mtime_utc = datetime.utcfromtimestamp(mtime_unix)\
-                    .strftime('%Y-%m-%dT%H:%M:%S')
-                dirinfo_dict['last_modified'] = mtime_utc
-                atime_unix = os.stat(unicode(path)).st_atime
-                atime_utc = datetime.utcfromtimestamp(atime_unix)\
-                    .strftime('%Y-%m-%dT%H:%M:%S')
-                dirinfo_dict['last_access'] = atime_utc
-                ctime_unix = os.stat(unicode(path)).st_ctime
-                ctime_utc = datetime.utcfromtimestamp(ctime_unix)\
-                    .strftime('%Y-%m-%dT%H:%M:%S')
-                dirinfo_dict['last_change'] = ctime_utc
-                indextime_utc = datetime.utcnow()\
-                    .strftime("%Y-%m-%dT%H:%M:%S.%f")
-                dirinfo_dict['indexing_date'] = indextime_utc
 
-                # add dirinfo to dirlist
-                dirlist.append(dirinfo_dict)
-                # once dirlist contains max chunk size,
-                # add dirlist to ES and empty it
-                if len(dirlist) >= CONFIG['es_chunksize']:
-                    index_add_dirs(threadnum, dirlist)
-                    del dirlist[:]
+            # add directory meta data to dirlist list
+            mtime_unix = os.stat(path).st_mtime
+            mtime_utc = datetime.utcfromtimestamp(mtime_unix)\
+                .strftime('%Y-%m-%dT%H:%M:%S')
+            atime_unix = os.stat(path).st_atime
+            atime_utc = datetime.utcfromtimestamp(atime_unix)\
+                .strftime('%Y-%m-%dT%H:%M:%S')
+            ctime_unix = os.stat(path).st_ctime
+            ctime_utc = datetime.utcfromtimestamp(ctime_unix)\
+                .strftime('%Y-%m-%dT%H:%M:%S')
+            # get time now in utc
+            indextime_utc = datetime.utcnow()\
+            .strftime("%Y-%m-%dT%H:%M:%S.%f")
+            # get user id of owner
+            uid = os.stat(path).st_uid
+            # try to get owner user name
+            try:
+                # check if we have it cached
+                if uid in uid_owner[threadnum]:
+                    owner = uid_owner[threadnum][uid]
+                else:
+                    owner = pwd.getpwuid(uid).pw_name.split('\\')
+                    # remove domain before owner
+                    if len(owner) == 2:
+                        owner = owner[1]
+                    else:
+                        owner = owner[0]
+                    # add to uid_owner_dict cache
+                    uid_owner[threadnum][uid] = owner
+            # if we can't find the owner's user name, use the uid number
+            except KeyError:
+                owner = uid
+                # add to uid_owner_dict cache
+                uid_owner[threadnum][uid] = owner
+            # get group id
+            gid = os.stat(path).st_gid
+            # try to get group name
+            try:
+                # check if we have it cached
+                if gid in gid_group[threadnum]:
+                    group = gid_group[threadnum][gid]
+                else:
+                    group = grp.getgrgid(gid).gr_name.split('\\')
+                    # remove domain before group
+                    if len(group) == 2:
+                        group = group[1]
+                    else:
+                        group = group[0]
+                    # add to gid_group_dict cache
+                    gid_group[threadnum][gid] = group
+            # if we can't find the group name, use the gid number
+            except KeyError:
+                group = gid
+                # add to gid_group_dict cache
+                gid_group[threadnum][gid] = group
+
+            dirinfo_dict = {
+                "filename": os.path.basename(path),
+                "path_parent": os.path.abspath(os.path.join(path, os.pardir)),
+                "filesize": "",
+                "last_modified": mtime_utc,
+                "last_access": atime_utc,
+                "last_change": ctime_utc,
+                "owner": owner,
+                "group": group,
+                "tag": "untagged",
+                "tag_custom": "",
+                "indexing_date": indextime_utc
+            }
+            # add dirinfo to dirlist
+            dirlist.append(dirinfo_dict)
+            # once dirlist contains max chunk size,
+            # add dirlist to ES and empty it
+            if len(dirlist) >= CONFIG['es_chunksize']:
+                index_add_dirs(threadnum, dirlist)
+                del dirlist[:]
 
         except (IOError, OSError):
             if VERBOSE:
@@ -455,7 +577,7 @@ def get_file_meta(entry, filelist=None, threadnum=0):
 
         # check if file is in exluded_files list
         if entry.name in CONFIG['excluded_files'] or \
-                (entry.name.startswith(u'.') and u'.*'
+                (entry.name.startswith('.') and u'.*'
                     in CONFIG['excluded_files']):
             if VERBOSE:
                 LOGGER.info('Skipping (excluded file) %s' % entry.path)
@@ -466,8 +588,8 @@ def get_file_meta(entry, filelist=None, threadnum=0):
         # get file extension and check excluded_files
         extension = os.path.splitext(entry.name)[1][1:].strip().lower()
         LOGGER.debug('Extension: <%s>', extension)
-        if (not extension and u'NULLEXT' in CONFIG['excluded_files']) \
-                or u'*.' + unicode(extension) in CONFIG['excluded_files']:
+        if (not extension and 'NULLEXT' in CONFIG['excluded_files']) \
+                or '*.' + extension in CONFIG['excluded_files']:
             if VERBOSE:
                 LOGGER.info('Skipping (excluded file) %s' % entry.path)
             totals[threadnum]['num_files_skipped'] += 1
@@ -499,68 +621,55 @@ def get_file_meta(entry, filelist=None, threadnum=0):
         ctime_unix = entry.stat().st_ctime
         ctime_utc = \
             datetime.utcfromtimestamp(ctime_unix).strftime('%Y-%m-%dT%H:%M:%S')
-        if IS_WIN:
-            sd = \
-                win32security.GetFileSecurity(
-                    filename_fullpath,
-                    win32security.OWNER_SECURITY_INFORMATION)
-            owner_sid = sd.GetSecurityDescriptorOwner()
-            owner, domain, type = \
-                win32security.LookupAccountSid(None, owner_sid)
-            # dummy group value for windows
-            group = "0"
-            inode = os.stat(entry.path).st_ino
-            hardlinks = os.stat(entry.path).st_nlink
-        else:
-            # get user id of owner
-            uid = entry.stat().st_uid
-            # try to get owner user name
-            try:
-                # check if we have it cached
-                if uid in uid_owner[threadnum]:
-                    owner = uid_owner[threadnum][uid]
+        # get user id of owner
+        uid = entry.stat().st_uid
+        # try to get owner user name
+        try:
+            # check if we have it cached
+            if uid in uid_owner[threadnum]:
+                owner = uid_owner[threadnum][uid]
+            else:
+                owner = pwd.getpwuid(uid).pw_name.split('\\')
+                # remove domain before owner
+                if len(owner) == 2:
+                    owner = owner[1]
                 else:
-                    owner = pwd.getpwuid(uid).pw_name.split('\\')
-                    # remove domain before owner
-                    if len(owner) == 2:
-                        owner = owner[1]
-                    else:
-                        owner = owner[0]
-                    # add to uid_owner_dict cache
-                    uid_owner[threadnum][uid] = owner
-            # if we can't find the owner's user name, use the uid number
-            except KeyError:
-                owner = uid
+                    owner = owner[0]
                 # add to uid_owner_dict cache
                 uid_owner[threadnum][uid] = owner
-            # get group id
-            gid = entry.stat().st_gid
-            # try to get group name
-            try:
-                # check if we have it cached
-                if gid in gid_group[threadnum]:
-                    group = gid_group[threadnum][gid]
+        # if we can't find the owner's user name, use the uid number
+        except KeyError:
+            owner = uid
+            # add to uid_owner_dict cache
+            uid_owner[threadnum][uid] = owner
+        # get group id
+        gid = entry.stat().st_gid
+        # try to get group name
+        try:
+            # check if we have it cached
+            if gid in gid_group[threadnum]:
+                group = gid_group[threadnum][gid]
+            else:
+                group = grp.getgrgid(gid).gr_name.split('\\')
+                # remove domain before group
+                if len(group) == 2:
+                    group = group[1]
                 else:
-                    group = grp.getgrgid(gid).gr_name.split('\\')
-                    # remove domain before group
-                    if len(group) == 2:
-                        group = group[1]
-                    else:
-                        group = group[0]
-                    # add to gid_group_dict cache
-                    gid_group[threadnum][gid] = group
-            # if we can't find the group name, use the gid number
-            except KeyError:
-                group = gid
+                    group = group[0]
                 # add to gid_group_dict cache
                 gid_group[threadnum][gid] = group
-            # get inode number
-            inode = entry.inode()
-            # get number of hardlinks
-            hardlinks = entry.stat().st_nlink
+        # if we can't find the group name, use the gid number
+        except KeyError:
+            group = gid
+            # add to gid_group_dict cache
+            gid_group[threadnum][gid] = group
+        # get inode number
+        inode = entry.inode()
+        # get number of hardlinks
+        hardlinks = entry.stat().st_nlink
         # get absolute path of parent directory
         parentdir = \
-            os.path.abspath(unicode(os.path.join(entry.path, os.pardir)))
+            os.path.abspath(os.path.join(entry.path, os.pardir))
         # create md5 hash of file using metadata filesize and mtime
         filestring = str(size) + str(mtime_unix)
         filehash = hashlib.md5(filestring.encode('utf-8')).hexdigest()
@@ -568,23 +677,23 @@ def get_file_meta(entry, filelist=None, threadnum=0):
         indextime_utc = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
         # create file metadata dictionary
         filemeta_dict = {
-            "filename": u"%s" % unicode(entry.name),
-            "extension": u"%s" % unicode(extension),
-            "path_parent": u"%s" % unicode(parentdir),
+            "filename": entry.name,
+            "extension": extension,
+            "path_parent": parentdir,
             "filesize": size,
-            "owner": u"%s" % unicode(owner),
-            "group": u"%s" % unicode(group),
-            "last_modified": "%s" % mtime_utc,
-            "last_access": "%s" % atime_utc,
-            "last_change": "%s" % ctime_utc,
+            "owner": owner,
+            "group": group,
+            "last_modified": mtime_utc,
+            "last_access": atime_utc,
+            "last_change": ctime_utc,
             "hardlinks": hardlinks,
             "inode": inode,
-            "filehash": "%s" % filehash,
+            "filehash": filehash,
             "tag": "untagged",
             "tag_custom": "",
             'is_dupe': "false",
-            "indexing_date": "%s" % indextime_utc,
-            "indexing_thread": "%s" % threadnum
+            "indexing_date": indextime_utc,
+            "indexing_thread": threadnum
         }
 
         # check plugins for adding extra meta data to filemeta_dict
@@ -630,10 +739,12 @@ def start_crawl():
     """
     global total_dirs
 
+    add_crawl_stats(DATEEPOCH)
+
     LOGGER.info('Crawling using %s threads' % CLIARGS['threads'])
 
     # put rootdir into Queue
-    q.put(unicode(CLIARGS['rootdir']))
+    q.put(os.path.abspath(CLIARGS['rootdir']))
     total_dirs += 1
 
     # check for reindex (non-recursive)
@@ -646,13 +757,17 @@ def start_crawl():
         global total_dirs
         global total_dirs_skipped
 
+        # check if path is unicode for python2
+        if not IS_PY3:
+            path = unicode(path)
+
         # check if at maxdepth
         if CLIARGS['maxdepth'] and depth > CLIARGS['maxdepth']:
             return
 
         try:
             subdirs = []
-            for entry in scandir(unicode(path)):
+            for entry in scandir(path):
                 if entry.is_dir(follow_symlinks=False) \
                         and not entry.is_symlink():
                     total_dirs += 1
@@ -667,7 +782,7 @@ def start_crawl():
                         continue
 
                     # skip any dirs which start with . and in excluded dirs
-                    if entry.name.startswith('.') and '.*' \
+                    if entry.name.startswith('.') and u'.*' \
                             in CONFIG['excluded_dirs']:
                         if VERBOSE:
                             LOGGER.info('Skipping (.* dir) %s', entry.path)
@@ -676,7 +791,7 @@ def start_crawl():
 
                     # queue directory for worker threads to crawl files
                     if VERBOSE:
-                        LOGGER.info('Queuing directory: %s', path)
+                        LOGGER.info('Queuing directory: %s', entry.path)
                     # add directory path to Queue
                     q.put(entry.path)
                     # check if breadthfirst cli arg and
@@ -699,6 +814,9 @@ def start_crawl():
                 LOGGER.error(
                     'Failed to crawl directory %s', path, exc_info=True)
             pass
+
+    # add disk space info to ES
+    add_diskspace(CLIARGS['rootdir'])
 
     # start crawling the rootdir directory
     crawl(CLIARGS['rootdir'], depth=1)
@@ -847,14 +965,15 @@ def elasticsearch_connect():
             hosts=[{'host': CONFIG['es_host'], 'port': CONFIG['es_port']}],
             use_ssl=True, verify_certs=True,
             connection_class=RequestsHttpConnection,
-            timeout=CONFIG['es_timeout'],
+            timeout=CONFIG['es_timeout'], maxsize=CONFIG['es_maxsize'],
             max_retries=CONFIG['es_max_retries'], retry_on_timeout=True)
     # Local connection to ES
     else:
         es = Elasticsearch(
             hosts=[{'host': CONFIG['es_host'], 'port': CONFIG['es_port']}],
             http_auth=(CONFIG['es_user'], CONFIG['es_password']),
-            timeout=CONFIG['es_timeout'],
+            connection_class=Urllib3HttpConnection,
+            timeout=CONFIG['es_timeout'], maxsize=CONFIG['es_maxsize'],
             max_retries=CONFIG['es_max_retries'], retry_on_timeout=True)
     # ping check Elasticsearch
     if not es.ping():
@@ -901,9 +1020,64 @@ def index_create():
             }
         },
         "mappings": {
-            "directory": {
+            "diskspace": {
                 "properties": {
                     "path": {
+                        "type": "keyword"
+                    },
+                    "total": {
+                        "type": "long"
+                    },
+                    "used": {
+                        "type": "long"
+                    },
+                    "free": {
+                        "type": "long"
+                    },
+                    "available": {
+                        "type": "long"
+                    },
+                    "indexing_date": {
+                        "type": "date"
+                    }
+                }
+            },
+            "crawlstat_start": {
+                "properties": {
+                    "path": {
+                        "type": "keyword"
+                    },
+                    "start_time": {
+                        "type": "date"
+                    }
+                    ,
+                    "indexing_date": {
+                        "type": "date"
+                    }
+                }
+            },
+            "crawlstat_stop": {
+                "properties": {
+                    "path": {
+                        "type": "keyword"
+                    },
+                    "stop_time": {
+                        "type": "date"
+                    },
+                    "elapsed_time": {
+                        "type": "long"
+                    },
+                    "indexing_date": {
+                        "type": "date"
+                    }
+                }
+            },
+            "directory": {
+                "properties": {
+                    "filename": {
+                        "type": "keyword"
+                    },
+                    "path_parent": {
                         "type": "keyword",
                         "fields": {
                             "tree": {
@@ -911,6 +1085,15 @@ def index_create():
                                 "analyzer": "path_analyzer"
                             }
                         }
+                    },
+                    "filesize": {
+                        "type": "long"
+                    },
+                    "owner": {
+                        "type": "keyword"
+                    },
+                    "group": {
+                        "type": "keyword"
                     },
                     "last_modified": {
                         "type": "date"
@@ -920,6 +1103,12 @@ def index_create():
                     },
                     "last_change": {
                         "type": "date"
+                    },
+                    "tag": {
+                        "type": "keyword"
+                    },
+                    "tag_custom": {
+                        "type": "keyword"
                     },
                     "indexing_date": {
                         "type": "date"
@@ -1049,6 +1238,8 @@ def index_delete_file(file_dict):
         }
     }
 
+    # refresh index
+    ES.indices.refresh(index=CLIARGS['index'])
     # search ES
     res = ES.search(index=CLIARGS['index'], doc_type='file', body=data,
                     request_timeout=CONFIG['es_timeout'])
@@ -1091,6 +1282,8 @@ def index_delete_path(path, recursive=False):
         }
 
     LOGGER.info('Searching for all files in %s' % path)
+    # refresh index
+    ES.indices.refresh(index=CLIARGS['index'])
     # search ES and start scroll
     res = ES.search(index=CLIARGS['index'], doc_type='file', scroll='1m',
                     size=1000, body=data,
@@ -1132,23 +1325,26 @@ def index_delete_path(path, recursive=False):
         # escape forward slashes
         newpath = path.replace('/', '\/')
         data = {
-            "query": {
-                "query_string": {
-                    "query": "path: " + newpath + "*",
-                    "analyze_wildcard": "true"
+            'query': {
+                'query_string': {
+                    'query': 'path_parent: + str(os.pardir(newpath)) + * AND \
+                    filename:  + str(os.path.basename(path))',
+                    'analyze_wildcard': 'true'
                 }
             }
         }
     else:
         data = {
-            "query": {
-                "query_string": {
-                    "query": "path: \"" + path + "\""
+            'query': {
+                'query_string': {
+                    'query': 'path_parent: " + str(os.pardir(path)) + "'
                 }
             }
         }
 
     LOGGER.info('Searching for all directories in %s' % path)
+    # refresh index
+    ES.indices.refresh(index=CLIARGS['index'])
     # search ES and start scroll
     res = ES.search(index=CLIARGS['index'], doc_type='directory', scroll='1m',
                     size=1000, body=data, request_timeout=CONFIG['es_timeout'])
@@ -1390,6 +1586,9 @@ def dupes_finder():
                 }
             }
         }
+        # refresh index
+        ES.indices.refresh(index=CLIARGS['index'])
+
         res = ES.search(index=CLIARGS['index'], doc_type='file', size="1000",
                         body=data, request_timeout=CONFIG['es_timeout'])
 
@@ -1440,6 +1639,8 @@ def dupes_finder():
     }
 
     LOGGER.info('Searching %s for duplicate file hashes', CLIARGS['index'])
+    # refresh index
+    ES.indices.refresh(index=CLIARGS['index'])
     res = ES.search(index=CLIARGS['index'], doc_type='file', body=data,
                     request_timeout=CONFIG['es_timeout'])
 
@@ -1482,6 +1683,8 @@ def print_stats(stats_type):
     It outputs stats at the end of runtime.
     """
     elapsedtime = time.time() - DATEEPOCH
+    # add stats to ES
+    add_crawl_stats(DATEEPOCH, time.time(), elapsedtime)
     sys.stdout.flush()
     LOGGER.disabled = True
 
@@ -1498,32 +1701,35 @@ def print_stats(stats_type):
             total_files_skipped += i['num_files_skipped']
             total_file_size += i['file_size']
             total_file_size_skipped += i['file_size_skipped']
-        sys.stdout.write("\n\033[35m********************************* \
-CRAWL STATS *********************************\033[0m\n")
-        sys.stdout.write("\033[35m Directories: %s\033[0m" % total_dirs)
-        sys.stdout.write("\033[35m / Skipped: %s\n" % total_dirs_skipped)
+        sys.stdout.write("\n\033[%s********************************* \
+CRAWL STATS *********************************\033[0m\n" % BANNER_COLOR)
+        sys.stdout.write("\033[%s Directories: %s\033[0m" % (BANNER_COLOR,
+                                                             total_dirs))
+        sys.stdout.write("\033[%s / Skipped: %s\033[0m\n" % (BANNER_COLOR,
+                                                             total_dirs_skipped))
         sys.stdout.write(
-            "\033[35m Files: %s (%s)\033[0m"
-            % (total_files, convert_size(total_file_size)))
+            "\033[%s Files: %s (%s)\033[0m"
+            % (BANNER_COLOR, total_files, convert_size(total_file_size)))
         sys.stdout.write(
-            "\033[35m / Skipped: %s (%s)\n"
-            % (total_files_skipped, convert_size(total_file_size_skipped)))
+            "\033[%s / Skipped: %s (%s)\033[0m\n"
+            % (BANNER_COLOR, total_files_skipped,
+               convert_size(total_file_size_skipped)))
 
     elif stats_type is 'updating_dupe':
         # sum totals from all threads
         for i in totals:
             total_dupes += i['num_dupes']
-        sys.stdout.write("\n\033[35m********************************* \
-DUPES STATS *********************************\033[0m\n")
-        sys.stdout.write("\033[35m Files checked: %s \
-(%s filehash groups)\033[0m\n" % (dupe_count, total_hash_groups))
-        sys.stdout.write("\033[35m Duplicates tagged: \
-%s\033[0m\n" % total_dupes)
+        sys.stdout.write("\n\033[%s********************************* \
+DUPES STATS *********************************\033[0m\n" % BANNER_COLOR)
+        sys.stdout.write("\033[%s Files checked: %s \
+(%s filehash groups)\033[0m\n" % (BANNER_COLOR, dupe_count, total_hash_groups))
+        sys.stdout.write("\033[%s Duplicates tagged: \
+%s\033[0m\n" % (BANNER_COLOR, total_dupes))
 
-    sys.stdout.write("\033[35m Elapsed time: \
-%s\033[0m\n" % get_time(elapsedtime))
-    sys.stdout.write("\033[35m******************************************\
-*************************************\033[0m\n\n")
+    sys.stdout.write("\033[%s Elapsed time: \
+%s\033[0m\n" % (BANNER_COLOR, get_time(elapsedtime)))
+    sys.stdout.write("\033[%s******************************************\
+*************************************\033[0m\n\n" % BANNER_COLOR)
     sys.stdout.flush()
 
 
@@ -1550,6 +1756,8 @@ def gource():
             }
         }
 
+    # refresh index
+    ES.indices.refresh(index=CLIARGS['index'])
     # search ES and start scroll
     res = ES.search(index=CLIARGS['index'], doc_type='file', scroll='1m',
                     size=100, body=data, request_timeout=CONFIG['es_timeout'])
@@ -1569,12 +1777,12 @@ def gource():
                     '%Y-%m-%dT%H:%M:%S').timetuple())))
                 u = hit['_source']['owner']
                 t = 'M'
-            f = unicode(hit['_source']['path_parent'] + "/" +
-                        hit['_source']['filename'])
-            output = unicode(d + '|' + u + '|' + t + '|' + f)
+            f = hit['_source']['path_parent'] + "/" + \
+                hit['_source']['filename']
+            output = d + '|' + u + '|' + t + '|' + f
             try:
                 # output for gource
-                sys.stdout.write(output.encode('utf-8'))
+                sys.stdout.write(output)
                 sys.stdout.write('\n')
                 sys.stdout.flush()
             except Exception:
@@ -1804,7 +2012,7 @@ if __name__ == "__main__":
         print('Please name your index: diskover-<string>')
         sys.exit(0)
 
-    if not IS_WIN and not CLIARGS['gourcert'] and not CLIARGS['gourcemt']:
+    if not CLIARGS['gourcert'] and not CLIARGS['gourcemt']:
         # check we are root
         if os.geteuid():
             print('Please run as root')
@@ -1862,7 +2070,7 @@ if __name__ == "__main__":
             path = os.path.abspath(os.path.join(CLIARGS['file'], os.pardir))
             name = os.path.basename(CLIARGS['file'])
             # create instance using scandir class
-            entry = GenericDirEntry(unicode(path), unicode(name))
+            entry = GenericDirEntry(path, name)
             totals.append(
                 {'num_files': 0, 'num_files_skipped': 0, 'file_size': 0,
                  'file_size_skipped': 0})
