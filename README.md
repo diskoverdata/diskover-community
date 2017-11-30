@@ -1,21 +1,24 @@
 # diskover - Elasticsearch file system crawler and storage analytics
 
+[![License](https://img.shields.io/github/license/shirosaidev/diskover.svg?label=License&maxAge=86400)](./LICENSE.txt)
+[![Release](https://img.shields.io/github/release/shirosaidev/diskover.svg?label=Release&maxAge=60)](https://github.com/shirosaidev/diskover/releases/latest)
+
 <img align="left" width="249" height="189" src="docs/diskover.png?raw=true" hspace="5" vspace="5">
 
-diskover is a multi-threaded file system crawler that uses [Elasticsearch](https://www.elastic.co) and [Kibana](https://www.elastic.co/products/kibana) to index your file metadata and visualize your storage analytics. diskover crawls and indexes your files on a local computer or remote server using NFS or SMB.
+diskover is a file system analytics application that includes a multi-threaded disk crawler that uses [Elasticsearch](https://www.elastic.co) to index your file metadata. diskover crawls and indexes your files on a local computer or remote server using NFS or SMB.
 
-File metadata is bulk added and streamed into Elasticsearch, allowing you to **search and visualize your files in Kibana without having to wait until the crawl is finished**. diskover is written in Python and runs on Linux, OS X/macOS and Windows.
+File metadata is bulk added and streamed into Elasticsearch, allowing you to search and visualize your files in [diskover-web](https://github.com/shirosaidev/diskover-web) or [Kibana](https://www.elastic.co/products/kibana) without having to wait until the crawl is finished. diskover is written in Python and runs on Linux, OS X/macOS and Windows.
 
-diskover aims to help manage your storage by identifying old and unused files and give better insights into file duplication and wasted space. It is designed to help deal with managing large amounts of data growth and provide detailed storage analytics.
+diskover aims to help manage your storage by identifying old and unused files and give better insights into data change, file duplication, "hotfiles" (diskover-web heatmap) and wasted space. It is designed to help deal with managing large amounts of data growth and provide detailed storage analytics.
 
 diskover includes a built-in UDP socket server for remote commands and also has plug-in support for expanding diskover's indexing capabilities.
 
 ## Screenshots
 
+[diskover-web](https://github.com/shirosaidev/diskover-web) (diskover's web file manager, analytics app, file system search engine, rest-api)
+![diskover-web](https://github.com/shirosaidev/diskover-web/raw/master/docs/diskover-web-heatmap-screenshot.png?raw=true)
 Kibana dashboards / saved searches and visualizations (included in diskover download)
 ![kibana-screenshot](docs/kibana-dashboarddark2-screenshot.png?raw=true)
-[diskover-web](https://shirosaidev.github.io/diskover-web/) (diskover's web file manager, file system search engine, rest-api)
-![diskover-web](https://github.com/shirosaidev/diskover-web/raw/master/docs/diskover-web-filetree-screenshot.png?raw=true)
 Gource visualization support (see videos below)
 ![diskover-gource](docs/diskover-gource1-screenshot.png?raw=true)
 
@@ -30,11 +33,11 @@ Gource visualization support (see videos below)
 
 * `Linux, OS X/macOS or Windows` (tested on OS X 10.11.6, Ubuntu 16.04 and Windows 7)
 * `Python 2.7. or Python 3.5.` (tested on Python 2.7.14, 3.5.3)
-* `Python elasticsearch client module` [elasticsearch](https://pypi.python.org/pypi/elasticsearch) (tested on 5.4.0)
+* `Python elasticsearch client module` [elasticsearch](https://pypi.python.org/pypi/elasticsearch) (tested on 5.4.0, 5.5.1)
 * `Python requests module` [requests](https://pypi.python.org/pypi/requests)
 * `Python scandir module` [scandir](https://pypi.python.org/pypi/scandir)
-* `Elasticsearch` (local or [AWS ES Service](https://aws.amazon.com/elasticsearch-service/), tested on Elasticsearch 5.4.2)
-* `Kibana` (tested on Kibana 5.4.2)
+* `Elasticsearch` (local or [AWS ES Service](https://aws.amazon.com/elasticsearch-service/), tested on Elasticsearch 5.4.2, 5.6.4)
+* `Kibana` (tested on Kibana 5.4.2, 5.6.4)
 
 ### Windows Additional Requirements
 
@@ -43,7 +46,8 @@ Gource visualization support (see videos below)
 
 ### Optional Installs
 
-* [diskover-web](https://shirosaidev.github.io/diskover-web/) (diskover's web file manager for searching/tagging files)
+* [diskover-web](https://github.com/shirosaidev/diskover-web) (diskover's web file manager and analytics app)
+* [Kibana](https://www.elastic.co/products/kibana) (for visualizing Elasticsearch data)
 * [X-Pack](https://www.elastic.co/downloads/x-pack) (for graphs, reports, monitoring and http auth)
 * [Gource](http://gource.io) (for Gource visualizations of diskover Elasticsearch data)
 
