@@ -9,7 +9,14 @@ show_downloads: true
 google_analytics: UA-98866026-1
 plugins:
   - jekyll-remote-theme
-layout: splash
-classes:
-  - landing
-  - dark-theme
+defaults:
+  # _splash
+  - scope:
+      path: ""
+      type: splash
+    values:
+      layout: splash
+      classes:
+        - landing
+        - dark-theme
+      author_profile: true
