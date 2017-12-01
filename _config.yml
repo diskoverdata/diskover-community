@@ -12,7 +12,7 @@ baseurl                  : "/diskover"
 repository               : "shirosaidev/diskover"
 title                    : "diskover"
 show_downloads           : true
-google_analytics:        : UA-98866026-1
+google_analytics         : UA-98866026-1
 
 plugins:
   - jekyll-remote-theme
