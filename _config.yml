@@ -9,7 +9,7 @@ show_downloads: true
 google_analytics: UA-98866026-1
 plugins:
   - jekyll-remote-theme
-# _pages
+defaults:
   - scope:
       path: "_pages"
       type: pages
