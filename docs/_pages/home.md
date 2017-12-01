@@ -2,7 +2,7 @@
 layout: splash
 permalink: /
 header:
-  overlay_image: https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-heatmap-screenshot.png
+  overlay_image: https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-heatmap-screenshot.png?raw=true
   cta_label: "<i class='fa fa-download'></i> Install Now"
   cta_url: "https://github.com/shirosaidev/diskover/releases/latest"
   caption:
