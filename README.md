@@ -9,7 +9,7 @@ diskover is a file system analytics application that includes a multi-threaded d
 
 File metadata is bulk added and streamed into Elasticsearch, allowing you to search and visualize your files in [diskover-web](https://github.com/shirosaidev/diskover-web) or [Kibana](https://www.elastic.co/products/kibana) without having to wait until the crawl is finished. diskover is written in Python and runs on Linux and OS X/macOS.
 
-diskover aims to help manage your storage by identifying old and unused files and give better insights into data change "hotfiles", file duplication and wasted space. It is designed to help deal with managing large amounts of data growth and provide detailed storage analytics.
+diskover aims to help manage your storage by identifying old and unused files and give better insights into data change "hotfiles", file duplication "dupes" and wasted space. It is designed to help deal with managing large amounts of data growth and provide detailed storage analytics.
 
 diskover includes a built-in UDP socket server for remote commands and also has plug-in support for expanding diskover's indexing capabilities.
 
