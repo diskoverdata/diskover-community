@@ -5,6 +5,7 @@ show_downloads: true
 google_analytics: UA-98866026-1
 plugins:
   - jekyll-remote-theme
+include: ["_pages"]
 defaults:
   # _pages
   - scope:
