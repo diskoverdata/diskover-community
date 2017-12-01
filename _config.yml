@@ -14,3 +14,7 @@ defaults:
     values:
       layout: single
       author_profile: true
+layout: splash
+classes:
+  - landing
+  - dark-theme
