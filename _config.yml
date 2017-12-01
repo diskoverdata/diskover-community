@@ -5,12 +5,12 @@ minimal_mistakes_skin    : "dark"
 locale                   : "en-US"
 title                    : "diskover"
 title_separator          : "-"
-name                     : &name "Chris Park"
-description              : &description "Elasticsearch file system crawler and storage analytics."
+name                     : "Chris Park"
+description              : "Elasticsearch file system crawler and storage analytics."
 url                      : https://shirosaidev.github.io
 baseurl                  : "/diskover"
 repository               : "mmistakes/minimal-mistakes"
-title                    : "diskover:
+title                    : "diskover"
 show_downloads           : true
 google_analytics:        : "UA-98866026-1"
 
