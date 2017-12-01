@@ -18,8 +18,8 @@ plugins:
   - jekyll-remote-theme
 defaults:
   - scope:
-      path: "_pages"
+      path: ""
       type: pages
     values:
-      layout: single
+      layout: splash
       author_profile: true
