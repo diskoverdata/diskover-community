@@ -12,7 +12,7 @@ plugins:
 defaults:
   # _pages
   - scope:
-      path: ""
+      path: _pages
       type: pages
     values:
       layout: splash
