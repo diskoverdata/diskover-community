@@ -35,7 +35,7 @@ feature_row:
 github:
   - excerpt: '{::nomarkdown}<iframe style="display: inline-block;" src="https://ghbtns.com/github-btn.html?user=shirosaidev&repo=diskover&type=star&count=true&size=large" frameborder="0" scrolling="0" width="160px" height="30px"></iframe> <iframe style="display: inline-block;" src="https://ghbtns.com/github-btn.html?user=shirosaidev&repo=diskover&type=fork&count=true&size=large" frameborder="0" scrolling="0" width="158px" height="30px"></iframe>{:/nomarkdown}'
 intro:
-  - excerpt: 'Get notified when I add new stuff &nbsp; [<i class="fa fa-google"></i> Google Group](https://groups.google.com/forum/?hl=en#!forum/diskover){: .btn .btn--twitter} [<i class="fa fa-paypal"></i> Donate](https://www.paypal.me/shirosaidev){: .btn .btn--primary}'
+  - excerpt: 'Get notified when I add new stuff &nbsp; [<i class="fa fa-google"></i> Google Group](https://groups.google.com/forum/?hl=en#!forum/diskover){: .btn .btn--google} [<i class="fa fa-paypal"></i> Donate](https://www.paypal.me/shirosaidev){: .btn .btn--primary}'
 ---
 
 {% include feature_row id="intro" type="center" %}
