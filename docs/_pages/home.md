@@ -7,7 +7,7 @@ header:
   cta_label: "<i class='fa fa-download'></i> Install Now"
   cta_url: "https://github.com/shirosaidev/diskover/releases/latest"
   caption:
-excerpt: 'diskover is a file system analytics application that includes a multi-threaded disk crawler that uses Elasticsearch to index your file metadata.<br /> <small><a href="https://github.com/shirosaidev/diskover/releases/tag/1.4.0">Latest release v1.4.0</a></small><br /><br /> {::nomarkdown}<iframe style="display: inline-block;" src="https://ghbtns.com/github-btn.html?user=shirosaidev&repo=diskover&type=star&count=true&size=large" frameborder="0" scrolling="0" width="160px" height="30px"></iframe> <iframe style="display: inline-block;" src="https://ghbtns.com/github-btn.html?user=shirosaidev&repo=diskover&type=fork&count=true&size=large" frameborder="0" scrolling="0" width="158px" height="30px"></iframe>{:/nomarkdown}'
+excerpt: 'diskover is a file system analytics application that includes a multi-threaded disk crawler that uses Elasticsearch to index your file metadata.<br /> <small><a href="https://github.com/shirosaidev/diskover/releases/tag/v1.4.0">Latest release v1.4.0</a></small><br /><br /> {::nomarkdown}<iframe style="display: inline-block;" src="https://ghbtns.com/github-btn.html?user=shirosaidev&repo=diskover&type=star&count=true&size=large" frameborder="0" scrolling="0" width="160px" height="30px"></iframe> <iframe style="display: inline-block;" src="https://ghbtns.com/github-btn.html?user=shirosaidev&repo=diskover&type=fork&count=true&size=large" frameborder="0" scrolling="0" width="158px" height="30px"></iframe>{:/nomarkdown}'
 feature_row:
   - image_path: /assets/images/mm-customizable-feature.png
     alt: "customizable"
