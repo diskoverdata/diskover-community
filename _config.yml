@@ -1,5 +1,5 @@
-theme: jekyll-theme-cayman
+remote_theme: "mmistakes/minimal-mistakes"
 title: diskover
-description: Elasticsearch file system crawler and disk space analyzer.
+description: Elasticsearch file system crawler and storage analytics.
 show_downloads: true
 google_analytics: UA-98866026-1
