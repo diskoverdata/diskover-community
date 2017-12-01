@@ -1,9 +1,7 @@
 ---
 layout: splash
-logo: "https://github.com/shirosaidev/diskover/blob/master/docs/diskover.png?raw=true"
 permalink: /
 header:
-  logo: "https://github.com/shirosaidev/diskover/blob/master/docs/diskover.png?raw=true"
   overlay_color: "#000"
   overlay_filter: "0.5"
   overlay_image: https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-heatmap-screenshot.png?raw=true
