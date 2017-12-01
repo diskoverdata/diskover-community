@@ -1,4 +1,8 @@
 remote_theme: "mmistakes/minimal-mistakes"
+minimal_mistakes_skin: dark
+locale: en
+title_separator: -
+name: Chris Park
 title: diskover
 description: Elasticsearch file system crawler and storage analytics.
 show_downloads: true
