@@ -9,10 +9,10 @@ name                     : "Chris Park"
 description              : "Elasticsearch file system crawler and storage analytics."
 url                      : https://shirosaidev.github.io
 baseurl                  : "/diskover"
-repository               : "mmistakes/minimal-mistakes"
+repository               : "shirosaidev/diskover"
 title                    : "diskover"
 show_downloads           : true
-google_analytics:        : "UA-98866026-1"
+google_analytics:        : UA-98866026-1
 
 plugins:
   - jekyll-remote-theme
