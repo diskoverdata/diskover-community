@@ -26,7 +26,7 @@ feature_row:
   - image_path: https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-treemap-screenshot.png?raw=true
     alt: "storage analytics"
     title: "Make Sense Of Your Data"
-    excerpt: "Identify old and unused files and give better insights into data change "hotfiles", file duplication "dupes" and wasted space."
+    excerpt: "Identify old and unused files and give better insights into data change 'hotfiles', file duplication 'dupes' and wasted space."
     url: "https://github.com/shirosaidev/diskover"
     btn_class: "btn--primary"
     btn_label: "Learn More"
