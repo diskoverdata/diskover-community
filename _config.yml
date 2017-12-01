@@ -10,10 +10,10 @@ google_analytics: UA-98866026-1
 plugins:
   - jekyll-remote-theme
 defaults:
-  # _splash
+  # _pages
   - scope:
       path: ""
-      type: splash
+      type: pages
     values:
       layout: splash
       classes:
