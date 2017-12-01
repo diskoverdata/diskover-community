@@ -37,12 +37,11 @@ Gource visualization support (see videos below)
 * `Python requests module` [requests](https://pypi.python.org/pypi/requests)
 * `Python scandir module` [scandir](https://pypi.python.org/pypi/scandir)
 * `Elasticsearch` (local or [AWS ES Service](https://aws.amazon.com/elasticsearch-service/), tested on Elasticsearch 5.4.2, 5.6.4)
-* `Kibana` (tested on Kibana 5.4.2, 5.6.4)
 
 ### Optional Installs
 
 * [diskover-web](https://github.com/shirosaidev/diskover-web) (diskover's web file manager and analytics app)
-* [Kibana](https://www.elastic.co/products/kibana) (for visualizing Elasticsearch data)
+* [Kibana](https://www.elastic.co/products/kibana) (for visualizing Elasticsearch data, tested on Kibana 5.4.2, 5.6.4)
 * [X-Pack](https://www.elastic.co/downloads/x-pack) (for graphs, reports, monitoring and http auth)
 * [Gource](http://gource.io) (for Gource visualizations of diskover Elasticsearch data)
 
@@ -77,28 +76,28 @@ $ sudo python /path/to/diskover.py
 A successfull crawl should look like this:
 
 ```
+  __               __
+ /\ \  __         /\ \
+ \_\ \/\_\    ____\ \ \/'\     ___   __  __     __   _ __     //
+ /'_` \/\ \  /',__\\ \ , <    / __`\/\ \/\ \  /'__`\/\`'__\  ('>
+/\ \L\ \ \ \/\__, `\\ \ \\`\ /\ \L\ \ \ \_/ |/\  __/\ \ \/   /rr
+\ \___,_\ \_\/\____/ \ \_\ \_\ \____/\ \___/ \ \____\\ \_\  *\))_
+ \/__,_ /\/_/\/___/   \/_/\/_/\/___/  \/__/   \/____/ \/_/ v1.3.6
+                  https://github.com/shirosaidev/diskover
 
-   ___       ___       ___       ___       ___       ___       ___       ___
-  /\  \     /\  \     /\  \     /\__\     /\  \     /\__\     /\  \     /\  \
- /::\  \   _\:\  \   /::\  \   /:/ _/_   /::\  \   /:/ _/_   /::\  \   /::\  \
-/:/\:\__\ /\/::\__\ /\:\:\__\ /::-"\__\ /:/\:\__\ |::L/\__\ /::\:\__\ /::\:\__\
-\:\/:/  / \::/\/__/ \:\:\/__/ \;:;-",-" \:\/:/  / |::::/  / \:\:\/  / \;:::/  /
- \::/  /   \:\__\    \::/  /   |:|  |    \::/  /   L;;/__/   \:\/  /   |:\/__/
-  \/__/     \/__/     \/__/     \|__|     \/__/    v1.3.3     \/__/     \|__|
-                                      https://github.com/shirosaidev/diskover
-
-2017-10-20 18:36:44,749 [INFO][diskover] Connecting to Elasticsearch
-2017-10-20 18:36:44,764 [INFO][diskover] Checking ES index: diskover-2017.04.22
-2017-10-20 18:36:44,779 [WARNING][diskover] ES index exists, deleting
-2017-10-20 18:36:44,958 [INFO][diskover] Creating ES index
-2017-10-20 18:36:45,060 [INFO][diskover] Crawling using 8 threads
-Crawling: 100%|████████████████████| 10995/10995 [0h:00m:00s, 265.9 dir/s]
-2017-10-20 18:37:27,071 [INFO][diskover] Finished crawling
+2017-11-30 17:38:24,203 [INFO][diskover] Connecting to Elasticsearch
+2017-11-30 17:38:24,207 [INFO][diskover] Checking ES index: diskover-2017.11.30
+2017-11-30 17:38:24,209 [WARNING][diskover] ES index exists, deleting
+2017-11-30 17:38:24,353 [INFO][diskover] Creating ES index
+2017-11-30 17:38:24,466 [INFO][diskover] Crawling using 8 threads
+2017-11-30 17:38:24,466 [INFO][diskover] Adding disk space info to ES index
+Crawling: 100%|████████████████████| 22352/22352 [0h:00m:00s, 267.6 dir/s]
+2017-11-30 17:39:50,738 [INFO][diskover] Finished crawling
 
 ********************************* CRAWL STATS *********************************
- Directories: 10995 / Skipped: 93
- Files: 83295 (57.47 GB) / Skipped: 1275 (2.8 MB)
- Elapsed time: 0h:00m:42s
+ Directories: 22352 / Skipped: 0
+ Files: 127733 (54.88 GB) / Skipped: 1325 (0B)
+ Elapsed time: 0h:01m:26s
 *******************************************************************************
 ```
 
