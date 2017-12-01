@@ -7,27 +7,27 @@ header:
   cta_label: "<i class='fa fa-download'></i> Install Now"
   cta_url: "https://github.com/shirosaidev/diskover/releases/latest"
   caption:
-excerpt: 'diskover is a file system analytics application that includes a multi-threaded disk crawler that uses Elasticsearch to index your file metadata.<br /> <small><a href="https://github.com/shirosaidev/diskover/releases/tag/v1.4.0">Latest release v1.4.0</a></small><br /><br /> {::nomarkdown}<iframe style="display: inline-block;" src="https://ghbtns.com/github-btn.html?user=shirosaidev&repo=diskover&type=star&count=true&size=large" frameborder="0" scrolling="0" width="160px" height="30px"></iframe> <iframe style="display: inline-block;" src="https://ghbtns.com/github-btn.html?user=shirosaidev&repo=diskover&type=fork&count=true&size=large" frameborder="0" scrolling="0" width="158px" height="30px"></iframe>{:/nomarkdown}'
+excerpt: 'Analyze your file system by crawling and indexing your file metadata into Elasticsearch.<br /> <small><a href="https://github.com/shirosaidev/diskover/releases/tag/v1.4.0">Latest release v1.4.0</a></small><br /><br /> {::nomarkdown}<iframe style="display: inline-block;" src="https://ghbtns.com/github-btn.html?user=shirosaidev&repo=diskover&type=star&count=true&size=large" frameborder="0" scrolling="0" width="160px" height="30px"></iframe> <iframe style="display: inline-block;" src="https://ghbtns.com/github-btn.html?user=shirosaidev&repo=diskover&type=fork&count=true&size=large" frameborder="0" scrolling="0" width="158px" height="30px"></iframe>{:/nomarkdown}'
 feature_row:
   - image_path: https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-filetree-screenshot.png?raw=true
-    alt: "customizable"
-    title: "Super Customizable"
-    excerpt: "Everything from the menus, sidebars, comments, and more can be configured or set with YAML Front Matter."
-    url: "/docs/configuration/"
+    alt: "fast fs crawler"
+    title: "Crawl Filesystems Fast"
+    excerpt: "diskover is built to crawl your file system as fast as possible, locally or over nfs/smb."
+    url: "https://github.com/shirosaidev/diskover"
     btn_class: "btn--primary"
     btn_label: "Learn More"
   - image_path: https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-dashboard-screenshot.png?raw=true
-    alt: "fully responsive"
-    title: "Responsive Layouts"
-    excerpt: "Built on HTML5 + CSS3. All layouts are fully responsive with helpers to augment your content."
-    url: "/docs/layouts/"
+    alt: "analyze metadata"
+    title: "Open Source"
+    excerpt: "Built on Python + HTML5 + CSS3 + D3.js. diskover will crawl, search and analyze all your file metadata."
+    url: "https://github.com/shirosaidev/diskover"
     btn_class: "btn--primary"
     btn_label: "Learn More"
   - image_path: https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-treemap-screenshot.png?raw=true
-    alt: "100% free"
-    title: "100% Free"
-    excerpt: "Free to use however you want under the MIT License. Clone it, fork it, customize it, whatever!"
-    url: "/docs/license/"
+    alt: "storage analytics"
+    title: "Make Sense Of Your Data"
+    excerpt: "Identify old and unused files and give better insights into data change "hotfiles", file duplication "dupes" and wasted space."
+    url: "https://github.com/shirosaidev/diskover"
     btn_class: "btn--primary"
     btn_label: "Learn More"
 github:
