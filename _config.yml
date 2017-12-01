@@ -10,7 +10,6 @@ description              : "Elasticsearch file system crawler and storage analyt
 url                      : https://shirosaidev.github.io
 baseurl                  : "/diskover"
 repository               : "shirosaidev/diskover"
-title                    : "diskover"
 show_downloads           : true
 google_analytics         : UA-98866026-1
 
