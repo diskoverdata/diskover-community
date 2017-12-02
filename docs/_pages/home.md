@@ -4,7 +4,7 @@ permalink: /
 header:
   overlay_color: "#000"
   overlay_filter: "0.5"
-  overlay_image: https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-heatmap-screenshot.png?raw=true
+  overlay_image: /heatmap.png
   cta_label: "<i class='fa fa-download'></i> Install Now"
   cta_url: "https://github.com/shirosaidev/diskover/releases/latest"
   caption:
