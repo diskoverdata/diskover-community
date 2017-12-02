@@ -4,7 +4,7 @@ permalink: /
 header:
   overlay_color: "#000"
   overlay_filter: "0.5"
-  overlay_image: /heatmap.png
+  overlay_image: https://github.com/shirosaidev/diskover/blob/master/docs/_pages/heatmap.png?raw=true
   cta_label: "<i class='fa fa-download'></i> Install Now"
   cta_url: "https://github.com/shirosaidev/diskover/releases/latest"
   caption:
@@ -35,7 +35,7 @@ feature_row:
 github:
   - excerpt: '{::nomarkdown}<iframe style="display: inline-block;" src="https://ghbtns.com/github-btn.html?user=shirosaidev&repo=diskover&type=star&count=true&size=large" frameborder="0" scrolling="0" width="160px" height="30px"></iframe> <iframe style="display: inline-block;" src="https://ghbtns.com/github-btn.html?user=shirosaidev&repo=diskover&type=fork&count=true&size=large" frameborder="0" scrolling="0" width="158px" height="30px"></iframe>{:/nomarkdown}'
 intro:
-  - excerpt: 'Get notified when I add new stuff and support the development of diskover on Patreon &nbsp; [<i class="fa fa-google"></i> Google Group](https://groups.google.com/forum/?hl=en#!forum/diskover){: .btn .btn--primary} [<i class="fa fa-credit-card"></i> Donate](https://www.patreon.com/diskover){: .btn .btn--primary}'
+  - excerpt: 'Get notified of new releases and support the development of diskover on Patreon &nbsp; [<i class="fa fa-google"></i> Google Group](https://groups.google.com/forum/?hl=en#!forum/diskover){: .btn .btn--primary} [<i class="fa fa-credit-card"></i> Donate](https://www.patreon.com/diskover){: .btn .btn--primary}'
 ---
 
 {% include feature_row id="intro" type="center" %}
