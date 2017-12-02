@@ -8,7 +8,7 @@ header:
   cta_label: "<i class='fa fa-download'></i> Install Now"
   cta_url: "https://github.com/shirosaidev/diskover/releases/latest"
   caption:
-excerpt: '<img src="https://github.com/shirosaidev/diskover/raw/master/docs/diskover.png?raw=true" style="width: 183px; float: left; margin: 0px 10px 10px 0px;">A file system crawler and storage analytics application that uses Elasticsearch to help uderstand your data.<br /> <small><a href="https://github.com/shirosaidev/diskover/releases/tag/v1.4.0">Latest release v1.4.0</a></small><br /><br />
+excerpt: '<img src="https://github.com/shirosaidev/diskover/raw/master/docs/diskover.png?raw=true" style="width: 183px; float: left; margin: 0px 10px 10px 0px;">A file system crawler and storage analytics application that uses Elasticsearch to help uderstand your data.<br /><br /> <small><a href="https://github.com/shirosaidev/diskover/releases/tag/v1.4.0">Latest release v1.4.0</a></small><br /><br />
 {::nomarkdown}<iframe style="display: inline-block;" src="https://ghbtns.com/github-btn.html?user=shirosaidev&repo=diskover&type=star&count=true&size=large" frameborder="0" scrolling="0" width="160px" height="30px"></iframe> <iframe style="display: inline-block;" src="https://ghbtns.com/github-btn.html?user=shirosaidev&repo=diskover&type=fork&count=true&size=large" frameborder="0" scrolling="0" width="158px" height="30px"></iframe>{:/nomarkdown}'
 feature_row:
   - image_path: https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-filetree-screenshot.png?raw=true
@@ -20,14 +20,14 @@ feature_row:
     btn_label: "Learn More"
   - image_path: https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-dashboard-screenshot.png?raw=true
     alt: "analyze metadata"
-    title: "Search Storage Servers"
+    title: "Index Meta Data"
     excerpt: "Built on Python + HTML5 + CSS3 + D3.js. diskover will crawl, search and analyze all your file metadata."
     url: "https://github.com/shirosaidev/diskover"
     btn_class: "btn--primary"
     btn_label: "Learn More"
   - image_path: https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-treemap-screenshot.png?raw=true
     alt: "storage analytics"
-    title: "Understand Your Data"
+    title: "Search Storage Servers"
     excerpt: "Identify old and unused files and give better insights into data change 'hotfiles', file duplication 'dupes' and wasted space."
     url: "https://github.com/shirosaidev/diskover"
     btn_class: "btn--primary"
