@@ -14,6 +14,10 @@ diskover aims to help manage your storage by identifying old and unused files an
 
 diskover includes a built-in UDP socket server for remote commands and also has plug-in support for expanding diskover's indexing capabilities.
 
+## Donations
+
+To continue developing diskover and keep making it better, please consider supporting my work on [Patreon(https://www.patreon.com/diskover). Thank you so much to all the users and supporters.
+
 ## Screenshots
 
 [diskover-web](https://github.com/shirosaidev/diskover-web) (diskover's web file manager, analytics app, file system search engine, rest-api)
@@ -113,10 +117,6 @@ For discussions or questions about diskover, please ask on [Google Group](https:
 ## Bugs
 
 For bugs about diskover, please use the [issues page](https://github.com/shirosaidev/diskover/issues).
-
-## Donations
-
-To continue developing diskover and keep making it better, please consider supporting my work on Patreon. [Patreon](https://www.patreon.com/diskover).
 
 ## License
 
