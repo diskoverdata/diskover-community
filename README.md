@@ -16,7 +16,7 @@ diskover includes a built-in UDP socket server for remote commands and also has 
 
 ## Donations
 
-To continue developing diskover and keep making it better, please consider supporting my work on [Patreon(https://www.patreon.com/diskover). Thank you so much to all the users and supporters.
+To continue developing diskover and keep making it better, please consider supporting my work on [Patreon](https://www.patreon.com/diskover). Thank you so much to all the users and supporters.
 
 ## Screenshots
 
