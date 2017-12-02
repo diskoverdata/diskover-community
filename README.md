@@ -114,6 +114,10 @@ For discussions or questions about diskover, please ask on [Google Group](https:
 
 For bugs about diskover, please use the [issues page](https://github.com/shirosaidev/diskover/issues).
 
+## Donations
+
+To continue developing diskover and keep making it better, please consider supporting my work on Patreon. [Patreon](https://www.patreon.com/diskover).
+
 ## License
 
 See the [license file](https://github.com/shirosaidev/diskover/blob/master/LICENSE).
