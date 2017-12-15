@@ -2,6 +2,11 @@
 # diskover parallel multi-processing crawl script
 # runs diskover.py in parallel for each directory in rootdir
 # https://github.com/shirosaidev/diskover
+#
+# Copyright (C) Chris Park 2017
+# diskover is released under the Apache 2.0 license. See
+# LICENSE for the full license text.
+#
 
 # paths
 PYTHON=python # path to python executable or python if in PATH
@@ -81,7 +86,7 @@ function startcrawl {
 		do
 			echo maxprocs running, sleeping...
 			sleep 3
-		done	
+		done
 		sudo -b $PYTHON $DISKOVER -d "$dir" $DISKOVER_OPTS -q -n
 		x=$[$x+1]
 		echo started process $x
