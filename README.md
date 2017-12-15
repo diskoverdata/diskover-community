@@ -6,7 +6,7 @@
 
 <img align="left" width="249" height="189" src="docs/diskover.png?raw=true" hspace="5" vspace="5">
 
-diskover is a file system analytics application that includes a multi-threaded disk crawler that uses [Elasticsearch](https://www.elastic.co) to index your file metadata. diskover crawls and indexes your files on a local computer or remote server using NFS or SMB.
+diskover is an open-source file system analytics application that includes a multi-threaded disk crawler that uses [Elasticsearch](https://www.elastic.co) to index your file metadata. diskover crawls and indexes your files on a local computer or remote server using NFS or SMB.
 
 File metadata is bulk added and streamed into Elasticsearch, allowing you to search and visualize your files in [diskover-web](https://github.com/shirosaidev/diskover-web) or [Kibana](https://www.elastic.co/products/kibana) without having to wait until the crawl is finished. diskover is written in Python and runs on Linux and OS X/macOS.
 
