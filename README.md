@@ -12,7 +12,7 @@ File metadata is bulk added and streamed into Elasticsearch, allowing you to sea
 
 diskover aims to help manage your storage by identifying old and unused files and give better insights into data change "hotfiles", file duplication "dupes" and wasted space. It is designed to help deal with managing large amounts of data growth and provide detailed storage analytics.
 
-diskover includes a built-in TCP socket server for remote commands, "crawl-bot" for continuos scanning and also has plug-in support for expanding diskover's indexing capabilities.
+diskover includes a built-in TCP socket server for remote commands, "crawl-bot" for continuos scanning and plug-in support for expanding diskover's indexing capabilities.
 
 ## Screenshots
 
