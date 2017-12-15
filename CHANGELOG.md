@@ -1,5 +1,33 @@
 # Diskover Change Log
 
+## [1.4.1] = 2017-12-15
+### notice
+- diskover project is now accepting donations on Patreon. Please consider supporting if you are using diskover :) https://www.patreon.com/diskover
+### added
+- faster crawl and reindexing performance
+- improved duplicate file finding functionality and performance
+- improved -b --breadthfirst crawl algorithm
+- improved progress bar output
+- escape_chars function to better escape special characters (in paths) when searching in ES
+- -S --dirsize cli option to calculate single directory size and item counts or all in existing index and update dir doc filesize, items fields
+- -B --crawlbot cli option to start up crawl bot which runs in continuous loop to check index for directories which have changed (mtime) and recrawl those directories
+- added crawlbot section and sleeptime option to config file to control how long bot sleeps before scanning next directory in list
+- socket server support for python3
+- debug output to socket server
+### changed
+- directory tree is now walked using scandir.walk before added directories to queue
+- -s --minsize cli flag is now in Bytes (previously was MB), default is >0 Bytes. You can crawl empty files now by setting -s 0
+- set maxsize for Queue to 1000 items
+- cli args -v is now for verbose and -V for version
+- socket server switched to TCP and allows up to 5 connections with threaded tasks
+- progress and progressbar will only update screen when progress has increased
+### fixed
+- crawlstat_start and crawlstat_stop doc no longer gets indexed when tagging dupes (--tagdupes)
+- --maxdepth crawling files 1 depth past maxdepth (matches find command now)
+- fatal error when outputting for Gource
+- socket server now works properly with python3
+- duplicate file finder progress output
+
 ## [1.4.0] = 2017-12-01
 ### notice
 - required by diskover-web v1.4.0
