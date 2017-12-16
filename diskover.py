@@ -2625,8 +2625,11 @@ if __name__ == "__main__":
             LOGGER.error("Rootdir path not found or not a directory, exiting")
             sys.exit(1)
         else:
-            # get absolute path and remove any trailing slash
-            path = os.path.abspath(CLIARGS['rootdir']).rstrip(os.path.sep)
+            # get absolute path
+            path = os.path.abspath(CLIARGS['rootdir'])
+            # remove any trailing slash unless root /
+            if path is not '/':
+                path = path.rstrip(os.path.sep)
     # check if file exists if only indexing single file
     elif CLIARGS['file']:
         # check if file exists
