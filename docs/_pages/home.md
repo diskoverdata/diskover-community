@@ -8,7 +8,7 @@ header:
   cta_label: "<i class='fa fa-download'></i> Install Now"
   cta_url: "https://github.com/shirosaidev/diskover/releases/latest"
   caption:
-excerpt: '<img src="https://github.com/shirosaidev/diskover/raw/master/docs/diskover.png?raw=true" style="width: 183px; float: left; margin: 0px 10px 10px 0px;">A file system crawler and storage analytics application that uses Elasticsearch to help uderstand your data.<br /> <small><a href="https://github.com/shirosaidev/diskover/releases/tag/v1.4.0">Latest release v1.4.0</a></small><br /><br />
+excerpt: '<img src="https://github.com/shirosaidev/diskover/raw/master/docs/diskover.png?raw=true" style="width: 183px; float: left; margin: 0px 10px 10px 0px;">A file system crawler and storage analytics application that uses Elasticsearch to help uderstand your data.<br /> <small><a href="https://github.com/shirosaidev/diskover/releases/tag/v1.4.1">Latest release v1.4.1</a></small><br /><br />
 {::nomarkdown}<iframe style="display: inline-block;" src="https://ghbtns.com/github-btn.html?user=shirosaidev&repo=diskover&type=star&count=true&size=large" frameborder="0" scrolling="0" width="160px" height="30px"></iframe> <iframe style="display: inline-block;" src="https://ghbtns.com/github-btn.html?user=shirosaidev&repo=diskover&type=fork&count=true&size=large" frameborder="0" scrolling="0" width="158px" height="30px"></iframe>{:/nomarkdown}'
 feature_row:
   - image_path: https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-filetree-screenshot.png?raw=true
@@ -35,7 +35,7 @@ feature_row:
 github:
   - excerpt: '{::nomarkdown}<iframe style="display: inline-block;" src="https://ghbtns.com/github-btn.html?user=shirosaidev&repo=diskover&type=star&count=true&size=large" frameborder="0" scrolling="0" width="160px" height="30px"></iframe> <iframe style="display: inline-block;" src="https://ghbtns.com/github-btn.html?user=shirosaidev&repo=diskover&type=fork&count=true&size=large" frameborder="0" scrolling="0" width="158px" height="30px"></iframe>{:/nomarkdown}'
 intro:
-  - excerpt: 'Support the development &nbsp; [<i class="fa fa-google"></i> Google Group](https://groups.google.com/forum/?hl=en#!forum/diskover){: .btn .btn--primary} [<i class="fa fa-credit-card"></i> Donate Patreon](https://www.patreon.com/diskover){: .btn .btn--primary}'
+  - excerpt: 'Support the development &nbsp; [<i class="fa fa-credit-card"></i> Donate Patreon](https://www.patreon.com/diskover){: .btn .btn--primary} [<i class="fa fa-paypal"></i> Donate PayPal](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=CLF223XAS4W72){: .btn .btn--primary} <br /> Discuss &nbsp; [<i class="fa fa-google"></i> Google Group](https://groups.google.com/forum/?hl=en#!forum/diskover){: .btn .btn--primary}'
 ---
 
 {% include feature_row id="intro" type="center" %}

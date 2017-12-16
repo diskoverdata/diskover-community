@@ -2,17 +2,18 @@
 
 [![License](https://img.shields.io/github/license/shirosaidev/diskover.svg?label=License&maxAge=86400)](./LICENSE)
 [![Release](https://img.shields.io/github/release/shirosaidev/diskover.svg?label=Release&maxAge=60)](https://github.com/shirosaidev/diskover/releases/latest)
-[![Donate](https://img.shields.io/badge/Donate%20%24-Patreon-brightgreen.svg)](https://www.patreon.com/diskover)
+[![Donate Patreon](https://img.shields.io/badge/Donate%20%24-Patreon-brightgreen.svg)](https://www.patreon.com/diskover)
+[![Donate PayPal](https://img.shields.io/badge/Donate%20%24-PayPal-brightgreen.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=CLF223XAS4W72)
 
 <img align="left" width="249" height="189" src="docs/diskover.png?raw=true" hspace="5" vspace="5">
 
-diskover is a file system analytics application that includes a multi-threaded disk crawler that uses [Elasticsearch](https://www.elastic.co) to index your file metadata. diskover crawls and indexes your files on a local computer or remote server using NFS or SMB.
+diskover is an open-source file system analytics application that includes a multi-threaded disk crawler that uses [Elasticsearch](https://www.elastic.co) to index your file metadata. diskover crawls and indexes your files on a local computer or remote server using NFS or SMB.
 
 File metadata is bulk added and streamed into Elasticsearch, allowing you to search and visualize your files in [diskover-web](https://github.com/shirosaidev/diskover-web) or [Kibana](https://www.elastic.co/products/kibana) without having to wait until the crawl is finished. diskover is written in Python and runs on Linux and OS X/macOS.
 
 diskover aims to help manage your storage by identifying old and unused files and give better insights into data change "hotfiles", file duplication "dupes" and wasted space. It is designed to help deal with managing large amounts of data growth and provide detailed storage analytics.
 
-diskover includes a built-in UDP socket server for remote commands and also has plug-in support for expanding diskover's indexing capabilities.
+diskover includes a built-in TCP socket server for remote commands, "crawl-bot" for continuos scanning and plug-in support for expanding diskover's indexing capabilities.
 
 ## Screenshots
 
@@ -116,7 +117,7 @@ For bugs about diskover, please use the [issues page](https://github.com/shirosa
 
 ## Donations
 
-To continue developing diskover and keep making it better, please consider supporting my work on [Patreon](https://www.patreon.com/diskover). Thank you so much to all the users and supporters.
+To continue developing diskover and keep making it better, please consider supporting my work on [Patreon](https://www.patreon.com/diskover) or [PayPal](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=CLF223XAS4W72). Thank you so much to all the users and supporters.
 
 ## License
 
