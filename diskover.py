@@ -487,7 +487,6 @@ def crawl_path(path, threadnum, filelist, dirlist):
     Returns if directory in 'excluded_dirs' or path is None.
     """
     global total_dirs
-    global total_dirs_skipped
 
     # add the directory and it's files to ES
     if VERBOSE:
@@ -1004,6 +1003,8 @@ def dirsize_worker(threadnum):
 
 def check_dir_excludes(path):
     """Return Boolean if path in excluded_dirs list"""
+    global total_dirs_skipped
+
     # skip any dirs in excluded dirs
     if os.path.basename(path) in CONFIG['excluded_dirs'] \
             or path in CONFIG['excluded_dirs']:
