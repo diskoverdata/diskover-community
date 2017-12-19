@@ -1014,14 +1014,15 @@ def check_dir_excludes(path):
             total_dirs_skipped += 1
         return True
     # skip any dirs which start with . and in excluded dirs
-    if os.path.basename(path).startswith('.') and u'.*' \
+    elif os.path.basename(path).startswith('.') and u'.*' \
             in CONFIG['excluded_dirs']:
         if VERBOSE:
             LOGGER.info('Skipping (.* dir) %s', path)
         with lock:
             total_dirs_skipped += 1
         return True
-    return False
+    else:
+        return False
 
 
 def start_crawl(path, crawlbot=False):
@@ -1050,8 +1051,14 @@ def start_crawl(path, crawlbot=False):
                 depth = root.count(os.path.sep) - num_sep
                 if depth not in dirs_depth:
                     dirs_depth[depth] = []
-                if not check_dir_excludes(root):
+                excluded = check_dir_excludes(root)
+                if excluded is False:
+                    if VERBOSE:
+                        LOGGER.info("Adding path to diritems: %s (depth:%s)",
+                                    root, depth)
                     dirs_depth[depth].append(root)
+                elif excluded is True:
+                    del dirs[:]
                 num_sep_this = root.count(os.path.sep)
                 if num_sep + level <= num_sep_this:
                     del dirs[:]
@@ -1059,7 +1066,7 @@ def start_crawl(path, crawlbot=False):
                     sys.stdout.write(
                         '\r\033[' + BANNER_COLOR + '\033[1mWalking: %s (dirs:%s)\033[0m'
                         % (animation[i % len(animation)], i + 1))
-                    sys.stdout.flush()
+                    # sys.stdout.flush()
                 i += 1
 
             if not CLIARGS['progress'] and not CLIARGS['quiet']:
@@ -1082,16 +1089,22 @@ def start_crawl(path, crawlbot=False):
             animation = "|/-\\"
             i = 0
             for root, dirs, files in walk(path):
-                if not check_dir_excludes(root):
+                excluded = check_dir_excludes(root)
+                if excluded is False:
+                    if VERBOSE:
+                        LOGGER.info("Adding path to diritems: %s", root)
                     diritems.append(root)
+                elif excluded is True:
+                    del dirs[:]
                 num_sep_this = root.count(os.path.sep)
                 if num_sep + level <= num_sep_this:
                     del dirs[:]
-                if not CLIARGS['progress'] and not CLIARGS['quiet']:
+                if not VERBOSE and not CLIARGS['progress'] \
+                        and not CLIARGS['quiet']:
                     sys.stdout.write(
                         '\r\033[' + BANNER_COLOR + '\033[1mWalking: %s (dirs:%s)\033[0m'
                         % (animation[i % len(animation)], i + 1))
-                    sys.stdout.flush()
+                    # sys.stdout.flush()
                 i += 1
 
             if not CLIARGS['progress'] and not CLIARGS['quiet']:
