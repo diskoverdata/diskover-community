@@ -529,9 +529,9 @@ def crawl_path(path, threadnum, filelist, dirlist):
     return filelist, dirlist
 
 
-def update_progress(threadnum, finished=False):
+def update_progress(finished=False):
     """Updates progress on screen."""
-    if threadnum > 0 or VERBOSE:
+    if CLIARGS['quiet'] or VERBOSE:
         return
     if CLIARGS['tagdupes']:
         t = total_hash_groups
@@ -550,11 +550,11 @@ def update_progress(threadnum, finished=False):
         i = t - q.qsize()
         prefix = "Crawling:"
         it_name = "dir"
-    if i > 0 and not CLIARGS['quiet'] and not CLIARGS['progress']:
-        print_progress_bar(
-            i, t, prefix, '%s/%s' % (i, t), it_name, finished)
-    elif i > 0 and CLIARGS['progress']:
-        print_progress(i, t, it_name, finished)
+    if i > 0 and i % 10 == 0 or finished:
+        if CLIARGS['progress']:
+            print_progress(i, t, it_name, finished)
+        else:
+            print_progress_bar(i, t, prefix, '%s/%s' % (i, t), it_name, finished)
 
 
 def crawl_worker(threadnum):
@@ -577,7 +577,10 @@ def crawl_worker(threadnum):
                         threadnum)
 
         # get a path from the Queue
-        path = q.get()
+        if CLIARGS['breadthfirst']:
+            pri, path = q.get()
+        else:
+            path = q.get()
 
         if path is None:
             # add filelist to ES and empty it
@@ -588,7 +591,7 @@ def crawl_worker(threadnum):
             if len(dirlist) > 0:
                 index_add_dirs(threadnum, dirlist)
                 del dirlist[:]
-            update_progress(threadnum, finished=True)
+            update_progress(finished=True)
             # stop thread's infinite loop
             q.task_done()
             break
@@ -597,7 +600,7 @@ def crawl_worker(threadnum):
             filelist, dirlist = crawl_path(path, threadnum, filelist, dirlist)
 
         # update progress bar
-        update_progress(threadnum)
+        update_progress()
 
         # task is done
         q.task_done()
@@ -909,7 +912,7 @@ def dirsize_worker(threadnum):
                          chunk_size=CONFIG['es_chunksize'],
                          request_timeout=CONFIG['es_timeout'])
             del dir_id_list[:]
-            update_progress(threadnum, finished=True)
+            update_progress(finished=True)
             # stop thread's infinite loop
             q.task_done()
             break
@@ -995,7 +998,7 @@ def dirsize_worker(threadnum):
                              request_timeout=CONFIG['es_timeout'])
                 del dir_id_list[:]
 
-            update_progress(threadnum)
+            update_progress()
 
             # task is done
             q.task_done()
@@ -1032,9 +1035,13 @@ def start_crawl(path, crawlbot=False):
     the Queue.
     """
 
+    LOGGER.info('Starting crawl using %s threads', CLIARGS['threads'])
+
     try:
         # set maxdepth level
         level = CLIARGS['maxdepth']
+        # set current depth
+        num_sep = path.count(os.path.sep)
         # check for reindex (non-recursive) or crawlbot
         if CLIARGS['reindex'] or crawlbot:
             level = 1
@@ -1043,82 +1050,40 @@ def start_crawl(path, crawlbot=False):
             LOGGER.info(
                 'Walking tree (breadth-first, maxdepth:%s)'
                 % level)
-            dirs_depth = {}
-            num_sep = path.count(os.path.sep)
-            animation = "|/-\\"
-            i = 0
             for root, dirs, files in walk(path):
-                depth = root.count(os.path.sep) - num_sep
-                if depth not in dirs_depth:
-                    dirs_depth[depth] = []
+                depth = root.count(os.path.sep) - num_sep  # priority
                 excluded = check_dir_excludes(root)
                 if excluded is False:
                     if VERBOSE:
-                        LOGGER.info("Adding path to diritems: %s (depth:%s)",
+                        LOGGER.info("Adding path to queue: %s (depth:%s)",
                                     root, depth)
-                    dirs_depth[depth].append(root)
+                    q.put((depth, root))
                 elif excluded is True:
                     del dirs[:]
                 num_sep_this = root.count(os.path.sep)
                 if num_sep + level <= num_sep_this:
                     del dirs[:]
-                if not CLIARGS['progress'] and not CLIARGS['quiet']:
-                    sys.stdout.write(
-                        '\r\033[' + BANNER_COLOR + '\033[1mWalking: %s (dirs:%s)\033[0m'
-                        % (animation[i % len(animation)], i + 1))
-                    # sys.stdout.flush()
-                i += 1
-
-            if not CLIARGS['progress'] and not CLIARGS['quiet']:
-                sys.stdout.write("\n")
-            LOGGER.info('Starting crawl using %s threads' % CLIARGS['threads'])
-            for key, value in dirs_depth.items():
-                for d in value:
-                    if VERBOSE:
-                        LOGGER.info('Adding path to queue: %s (depth:%s)'
-                                    % (d, key))
-                    # add directory to queue
-                    q.put(d)
 
         else:  # depth-first (default)
-            diritems = []
-            LOGGER.info(
-                'Walking tree (depth-first, maxdepth:%s)'
-                % level)
-            num_sep = path.count(os.path.sep)
-            animation = "|/-\\"
-            i = 0
             for root, dirs, files in walk(path):
                 excluded = check_dir_excludes(root)
                 if excluded is False:
                     if VERBOSE:
-                        LOGGER.info("Adding path to diritems: %s", root)
-                    diritems.append(root)
+                        LOGGER.info('Adding path to queue: %s', root)
+                    # add directory to queue
+                    q.put(root)
                 elif excluded is True:
                     del dirs[:]
                 num_sep_this = root.count(os.path.sep)
                 if num_sep + level <= num_sep_this:
                     del dirs[:]
-                if not VERBOSE and not CLIARGS['progress'] \
-                        and not CLIARGS['quiet']:
-                    sys.stdout.write(
-                        '\r\033[' + BANNER_COLOR + '\033[1mWalking: %s (dirs:%s)\033[0m'
-                        % (animation[i % len(animation)], i + 1))
-                    # sys.stdout.flush()
-                i += 1
-
-            if not CLIARGS['progress'] and not CLIARGS['quiet']:
-                sys.stdout.write("\n")
-            LOGGER.info('Starting crawl using %s threads', CLIARGS['threads'])
-            for d in diritems:
-                if VERBOSE:
-                    LOGGER.info('Adding path to queue: %s', d)
-                # add directory to queue
-                q.put(d)
 
         # put None into the queue to trigger final ES bulk operations
         for i in range(int(CLIARGS['threads'])):
-            q.put(None)
+            if CLIARGS['breadthfirst']:
+                q.put((9999, None))
+            else:
+                q.put(None)
         # block until all tasks are done
         q.join()
 
@@ -1128,7 +1093,10 @@ def start_crawl(path, crawlbot=False):
         print("Attempting to close worker threads")
         # stop workers
         for i in range(int(CLIARGS['threads'])):
-            q.put(None)
+            if CLIARGS['breadthfirst']:
+                q.put((9999, None))
+            else:
+                q.put(None)
         print("\nThreads successfully closed, sayonara!")
         sys.exit(0)
 
@@ -1273,7 +1241,7 @@ def dupes_worker(threadnum):
                 # update existing index and tag dupe files is_dupe field
                 index_tag_dupe(threadnum, dupelist)
                 del dupelist[:]
-            update_progress(threadnum, finished=True)
+            update_progress(finished=True)
             # end thread's infinite loop
             q.task_done()
             break
@@ -1283,7 +1251,7 @@ def dupes_worker(threadnum):
             # process the duplicate files in hashgroup and return dupelist
             dupelist = tag_dupes(threadnum, hashgroup, dupelist)
 
-        update_progress(threadnum)
+        update_progress()
 
         # task is done
         q.task_done()
@@ -2669,7 +2637,10 @@ if __name__ == "__main__":
         sys.exit(0)
 
     # Set up Queue and lock for worker threads
-    q = Queue.Queue(maxsize=1000)
+    if CLIARGS['breadthfirst']:
+        q = Queue.PriorityQueue(maxsize=1000)
+    else:
+        q = Queue.Queue(maxsize=1000)
     lock = threading.RLock()
 
     # tag duplicate files if cli argument
