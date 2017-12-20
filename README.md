@@ -76,28 +76,31 @@ $ sudo python /path/to/diskover.py
 A successfull crawl should look like this:
 
 ```
-  __               __
- /\ \  __         /\ \
- \_\ \/\_\    ____\ \ \/'\     ___   __  __     __   _ __     //
- /'_` \/\ \  /',__\\ \ , <    / __`\/\ \/\ \  /'__`\/\`'__\  ('>
-/\ \L\ \ \ \/\__, `\\ \ \\`\ /\ \L\ \ \ \_/ |/\  __/\ \ \/   /rr
-\ \___,_\ \_\/\____/ \ \_\ \_\ \____/\ \___/ \ \____\\ \_\  *\))_
- \/__,_ /\/_/\/___/   \/_/\/_/\/___/  \/__/   \/____/ \/_/ v1.4.0
-                  https://github.com/shirosaidev/diskover
+   ___       ___       ___       ___       ___       ___       ___       ___
+  /\  \     /\  \     /\  \     /\__\     /\  \     /\__\     /\  \     /\  \
+ /::\  \   _\:\  \   /::\  \   /:/ _/_   /::\  \   /:/ _/_   /::\  \   /::\  \
+/:/\:\__\ /\/::\__\ /\:\:\__\ /::-"\__\ /:/\:\__\ |::L/\__\ /::\:\__\ /::\:\__\
+\:\/:/  / \::/\/__/ \:\:\/__/ \;:;-",-" \:\/:/  / |::::/  / \:\:\/  / \;:::/  /
+ \::/  /   \:\__\    \::/  /   |:|  |    \::/  /   L;;/__/   \:\/  /   |:\/__/
+  \/__/     \/__/     \/__/     \|__|     \/__/    v1.4.1     \/__/     \|__|
+                                      https://shirosaidev.github.io/diskover
+                                      Bringing light to the darkness.
+                                      Support diskover on Patreon :)
 
-2017-11-30 17:38:24,203 [INFO][diskover] Connecting to Elasticsearch
-2017-11-30 17:38:24,207 [INFO][diskover] Checking ES index: diskover-2017.11.30
-2017-11-30 17:38:24,209 [WARNING][diskover] ES index exists, deleting
-2017-11-30 17:38:24,353 [INFO][diskover] Creating ES index
-2017-11-30 17:38:24,466 [INFO][diskover] Crawling using 8 threads
-2017-11-30 17:38:24,466 [INFO][diskover] Adding disk space info to ES index
-Crawling: 100%|████████████████████| 22352/22352 [0h:00m:00s, 267.6 dir/s]
-2017-11-30 17:39:50,738 [INFO][diskover] Finished crawling
+    
+2017-12-20 15:08:41,664 [INFO][diskover] Connecting to Elasticsearch
+2017-12-20 15:08:41,676 [INFO][diskover] Checking ES index: diskover-index
+2017-12-20 15:08:41,680 [WARNING][diskover] ES index exists, deleting
+2017-12-20 15:08:41,968 [INFO][diskover] Creating ES index
+2017-12-20 15:08:42,192 [INFO][diskover] Adding disk space info to ES index
+2017-12-20 15:08:42,197 [INFO][diskover] Starting crawl using 20 threads
+Crawling: 100%|████████████████████| 10147/10147 [0h:00m:00s, 322.7 dir/s]
+2017-12-20 15:09:13,107 [INFO][diskover] Finished crawling
 
 ********************************* CRAWL STATS *********************************
- Directories: 22352 / Skipped: 0
- Files: 127733 (54.88 GB) / Skipped: 1325 (0B)
- Elapsed time: 0h:01m:26s
+ Directories: 10147 / Skipped: 92
+ Files: 64267 (54.01 GB) / Skipped: 1211 (46.21 GB)
+ Elapsed time: 0h:00m:31s
 *******************************************************************************
 ```
 
