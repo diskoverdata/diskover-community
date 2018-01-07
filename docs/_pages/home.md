@@ -38,6 +38,8 @@ intro:
   - excerpt: 'Support the development &nbsp; [<i class="fa fa-credit-card"></i> Donate Patreon](https://www.patreon.com/diskover){: .btn .btn--primary} [<i class="fa fa-paypal"></i> Donate PayPal](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=CLF223XAS4W72){: .btn .btn--primary} <br /> Discuss &nbsp; [<i class="fa fa-google"></i> Google Group](https://groups.google.com/forum/?hl=en#!forum/diskover){: .btn .btn--primary}'
 ---
 
+{% include google_analytics.html %}
+
 {% include feature_row id="intro" type="center" %}
 
 {% include feature_row %}
