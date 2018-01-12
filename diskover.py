@@ -629,20 +629,21 @@ def get_dir_meta(threadnum, path, dirlist):
     """
 
     try:
+        lstat_path = os.lstat(path)
         # add directory meta data to dirlist list
-        mtime_unix = os.lstat(path).st_mtime
+        mtime_unix = lstat_path.st_mtime
         mtime_utc = datetime.utcfromtimestamp(mtime_unix)\
             .strftime('%Y-%m-%dT%H:%M:%S')
-        atime_unix = os.lstat(path).st_atime
+        atime_unix = lstat_path.st_atime
         atime_utc = datetime.utcfromtimestamp(atime_unix)\
             .strftime('%Y-%m-%dT%H:%M:%S')
-        ctime_unix = os.lstat(path).st_ctime
+        ctime_unix = lstat_path.st_ctime
         ctime_utc = datetime.utcfromtimestamp(ctime_unix)\
             .strftime('%Y-%m-%dT%H:%M:%S')
         # get time now in utc
         indextime_utc = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
         # get user id of owner
-        uid = os.lstat(path).st_uid
+        uid = lstat_path.st_uid
         # try to get owner user name
         try:
             owner = pwd.getpwuid(uid).pw_name.split('\\')
@@ -655,7 +656,7 @@ def get_dir_meta(threadnum, path, dirlist):
         except KeyError:
             owner = uid
         # get group id
-        gid = os.lstat(path).st_gid
+        gid = lstat_path.st_gid
         # try to get group name
         try:
             group = grp.getgrgid(gid).gr_name.split('\\')
@@ -712,8 +713,9 @@ def get_file_meta(threadnum, entry, filelist, singlefile=False):
     global total_file_size_skipped
 
     try:
+        entry_stat = entry.stat()
         # get file size (bytes)
-        size = entry.stat().st_size
+        size = entry_stat.st_size
 
         # add to totals
         if not singlefile:
@@ -763,7 +765,7 @@ def get_file_meta(threadnum, entry, filelist, singlefile=False):
             return filelist
 
         # check file modified time
-        mtime_unix = entry.stat().st_mtime
+        mtime_unix = entry_stat.st_mtime
         mtime_utc = \
             datetime.utcfromtimestamp(mtime_unix).strftime('%Y-%m-%dT%H:%M:%S')
         # Convert time in days to seconds
@@ -781,15 +783,15 @@ def get_file_meta(threadnum, entry, filelist, singlefile=False):
             return filelist
 
         # get access time
-        atime_unix = entry.stat().st_atime
+        atime_unix = entry_stat.st_atime
         atime_utc = \
             datetime.utcfromtimestamp(atime_unix).strftime('%Y-%m-%dT%H:%M:%S')
         # get change time
-        ctime_unix = entry.stat().st_ctime
+        ctime_unix = entry_stat.st_ctime
         ctime_utc = \
             datetime.utcfromtimestamp(ctime_unix).strftime('%Y-%m-%dT%H:%M:%S')
         # get user id of owner
-        uid = entry.stat().st_uid
+        uid = entry_stat.st_uid
         # try to get owner user name
         try:
             owner = pwd.getpwuid(uid).pw_name.split('\\')
@@ -802,7 +804,7 @@ def get_file_meta(threadnum, entry, filelist, singlefile=False):
         except KeyError:
             owner = uid
         # get group id
-        gid = entry.stat().st_gid
+        gid = entry_stat.st_gid
         # try to get group name
         try:
             group = grp.getgrgid(gid).gr_name.split('\\')
@@ -817,7 +819,7 @@ def get_file_meta(threadnum, entry, filelist, singlefile=False):
         # get inode number
         inode = entry.inode()
         # get number of hardlinks
-        hardlinks = entry.stat().st_nlink
+        hardlinks = entry_stat.st_nlink
         # create md5 hash of file using metadata filesize and mtime
         filestring = str(size) + str(mtime_unix)
         filehash = hashlib.md5(filestring.encode('utf-8')).hexdigest()
