@@ -1,5 +1,10 @@
 # Diskover Change Log
 
+## [1.4.2] = 2018-01-17
+### changed
+- improvements to reduce function calls in get_file_meta and get_dir_meta (rapphil)
+- improved performance by reducing plugin loading (rapphil)
+
 ## [1.4.1] = 2017-12-15
 ### notice
 - diskover project is now accepting donations on Patreon. Please consider supporting if you are using diskover :) https://www.patreon.com/diskover
