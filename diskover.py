@@ -48,7 +48,7 @@ import uuid
 IS_PY3 = sys.version_info >= (3, 0)
 
 # version
-DISKOVER_VERSION = '1.4.1'
+DISKOVER_VERSION = '1.4.2'
 __version__ = DISKOVER_VERSION
 BANNER_COLOR = '35m'
 # totals for crawl stats output
