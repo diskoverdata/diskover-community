@@ -69,20 +69,20 @@ clientlist = []
 last_percents = 0
 # get seconds since epoch used for elapsed time
 STARTTIME = time.time()
-# boolean for plugins
-loadplugins = False
 
 # plugins
 plugin_dir = os.path.dirname(os.path.realpath(__file__)) + "/plugins"
 main_module = "__init__"
+# Stores all the dynamically loaded plugins
+plugins = []
 
 
-def get_plugins():
-    """This is the get plugin function.
-    It gets a list of python plugins (modules) in
-    the plugins directory and returns the plugins.
+def get_plugins_info():
+    """This is the get plugins info function.
+    It gets a list of python plugins info (modules) in
+    the plugins directory and returns the plugins information.
     """
-    plugins = []
+    plugins_info = []
     possible_plugins = os.listdir(plugin_dir)
     for i in possible_plugins:
         location = os.path.join(plugin_dir, i)
@@ -90,15 +90,30 @@ def get_plugins():
                 in os.listdir(location):
                 continue
         info = imp.find_module(main_module, [location])
-        plugins.append({"name": i, "info": info})
-    return plugins
+        plugins_info.append({"name": i, "info": info})
+    return plugins_info
 
 
-def load_plugin(plugin):
-    """This is the load plugin function.
-    It returns the python plugin (module).
+def load_plugins():
+    """This is the load plugins function.
+    It dynamically load the plugins and return them in a list
     """
-    return imp.load_module(main_module, *plugin["info"])
+    loaded_plugins = []
+    plugins_info = get_plugins_info()
+    for plugin_info in plugins_info:
+        plugin_module = imp.load_module(main_module, *plugin_info["info"])
+        loaded_plugins.append(plugin_module)
+    return loaded_plugins
+
+
+def list_plugins():
+    """This is the list plugins function.
+    It prints the name of all the available plugins
+    """
+    plugins_info = get_plugins_info()
+
+    for plugin_info in plugins_info:
+        print(plugin_info["name"])
 
 
 def add_diskspace(path):
@@ -614,20 +629,21 @@ def get_dir_meta(threadnum, path, dirlist):
     """
 
     try:
+        lstat_path = os.lstat(path)
         # add directory meta data to dirlist list
-        mtime_unix = os.lstat(path).st_mtime
+        mtime_unix = lstat_path.st_mtime
         mtime_utc = datetime.utcfromtimestamp(mtime_unix)\
             .strftime('%Y-%m-%dT%H:%M:%S')
-        atime_unix = os.lstat(path).st_atime
+        atime_unix = lstat_path.st_atime
         atime_utc = datetime.utcfromtimestamp(atime_unix)\
             .strftime('%Y-%m-%dT%H:%M:%S')
-        ctime_unix = os.lstat(path).st_ctime
+        ctime_unix = lstat_path.st_ctime
         ctime_utc = datetime.utcfromtimestamp(ctime_unix)\
             .strftime('%Y-%m-%dT%H:%M:%S')
         # get time now in utc
         indextime_utc = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
         # get user id of owner
-        uid = os.lstat(path).st_uid
+        uid = lstat_path.st_uid
         # try to get owner user name
         try:
             owner = pwd.getpwuid(uid).pw_name.split('\\')
@@ -640,7 +656,7 @@ def get_dir_meta(threadnum, path, dirlist):
         except KeyError:
             owner = uid
         # get group id
-        gid = os.lstat(path).st_gid
+        gid = lstat_path.st_gid
         # try to get group name
         try:
             group = grp.getgrgid(gid).gr_name.split('\\')
@@ -697,8 +713,9 @@ def get_file_meta(threadnum, entry, filelist, singlefile=False):
     global total_file_size_skipped
 
     try:
+        entry_stat = entry.stat()
         # get file size (bytes)
-        size = entry.stat().st_size
+        size = entry_stat.st_size
 
         # add to totals
         if not singlefile:
@@ -748,7 +765,7 @@ def get_file_meta(threadnum, entry, filelist, singlefile=False):
             return filelist
 
         # check file modified time
-        mtime_unix = entry.stat().st_mtime
+        mtime_unix = entry_stat.st_mtime
         mtime_utc = \
             datetime.utcfromtimestamp(mtime_unix).strftime('%Y-%m-%dT%H:%M:%S')
         # Convert time in days to seconds
@@ -766,15 +783,15 @@ def get_file_meta(threadnum, entry, filelist, singlefile=False):
             return filelist
 
         # get access time
-        atime_unix = entry.stat().st_atime
+        atime_unix = entry_stat.st_atime
         atime_utc = \
             datetime.utcfromtimestamp(atime_unix).strftime('%Y-%m-%dT%H:%M:%S')
         # get change time
-        ctime_unix = entry.stat().st_ctime
+        ctime_unix = entry_stat.st_ctime
         ctime_utc = \
             datetime.utcfromtimestamp(ctime_unix).strftime('%Y-%m-%dT%H:%M:%S')
         # get user id of owner
-        uid = entry.stat().st_uid
+        uid = entry_stat.st_uid
         # try to get owner user name
         try:
             owner = pwd.getpwuid(uid).pw_name.split('\\')
@@ -787,7 +804,7 @@ def get_file_meta(threadnum, entry, filelist, singlefile=False):
         except KeyError:
             owner = uid
         # get group id
-        gid = entry.stat().st_gid
+        gid = entry_stat.st_gid
         # try to get group name
         try:
             group = grp.getgrgid(gid).gr_name.split('\\')
@@ -802,7 +819,7 @@ def get_file_meta(threadnum, entry, filelist, singlefile=False):
         # get inode number
         inode = entry.inode()
         # get number of hardlinks
-        hardlinks = entry.stat().st_nlink
+        hardlinks = entry_stat.st_nlink
         # create md5 hash of file using metadata filesize and mtime
         filestring = str(size) + str(mtime_unix)
         filehash = hashlib.md5(filestring.encode('utf-8')).hexdigest()
@@ -833,10 +850,8 @@ def get_file_meta(threadnum, entry, filelist, singlefile=False):
         }
 
         # check plugins for adding extra meta data to filemeta_dict
-        if loadplugins:
-            for i in get_plugins():
-                plugin = load_plugin(i)
-                filemeta_dict.update(plugin.add_meta(entry.path))
+        for plugin in plugins:
+            filemeta_dict.update(plugin.add_meta(entry.path))
 
         # add file metadata dictionary to filelist list
         filelist.append(filemeta_dict)
@@ -1488,10 +1503,8 @@ def index_create():
     }
 
     # check plugins for additional mappings
-    if loadplugins:
-        for i in get_plugins():
-            plugin = load_plugin(i)
-            mappings = (plugin.add_mappings(mappings))
+    for plugin in plugins:
+        mappings = (plugin.add_mappings(mappings))
 
     LOGGER.info('Creating ES index')
     ES.indices.create(index=CLIARGS['index'], body=mappings)
@@ -2543,18 +2556,13 @@ if __name__ == "__main__":
     # parse cli arguments into CLIARGS dictionary
     CLIARGS = vars(parse_cli_args(CONFIG['index']))
 
-    # check if there are any plugins
-    i = 0
-    for i in get_plugins():
-        i += 1
-    if i > 0:
-        loadplugins = True
+    # load any available plugins
+    plugins = load_plugins()
 
     # list plugins
     if CLIARGS['listplugins']:
         print("diskover plugins:")
-        for i in get_plugins():
-            print(i["name"])
+        list_plugins()
         sys.exit(0)
 
     # check index name
@@ -2583,11 +2591,11 @@ if __name__ == "__main__":
         sys.exit(0)
 
     # print plugins
-    plugins = ""
-    for i in get_plugins():
-        plugins = plugins + i["name"] + " "
+    plugins_list = ""
+    for i in get_plugins_info():
+        plugins_list = plugins_list + i["name"] + " "
     if plugins:
-        LOGGER.info("Plugins loaded: %s", plugins)
+        LOGGER.info("Plugins loaded: %s", plugins_list)
 
     # connect to Elasticsearch
     ES = elasticsearch_connect()
