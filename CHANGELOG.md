@@ -1,5 +1,12 @@
 # Diskover Change Log
 
+## [1.4.3] = 2018-02-06
+### notice
+- diskover project is now accepting donations on PayPal. Please consider supporting if you are using diskover :) https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=CLF223XAS4W72
+### fixed
+- bug in calculating directory sizes with similar path names
+- bug in finding directories with similar path names when collecting directories for reindex
+
 ## [1.4.2] = 2018-01-17
 ### changed
 - improvements to reduce function calls in get_file_meta and get_dir_meta (rapphil)

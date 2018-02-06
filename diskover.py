@@ -48,7 +48,7 @@ import uuid
 IS_PY3 = sys.version_info >= (3, 0)
 
 # version
-DISKOVER_VERSION = '1.4.2'
+DISKOVER_VERSION = '1.4.3'
 __version__ = DISKOVER_VERSION
 BANNER_COLOR = '35m'
 # totals for crawl stats output
@@ -206,7 +206,7 @@ def print_banner():
               \/        \/     \/   v%s      \/
                           https://shirosaidev.github.io/diskover
                           Crawling all your stuff.
-                          Support diskover on Patreon :)\033[0m
+                          Support diskover on Patreon or PayPal :)\033[0m
 
     """ % (BANNER_COLOR, DISKOVER_VERSION)
         elif b == 2:
@@ -221,7 +221,7 @@ def print_banner():
   \/__/     \/__/     \/__/     \|__|     \/__/    v%s     \/__/     \|__|
                                       https://shirosaidev.github.io/diskover
                                       Bringing light to the darkness.
-                                      Support diskover on Patreon :)\033[0m
+                                      Support diskover on Patreon or PayPal :)\033[0m
 
     """ % (BANNER_COLOR, DISKOVER_VERSION)
         elif b == 3:
@@ -234,7 +234,7 @@ def print_banner():
  _/_/_/    _/  _/_/_/    _/    _/    _/_/        _/ v%s _/_/_/  _/
                               https://shirosaidev.github.io/diskover
                               "I didn't even know that was there."
-                              Support diskover on Patreon :)\033[0m
+                              Support diskover on Patreon or PayPal :)\033[0m
 
     """ % (BANNER_COLOR, DISKOVER_VERSION)
         elif b == 4:
@@ -249,7 +249,7 @@ def print_banner():
      \/__,_ /\/_/\/___/   \/_/\/_/\/___/  \/__/   \/____/ \\/_/ v%s
                       https://shirosaidev.github.io/diskover
                       "Holy s*i# there are so many temp files."
-                      Support diskover on Patreon :)\033[0m
+                      Support diskover on Patreon or PayPal :)\033[0m
 
     """ % (BANNER_COLOR, DISKOVER_VERSION)
     sys.stdout.write(banner)
@@ -967,7 +967,8 @@ def dirsize_worker(threadnum):
                 "size": 0,
                 "query": {
                     "query_string": {
-                        "query": "path_parent: " + newpath + "*",
+                        "query": "path_parent: " + newpath + " \
+                        OR path_parent: " + newpath + "\/*",
                         "analyze_wildcard": "true"
                     }
                 },
@@ -1590,7 +1591,8 @@ def index_delete_path(path, recursive=False, crawlbot=False):
         data = {
             "query": {
                 "query_string": {
-                    "query": "path_parent: " + newpath + "*",
+                    "query": "path_parent: " + newpath + " \
+                    OR path_parent: " + newpath + "\/*",
                     "analyze_wildcard": "true"
                 }
             }
@@ -1650,9 +1652,10 @@ def index_delete_path(path, recursive=False, crawlbot=False):
         data = {
             'query': {
                 'query_string': {
-                    'query': '(path_parent: ' + newpath + '*) OR (filename: "'
-                    + os.path.basename(path) +'" AND path_parent: "'
-                    + os.path.abspath(os.path.join(path, os.pardir)) +'")',
+                    'query': '(path_parent: ' + newpath + ' OR \
+                    path_parent: ' + newpath + '\/*) OR (filename: "'
+                    + os.path.basename(path) + '" AND path_parent: "'
+                    + os.path.abspath(os.path.join(path, os.pardir)) + '")',
                     'analyze_wildcard': 'true'
                 }
             }
@@ -1662,8 +1665,8 @@ def index_delete_path(path, recursive=False, crawlbot=False):
             'query': {
                 'query_string': {
                     'query': '(path_parent: "' + path + '") OR (filename: "'
-                    + os.path.basename(path) +'" AND path_parent: "'
-                    + os.path.abspath(os.path.join(path, os.pardir)) +'")'
+                    + os.path.basename(path) + '" AND path_parent: "'
+                    + os.path.abspath(os.path.join(path, os.pardir)) + '")'
                 }
             }
         }
