@@ -1,5 +1,16 @@
 # Diskover Change Log
 
+## [1.4.4] = 2018-02-07
+### added
+- -C --copytags cli flag to copy tags from source index (index2) to destination index (overwrites any existing tags in index)
+- plugins will now work with adding additional meta fields and mappings for directories
+- worker_setup_copytags function for setting up worker threads for copying tags
+- worker_setup_copytags and copytag_worker functions for setting up worker threads and copying tags
+### changed
+- reindexing, single file indexing and crawlbot (continuous scanning) now preserves any existing tags in index
+- added check for plugins to see if for file or directory
+- renamed index_get_dirs to index_get_docs and added ability to get file or directory docs and also return doc id as well as fullpath and mtime
+
 ## [1.4.3] = 2018-02-06
 ### notice
 - diskover project is now accepting donations on PayPal. Please consider supporting if you are using diskover :) https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=CLF223XAS4W72

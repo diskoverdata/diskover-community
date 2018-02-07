@@ -48,7 +48,7 @@ import uuid
 IS_PY3 = sys.version_info >= (3, 0)
 
 # version
-DISKOVER_VERSION = '1.4.3'
+DISKOVER_VERSION = '1.4.4'
 __version__ = DISKOVER_VERSION
 BANNER_COLOR = '35m'
 # totals for crawl stats output
@@ -69,6 +69,9 @@ clientlist = []
 last_percents = 0
 # get seconds since epoch used for elapsed time
 STARTTIME = time.time()
+# lists to hold file and dir info for reindexing (for preserving tags)
+reindex_file_list = []
+reindex_dir_list = []
 
 # plugins
 plugin_dir = os.path.dirname(os.path.realpath(__file__)) + "/plugins"
@@ -468,6 +471,8 @@ def parse_cli_args(indexname):
                         help="Tag duplicate files in existing index")
     parser.add_argument("-S", "--dirsize", metavar='DIR', nargs="?", const="all",
                         help="Calculate size (du) of dir or all in existing index")
+    parser.add_argument("-C", "--copytags", metavar='INDEX2', nargs=1,
+                        help="Copy tags from index2 to index")
     parser.add_argument("-B", "--crawlbot", action="store_true",
                         help="Starts up crawl bot to scan for dir changes in index")
     parser.add_argument("-l", "--listen", action="store_true",
@@ -559,6 +564,12 @@ def update_progress(finished=False):
         i = t - q.qsize()
         prefix = "Calculating:"
         it_name = "dir"
+    elif CLIARGS['copytags']:
+        with lock:
+            t = total_dirs + total_files
+        i = t - q.qsize()
+        prefix = "Copying:"
+        it_name = "doc"
     else:
         with lock:
             t = total_dirs
@@ -627,6 +638,7 @@ def get_dir_meta(threadnum, path, dirlist):
     Once dirlist reaches max chunk_size or Queue is empty,
     it is bulk added to Elasticsearch and emptied.
     """
+    global reindex_dir_list
 
     try:
         lstat_path = os.lstat(path)
@@ -669,9 +681,13 @@ def get_dir_meta(threadnum, path, dirlist):
         except KeyError:
             group = gid
 
-        dirinfo_dict = {
-            "filename": os.path.basename(path),
-            "path_parent": os.path.abspath(os.path.join(path, os.pardir)),
+        filename = os.path.basename(path)
+        parentdir = os.path.abspath(os.path.join(path, os.pardir))
+        fullpath = parentdir + '/' + filename
+
+        dirmeta_dict = {
+            "filename": filename,
+            "path_parent": parentdir,
             "filesize": 0,
             "items": 0,
             "last_modified": mtime_utc,
@@ -684,7 +700,22 @@ def get_dir_meta(threadnum, path, dirlist):
             "indexing_date": indextime_utc
         }
         # add dirinfo to dirlist
-        dirlist.append(dirinfo_dict)
+        dirlist.append(dirmeta_dict)
+
+        # search for and copy over any existing tags
+        search_path = fullpath
+        for sublist in reindex_dir_list:
+            if sublist[0] == search_path:
+                dirmeta_dict['tag'] = sublist[1]
+                dirmeta_dict['tag_custom'] = sublist[2]
+                break
+
+        # check plugins for adding extra meta data to dirmeta_dict
+        for plugin in plugins:
+            # check if plugin is for directory doc
+            mappings = plugin.add_mappings({})
+            if 'directory' in mappings:
+                dirmeta_dict.update(plugin.add_meta(fullpath))
 
         # when dirlist reaches max chunk size, bulk add to ES and empty it
         if len(dirlist) >= CONFIG['es_chunksize']:
@@ -711,6 +742,7 @@ def get_file_meta(threadnum, entry, filelist, singlefile=False):
     global total_file_size
     global total_files_skipped
     global total_file_size_skipped
+    global reindex_file_list
 
     try:
         entry_stat = entry.stat()
@@ -849,21 +881,35 @@ def get_file_meta(threadnum, entry, filelist, singlefile=False):
             "indexing_thread": threadnum
         }
 
+        # check if we are just indexing one file
+        if singlefile:
+            # check if file exists already in index
+            LOGGER.info('Removing any existing same file from index')
+            index_delete_file(filemeta_dict)
+
+        # search for and copy over any existing tags
+        search_path = parentdir + '/' + entry.name
+        for sublist in reindex_file_list:
+            if sublist[0] == search_path:
+                filemeta_dict['tag'] = sublist[1]
+                filemeta_dict['tag_custom'] = sublist[2]
+                break
+
         # check plugins for adding extra meta data to filemeta_dict
         for plugin in plugins:
-            filemeta_dict.update(plugin.add_meta(entry.path))
+            # check if plugin is for file doc
+            mappings = plugin.add_mappings({})
+            if 'file' in mappings:
+                filemeta_dict.update(plugin.add_meta(entry.path))
 
         # add file metadata dictionary to filelist list
         filelist.append(filemeta_dict)
 
         # check if we are just indexing one file
-        if CLIARGS['file']:
-            # check if file exists already in index
-            LOGGER.info('Removing any existing same file from index')
-            index_delete_file(filemeta_dict)
+        if singlefile:
             LOGGER.info('Adding file to index: %s' % CLIARGS['index'])
             index_add_files(threadnum, filelist)
-            LOGGER.info('File added to Elasticsearch')
+            LOGGER.info('File added to Elasticsearch, any tags have been copied')
             return
         else:
             # when filelist reaches max chunk size, bulk add to ES and empty it
@@ -916,7 +962,7 @@ def dirsize_worker(threadnum):
         if VERBOSE:
             LOGGER.info('[thread-%s]: Looking for the next directory',
                         threadnum)
-        path = q.get()
+        path = q.get()  # [docid, fullpath, mtime, doctype]
 
         if path is None:
             # wait for ES health to be at least yellow
@@ -933,35 +979,11 @@ def dirsize_worker(threadnum):
             break
         else:
             if VERBOSE:
-                LOGGER.info('[thread-%s]: Calculating size: %s', threadnum, path[0])
-
-            # directory doc search to get doc id
-            # filename
-            f = os.path.basename(path[0])
-            # parent path
-            p = os.path.abspath(os.path.join(path[0], os.pardir))
-
-            data = {
-                "size": 1,
-                "_source" : {},
-                "query": {
-                    "query_string": {
-                        "query": "filename: \"" + f + "\" AND path_parent: \"" + p + "\""
-                    }
-                }
-            }
-
-            # refresh index
-            #ES.indices.refresh(index=CLIARGS['index'])
-            # search ES and start scroll
-            res = ES.search(index=CLIARGS['index'], doc_type='directory', body=data,
-                            request_timeout=CONFIG['es_timeout'])
-            # ES id of directory doc
-            directoryid = res['hits']['hits'][0]['_id']
+                LOGGER.info('[thread-%s]: Calculating size: %s', threadnum, path[1])
 
             # file doc search with aggregate for sum filesizes
             # escape special characters
-            newpath = escape_chars(path[0])
+            newpath = escape_chars(path[1])
 
             data = {
                 "size": 0,
@@ -993,6 +1015,9 @@ def dirsize_worker(threadnum):
             # total file size sum
             totalsize = res['aggregations']['total_size']['value']
 
+            # ES id of directory doc
+            directoryid = path[0]
+
             # update filesize field for directory (path) doc
             d = {
                 '_op_type': 'update',
@@ -1013,6 +1038,126 @@ def dirsize_worker(threadnum):
                              chunk_size=CONFIG['es_chunksize'],
                              request_timeout=CONFIG['es_timeout'])
                 del dir_id_list[:]
+
+            update_progress()
+
+            # task is done
+            q.task_done()
+
+
+def copytag_worker(threadnum):
+    """This is the copy tag worker function.
+    It gets a path from the Queue and searches index2 for the
+    same path and copies any existing tags.
+    Updates index's doc's tag and tag_custom fields.
+    """
+    dir_id_list = []
+    file_id_list = []
+
+    while True:
+        totalsize = 0
+        totalitems = 0
+
+        if CLIARGS['nice']:
+            time.sleep(.01)
+        if VERBOSE:
+            LOGGER.info('[thread-%s]: Looking for the next path in queue',
+                        threadnum)
+        path = q.get()  # [docid, fullpath, mtime, doctype]
+
+        if path is None:
+            # wait for ES health to be at least yellow
+            ES.cluster.health(wait_for_status='yellow',
+                              request_timeout=CONFIG['es_timeout'])
+            helpers.bulk(ES, dir_id_list, index=CLIARGS['index'],
+                         doc_type='directory',
+                         chunk_size=CONFIG['es_chunksize'],
+                         request_timeout=CONFIG['es_timeout'])
+            del dir_id_list[:]
+            helpers.bulk(ES, file_id_list, index=CLIARGS['index'],
+                         doc_type='file',
+                         chunk_size=CONFIG['es_chunksize'],
+                         request_timeout=CONFIG['es_timeout'])
+            del file_id_list[:]
+            update_progress(finished=True)
+            # stop thread's infinite loop
+            q.task_done()
+            break
+        else:
+            if VERBOSE:
+                LOGGER.info('[thread-%s]: Copying tags: %s', threadnum, path[1])
+
+            # doc search (matching path) in index2 for existing tags
+            # filename
+            f = os.path.basename(path[1])
+            # parent path
+            p = os.path.abspath(os.path.join(path[1], os.pardir))
+
+            data = {
+                "size": 1,
+                "_source": ['tag', 'tag_custom'],
+                "query": {
+                    "query_string": {
+                        "query": "filename: \"" + f + "\" AND path_parent: \"" + p + "\""
+                    }
+                }
+            }
+
+            # refresh index
+            #ES.indices.refresh(index=CLIARGS['index'])
+
+            # check if file or directory
+            if path[3] is 'directory':
+                # search ES
+                res = ES.search(index=CLIARGS['copytags'], doc_type='directory', body=data,
+                                request_timeout=CONFIG['es_timeout'])
+            else:
+                res = ES.search(index=CLIARGS['copytags'], doc_type='file', body=data,
+                                request_timeout=CONFIG['es_timeout'])
+
+            # mark task done if no matching path in index2 and continue
+            if len(res['hits']['hits']) == 0:
+                update_progress()
+                q.task_done()
+                continue
+
+            # existing tag in index2
+            tag = res['hits']['hits'][0]['_source']['tag']
+            # existing tag_custom in index2
+            tag_custom = res['hits']['hits'][0]['_source']['tag_custom']
+
+            # update tag and tag_custom fields in index
+            d = {
+                '_op_type': 'update',
+                '_index': CLIARGS['index'],
+                '_type': path[3],
+                '_id': path[0],
+                'doc': {'tag': tag, 'tag_custom': tag_custom}
+            }
+            if path[3] is 'directory':
+                dir_id_list.append(d)
+            else:
+                file_id_list.append(d)
+
+            # bulk add to ES once we reach max chunk size
+            if len(dir_id_list) >= CONFIG['es_chunksize']:
+                # wait for ES health to be at least yellow
+                ES.cluster.health(wait_for_status='yellow',
+                                  request_timeout=CONFIG['es_timeout'])
+                helpers.bulk(ES, dir_id_list, index=CLIARGS['index'],
+                             doc_type='directory',
+                             chunk_size=CONFIG['es_chunksize'],
+                             request_timeout=CONFIG['es_timeout'])
+                del dir_id_list[:]
+            if len(file_id_list) >= CONFIG['es_chunksize']:
+                # wait for ES health to be at least yellow
+                ES.cluster.health(wait_for_status='yellow',
+                                  request_timeout=CONFIG['es_timeout'])
+                helpers.bulk(ES, file_id_list, index=CLIARGS['index'],
+                             doc_type='file',
+                             chunk_size=CONFIG['es_chunksize'],
+                             request_timeout=CONFIG['es_timeout'])
+                del file_id_list[:]
 
             update_progress()
 
@@ -1195,6 +1340,53 @@ def worker_setup_dirsizes(dirlist, crawlbot=False):
         sys.exit(0)
 
 
+def worker_setup_copytags(dirlist, filelist):
+    """This is the copy tags worker setup function.
+    It sets up the worker threads to process the directory and file list Queue
+    for copying directory and file tags from index2 to index in ES.
+    """
+    global total_dirs
+    global total_files
+
+    # set up the threads and start them
+    LOGGER.info('Running with %s threads', CLIARGS['threads'])
+
+    threads = []
+    for i in range(int(CLIARGS['threads'])):
+        # start thread
+        t = threading.Thread(target=copytag_worker, args=(i,))
+        t.daemon = True
+        t.start()
+        threads.append(t)
+        if CLIARGS['nice']:
+            time.sleep(0.5)
+
+    LOGGER.info('Copying tags from %s to %s', CLIARGS['copytags'][0], CLIARGS['index'])
+
+    try:
+        for d in dirlist:
+            q.put(d)
+            total_dirs += 1
+        for f in filelist:
+            q.put(f)
+            total_files += 1
+        # stop workers
+        for i in range(int(CLIARGS['threads'])):
+            q.put(None)
+        # block until all tasks are done
+        q.join()
+
+    except KeyboardInterrupt:
+        LOGGER.disabled = True
+        print('\nCtrl-c keyboard interrupt received')
+        print("Attempting to close worker threads")
+        # stop workers
+        for i in range(int(CLIARGS['threads'])):
+            q.put(None)
+        print("\nThreads successfully closed, sayonara!")
+        sys.exit(0)
+
+
 def worker_setup_dupes():
     """This is the duplicate file worker setup function.
     It sets up the worker threads to process the duplicate file list Queue.
@@ -1313,10 +1505,10 @@ def index_create():
         # check if nodelete, reindex, cli argument
         # and don't delete existing index
         if CLIARGS['reindex']:
-            LOGGER.info('Reindexing (non-recursive)')
+            LOGGER.info('Reindexing (non-recursive, preserving tags)')
             return
         elif CLIARGS['reindexrecurs']:
-            LOGGER.info('Reindexing (recursive)')
+            LOGGER.info('Reindexing (recursive, preserving tags)')
             return
         elif CLIARGS['nodelete']:
             LOGGER.info('Adding to ES index')
@@ -1550,6 +1742,7 @@ def index_delete_file(file_dict):
     Only intended to delete single file, use index_delete_path for bulk delete
     of files in same directory.
     """
+    global reindex_file_list
 
     # get the file id
     data = {
@@ -1568,6 +1761,11 @@ def index_delete_file(file_dict):
                     request_timeout=CONFIG['es_timeout'])
 
     for hit in res['hits']['hits']:
+        # store any tags
+        reindex_file_list.append([hit['_source']['path_parent'] +
+                                  '/' + hit['_source']['filename'],
+                                  hit['_source']['tag'],
+                                  hit['_source']['tag_custom']])
         # delete the file in ES
         ES.delete(index=CLIARGS['index'], doc_type="file", id=hit['_id'])
 
@@ -1577,7 +1775,10 @@ def index_delete_path(path, recursive=False, crawlbot=False):
     It finds all file and directory docs in path and deletes them from ES
     including the directory (path).
     Recursive will also find and delete all docs in subdirs of path.
+    Stores any existing tags in reindex_file_list or reindex_dir_list.
     """
+    global reindex_file_list
+    global reindex_dir_list
     file_id_list = []
     dir_id_list = []
     file_delete_list = []
@@ -1616,7 +1817,13 @@ def index_delete_path(path, recursive=False, crawlbot=False):
 
     while res['hits']['hits'] and len(res['hits']['hits']) > 0:
         for hit in res['hits']['hits']:
+            # add doc id to file_id_list
             file_id_list.append(hit['_id'])
+            # add file path info inc. tags to reindex_file_list
+            reindex_file_list.append([hit['_source']['path_parent'] +
+                                      '/' + hit['_source']['filename'],
+                                      hit['_source']['tag'],
+                                      hit['_source']['tag_custom']])
         # get ES scroll id
         scroll_id = res['_scroll_id']
         # use ES scroll api
@@ -1680,7 +1887,13 @@ def index_delete_path(path, recursive=False, crawlbot=False):
 
     while res['hits']['hits'] and len(res['hits']['hits']) > 0:
         for hit in res['hits']['hits']:
+            # add directory doc id to dir_id_list
             dir_id_list.append(hit['_id'])
+            # add directory path info inc. tags to reindex_dir_list
+            reindex_dir_list.append([hit['_source']['path_parent'] +
+                                     '/' + hit['_source']['filename'],
+                                     hit['_source']['tag'],
+                                     hit['_source']['tag_custom']])
         # get ES scroll id
         scroll_id = res['_scroll_id']
         # use ES scroll api
@@ -1711,17 +1924,17 @@ def index_delete_path(path, recursive=False, crawlbot=False):
                      request_timeout=CONFIG['es_timeout'])
 
 
-def index_get_dirs(path=None):
-    """This is the ES get dirs function.
-    It finds all directory docs in ES if no path provided or
-    will find all directory docs in path (non-recursive) and returns dirlist
-    which contains directory paths and their mtimes.
+def index_get_docs(doctype='directory', path=None):
+    """This is the ES get docs function.
+    It finds all docs (by doctype) in ES if no path provided or
+    will find all docs in path (non-recursive) and returns doclist
+    which contains doc id, fullpath and mtime for all docs.
     """
-    dirlist = []
+    doclist = []
 
     if not path:
-        LOGGER.info('Searching for all directories in index')
-        # directory doc search
+        LOGGER.info('Searching for all %s docs in index', doctype)
+        # doc search
         data = {
             '_source': ['path_parent', 'filename', 'last_modified'],
             'query': {
@@ -1729,7 +1942,7 @@ def index_get_dirs(path=None):
             }
         }
     else:
-        LOGGER.info('Searching for directories in %s', path)
+        LOGGER.info('Searching for %s in %s', doctype, path)
         pd = os.path.abspath(os.path.join(path, os.pardir))
         f = os.path.basename(path)
         # directory doc search
@@ -1746,26 +1959,27 @@ def index_get_dirs(path=None):
     # refresh index
     ES.indices.refresh(index=CLIARGS['index'])
     # search ES and start scroll
-    res = ES.search(index=CLIARGS['index'], doc_type='directory', scroll='1m',
+    res = ES.search(index=CLIARGS['index'], doc_type=doctype, scroll='1m',
                     size=1000, body=data, request_timeout=CONFIG['es_timeout'])
 
     while res['hits']['hits'] and len(res['hits']['hits']) > 0:
         for hit in res['hits']['hits']:
-            fp = hit['_source']['path_parent'] + '/' + hit['_source']['filename']
+            docid = hit['_id']
+            fullpath = hit['_source']['path_parent'] + '/' + hit['_source']['filename']
             # convert es time to unix time format
-            mt = time.mktime(datetime.strptime(
+            mtime = time.mktime(datetime.strptime(
                 hit['_source']['last_modified'],
                 '%Y-%m-%dT%H:%M:%S').timetuple())
-            dirlist.append([fp, mt])
+            doclist.append([docid, fullpath, mtime, doctype])
         # get ES scroll id
         scroll_id = res['_scroll_id']
         # use ES scroll api
         res = ES.scroll(scroll_id=scroll_id, scroll='1m',
                         request_timeout=CONFIG['es_timeout'])
 
-    LOGGER.info('Found %s directories' % (len(dirlist)))
+    LOGGER.info('Found %s %s docs' % (len(doclist), doctype))
 
-    return dirlist
+    return doclist
 
 
 def index_tag_dupe(threadnum, dupelist):
@@ -2518,8 +2732,8 @@ def start_crawl_bot(dirlist):
                 n = 1
             total_dirs = 0
             li = randint(0, i)
-            path = dirlist[li][0]
-            mtime_utc = dirlist[li][1]
+            path = dirlist[li][1]
+            mtime_utc = dirlist[li][2]
             # pick a new path if same as last time
             if path == last_path:
                 continue
@@ -2542,7 +2756,7 @@ def start_crawl_bot(dirlist):
                 # reindex path
                 worker_setup_crawl(path, crawlbot=True)
                 if CLIARGS['dirsize']:
-                    dirlist_path = index_get_dirs(path)
+                    dirlist_path = index_get_docs('directory', path)
                     # update directory size
                     worker_setup_dirsizes(dirlist_path, crawlbot=True)
             time.sleep(CONFIG['botsleep'])
@@ -2641,7 +2855,7 @@ if __name__ == "__main__":
             # create instance using scandir class
             entry = GenericDirEntry(path, name)
             # index file in Elasticsearch
-            get_file_meta(0, entry, [], True)
+            get_file_meta(0, entry, [], singlefile=True)
             sys.exit(0)
         except KeyboardInterrupt:
             print('\nCtrl-c keyboard interrupt received, exiting')
@@ -2668,7 +2882,7 @@ if __name__ == "__main__":
 
     # start crawlbot if cli argument
     if CLIARGS['crawlbot']:
-        dirlist = index_get_dirs()
+        dirlist = index_get_docs('directory')
         start_crawl_bot(dirlist)
         sys.exit(0)
 
@@ -2676,17 +2890,31 @@ if __name__ == "__main__":
     if CLIARGS['dirsize']:
         if CLIARGS['dirsize'] is "all":
             # look in ES for all directory docs and add to queue
-            dirlist = index_get_dirs()
+            dirlist = index_get_docs('directory')
         else:
             # use directory from cli arg
             fp = os.path.abspath(CLIARGS['dirsize']).rstrip(os.path.sep)
-            dirlist = index_get_dirs(fp)
+            dirlist = index_get_docs('directory', fp)
         # Set up worker threads for calculating dir sizes
         worker_setup_dirsizes(dirlist)
         if not CLIARGS['quiet'] and not CLIARGS['progress']:
             sys.stdout.write("\n")
             sys.stdout.flush()
         LOGGER.info('Finished updating directory sizes')
+        sys.exit(0)
+
+    # copy tags from index2 to index if cli argument
+    if CLIARGS['copytags']:
+        # look in ES for all directory docs and add to queue
+        dirlist = index_get_docs('directory')
+        # look in ES for all file docs and add to queue
+        filelist = index_get_docs('file')
+        # Set up worker threads for collecting tags
+        worker_setup_copytags(dirlist, filelist)
+        if not CLIARGS['quiet'] and not CLIARGS['progress']:
+            sys.stdout.write("\n")
+            sys.stdout.flush()
+        LOGGER.info('Finished copying tags')
         sys.exit(0)
 
     # create Elasticsearch index
