@@ -699,8 +699,6 @@ def get_dir_meta(threadnum, path, dirlist):
             "tag_custom": "",
             "indexing_date": indextime_utc
         }
-        # add dirinfo to dirlist
-        dirlist.append(dirmeta_dict)
 
         # search for and copy over any existing tags
         search_path = fullpath
@@ -719,6 +717,9 @@ def get_dir_meta(threadnum, path, dirlist):
                 dirmeta_dict.update(plugin.add_meta(fullpath))
             except KeyError:
                 pass
+
+        # add dirinfo to dirlist
+        dirlist.append(dirmeta_dict)
 
         # when dirlist reaches max chunk size, bulk add to ES and empty it
         if len(dirlist) >= CONFIG['es_chunksize']:
