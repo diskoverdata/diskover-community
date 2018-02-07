@@ -712,10 +712,13 @@ def get_dir_meta(threadnum, path, dirlist):
 
         # check plugins for adding extra meta data to dirmeta_dict
         for plugin in plugins:
-            # check if plugin is for directory doc
-            mappings = plugin.add_mappings({})
-            if 'directory' in mappings:
+            try:
+                # check if plugin is for directory doc
+                mappings = {'mappings': {'directory': {'properties': {}}}}
+                mappings = (plugin.add_mappings(mappings))
                 dirmeta_dict.update(plugin.add_meta(fullpath))
+            except KeyError:
+                pass
 
         # when dirlist reaches max chunk size, bulk add to ES and empty it
         if len(dirlist) >= CONFIG['es_chunksize']:
@@ -897,10 +900,13 @@ def get_file_meta(threadnum, entry, filelist, singlefile=False):
 
         # check plugins for adding extra meta data to filemeta_dict
         for plugin in plugins:
-            # check if plugin is for file doc
-            mappings = plugin.add_mappings({})
-            if 'file' in mappings:
+            try:
+                # check if plugin is for file doc
+                mappings = {'mappings': {'file': {'properties': {}}}}
+                mappings = (plugin.add_mappings(mappings))
                 filemeta_dict.update(plugin.add_meta(entry.path))
+            except KeyError:
+                pass
 
         # add file metadata dictionary to filelist list
         filelist.append(filemeta_dict)
