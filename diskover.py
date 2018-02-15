@@ -48,7 +48,7 @@ import uuid
 IS_PY3 = sys.version_info >= (3, 0)
 
 # version
-DISKOVER_VERSION = '1.4.4'
+DISKOVER_VERSION = '1.4.5'
 __version__ = DISKOVER_VERSION
 BANNER_COLOR = '35m'
 # totals for crawl stats output
@@ -467,10 +467,12 @@ def parse_cli_args(indexname):
                         help="Reindex directory and all subdirs (recursive)")
     parser.add_argument("-f", "--file",
                         help="Index single file")
-    parser.add_argument("-D", "--tagdupes", action="store_true",
-                        help="Tag duplicate files in existing index")
+    parser.add_argument("-D", "--finddupes", action="store_true",
+                        help="Find duplicate files in existing index and update \
+                        their dupe_md5 field")
     parser.add_argument("-S", "--dirsize", metavar='DIR', nargs="?", const="all",
-                        help="Calculate size (du) of dir or all in existing index")
+                        help="Calculate size of directories in existing index \
+                        (default: all dirs)")
     parser.add_argument("-C", "--copytags", metavar='INDEX2', nargs=1,
                         help="Copy tags from index2 to index")
     parser.add_argument("-B", "--crawlbot", action="store_true",
@@ -553,7 +555,7 @@ def update_progress(finished=False):
     """Updates progress on screen."""
     if CLIARGS['quiet'] or VERBOSE:
         return
-    if CLIARGS['tagdupes']:
+    if CLIARGS['finddupes']:
         t = total_hash_groups
         i = t - q.qsize()
         prefix = "Checking:"
@@ -695,7 +697,7 @@ def get_dir_meta(threadnum, path, dirlist):
             "last_change": ctime_utc,
             "owner": owner,
             "group": group,
-            "tag": "untagged",
+            "tag": "",
             "tag_custom": "",
             "indexing_date": indextime_utc
         }
@@ -878,9 +880,9 @@ def get_file_meta(threadnum, entry, filelist, singlefile=False):
             "hardlinks": hardlinks,
             "inode": inode,
             "filehash": filehash,
-            "tag": "untagged",
+            "tag": "",
             "tag_custom": "",
-            'is_dupe': "false",
+            "dupe_md5": "",
             "indexing_date": indextime_utc,
             "indexing_thread": threadnum
         }
@@ -1016,11 +1018,30 @@ def dirsize_worker(threadnum):
             res = ES.search(index=CLIARGS['index'], doc_type='file', body=data,
                             request_timeout=CONFIG['es_timeout'])
 
-            # total files (items)
-            totalitems = res['hits']['total']
+            # add total files to items
+            totalitems += res['hits']['total']
 
             # total file size sum
             totalsize = res['aggregations']['total_size']['value']
+
+            # search and add total directories to items
+
+            data = {
+                "size": 0,
+                "query": {
+                    "query_string": {
+                        "query": "path_parent: " + newpath + " \
+                        OR path_parent: " + newpath + "\/*",
+                        "analyze_wildcard": "true"
+                    }
+                }
+            }
+
+            res = ES.search(index=CLIARGS['index'], doc_type='directory',
+                            body=data, request_timeout=CONFIG['es_timeout'])
+
+            # add total directories (subdirs) to items
+            totalitems += res['hits']['total']
 
             # ES id of directory doc
             directoryid = path[0]
@@ -1453,7 +1474,7 @@ def dupes_worker(threadnum):
         if hashkey is None:
             # add any remaining to ES
             if len(dupelist) > 0:
-                # update existing index and tag dupe files is_dupe field
+                # update existing index and tag dupe files dupe_md5 field
                 index_tag_dupe(threadnum, dupelist)
                 del dupelist[:]
             update_progress(finished=True)
@@ -1688,8 +1709,8 @@ def index_create():
                     "tag_custom": {
                         "type": "keyword"
                     },
-                    "is_dupe": {
-                        "type": "boolean"
+                    "dupe_md5": {
+                        "type": "keyword"
                     },
                     "indexing_date": {
                         "type": "date"
@@ -1990,19 +2011,20 @@ def index_get_docs(doctype='directory', path=None):
 
 
 def index_tag_dupe(threadnum, dupelist):
-    """This is the ES is_dupe tag update function.
-    It updates a file's is_dupe field to true.
+    """This is the ES dupe_md5 tag update function.
+    It updates a file's dupe_md5 field to be md5sum of file
+    if it's marked as a duplicate.
     """
     file_id_list = []
     # bulk update data in Elasticsearch index
     for item in dupelist:
-        for file in item['files']:
+        for f in item['files']:
             d = {
                 '_op_type': 'update',
                 '_index': CLIARGS['index'],
                 '_type': 'file',
-                '_id': file['id'],
-                'doc': {'is_dupe': 'true'}
+                '_id': f['id'],
+                'doc': {'dupe_md5': item['filehash']}
             }
             file_id_list.append(d)
     if VERBOSE:
@@ -2020,8 +2042,8 @@ def tag_dupes(threadnum, hashgroup, dupelist):
     It processes files in hashgroup to verify if they are duplicate.
     The first few bytes at beginning and end of files are
     compared and if same, a md5 check is run on the files.
-    If the files are duplicate, their is_dupe field
-    is set to true.
+    If the files are duplicate, their dupe_md5 field
+    is updated to their md5sum.
     """
     global total_dupes
 
@@ -2173,7 +2195,7 @@ def tag_dupes(threadnum, hashgroup, dupelist):
 
     # bulk add to ES once we reach max chunk size
     if len(dupelist) >= CONFIG['es_chunksize']:
-        # update existing index and tag dupe files is_dupe field
+        # update existing index and tag dupe files dupe_md5 field
         index_tag_dupe(threadnum, dupelist)
         del dupelist[:]
 
@@ -2427,10 +2449,10 @@ def run_command(threadnum, command_dict, clientsock, lock):
                 pythonpath, '-u', diskoverpath, '-t', threads,
                 '-i', index, '-d', path, '--progress']
 
-        elif action == 'tagdupes':
+        elif action == 'finddupes':
             cmd = [
                 pythonpath, '-u', diskoverpath, '-t', threads,
-                '-i', index, '--tagdupes', '--progress']
+                '-i', index, '--finddupes', '--progress']
 
         elif action == 'reindex':
             try:
@@ -2876,7 +2898,7 @@ if __name__ == "__main__":
     lock = threading.RLock()
 
     # tag duplicate files if cli argument
-    if CLIARGS['tagdupes']:
+    if CLIARGS['finddupes']:
         # Set up worker threads for duplicate file checker queue
         worker_setup_dupes()
         if not CLIARGS['quiet'] and not CLIARGS['progress']:

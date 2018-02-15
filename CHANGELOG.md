@@ -1,5 +1,13 @@
 # Diskover Change Log
 
+## [1.4.5] = 2018-02-15
+### changed
+- removed tag "untagged" from all files and directories and is just now empty string (help reduce index size)
+- when calculating directory sizes, count of subdirs are added to items (prev was just count of files)
+- --tagdupes cli arg has been renamed to --finddupes
+- --finddupes now updates dupe_md5 to be the md5sum of the file (previously was just boolean)
+- changed is_dupe boolean field to dupe_md5 keyword field (default is empty)
+
 ## [1.4.4] = 2018-02-07
 ### added
 - -C --copytags cli flag to copy tags from source index (index2) to destination index (overwrites any existing tags in index)
