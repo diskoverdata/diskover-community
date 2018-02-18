@@ -1,5 +1,11 @@
 # Diskover Change Log
 
+## [1.4.6] = 2018-02-18
+### fixed
+- calculating directory sizes for / (root) and directories in /
+- elapsed time when crawling for more than 24 hours
+- not being able to load more than 1 plugin
+
 ## [1.4.5] = 2018-02-15
 ### changed
 - removed tag "untagged" from all files and directories and is just now empty string (help reduce index size)

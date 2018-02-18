@@ -48,7 +48,7 @@ import uuid
 IS_PY3 = sys.version_info >= (3, 0)
 
 # version
-DISKOVER_VERSION = '1.4.5'
+DISKOVER_VERSION = '1.4.6'
 __version__ = DISKOVER_VERSION
 BANNER_COLOR = '35m'
 # totals for crawl stats output
@@ -104,7 +104,7 @@ def load_plugins():
     loaded_plugins = []
     plugins_info = get_plugins_info()
     for plugin_info in plugins_info:
-        plugin_module = imp.load_module(main_module, *plugin_info["info"])
+        plugin_module = imp.load_module(plugin_info["name"], *plugin_info["info"])
         loaded_plugins.append(plugin_module)
     return loaded_plugins
 
@@ -994,23 +994,42 @@ def dirsize_worker(threadnum):
             # escape special characters
             newpath = escape_chars(path[1])
 
-            data = {
-                "size": 0,
-                "query": {
-                    "query_string": {
-                        "query": "path_parent: " + newpath + " \
-                        OR path_parent: " + newpath + "\/*",
-                        "analyze_wildcard": "true"
-                    }
-                },
-                "aggs": {
-                    "total_size": {
-                        "sum": {
-                            "field": "filesize"
+            # check if / (root) path
+            if newpath == '\/':
+                data = {
+                    "size": 0,
+                    "query": {
+                        "query_string": {
+                            "query": "path_parent: " + newpath + "*",
+                            "analyze_wildcard": "true"
+                        }
+                    },
+                    "aggs": {
+                        "total_size": {
+                            "sum": {
+                                "field": "filesize"
+                            }
                         }
                     }
                 }
-            }
+            else:
+                data = {
+                    "size": 0,
+                    "query": {
+                        "query_string": {
+                            "query": "path_parent: " + newpath + " \
+                            OR path_parent: " + newpath + "\/*",
+                            "analyze_wildcard": "true"
+                        }
+                    },
+                    "aggs": {
+                        "total_size": {
+                            "sum": {
+                                "field": "filesize"
+                            }
+                        }
+                    }
+                }
 
             # refresh index
             #ES.indices.refresh(index=CLIARGS['index'])
@@ -1026,16 +1045,28 @@ def dirsize_worker(threadnum):
 
             # search and add total directories to items
 
-            data = {
-                "size": 0,
-                "query": {
-                    "query_string": {
-                        "query": "path_parent: " + newpath + " \
-                        OR path_parent: " + newpath + "\/*",
-                        "analyze_wildcard": "true"
+            # check if / (root) path
+            if newpath == '\/':
+                data = {
+                    "size": 0,
+                    "query": {
+                        "query_string": {
+                            "query": "path_parent: " + newpath + "*",
+                            "analyze_wildcard": "true"
+                        }
                     }
                 }
-            }
+            else:
+                data = {
+                    "size": 0,
+                    "query": {
+                        "query_string": {
+                            "query": "path_parent: " + newpath + " \
+                            OR path_parent: " + newpath + "\/*",
+                            "analyze_wildcard": "true"
+                        }
+                    }
+                }
 
             res = ES.search(index=CLIARGS['index'], doc_type='directory',
                             body=data, request_timeout=CONFIG['es_timeout'])
@@ -1993,7 +2024,13 @@ def index_get_docs(doctype='directory', path=None):
     while res['hits']['hits'] and len(res['hits']['hits']) > 0:
         for hit in res['hits']['hits']:
             docid = hit['_id']
-            fullpath = hit['_source']['path_parent'] + '/' + hit['_source']['filename']
+            # check if / (root) directory or directory in root
+            if hit['_source']['path_parent'] == '/':
+                fullpath = hit['_source']['path_parent'] + \
+                    hit['_source']['filename']
+            else:
+                fullpath = hit['_source']['path_parent'] + '/' + \
+                    hit['_source']['filename']
             # convert es time to unix time format
             mtime = time.mktime(datetime.strptime(
                 hit['_source']['last_modified'],
@@ -2294,7 +2331,8 @@ def get_time(seconds):
     """
     m, s = divmod(seconds, 60)
     h, m = divmod(m, 60)
-    return "%dh:%02dm:%02ds" % (h, m, s)
+    d, h = divmod(h, 24)
+    return "%dd:%dh:%02dm:%02ds" % (d, h, m, s)
 
 
 def convert_size(size_bytes):
