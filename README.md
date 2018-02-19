@@ -5,7 +5,7 @@
 [![Donate Patreon](https://img.shields.io/badge/Donate%20%24-Patreon-brightgreen.svg)](https://www.patreon.com/diskover)
 [![Donate PayPal](https://img.shields.io/badge/Donate%20%24-PayPal-brightgreen.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=CLF223XAS4W72)
 
-<img align="left" width="249" height="189" src="docs/diskover.png?raw=true" hspace="5" vspace="5">
+<img align="left" width="249" height="189" src="docs/diskover.png?raw=true" hspace="5" vspace="5" alt="diskover">
 
 diskover is an open-source file system crawler and disk usage application that uses [Elasticsearch](https://www.elastic.co) to index and search your file metadata. diskover crawls and indexes your files on a local computer or remote server using NFS or SMB.
 
@@ -15,12 +15,14 @@ diskover includes a built-in TCP socket server for remote commands, "crawl-bot" 
 
 ## Screenshots
 
-[diskover-web](https://github.com/shirosaidev/diskover-web) (diskover's web file manager, analytics app, file system search engine, rest-api)
-![diskover-web](https://github.com/shirosaidev/diskover-web/raw/master/docs/diskover-web-dashboard-screenshot.png?raw=true)
-Kibana dashboards / saved searches and visualizations (included in diskover download)
-![kibana-screenshot](docs/kibana-dashboarddark2-screenshot.png?raw=true)
-Gource visualization support (see videos below)
-![diskover-gource](docs/diskover-gource1-screenshot.png?raw=true)
+[diskover-web](https://github.com/shirosaidev/diskover-web) (diskover's web file manager, analytics app, file system search engine, rest-api)<br>
+<img align="left" width="400" src="https://github.com/shirosaidev/diskover-web/raw/master/docs/diskover-web-dashboard-screenshot.png?raw=true" alt="diskover-web dashboard">
+<img align="left" width="400" src="https://github.com/shirosaidev/diskover-web/raw/master/docs/diskover-web-filetree-screenshot.png?raw=true" alt="diskover-web file tree">
+<img align="left" width="400" src="https://github.com/shirosaidev/diskover-web/raw/master/docs/diskover-web-advancedsearch-screenshot.png?raw=true" alt="diskover-web advanced search">
+<img width="400" src="https://github.com/shirosaidev/diskover-web/raw/master/docs/diskover-web-tags-screenshot.png?raw=true" alt="diskover-web tags"><br>
+Kibana dashboards/saved searches/visualizations and support for Gource<br>
+<img align="left" width="400" src="docs/kibana-dashboarddark2-screenshot.png?raw=true" alt="kibana-screenshot">
+<img width="400" src="docs/diskover-gource1-screenshot.png?raw=true" alt="diskover-gource">
 
 ### diskover Gource videos
 
