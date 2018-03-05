@@ -7,11 +7,11 @@
 
 <img align="left" width="249" height="189" src="docs/diskover.png?raw=true" hspace="5" vspace="5" alt="diskover">
 
-diskover is an open-source file system crawler and disk usage application that uses [Elasticsearch](https://www.elastic.co) to index and search your file metadata. diskover crawls and indexes your files on a local computer or remote server using NFS or SMB.
+diskover is an open-source file system crawler and disk usage application that uses [Elasticsearch](https://www.elastic.co) to index and search your file metadata. diskover crawls and indexes your files and directories on a local computer or remote server using NFS or SMB.
 
 diskover helps identify old and unused files and give better insights into data change, file duplication and wasted space. It is designed to help deal with managing large amounts of data growth and provide detailed storage analytics.
 
-diskover includes a built-in TCP socket server for remote commands, "crawl-bot" for continuos scanning and plug-in support for expanding diskover's indexing capabilities. It is written in Python and runs on Linux and OS X/macOS.
+diskover includes a shell script to run parallel multi-proc crawls using [gnu parallel](https://www.gnu.org/software/parallel/). There is also a built-in TCP socket server for remote commands, "crawl-bot" for continuos scanning and plug-in support for expanding diskover's indexing capabilities. It is written in Python and runs on Linux and OS X/macOS.
 
 ## Screenshots
 
@@ -73,7 +73,7 @@ $ cd /path/you/want/to/crawl
 $ sudo python /path/to/diskover.py
 ```
 
-**Defaults for crawl with no flags is to index from . (current directory) and files >0 MB and 0 days modified time. Empty files are skipped. Use -h to see cli options.**
+**Defaults for crawl with no flags is to index from . (current directory) and files >0 Bytes and 0 days modified time. Empty files are skipped. Use -h to see cli options.**
 
 A successfull crawl should look like this:
 
