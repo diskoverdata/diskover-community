@@ -1,5 +1,36 @@
 # Diskover Change Log
 
+## [1.5.0] = 2018-03-06
+### notice
+- requires diskover-web >= v1.5.0
+### added
+- faster crawling and directory size calculations (directory sizes/items are now calculated during crawl)
+- faster tag copying from previous index to new index
+- crawlbot continuous scanner is now multi-threaded
+- diskover-mp.sh (muliproc shell helper script) ver 1.1 - use to run parallel diskover.py processes across top-level directories (settings at top of script) requires GNU parallel command https://www.gnu.org/software/parallel/
+- added -c --calcrootdir for calculating rootdir filesize/items after running parallel crawls (run this after all crawl processes finish)
+- added -e --indexemptydirs flag to index empty directories (empty directories will show item count as 1 for itself)
+- ES index shard size and replica settings in diskover.cfg
+- Queue size setting in diskover.cfg
+- improved crawlstats
+- warning if indexing 0 Byte empty files (-s 0)
+### changed
+- empty directories are not indexed (reduce index size), if you want to index, use -e flag
+- removed scandir directory iteration and just use scandir.walk in main thread to add tuple of directory and files to queue
+- removed path_parent.tree text field from directory and file mappings since was not being used (help reduce index size)
+- -S --dirsize flags has been removed since dirsize is calculated during crawl
+- crawlstats es mapping and add_crawl_stats function now only uses crawlstat doctype instead of crawlstat_start, crawlstat_stop
+- diskover no longer enforces to be run as root user. Will only output warning instead when not run as root.
+- moved pythonpath and diskoverpath in config to a new paths section
+- combined index_add_files, index_add_dirs into index_bulk_add functiion
+### fixed
+- dupe_md5 field being set to same as filehash instead of md5sum when running tagdupes
+- bugs in diskover-mp.sh
+- crawl stats not updating in ES when running in -q quiet mode
+- crawl stats output at end of crawl, file count was showing total instead of indexed count
+- -r reindex option reindexing files in 2nd level subdirs causing duplicate docs in index
+- bugs in crawlbot
+
 ## [1.4.6] = 2018-02-18
 ### fixed
 - calculating directory sizes for / (root) and directories in /

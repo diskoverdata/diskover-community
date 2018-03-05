@@ -12,24 +12,31 @@ LICENSE for the full license text.
 """
 
 try:
-    from elasticsearch5 import Elasticsearch, helpers, RequestsHttpConnection,\
+    from elasticsearch5 import Elasticsearch, helpers, RequestsHttpConnection, \
         Urllib3HttpConnection
 except ImportError:
-    from elasticsearch import Elasticsearch, helpers, RequestsHttpConnection,\
-        Urllib3HttpConnection
-from scandir import scandir, walk, GenericDirEntry
-from random import randint
-from datetime import datetime
-from subprocess import Popen, PIPE
+    try:
+        from elasticsearch import Elasticsearch, helpers, RequestsHttpConnection, \
+            Urllib3HttpConnection
+    except ImportError:
+        raise ImportError('elasticsearch5 or elasticsearch module required, install with pip')
+try:
+    from scandir import walk
+except ImportError:
+    raise ImportError('scandir module required, install with pip')
 try:
     import queue as Queue
 except ImportError:
     import Queue
 import threading
+
 try:
     import configparser as ConfigParser
 except ImportError:
     import ConfigParser
+from random import randint
+from datetime import datetime
+from subprocess import Popen, PIPE
 import os
 import sys
 import imp
@@ -48,19 +55,26 @@ import uuid
 IS_PY3 = sys.version_info >= (3, 0)
 
 # version
-DISKOVER_VERSION = '1.4.6'
+DISKOVER_VERSION = '1.5.0'
 __version__ = DISKOVER_VERSION
 BANNER_COLOR = '35m'
 # totals for crawl stats output
 total_files = 0
-total_files_skipped = 0
+total_files_skipped_size = 0
+total_files_skipped_excluded = 0
+total_files_skipped_mtime = 0
 total_file_size = 0
-total_file_size_skipped = 0
+total_file_size_skipped_size = 0
+total_file_size_skipped_excluded = 0
+total_file_size_skipped_mtime = 0
 total_dupes = 0
 total_dirs = 0
-total_dirs_skipped = 0
+total_dirs_skipped_empty = 0
+total_dirs_skipped_excluded = 0
 total_hash_groups = 0
 dupe_count = 0
+# dictionaries to hold all directory paths (used for directory calculation)
+dirlist = {}
 # dict to hold socket tasks
 socket_tasks = {}
 # list of socket client
@@ -91,7 +105,7 @@ def get_plugins_info():
         location = os.path.join(plugin_dir, i)
         if not os.path.isdir(location) or not main_module + ".py" \
                 in os.listdir(location):
-                continue
+            continue
         info = imp.find_module(main_module, [location])
         plugins_info.append({"name": i, "info": info})
     return plugins_info
@@ -147,27 +161,26 @@ def add_diskspace(path):
     ES.index(index=CLIARGS['index'], doc_type='diskspace', body=data)
 
 
-def add_crawl_stats(start, stop=None, elapsed=None):
+def add_crawl_stats(event, elapsedtime=None):
     """This is the add crawl stats function.
-    It adds start, end, elapsed time info to ES.
+    It adds crawl events (start/stop), elapsed time info to ES.
     """
-    if stop:
-        stop = datetime.utcfromtimestamp(stop).strftime('%Y-%m-%dT%H:%M:%S.%f')
+    if event == "stop":
         data = {
             "path": os.path.abspath(CLIARGS['rootdir']),
-            "stop_time": stop,
-            "elapsed_time": elapsed,
+            "event": "stop",
+            "elapsed_time": elapsedtime,
             "indexing_date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
         }
-        ES.index(index=CLIARGS['index'], doc_type='crawlstat_stop', body=data)
+        ES.index(index=CLIARGS['index'], doc_type='crawlstat', body=data)
     else:
-        start = datetime.utcfromtimestamp(start).strftime('%Y-%m-%dT%H:%M:%S.%f')
         data = {
             "path": os.path.abspath(CLIARGS['rootdir']),
-            "start_time": start,
+            "event": "start",
+            "elapsed_time": "",
             "indexing_date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
         }
-        ES.index(index=CLIARGS['index'], doc_type='crawlstat_start', body=data)
+        ES.index(index=CLIARGS['index'], doc_type='crawlstat', body=data)
 
 
 def print_banner():
@@ -260,75 +273,74 @@ def print_banner():
     sys.stdout.flush()
 
 
-def print_progress_bar(iteration, total, prefix='', suffix='',
-                       it_name='it', finished=False):
-    """This is the create terminal progress bar function.
-    It outputs a progress bar and shows progress of the queue.
+def print_stats(stats_type):
+    """This is the print stats function
+    It outputs stats at the end of runtime.
     """
-    global last_percents
+    elapsedtime = time.time() - STARTTIME
+    it_sec = round((total_dirs + total_dirs_skipped_empty + total_dirs_skipped_excluded
+                    + total_files + total_files_skipped_size + total_files_skipped_excluded
+                    + total_files_skipped_mtime) / elapsedtime, 2)
+    if stats_type == "crawl":
+        # add stats to ES
+        add_crawl_stats(event='stop', elapsedtime=elapsedtime)
+    # don't print stats if running quiet or just showing progress
+    if CLIARGS['quiet'] or CLIARGS['progress']:
+        return
+    # print out stats
+    sys.stdout.write("\n")
+    sys.stdout.flush()
+    LOGGER.disabled = True
 
-    if finished:
-        iteration = total
-
-    # calculate number of iterations per second and eta
-    time_diff = time.time() - STARTTIME
-    it_per_sec = round(iteration / time_diff, 1)
-    try:
-        eta = get_time((total - iteration) / it_per_sec)
-    except ZeroDivisionError:
-        eta = get_time(0)
-
-    decimals = 0
-    bar_length = 20
-    str_format = "{0:." + str(decimals) + "f}"
-    try:
-        percents = int(str_format.format(100 * (iteration / float(total))))
-    except ZeroDivisionError:
-        percents = 0
-    try:
-        filled_length = int(round(bar_length * iteration / float(total)))
-    except ZeroDivisionError:
-        filled_length = 0
-    bar = '█' * filled_length + ' ' * (bar_length - filled_length)
-    # only output if percents has increased
-    if percents > last_percents or finished:
+    if stats_type is 'crawl':
+        sys.stdout.write("\033[%s********************************* \
+CRAWL STATS *********************************\033[0m\n\n" % BANNER_COLOR)
+        sys.stdout.write("\033[%s Directories indexed: %s\033[0m" % (BANNER_COLOR,
+                                                             total_dirs))
+        sys.stdout.write("\033[%s    Skipped (excluded): %s\033[0m" % (
+            BANNER_COLOR, total_dirs_skipped_excluded))
+        sys.stdout.write("\033[%s    Skipped (empty): %s\033[0m" % (
+            BANNER_COLOR, total_dirs_skipped_empty))
+        sys.stdout.write("\033[%s    Total: %s\033[0m\n\n" % (
+            BANNER_COLOR, total_dirs + total_dirs_skipped_empty + total_dirs_skipped_excluded))
         sys.stdout.write(
-            '\r\033[' + BANNER_COLOR + '\033[1m%s %s%s|%s| %s [%s, %s %s/s]\033[0m'
-            % (prefix, percents, '%', bar, suffix, eta, it_per_sec, it_name))
-        sys.stdout.flush()
-    last_percents = percents
-
-
-def print_progress(iteration, total, it_name='it', finished=False):
-    """This is the create terminal progress function.
-    It outputs just progress of the queue in json format.
-    """
-    global last_percents
-
-    if finished:
-        iteration = total
-
-    # calculate number of dirs per second and eta
-    time_diff = time.time() - STARTTIME
-    it_per_sec = round(iteration / time_diff, 1)
-    try:
-        eta = get_time((total - iteration) / it_per_sec)
-    except ZeroDivisionError:
-        eta = get_time(0)
-
-    decimals = 0
-    str_format = "{0:." + str(decimals) + "f}"
-    try:
-        percents = int(str_format.format(100 * (iteration / float(total))))
-    except ZeroDivisionError:
-        percents = 0
-    # only output if percents has increased
-    if percents > last_percents or finished:
+            "\033[%s Files indexed: %s (%s)\033[0m"
+            % (BANNER_COLOR, total_files, convert_size(total_file_size)))
         sys.stdout.write(
-            '{"msg": "progress", "percent": %s, "eta": "%s", "it_per_sec": %s, "it_name": "%s"}\n'
-            % (percents, eta, it_per_sec, it_name))
-        sys.stdout.flush()
-    last_percents = percents
+            "\033[%s    Skipped (excluded): %s (%s)\033[0m\n"
+            % (BANNER_COLOR, total_files_skipped_excluded,
+               convert_size(total_file_size_skipped_excluded)))
+        sys.stdout.write(
+            "\033[%s   Skipped (size): %s (%s)\033[0m"
+            % (BANNER_COLOR, total_files_skipped_size,
+               convert_size(total_file_size_skipped_size)))
+        sys.stdout.write(
+            "\033[%s    Skipped (mtime): %s (%s)\033[0m"
+            % (BANNER_COLOR, total_files_skipped_mtime,
+               convert_size(total_file_size_skipped_mtime)))
+        sys.stdout.write(
+            "\033[%s    Total: %s (%s)\033[0m\n\n"
+            % (BANNER_COLOR, total_files + total_files_skipped_size
+               + total_files_skipped_mtime + total_files_skipped_excluded,
+               convert_size(total_file_size + total_file_size_skipped_excluded
+                            + total_file_size_skipped_size + total_file_size_skipped_mtime)))
+        sys.stdout.write(
+            "\033[%s Items/sec: %s\033[0m\n\n"
+            % (BANNER_COLOR, it_sec))
+
+    elif stats_type is 'updating_dupe':
+        sys.stdout.write("\033[%s********************************* \
+DUPES STATS *********************************\033[0m\n\n" % BANNER_COLOR)
+        sys.stdout.write("\033[%s Files checked: %s \
+(%s filehash groups)\033[0m\n\n" % (BANNER_COLOR, dupe_count, total_hash_groups))
+        sys.stdout.write("\033[%s Duplicates tagged: \
+%s\033[0m\n\n" % (BANNER_COLOR, total_dupes))
+
+    sys.stdout.write("\033[%s Elapsed time: \
+%s\033[0m\n" % (BANNER_COLOR, get_time(elapsedtime)))
+    sys.stdout.write("\n\033[%s******************************************\
+*************************************\033[0m\n\n" % BANNER_COLOR)
+    sys.stdout.flush()
 
 
 def load_config():
@@ -370,15 +382,15 @@ def load_config():
     try:
         configsettings['es_user'] = config.get('elasticsearch', 'user')
     except Exception:
-        configsettings['es_user'] = ''
+        configsettings['es_user'] = ""
     try:
         configsettings['es_password'] = config.get('elasticsearch', 'password')
     except Exception:
-        configsettings['es_password'] = ''
+        configsettings['es_password'] = ""
     try:
         configsettings['index'] = config.get('elasticsearch', 'indexname')
     except Exception:
-        configsettings['index'] = ''
+        configsettings['index'] = ""
     try:
         configsettings['es_timeout'] = \
             int(config.get('elasticsearch', 'timeout'))
@@ -400,6 +412,21 @@ def load_config():
     except Exception:
         configsettings['es_chunksize'] = 500
     try:
+        configsettings['index_shards'] = \
+            int(config.get('elasticsearch', 'shards'))
+    except Exception:
+        configsettings['index_shards'] = 5
+    try:
+        configsettings['index_replicas'] = \
+            int(config.get('elasticsearch', 'replicas'))
+    except Exception:
+        configsettings['index_replicas'] = 1
+    try:
+        configsettings['queuesize'] = \
+            int(config.get('queues', 'queuesize'))
+    except Exception:
+        configsettings['queuesize'] = -1  # unlimited
+    try:
         configsettings['listener_host'] = config.get('socketlistener', 'host')
     except Exception:
         configsettings['listener_host'] = "localhost"
@@ -409,15 +436,15 @@ def load_config():
     except Exception:
         configsettings['listener_port'] = 9999
     try:
-        configsettings['listener_diskover_path'] = \
-            config.get('socketlistener', 'diskoverpath')
+        configsettings['diskover_path'] = \
+            config.get('paths', 'diskoverpath')
     except Exception:
-        configsettings['listener_diskover_path'] = "/usr/local/bin/diskover.py"
+        configsettings['diskover_path'] = "./diskover.py"
     try:
-        configsettings['listener_python_path'] = \
-            config.get('socketlistener', 'pythonpath')
+        configsettings['python_path'] = \
+            config.get('paths', 'pythonpath')
     except Exception:
-        configsettings['listener_python_path'] = "python"
+        configsettings['python_path'] = "python"
     try:
         configsettings['md5_readsize'] = \
             int(config.get('dupescheck', 'readsize'))
@@ -448,7 +475,9 @@ def parse_cli_args(indexname):
     parser.add_argument("-m", "--mtime", metavar='DAYS', default=0, type=int,
                         help="Minimum days ago for modified time (default: 0)")
     parser.add_argument("-s", "--minsize", metavar='BYTES', default=1, type=int,
-                        help="Minimum file size in Bytes (default: >0B)")
+                        help="Minimum file size in Bytes (default: 1 Bytes)")
+    parser.add_argument("-e", "--indexemptydirs", action="store_true",
+                        help="Index empty directories (default: don't index)")
     parser.add_argument("-t", "--threads", default=8, type=int,
                         help="Number of threads to use (default: 8)")
     parser.add_argument("-i", "--index", default=indexname,
@@ -465,14 +494,13 @@ def parse_cli_args(indexname):
                         help="Reindex (freshen) directory (non-recursive)")
     parser.add_argument("-R", "--reindexrecurs", action="store_true",
                         help="Reindex directory and all subdirs (recursive)")
+    parser.add_argument("-c", "--calcrootdir", action="store_true",
+                        help="Calculate rootdir size/items (after parallel crawls)")
     parser.add_argument("-f", "--file",
                         help="Index single file")
     parser.add_argument("-D", "--finddupes", action="store_true",
                         help="Find duplicate files in existing index and update \
                         their dupe_md5 field")
-    parser.add_argument("-S", "--dirsize", metavar='DIR', nargs="?", const="all",
-                        help="Calculate size of directories in existing index \
-                        (default: all dirs)")
     parser.add_argument("-C", "--copytags", metavar='INDEX2', nargs=1,
                         help="Copy tags from index2 to index")
     parser.add_argument("-B", "--crawlbot", action="store_true",
@@ -502,157 +530,168 @@ def parse_cli_args(indexname):
     return args
 
 
-def crawl_path(path, threadnum, filelist, dirlist):
-    """This is the crawl path function.
-    It crawls the directory in path using scandir and adds to
-    dirlist and filelist lists.
-    Returns if directory in 'excluded_dirs' or path is None.
+def log_setup():
+    """This is the log set up function.
+    It configures log output for diskover.
     """
-    global total_dirs
+    diskover_logger = logging.getLogger('diskover')
+    diskover_logger.setLevel(logging.INFO)
+    es_logger = logging.getLogger('elasticsearch')
+    es_logger.setLevel(logging.WARNING)
+    urllib3_logger = logging.getLogger('urllib3')
+    urllib3_logger.setLevel(logging.WARNING)
+    requests_logger = logging.getLogger('requests')
+    requests_logger.setLevel(logging.WARNING)
+    logging.addLevelName(
+        logging.INFO, "\033[1;32m%s\033[1;0m"
+                      % logging.getLevelName(logging.INFO))
+    logging.addLevelName(
+        logging.WARNING, "\033[1;31m%s\033[1;0m"
+                         % logging.getLevelName(logging.WARNING))
+    logging.addLevelName(
+        logging.ERROR, "\033[1;41m%s\033[1;0m"
+                       % logging.getLevelName(logging.ERROR))
+    logging.addLevelName(
+        logging.DEBUG, "\033[1;33m%s\033[1;0m"
+                       % logging.getLevelName(logging.DEBUG))
+    logformatter = '%(asctime)s [%(levelname)s][%(name)s] %(message)s'
+    loglevel = logging.INFO
+    logging.basicConfig(format=logformatter, level=loglevel)
+    if CLIARGS['verbose']:
+        diskover_logger.setLevel(logging.INFO)
+        es_logger.setLevel(logging.INFO)
+        urllib3_logger.setLevel(logging.INFO)
+        requests_logger.setLevel(logging.INFO)
+    if CLIARGS['debug']:
+        diskover_logger.setLevel(logging.DEBUG)
+        es_logger.setLevel(logging.DEBUG)
+        urllib3_logger.setLevel(logging.DEBUG)
+        requests_logger.setLevel(logging.DEBUG)
+    if CLIARGS['quiet'] or CLIARGS['progress'] or \
+            CLIARGS['gourcert'] or CLIARGS['gourcemt']:
+        diskover_logger.disabled = True
+        es_logger.disabled = True
+        urllib3_logger.disabled = True
+        requests_logger.disabled = True
 
-    # add the directory and it's files to ES
-    if VERBOSE:
-        LOGGER.info('[thread-%s]: Crawling: %s', threadnum, path)
-    with lock:
-        total_dirs += 1
+    # check if we want to run with verbose logging
+    verbose = False
+    if CLIARGS['verbose'] or CLIARGS['debug']:
+        verbose = True
 
-    # crawl directory using scandir
+    return diskover_logger, verbose
+
+
+def print_progress_bar(iteration, total, prefix='', suffix='',
+                       it_name='it', finished=False):
+    """This is the create terminal progress bar function.
+    It outputs a progress bar and shows progress of the queue.
+    If progressonly is True will only output progress in json.
+    """
+    global last_percents
+    decimals = 0
+    bar_length = 20
+    str_format = "{0:." + str(decimals) + "f}"
+
     try:
-        if VERBOSE:
-            LOGGER.info('[thread-%s]: Getting meta for dir: %s',
-                        threadnum, path)
-        # get directory meta info and add to dirlist
-        dirlist = get_dir_meta(threadnum, path, dirlist)
+        percents = int(str_format.format(100 * (iteration / float(total))))
+    except ZeroDivisionError:
+        percents = 0
+    # return if percent has not changed
+    if percents <= last_percents and not finished:
+        with lock:
+            last_percents = percents
+        return
+    # calculate number of iterations per second and eta
+    time_diff = time.time() - STARTTIME
+    it_per_sec = round(iteration / time_diff, 1)
+    try:
+        eta = get_time((total - iteration) / it_per_sec)
+    except ZeroDivisionError:
+        eta = get_time(0)
+    try:
+        filled_length = int(round(bar_length * iteration / float(total)))
+    except ZeroDivisionError:
+        filled_length = 0
+    bar = '█' * filled_length + ' ' * (bar_length - filled_length)
+    # only output progress
+    if CLIARGS['progress']:
+        sys.stdout.write(
+            '{"msg": "progress", "percent": %s, "eta": "%s", "it_per_sec": %s, "it_name": "%s"}\n'
+            % (percents, eta, it_per_sec, it_name))
+    else:  # show progress bar
+        sys.stdout.write(
+            '\r\033[' + BANNER_COLOR + '\033[1m%s %s%s|%s| %s [%s, %s %s/s]\033[0m'
+            % (prefix, percents, '%', bar, suffix, eta, it_per_sec, it_name))
+    sys.stdout.flush()
+    with lock:
+        last_percents = percents
+    if finished and not CLIARGS['progress']:
+        sys.stdout.write('\n')
+        sys.stdout.flush()
 
-        # check maxdepth
-        root = os.path.abspath(CLIARGS['rootdir']).rstrip(os.path.sep)
-        num_sep = root.count(os.path.sep)
-        depth = path.count(os.path.sep) - num_sep
-        if depth < CLIARGS['maxdepth']:
-            for entry in scandir(path):
-                if entry.is_symlink():
-                    if VERBOSE:
-                        LOGGER.info('[thread-%s]: Skipping symlink: %s',
-                                    threadnum, entry.path)
-                    continue
-                if entry.is_file():
-                    if VERBOSE:
-                        LOGGER.info('[thread-%s]: Getting meta for file: %s',
-                                    threadnum, entry.path)
-                    # get file meta info and add to filelist
-                    filelist = get_file_meta(threadnum, entry, filelist)
 
-    except (IOError, OSError):
-        if VERBOSE:
-            LOGGER.error(
-                'Failed to crawl directory %s', path, exc_info=True)
-        pass
-
-    return filelist, dirlist
-
-
-def update_progress(finished=False):
+def update_progress(threadnum=0, bulkadddirs=False, finished=False, n=None):
     """Updates progress on screen."""
-    if CLIARGS['quiet'] or VERBOSE:
+    if CLIARGS['quiet'] or VERBOSE or CLIARGS['crawlbot']:
+        return
+    # limit only thread 0 to print output
+    if threadnum > 0:
         return
     if CLIARGS['finddupes']:
         t = total_hash_groups
         i = t - q.qsize()
+        if i < 0:
+            i = 0
         prefix = "Checking:"
         it_name = "hg"
-    elif CLIARGS['dirsize']:
-        with lock:
-            t = total_dirs
-        i = t - q.qsize()
-        prefix = "Calculating:"
+    elif bulkadddirs:
+        t = len(dirlist)
+        i = t - n
+        if i < 0:
+            i = 0
+        prefix = "Indexing:"
         it_name = "dir"
     elif CLIARGS['copytags']:
-        with lock:
-            t = total_dirs + total_files
+        t = total_dirs + total_files
         i = t - q.qsize()
+        if i < 0:
+            i = 0
         prefix = "Copying:"
         it_name = "doc"
     else:
-        with lock:
-            t = total_dirs
+        t = total_dirs
         i = t - q.qsize()
+        if i < 0:
+            i = 0
         prefix = "Crawling:"
         it_name = "dir"
-    if i > 0 and i % 10 == 0 or finished:
-        if CLIARGS['progress']:
-            print_progress(i, t, it_name, finished)
-        else:
-            print_progress_bar(i, t, prefix, '%s/%s' % (i, t), it_name, finished)
+    if finished:
+        i = t
+    print_progress_bar(i, t, prefix, '%s/%s' % (i, t), it_name,
+                       finished=finished)
 
 
-def crawl_worker(threadnum):
-    """This is the crawl worker function.
-    It gets a directory from the Queue passes
-    the directory to the crawl_path function.
-    It runs in infinite loop until all worker thread
-    tasks are finished (Queue empty).
-    """
-
-    # create lists to hold files and directories
-    filelist = []
-    dirlist = []
-
-    while True:
-        if CLIARGS['nice']:
-            time.sleep(.01)
-        if VERBOSE:
-            LOGGER.info('[thread-%s]: Looking for the next path in the queue',
-                        threadnum)
-
-        # get a path from the Queue
-        if CLIARGS['breadthfirst']:
-            pri, path = q.get()
-        else:
-            path = q.get()
-
-        if path is None:
-            # add filelist to ES and empty it
-            if len(filelist) > 0:
-                index_add_files(threadnum, filelist)
-                del filelist[:]
-            # add dirlist to ES and empty it
-            if len(dirlist) > 0:
-                index_add_dirs(threadnum, dirlist)
-                del dirlist[:]
-            update_progress(finished=True)
-            # stop thread's infinite loop
-            q.task_done()
-            break
-        else:
-            # start crawling the path
-            filelist, dirlist = crawl_path(path, threadnum, filelist, dirlist)
-
-        # update progress bar
-        update_progress()
-
-        # task is done
-        q.task_done()
-
-
-def get_dir_meta(threadnum, path, dirlist):
+def get_dir_meta(path):
     """This is the get directory meta data function.
     It gets directory meta and adds to Elasticsearch.
-    Once dirlist reaches max chunk_size or Queue is empty,
-    it is bulk added to Elasticsearch and emptied.
+    Returns dir meta dict.
     """
     global reindex_dir_list
+
+    LOGGER.debug('Directory: <%s>', path)
 
     try:
         lstat_path = os.lstat(path)
         # add directory meta data to dirlist list
         mtime_unix = lstat_path.st_mtime
-        mtime_utc = datetime.utcfromtimestamp(mtime_unix)\
+        mtime_utc = datetime.utcfromtimestamp(mtime_unix) \
             .strftime('%Y-%m-%dT%H:%M:%S')
         atime_unix = lstat_path.st_atime
-        atime_utc = datetime.utcfromtimestamp(atime_unix)\
+        atime_utc = datetime.utcfromtimestamp(atime_unix) \
             .strftime('%Y-%m-%dT%H:%M:%S')
         ctime_unix = lstat_path.st_ctime
-        ctime_utc = datetime.utcfromtimestamp(ctime_unix)\
+        ctime_utc = datetime.utcfromtimestamp(ctime_unix) \
             .strftime('%Y-%m-%dT%H:%M:%S')
         # get time now in utc
         indextime_utc = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
@@ -685,13 +724,13 @@ def get_dir_meta(threadnum, path, dirlist):
 
         filename = os.path.basename(path)
         parentdir = os.path.abspath(os.path.join(path, os.pardir))
-        fullpath = parentdir + '/' + filename
+        fullpath = os.path.abspath(os.path.join(parentdir, filename))
 
         dirmeta_dict = {
             "filename": filename,
             "path_parent": parentdir,
             "filesize": 0,
-            "items": 0,
+            "items": 1,  # itself
             "last_modified": mtime_utc,
             "last_access": atime_utc,
             "last_change": ctime_utc,
@@ -702,12 +741,16 @@ def get_dir_meta(threadnum, path, dirlist):
             "indexing_date": indextime_utc
         }
 
-        # search for and copy over any existing tags
-        search_path = fullpath
+        # search for and copy over any existing tags and filesize/items
         for sublist in reindex_dir_list:
-            if sublist[0] == search_path:
+            if sublist[0] == fullpath:
                 dirmeta_dict['tag'] = sublist[1]
                 dirmeta_dict['tag_custom'] = sublist[2]
+                # copy over any existing subdir item/filesize
+                # only for non-recursive reindexing
+                if CLIARGS['reindex'] and fullpath != CLIARGS['rootdir']:
+                    dirmeta_dict['filesize'] = sublist[3]
+                    dirmeta_dict['items'] = sublist[4]
                 break
 
         # check plugins for adding extra meta data to dirmeta_dict
@@ -720,90 +763,80 @@ def get_dir_meta(threadnum, path, dirlist):
             except KeyError:
                 pass
 
-        # add dirinfo to dirlist
-        dirlist.append(dirmeta_dict)
-
-        # when dirlist reaches max chunk size, bulk add to ES and empty it
-        if len(dirlist) >= CONFIG['es_chunksize']:
-            index_add_dirs(threadnum, dirlist)
-            del dirlist[:]
-
     except (IOError, OSError):
         if VERBOSE:
             LOGGER.error('Error crawling directory %s', path, exc_info=True)
-        pass
+        return None
 
-    return dirlist
+    return dirmeta_dict
 
 
-def get_file_meta(threadnum, entry, filelist, singlefile=False):
+def get_file_meta(threadnum, path, singlefile=False):
     """This is the get file meta data function.
-    It gets file meta and adds to Elasticsearch.
-    Once filelist reaches max chunk_size or Queue is empty,
-    it is bulk added to Elasticsearch and emptied.
-    Ignores files smaller than 'minsize' Bytes, newer
-    than 'daysold' old and in 'excluded_files'.
+    It scrapes file meta and ignores files smaller
+    than 'minsize' Bytes, newer than 'daysold' old
+    and in 'excluded_files'. Returns file meta dict.
     """
     global total_files
     global total_file_size
-    global total_files_skipped
-    global total_file_size_skipped
+    global total_files_skipped_size
+    global total_files_skipped_excluded
+    global total_files_skipped_mtime
+    global total_file_size_skipped_size
+    global total_file_size_skipped_excluded
+    global total_file_size_skipped_mtime
     global reindex_file_list
 
     try:
-        entry_stat = entry.stat()
+        filename = os.path.basename(path)
+        # use lstat to get meta and not follow sym links
+        stat = os.lstat(path)
         # get file size (bytes)
-        size = entry_stat.st_size
+        size = stat.st_size
 
-        # add to totals
-        if not singlefile:
-            with lock:
-                total_files += 1
-                total_file_size += size
-
-        LOGGER.debug('Filename: <%s>', entry.name)
-        LOGGER.debug('Path: <%s>', entry.path)
+        LOGGER.debug('Filename: <%s>', filename)
+        LOGGER.debug('Path: <%s>', path)
 
         # Skip files smaller than minsize cli flag
         if size < CLIARGS['minsize']:
             if VERBOSE:
                 LOGGER.info('[thread-%s]: Skipping (size) %s',
-                            threadnum, entry.path)
+                            threadnum, path)
             if not singlefile:
                 with lock:
-                    total_files_skipped += 1
-                    total_file_size_skipped += size
-            return filelist
+                    total_files_skipped_size += 1
+                    total_file_size_skipped_size += size
+            return None
 
         # check if file is in exluded_files list
-        if entry.name in CONFIG['excluded_files'] or \
-                (entry.name.startswith('.') and u'.*'
-                    in CONFIG['excluded_files']):
+        if filename in CONFIG['excluded_files'] or \
+                (filename.startswith('.') and u'.*'
+                in CONFIG['excluded_files']):
             if VERBOSE:
                 LOGGER.info('[thread-%s]: Skipping (excluded file) %s',
-                            threadnum, entry.path)
+                            threadnum, path)
             if not singlefile:
                 with lock:
-                    total_files_skipped += 1
-                    total_file_size_skipped += size
-            return filelist
+                    total_files_skipped_excluded += 1
+                    total_file_size_skipped_excluded += size
+            return None
 
         # get file extension and check excluded_files
-        extension = os.path.splitext(entry.name)[1][1:].strip().lower()
+        extension = os.path.splitext(filename)[1][1:].strip().lower()
         LOGGER.debug('Extension: <%s>', extension)
         if (not extension and 'NULLEXT' in CONFIG['excluded_files']) \
                 or '*.' + extension in CONFIG['excluded_files']:
             if VERBOSE:
                 LOGGER.info('[thread-%s]: Skipping (excluded file) %s',
-                            threadnum, entry.path)
+                            threadnum, path)
             if not singlefile:
                 with lock:
-                    total_files_skipped += 1
-                    total_file_size_skipped += size
-            return filelist
+                    total_files_skipped_excluded += 1
+                    total_file_size_skipped_excluded += size
+            return None
 
         # check file modified time
-        mtime_unix = entry_stat.st_mtime
+        mtime_unix = stat.st_mtime
         mtime_utc = \
             datetime.utcfromtimestamp(mtime_unix).strftime('%Y-%m-%dT%H:%M:%S')
         # Convert time in days to seconds
@@ -813,23 +846,29 @@ def get_file_meta(threadnum, entry, filelist, singlefile=False):
         if file_mtime_sec < time_sec:
             if VERBOSE:
                 LOGGER.info('[thread-%s]: Skipping (mtime) %s',
-                            threadnum, entry.path)
+                            threadnum, path)
             if not singlefile:
                 with lock:
-                    total_files_skipped += 1
-                    total_file_size_skipped += size
-            return filelist
+                    total_files_skipped_mtime += 1
+                    total_file_size_skipped_mtime += size
+            return None
+
+        # add to totals
+        if not singlefile:
+            with lock:
+                total_files += 1
+                total_file_size += size
 
         # get access time
-        atime_unix = entry_stat.st_atime
+        atime_unix = stat.st_atime
         atime_utc = \
             datetime.utcfromtimestamp(atime_unix).strftime('%Y-%m-%dT%H:%M:%S')
         # get change time
-        ctime_unix = entry_stat.st_ctime
+        ctime_unix = stat.st_ctime
         ctime_utc = \
             datetime.utcfromtimestamp(ctime_unix).strftime('%Y-%m-%dT%H:%M:%S')
         # get user id of owner
-        uid = entry_stat.st_uid
+        uid = stat.st_uid
         # try to get owner user name
         try:
             owner = pwd.getpwuid(uid).pw_name.split('\\')
@@ -842,7 +881,7 @@ def get_file_meta(threadnum, entry, filelist, singlefile=False):
         except KeyError:
             owner = uid
         # get group id
-        gid = entry_stat.st_gid
+        gid = stat.st_gid
         # try to get group name
         try:
             group = grp.getgrgid(gid).gr_name.split('\\')
@@ -855,20 +894,20 @@ def get_file_meta(threadnum, entry, filelist, singlefile=False):
         except KeyError:
             group = gid
         # get inode number
-        inode = entry.inode()
+        inode = stat.st_ino
         # get number of hardlinks
-        hardlinks = entry_stat.st_nlink
+        hardlinks = stat.st_nlink
         # create md5 hash of file using metadata filesize and mtime
         filestring = str(size) + str(mtime_unix)
         filehash = hashlib.md5(filestring.encode('utf-8')).hexdigest()
         # get time
         indextime_utc = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
         # get absolute path of parent directory
-        parentdir = os.path.abspath(os.path.join(entry.path, os.pardir))
+        parentdir = os.path.abspath(os.path.join(path, os.pardir))
 
         # create file metadata dictionary
         filemeta_dict = {
-            "filename": entry.name,
+            "filename": filename,
             "extension": extension,
             "path_parent": parentdir,
             "filesize": size,
@@ -894,9 +933,8 @@ def get_file_meta(threadnum, entry, filelist, singlefile=False):
             index_delete_file(filemeta_dict)
 
         # search for and copy over any existing tags
-        search_path = parentdir + '/' + entry.name
         for sublist in reindex_file_list:
-            if sublist[0] == search_path:
+            if sublist[0] == path:
                 filemeta_dict['tag'] = sublist[1]
                 filemeta_dict['tag_custom'] = sublist[2]
                 break
@@ -907,250 +945,143 @@ def get_file_meta(threadnum, entry, filelist, singlefile=False):
                 # check if plugin is for file doc
                 mappings = {'mappings': {'file': {'properties': {}}}}
                 mappings = (plugin.add_mappings(mappings))
-                filemeta_dict.update(plugin.add_meta(entry.path))
+                filemeta_dict.update(plugin.add_meta(path))
             except KeyError:
                 pass
 
-        # add file metadata dictionary to filelist list
-        filelist.append(filemeta_dict)
-
         # check if we are just indexing one file
         if singlefile:
-            LOGGER.info('Adding file to index: %s' % CLIARGS['index'])
-            index_add_files(threadnum, filelist)
-            LOGGER.info('File added to Elasticsearch, any tags have been copied')
+            LOGGER.info('Adding %s to %s', path, CLIARGS['index'])
+            index_bulk_add(threadnum, [filemeta_dict], 'file')
+            LOGGER.info('File added, any tags have been copied')
             return
-        else:
-            # when filelist reaches max chunk size, bulk add to ES and empty it
-            if len(filelist) >= CONFIG['es_chunksize']:
-                index_add_files(threadnum, filelist)
-                del filelist[:]
 
     except (IOError, OSError):
         if VERBOSE:
             LOGGER.error('[thread-%s]: Error crawling file %s',
-                         threadnum, entry.path, exc_info=True)
-        pass
+                         threadnum, path, exc_info=True)
+        return None
 
-    return filelist
-
-
-def escape_chars(text):
-    """This is the escape special characters function.
-    It returns escaped strings for ES queries."""
-    chr_dict = {'/': '\\/', '(': '\\(', ')': '\\)', '[': '\\[', ']': '\\]',
-           ' ': '\\ ', '&': '\\&', '<': '\\<', '>': '\\>', '+': '\\+', '-': '\\-',
-           '|': '\\|', '!': '\\!', '{': '\\{', '}': '\\}', '^': '\\^', '~': '\\~',
-           '?': '\\?', ':': '\\:'}
-    def char_trans(text, chr_dict):
-        for key, value in chr_dict.items():
-            text = text.replace(key, value)
-        return text
-    if IS_PY3:
-        text_esc = text.translate(str.maketrans(chr_dict))
-    else:
-        text_esc = char_trans(text, chr_dict)
-    return text_esc
+    return filemeta_dict
 
 
-def dirsize_worker(threadnum):
-    """This is the get directory size worker function.
-    It gets a directory from the Queue and searches ES for all files
-    in the directory (recursive) and sums their filesizes
-    to create a total filesize and item count for each dir.
-    Updates dir doc's filesize and items fields.
+def crawl_worker(threadnum):
+    """This is the crawl worker function.
+    It gets a directory from the Queue and scrapes
+    it's meta and it's file's meta and any subdirs
+    are added into the queue. Meta is added to
+    dirlist and filelist. Meta data for size and items
+    are added to dirlist for calculating
+    directory sizes at end of crawl.
+    It runs in infinite loop until all worker thread
+    tasks are finished (Queue empty).
+    When filelist reach max es_chunksize
+    the lists will be bulk added to ES. dirlist is
+    not bulk added until end of crawl.
     """
-    dir_id_list = []
+    global dirlist
+
+    # create list to hold files
+    filelist = []
 
     while True:
-        totalsize = 0
-        totalitems = 0
-
         if CLIARGS['nice']:
             time.sleep(.01)
         if VERBOSE:
-            LOGGER.info('[thread-%s]: Looking for the next directory',
+            LOGGER.info('[thread-%s]: Looking for the next path in the queue',
                         threadnum)
-        path = q.get()  # [docid, fullpath, mtime, doctype]
-
-        if path is None:
-            # wait for ES health to be at least yellow
-            ES.cluster.health(wait_for_status='yellow',
-                              request_timeout=CONFIG['es_timeout'])
-            helpers.bulk(ES, dir_id_list, index=CLIARGS['index'],
-                         doc_type='directory',
-                         chunk_size=CONFIG['es_chunksize'],
-                         request_timeout=CONFIG['es_timeout'])
-            del dir_id_list[:]
-            update_progress(finished=True)
+        # get a path from the Queue
+        if CLIARGS['breadthfirst']:
+            (pri, item) = q.get()
+        else:
+            item = q.get()
+        if item is None:
+            # add filelist to ES and empty it
+            if len(filelist) > 0:
+                index_bulk_add(threadnum, filelist, 'file')
+            update_progress(threadnum, finished=True)
             # stop thread's infinite loop
             q.task_done()
             break
         else:
+            (root, dirs, files) = item
+            # start gathering meta for path
             if VERBOSE:
-                LOGGER.info('[thread-%s]: Calculating size: %s', threadnum, path[1])
-
-            # file doc search with aggregate for sum filesizes
-            # escape special characters
-            newpath = escape_chars(path[1])
-
-            # check if / (root) path
-            if newpath == '\/':
-                data = {
-                    "size": 0,
-                    "query": {
-                        "query_string": {
-                            "query": "path_parent: " + newpath + "*",
-                            "analyze_wildcard": "true"
-                        }
-                    },
-                    "aggs": {
-                        "total_size": {
-                            "sum": {
-                                "field": "filesize"
-                            }
-                        }
-                    }
-                }
-            else:
-                data = {
-                    "size": 0,
-                    "query": {
-                        "query_string": {
-                            "query": "path_parent: " + newpath + " \
-                            OR path_parent: " + newpath + "\/*",
-                            "analyze_wildcard": "true"
-                        }
-                    },
-                    "aggs": {
-                        "total_size": {
-                            "sum": {
-                                "field": "filesize"
-                            }
-                        }
-                    }
-                }
-
-            # refresh index
-            #ES.indices.refresh(index=CLIARGS['index'])
-            # search ES and start scroll
-            res = ES.search(index=CLIARGS['index'], doc_type='file', body=data,
-                            request_timeout=CONFIG['es_timeout'])
-
-            # add total files to items
-            totalitems += res['hits']['total']
-
-            # total file size sum
-            totalsize = res['aggregations']['total_size']['value']
-
-            # search and add total directories to items
-
-            # check if / (root) path
-            if newpath == '\/':
-                data = {
-                    "size": 0,
-                    "query": {
-                        "query_string": {
-                            "query": "path_parent: " + newpath + "*",
-                            "analyze_wildcard": "true"
-                        }
-                    }
-                }
-            else:
-                data = {
-                    "size": 0,
-                    "query": {
-                        "query_string": {
-                            "query": "path_parent: " + newpath + " \
-                            OR path_parent: " + newpath + "\/*",
-                            "analyze_wildcard": "true"
-                        }
-                    }
-                }
-
-            res = ES.search(index=CLIARGS['index'], doc_type='directory',
-                            body=data, request_timeout=CONFIG['es_timeout'])
-
-            # add total directories (subdirs) to items
-            totalitems += res['hits']['total']
-
-            # ES id of directory doc
-            directoryid = path[0]
-
-            # update filesize field for directory (path) doc
-            d = {
-                '_op_type': 'update',
-                '_index': CLIARGS['index'],
-                '_type': 'directory',
-                '_id': directoryid,
-                'doc': {'filesize': totalsize, 'items': totalitems}
-            }
-            dir_id_list.append(d)
-
-            # bulk add to ES once we reach max chunk size
-            if len(dir_id_list) >= CONFIG['es_chunksize']:
-                # wait for ES health to be at least yellow
-                ES.cluster.health(wait_for_status='yellow',
-                                  request_timeout=CONFIG['es_timeout'])
-                helpers.bulk(ES, dir_id_list, index=CLIARGS['index'],
-                             doc_type='directory',
-                             chunk_size=CONFIG['es_chunksize'],
-                             request_timeout=CONFIG['es_timeout'])
-                del dir_id_list[:]
-
-            update_progress()
-
-            # task is done
-            q.task_done()
+                LOGGER.info('[thread-%s]: Crawling directory meta: %s',
+                            threadnum, root)
+            # get directory meta data and add to dirmeta
+            dirmeta = get_dir_meta(root)
+            for f in files:
+                p = os.path.abspath(os.path.join(root, f))
+                if VERBOSE:
+                    LOGGER.info('[thread-%s]: Crawling file meta: %s',
+                                threadnum, p)
+                # get file meta data and add to filelist
+                filemeta = get_file_meta(threadnum, p)
+                if filemeta is not None:
+                    filelist.append(filemeta)
+                    # update dirlist directory's filesize and items fields
+                    dirmeta['filesize'] += filemeta['filesize']
+                    dirmeta['items'] += 1
+            if dirmeta is not None:
+                with lock:
+                    # add dirmeta to dirlist
+                    dirlist[root]['meta'] = dirmeta
+                # add size/item up the tree to all dirs above
+                dirpath = os.path.abspath(os.path.join(dirmeta['path_parent'], dirmeta['filename']))
+                pathtree = dirpath.split('/')
+                n = CLIARGS['rootdir'].count(os.path.sep)
+                for i in range(n, len(pathtree)-1):
+                    pathtree = pathtree[:-1]
+                    p = '/'.join(pathtree)
+                    with lock:
+                        dirlist[p]['size'] += dirmeta['filesize']
+                        dirlist[p]['items'] += dirmeta['items']
+        # when filelist reaches max chunk size, bulk add to ES and empty it
+        if len(filelist) >= CONFIG['es_chunksize']:
+            index_bulk_add(threadnum, filelist, 'file')
+            del filelist[:]
+        # update progress bar
+        update_progress(threadnum)
+        # task is done
+        q.task_done()
 
 
 def copytag_worker(threadnum):
     """This is the copy tag worker function.
-    It gets a path from the Queue and searches index2 for the
-    same path and copies any existing tags.
+    It gets a path from the Queue and searches index for the
+    same path and copies any existing tags (from index2)
     Updates index's doc's tag and tag_custom fields.
     """
     dir_id_list = []
     file_id_list = []
 
     while True:
-        totalsize = 0
-        totalitems = 0
-
         if CLIARGS['nice']:
             time.sleep(.01)
         if VERBOSE:
             LOGGER.info('[thread-%s]: Looking for the next path in queue',
                         threadnum)
-        path = q.get()  # [docid, fullpath, mtime, doctype]
+        path = q.get()  # [fullpath, tag, tag_custom, doctype]
 
         if path is None:
-            # wait for ES health to be at least yellow
-            ES.cluster.health(wait_for_status='yellow',
-                              request_timeout=CONFIG['es_timeout'])
-            helpers.bulk(ES, dir_id_list, index=CLIARGS['index'],
-                         doc_type='directory',
-                         chunk_size=CONFIG['es_chunksize'],
-                         request_timeout=CONFIG['es_timeout'])
+            index_bulk_add(threadnum, dir_id_list, 'directory')
             del dir_id_list[:]
-            helpers.bulk(ES, file_id_list, index=CLIARGS['index'],
-                         doc_type='file',
-                         chunk_size=CONFIG['es_chunksize'],
-                         request_timeout=CONFIG['es_timeout'])
+            index_bulk_add(threadnum, file_id_list, 'file')
             del file_id_list[:]
-            update_progress(finished=True)
+            update_progress(threadnum, finished=True)
             # stop thread's infinite loop
             q.task_done()
             break
         else:
             if VERBOSE:
-                LOGGER.info('[thread-%s]: Copying tags: %s', threadnum, path[1])
+                LOGGER.info('[thread-%s]: Copying tags: %s', threadnum, path[0])
 
-            # doc search (matching path) in index2 for existing tags
+            # doc search (matching path) in index for existing tags from index2
             # filename
-            f = os.path.basename(path[1])
+            f = os.path.basename(path[0])
             # parent path
-            p = os.path.abspath(os.path.join(path[1], os.pardir))
+            p = os.path.abspath(os.path.join(path[0], os.pardir))
 
             data = {
                 "size": 1,
@@ -1163,35 +1094,33 @@ def copytag_worker(threadnum):
             }
 
             # refresh index
-            #ES.indices.refresh(index=CLIARGS['index'])
+            # ES.indices.refresh(index=CLIARGS['index'])
 
             # check if file or directory
             if path[3] is 'directory':
                 # search ES
-                res = ES.search(index=CLIARGS['copytags'], doc_type='directory', body=data,
+                res = ES.search(index=CLIARGS['index'], doc_type='directory', body=data,
                                 request_timeout=CONFIG['es_timeout'])
             else:
-                res = ES.search(index=CLIARGS['copytags'], doc_type='file', body=data,
+                res = ES.search(index=CLIARGS['index'], doc_type='file', body=data,
                                 request_timeout=CONFIG['es_timeout'])
 
-            # mark task done if no matching path in index2 and continue
+            # mark task done if no matching path in index and continue
             if len(res['hits']['hits']) == 0:
-                update_progress()
+                update_progress(threadnum)
                 q.task_done()
                 continue
 
             # existing tag in index2
-            tag = res['hits']['hits'][0]['_source']['tag']
-            # existing tag_custom in index2
-            tag_custom = res['hits']['hits'][0]['_source']['tag_custom']
+            docid = res['hits']['hits'][0]['_id']
 
             # update tag and tag_custom fields in index
             d = {
                 '_op_type': 'update',
                 '_index': CLIARGS['index'],
                 '_type': path[3],
-                '_id': path[0],
-                'doc': {'tag': tag, 'tag_custom': tag_custom}
+                '_id': docid,
+                'doc': {'tag': path[1], 'tag_custom': path[2]}
             }
             if path[3] is 'directory':
                 dir_id_list.append(d)
@@ -1200,104 +1129,273 @@ def copytag_worker(threadnum):
 
             # bulk add to ES once we reach max chunk size
             if len(dir_id_list) >= CONFIG['es_chunksize']:
-                # wait for ES health to be at least yellow
-                ES.cluster.health(wait_for_status='yellow',
-                                  request_timeout=CONFIG['es_timeout'])
-                helpers.bulk(ES, dir_id_list, index=CLIARGS['index'],
-                             doc_type='directory',
-                             chunk_size=CONFIG['es_chunksize'],
-                             request_timeout=CONFIG['es_timeout'])
+                index_bulk_add(threadnum, dir_id_list, 'directory')
                 del dir_id_list[:]
             if len(file_id_list) >= CONFIG['es_chunksize']:
-                # wait for ES health to be at least yellow
-                ES.cluster.health(wait_for_status='yellow',
-                                  request_timeout=CONFIG['es_timeout'])
-                helpers.bulk(ES, file_id_list, index=CLIARGS['index'],
-                             doc_type='file',
-                             chunk_size=CONFIG['es_chunksize'],
-                             request_timeout=CONFIG['es_timeout'])
+                index_bulk_add(threadnum, file_id_list, 'file')
                 del file_id_list[:]
 
-            update_progress()
+            update_progress(threadnum)
 
             # task is done
             q.task_done()
 
 
+def crawlbot_worker(threadnum):
+    """This is the crawl bot worker thread function.
+    It grabs an item from the queue which contains directory
+    path and mtime. Directory's mtime on disk is
+    checked and if newer it is reindexed (non-recursive).
+    """
+
+    t = time.time()
+    c = 0
+    n = 0
+    s = 0
+    last_path = ''
+    while True:
+        if CLIARGS['nice']:
+            time.sleep(.01)
+        if VERBOSE:
+            LOGGER.info('[thread-%s]: Looking for the next path in the queue',
+                        threadnum)
+
+        # get a path/mtime from the Bot Queue
+        item = botq.get()
+        path = item[0]
+        mtime_utc = item[1]
+
+        if item is None:
+            # stop thread's infinite loop
+            botq.task_done()
+            break
+        else:
+            # check directory's mtime on disk
+            if time.time() - t >= 60:
+                t = get_time(time.time() - STARTTIME)
+                # display stats if 1 min elapsed
+                LOGGER.info(
+                    '### crawlbot [thread-%s] [stats]: %s dirs checked (%s dir/s), %s dirs updated, %s same dir hits, running for %s ###',
+                    threadnum, n, round(n / (time.time() - STARTTIME), 2), c, s, t)
+                t = time.time()
+            # pick a new path if same as last time
+            if path == last_path:
+                s += 1
+                botq.task_done()
+                continue
+            last_path = path
+            if VERBOSE:
+                LOGGER.info('crawlbot [thread-%s]: checking %s', threadnum, path)
+            try:
+                mtime_now_utc = time.mktime(time.gmtime(os.lstat(path).st_mtime))
+            except (IOError, OSError):
+                if VERBOSE:
+                    LOGGER.error('crawlbot [thread-%s]: Error crawling directory %s', threadnum, path, exc_info=True)
+                botq.task_done()
+                continue
+            if (mtime_now_utc == mtime_utc):
+                LOGGER.debug('crawlbot [thread-%s]: same mtime %s', threadnum, path)
+                pass
+            else:
+                c += 1
+                LOGGER.info('crawlbot [thread-%s]: *** mtime changed! reindexing %s ***', threadnum, path)
+                # delete existing path docs (non-recursive)
+                index_delete_path(path)
+                # reindex path
+                worker_setup_crawl(path)
+            # task is done
+            botq.task_done()
+            time.sleep(CONFIG['botsleep'])
+            n += 1
+
+
 def check_dir_excludes(path):
     """Return Boolean if path in excluded_dirs list"""
-    global total_dirs_skipped
-
     # skip any dirs in excluded dirs
     if os.path.basename(path) in CONFIG['excluded_dirs'] \
             or path in CONFIG['excluded_dirs']:
         if VERBOSE:
             LOGGER.info('Skipping (excluded dir) %s', path)
-        with lock:
-            total_dirs_skipped += 1
         return True
     # skip any dirs which start with . and in excluded dirs
     elif os.path.basename(path).startswith('.') and u'.*' \
             in CONFIG['excluded_dirs']:
         if VERBOSE:
             LOGGER.info('Skipping (.* dir) %s', path)
-        with lock:
-            total_dirs_skipped += 1
         return True
     else:
         return False
 
 
-def start_crawl(path, crawlbot=False):
+def escape_chars(text):
+    """This is the escape special characters function.
+    It returns escaped path strings for ES queries.
+    """
+    chr_dict = {'/': '\\/', '(': '\\(', ')': '\\)', '[': '\\[', ']': '\\]',
+                ' ': '\\ ', '&': '\\&', '<': '\\<', '>': '\\>', '+': '\\+', '-': '\\-',
+                '|': '\\|', '!': '\\!', '{': '\\{', '}': '\\}', '^': '\\^', '~': '\\~',
+                '?': '\\?', ':': '\\:'}
+    def char_trans(text, chr_dict):
+        for key, value in chr_dict.items():
+            text = text.replace(key, value)
+        return text
+    if IS_PY3:
+        text_esc = text.translate(str.maketrans(chr_dict))
+    else:
+        text_esc = char_trans(text, chr_dict)
+    return text_esc
+
+
+def calc_rootdir_size(path):
+    """This is the calculate rootdir size function.
+    It runs when -c  flag to update the rootdir
+    doc's filesize/items fields. Usually run
+    after parallel crawls.
+    """
+    # get all the sub directory sizes/items under rootdir (maxdepth 1)
+    size = 0
+    items = 0
+    data = {
+        '_source': ['filesize', 'items'],
+        'query': {
+            'match': {
+                'path_parent': path
+            }
+        }
+    }
+    # refresh index
+    ES.indices.refresh(index=CLIARGS['index'])
+    # search ES and start scroll
+    res = ES.search(index=CLIARGS['index'], doc_type='directory', scroll='1m',
+                    size=1000, body=data, request_timeout=CONFIG['es_timeout'])
+    while res['hits']['hits'] and len(res['hits']['hits']) > 0:
+        for hit in res['hits']['hits']:
+            size += hit['_source']["filesize"]
+            items += hit['_source']["items"]
+        # get ES scroll id
+        scroll_id = res['_scroll_id']
+        # use ES scroll api
+        res = ES.scroll(scroll_id=scroll_id, scroll='1m',
+                        request_timeout=CONFIG['es_timeout'])
+    # get all the files and their sizes in rootdir
+    data = {
+        '_source': ['filesize'],
+        'query': {
+            'match': {
+                'path_parent': path
+            }
+        }
+    }
+    res = ES.search(index=CLIARGS['index'], doc_type='file', scroll='1m',
+                    size=1000, body=data, request_timeout=CONFIG['es_timeout'])
+    while res['hits']['hits'] and len(res['hits']['hits']) > 0:
+        for hit in res['hits']['hits']:
+            size += hit['_source']["filesize"]
+        # get ES scroll id
+        scroll_id = res['_scroll_id']
+        # use ES scroll api
+        res = ES.scroll(scroll_id=scroll_id, scroll='1m',
+                        request_timeout=CONFIG['es_timeout'])
+    # add total files to items
+    items += res['hits']['total']
+
+    # search for the rootdir doc id and update it's filesize/items fields
+    # filename
+    f = os.path.basename(path)
+    # parent path
+    p = os.path.abspath(os.path.join(path, os.pardir))
+    data = {
+        '_source': ['filesize', 'items'],
+        'query': {
+            'query_string': {
+                'query': 'path_parent: "' + p + '" AND filename: "' + f + '"'
+            }
+        }
+    }
+    res = ES.search(index=CLIARGS['index'], doc_type='directory',
+                    size=1, body=data, request_timeout=CONFIG['es_timeout'])
+    # add 1 more item for the rootdir itself
+    items += 1
+    try:
+        docid = res['hits']['hits'][0]['_id']
+        d = {
+            '_op_type': 'update',
+            '_index': CLIARGS['index'],
+            '_type': 'directory',
+            '_id': docid,
+            'doc': {'filesize': size, 'items': items}
+        }
+        index_bulk_add(0, [d], 'directory')
+    except IndexError:
+        pass
+        print('Index error, check -d rootdir is same as when indexing')
+        sys.exit(1)
+
+
+def start_crawl(path):
     """This is the start crawl function.
     It starts crawling the tree from the top rootdir
-    using scandir.walk and adds directories to
-    the Queue.
+    using scandir walk and adds a path tuple which contains
+    directory and it's files to the Queue.
     """
+    global dirlist
+    global total_dirs
+    global total_dirs_skipped_empty
+    global total_dirs_skipped_excluded
 
-    LOGGER.info('Starting crawl using %s threads', CLIARGS['threads'])
-
+    LOGGER.info('Starting crawl for %s using %s threads', path, CLIARGS['threads'])
     try:
         # set maxdepth level
         level = CLIARGS['maxdepth']
         # set current depth
         num_sep = path.count(os.path.sep)
-        # check for reindex (non-recursive) or crawlbot
-        if CLIARGS['reindex'] or crawlbot:
+        # set maxdepth level to 1 if reindex or crawlbot (non-recursive)
+        if CLIARGS['reindex'] or CLIARGS['crawlbot']:
             level = 1
-
+            CLIARGS['maxdepth'] = 1
         if CLIARGS['breadthfirst']:  # breadth-first crawl
             LOGGER.info(
                 'Walking tree (breadth-first, maxdepth:%s)'
                 % level)
-            for root, dirs, files in walk(path):
-                depth = root.count(os.path.sep) - num_sep  # priority
-                excluded = check_dir_excludes(root)
-                if excluded is False:
+        else:
+            LOGGER.info(
+                'Walking tree (depth-first, maxdepth:%s)'
+                % level)
+        for root, dirs, files in walk(path):
+            depth = root.count(os.path.sep) - num_sep  # priority for breadth-first
+            if len(dirs) == 0 and len(files) == 0 and not CLIARGS['indexemptydirs']:
+                if VERBOSE:
+                    LOGGER.info('Skipping directory (empty): %s', root)
+                total_dirs_skipped_empty += 1
+                continue
+            excluded = check_dir_excludes(root)
+            if excluded is False:
+                dirlist[root] = {'meta': {}, 'size': 0, 'items': 0}
+                if CLIARGS['breadthfirst']:
                     if VERBOSE:
                         LOGGER.info("Adding path to queue: %s (depth:%s)",
                                     root, depth)
-                    q.put((depth, root))
-                elif excluded is True:
-                    del dirs[:]
-                num_sep_this = root.count(os.path.sep)
-                if num_sep + level <= num_sep_this:
-                    del dirs[:]
-
-        else:  # depth-first (default)
-            for root, dirs, files in walk(path):
-                excluded = check_dir_excludes(root)
-                if excluded is False:
+                    # add priority and path tuple to queue
+                    q.put((depth, (root, dirs, files)))
+                else:
                     if VERBOSE:
                         LOGGER.info('Adding path to queue: %s', root)
-                    # add directory to queue
-                    q.put(root)
-                elif excluded is True:
-                    del dirs[:]
-                num_sep_this = root.count(os.path.sep)
-                if num_sep + level <= num_sep_this:
-                    del dirs[:]
-
+                    # add path tuple to queue
+                    q.put((root, dirs, files))
+                total_dirs += 1
+            elif excluded is True:
+                if VERBOSE:
+                    LOGGER.info('Skipping directory (excluded): %s', root)
+                total_dirs_skipped_excluded += 1
+                del dirs[:]
+            # check if at maxdepth level and delete dirs/files lists to not
+            # descend further down the tree
+            num_sep_this = root.count(os.path.sep)
+            if num_sep + level <= num_sep_this:
+                if VERBOSE:
+                    LOGGER.info('Maxdepth reached')
+                del dirs[:]
+                del files[:]
         # put None into the queue to trigger final ES bulk operations
         for i in range(int(CLIARGS['threads'])):
             if CLIARGS['breadthfirst']:
@@ -1306,6 +1404,24 @@ def start_crawl(path, crawlbot=False):
                 q.put(None)
         # block until all tasks are done
         q.join()
+        LOGGER.info('Finished crawling')
+
+        if len(dirlist) > 0:
+            dirlist_bulk = []
+            LOGGER.info('Bulk indexing directories')
+            n = 1
+            for path in dirlist:
+                dirlist[path]['meta']['filesize'] += dirlist[path]['size']
+                dirlist[path]['meta']['items'] += dirlist[path]['items']
+                dirlist_bulk.append(dirlist[path]['meta'])
+                update_progress(0, bulkadddirs=True, n=n)
+                if len(dirlist_bulk) >= CONFIG['es_chunksize']:
+                    index_bulk_add(0, dirlist_bulk, 'directory')
+                    del dirlist_bulk[:]
+                n += 1
+            index_bulk_add(0, dirlist_bulk, 'directory')
+            update_progress(0, bulkadddirs=True, finished=True, n=n)
+            LOGGER.info('Finished indexing directories')
 
     except KeyboardInterrupt:
         LOGGER.disabled = True
@@ -1321,12 +1437,11 @@ def start_crawl(path, crawlbot=False):
         sys.exit(0)
 
 
-def worker_setup_crawl(path, crawlbot=False):
+def worker_setup_crawl(path):
     """This is the worker setup function for directory crawling.
     It sets up the worker threads to process items in the Queue.
     crawloop is set to True if running in bot mode.
     """
-    threads = []
 
     # set up the threads and start them
     for i in range(int(CLIARGS['threads'])):
@@ -1334,59 +1449,58 @@ def worker_setup_crawl(path, crawlbot=False):
         t = threading.Thread(target=crawl_worker, args=(i,))
         t.daemon = True
         t.start()
-        threads.append(t)
-        if CLIARGS['nice']:
-            time.sleep(0.5)
 
     # set unicode path for python2
     if not IS_PY3:
         path = unicode(path)
 
-    if not CLIARGS['reindex'] and not CLIARGS['reindexrecurs'] and not crawlbot:
+    if not CLIARGS['crawlbot'] and not CLIARGS['reindex'] \
+            and not CLIARGS['reindexrecurs']:
         # add crawl stats to ES
-        add_crawl_stats(STARTTIME)
+        add_crawl_stats(event='start')
         # add disk space info to ES
         add_diskspace(path)
 
     # start crawling the path
-    start_crawl(path, crawlbot)
+    start_crawl(path)
 
 
-def worker_setup_dirsizes(dirlist, crawlbot=False):
-    """This is the directory sizes worker setup function.
-    It sets up the worker threads to process the directory list Queue
-    for calculating total directory sizes and item counts in ES.
+def worker_setup_crawlbot(botdirlist):
+    """This is the crawl bot worker setup function.
+    It grabs all the directory docs from botdirlist which
+    contains paths and their mtimes and randomly picks a
+    directory from the list. Directory mtime on disk is
+    checked and if newer it is reindexed (non-recursive).
     """
-    global total_dirs
+
+    LOGGER.info('diskover crawl bot starting up')
+    LOGGER.info('Running with %s threads', CLIARGS['threads'])
+    LOGGER.info('Randomly scanning for changes every %s sec', CONFIG['botsleep'])
+    LOGGER.info('*** Press Ctrl-c to shutdown ***')
 
     # set up the threads and start them
-    LOGGER.info('Running with %s threads', CLIARGS['threads'])
-
-    threads = []
     for i in range(int(CLIARGS['threads'])):
         # start thread
-        t = threading.Thread(target=dirsize_worker, args=(i,))
+        t = threading.Thread(target=crawlbot_worker, args=(i,))
         t.daemon = True
         t.start()
-        threads.append(t)
-        if CLIARGS['nice']:
-            time.sleep(0.5)
-
-    LOGGER.info('Calculating directory sizes')
 
     try:
-        for d in dirlist:
-            q.put(d)
-            total_dirs += 1
-        # stop workers
-        for i in range(int(CLIARGS['threads'])):
-            q.put(None)
-        # block until all tasks are done
-        q.join()
-
-        if crawlbot and not CLIARGS['quiet'] and not CLIARGS['progress']:
-            sys.stdout.write("\n")
-            sys.stdout.flush()
+        t = time.time()
+        # start infinite loop and randomly pick directories from dirlist
+        # in future will create better algorithm for this
+        while True:
+            # get a new dirlist after 1 hour to pick up any new directories which have been added
+            if time.time() - t >= 3600:
+                t = get_time(time.time() - STARTTIME)
+                LOGGER.info(
+                    '### crawlbot main thread: getting new dirlist from ES, crawlbot has been running for %s ###', t)
+                botdirlist = index_get_docs('directory')
+            # random pick from dirlist
+            i = len(botdirlist) - 1
+            li = randint(0, i)
+            d = [botdirlist[li][1], botdirlist[li][2]]
+            botq.put(d)
 
     except KeyboardInterrupt:
         LOGGER.disabled = True
@@ -1394,7 +1508,7 @@ def worker_setup_dirsizes(dirlist, crawlbot=False):
         print("Attempting to close worker threads")
         # stop workers
         for i in range(int(CLIARGS['threads'])):
-            q.put(None)
+            botq.put(None)
         print("\nThreads successfully closed, sayonara!")
         sys.exit(0)
 
@@ -1410,15 +1524,11 @@ def worker_setup_copytags(dirlist, filelist):
     # set up the threads and start them
     LOGGER.info('Running with %s threads', CLIARGS['threads'])
 
-    threads = []
     for i in range(int(CLIARGS['threads'])):
         # start thread
         t = threading.Thread(target=copytag_worker, args=(i,))
         t.daemon = True
         t.start()
-        threads.append(t)
-        if CLIARGS['nice']:
-            time.sleep(0.5)
 
     LOGGER.info('Copying tags from %s to %s', CLIARGS['copytags'][0], CLIARGS['index'])
 
@@ -1454,15 +1564,11 @@ def worker_setup_dupes():
     # set up the threads and start them
     LOGGER.info('Running with %s threads', CLIARGS['threads'])
 
-    threads = []
     for i in range(int(CLIARGS['threads'])):
         # start thread
         t = threading.Thread(target=dupes_worker, args=(i,))
         t.daemon = True
         t.start()
-        threads.append(t)
-        if CLIARGS['nice']:
-            time.sleep(0.5)
 
     LOGGER.info('Searching %s for duplicate file hashes', CLIARGS['index'])
 
@@ -1508,7 +1614,7 @@ def dupes_worker(threadnum):
                 # update existing index and tag dupe files dupe_md5 field
                 index_tag_dupe(threadnum, dupelist)
                 del dupelist[:]
-            update_progress(finished=True)
+            update_progress(threadnum, finished=True)
             # end thread's infinite loop
             q.task_done()
             break
@@ -1518,7 +1624,7 @@ def dupes_worker(threadnum):
             # process the duplicate files in hashgroup and return dupelist
             dupelist = tag_dupes(threadnum, hashgroup, dupelist)
 
-        update_progress()
+        update_progress(threadnum)
 
         # task is done
         q.task_done()
@@ -1530,7 +1636,7 @@ def elasticsearch_connect():
     """
     LOGGER.info('Connecting to Elasticsearch')
     # Check if we are using AWS ES
-    if CONFIG['aws'] == "True":
+    if CONFIG['aws'] == "True" or CONFIG['aws'] == "true":
         es = Elasticsearch(
             hosts=[{'host': CONFIG['es_host'], 'port': CONFIG['es_port']}],
             use_ssl=True, verify_certs=True,
@@ -1552,15 +1658,15 @@ def elasticsearch_connect():
     return es
 
 
-def index_create():
+def index_create(indexname):
     """This is the ES index create function.
     It checks for existing index and deletes if
     there is one with same name. It also creates
     the new index and sets up mappings.
     """
-    LOGGER.info('Checking ES index: %s', CLIARGS['index'])
+    LOGGER.info('Checking ES index: %s', indexname)
     # check for existing es index
-    if ES.indices.exists(index=CLIARGS['index']):
+    if ES.indices.exists(index=indexname):
         # check if nodelete, reindex, cli argument
         # and don't delete existing index
         if CLIARGS['reindex']:
@@ -1575,21 +1681,13 @@ def index_create():
         # delete existing index
         else:
             LOGGER.warning('ES index exists, deleting')
-            ES.indices.delete(index=CLIARGS['index'], ignore=[400, 404])
+            ES.indices.delete(index=indexname, ignore=[400, 404])
     # set up es index mappings and create new index
     mappings = {
         "settings": {
-            "analysis": {
-                "analyzer": {
-                    "path_analyzer": {
-                        "tokenizer": "path_tokenizer"
-                    }
-                },
-                "tokenizer": {
-                    "path_tokenizer": {
-                        "type": "path_hierarchy"
-                    }
-                }
+            "index" : {
+                "number_of_shards": CONFIG['index_shards'],
+                "number_of_replicas": CONFIG['index_replicas']
             }
         },
         "mappings": {
@@ -1615,26 +1713,13 @@ def index_create():
                     }
                 }
             },
-            "crawlstat_start": {
+            "crawlstat": {
                 "properties": {
                     "path": {
                         "type": "keyword"
                     },
-                    "start_time": {
-                        "type": "date"
-                    },
-                    "indexing_date": {
-                        "type": "date"
-                    }
-                }
-            },
-            "crawlstat_stop": {
-                "properties": {
-                    "path": {
+                    "event": {
                         "type": "keyword"
-                    },
-                    "stop_time": {
-                        "type": "date"
                     },
                     "elapsed_time": {
                         "type": "long"
@@ -1650,13 +1735,7 @@ def index_create():
                         "type": "keyword"
                     },
                     "path_parent": {
-                        "type": "keyword",
-                        "fields": {
-                            "tree": {
-                                "type": "text",
-                                "analyzer": "path_analyzer"
-                            }
-                        }
+                        "type": "keyword"
                     },
                     "filesize": {
                         "type": "long"
@@ -1699,13 +1778,7 @@ def index_create():
                         "type": "keyword"
                     },
                     "path_parent": {
-                        "type": "keyword",
-                        "fields": {
-                            "tree": {
-                                "type": "text",
-                                "analyzer": "path_analyzer"
-                            }
-                        }
+                        "type": "keyword"
                     },
                     "filesize": {
                         "type": "long"
@@ -1759,38 +1832,22 @@ def index_create():
         mappings = (plugin.add_mappings(mappings))
 
     LOGGER.info('Creating ES index')
-    ES.indices.create(index=CLIARGS['index'], body=mappings)
+    ES.indices.create(index=indexname, body=mappings)
 
 
-def index_add_files(threadnum, filelist):
-    """This is the ES index add files function.
-    It bulk adds file meta data from worker's crawl
-    results into ES.
-    """
-    if VERBOSE:
-        LOGGER.info('[thread-%s]: Bulk adding files to ES index', threadnum)
-    # wait for ES health to be at least yellow
-    ES.cluster.health(wait_for_status='yellow',
-                      request_timeout=CONFIG['es_timeout'])
-    # bulk load data to Elasticsearch index
-    helpers.bulk(ES, filelist, index=CLIARGS['index'], doc_type='file',
-                 chunk_size=CONFIG['es_chunksize'],
-                 request_timeout=CONFIG['es_timeout'])
-
-
-def index_add_dirs(threadnum, dirlist):
-    """This is the ES index add directories function.
-    It bulk adds directory meta data from worker's crawl
-    results into ES.
+def index_bulk_add(threadnum, doclist, doctype):
+    """This is the ES index bulk add function.
+    It bulk adds/updates/removes using file/directory
+    meta data lists from worker's crawl results.
     """
     if VERBOSE:
         LOGGER.info(
-            '[thread-%s]: Bulk adding directories to ES index', threadnum)
+            '[thread-%s]: Bulk adding %s %s docs to ES index', threadnum, len(doclist), doctype)
     # wait for ES health to be at least yellow
     ES.cluster.health(wait_for_status='yellow',
                       request_timeout=CONFIG['es_timeout'])
     # bulk load data to Elasticsearch index
-    helpers.bulk(ES, dirlist, index=CLIARGS['index'], doc_type='directory',
+    helpers.bulk(ES, doclist, index=CLIARGS['index'], doc_type=doctype,
                  chunk_size=CONFIG['es_chunksize'],
                  request_timeout=CONFIG['es_timeout'])
 
@@ -1807,8 +1864,8 @@ def index_delete_file(file_dict):
     data = {
         "query": {
             "query_string": {
-                "query": "path_parent: \"" + file_dict['path_parent'] + "\" \
-                AND filename: \"" + file_dict['filename'] + "\""
+                "query": "path_parent: \"" + file_dict['path_parent'] + "\" "
+                "AND filename: \"" + file_dict['filename'] + "\""
             }
         }
     }
@@ -1829,12 +1886,14 @@ def index_delete_file(file_dict):
         ES.delete(index=CLIARGS['index'], doc_type="file", id=hit['_id'])
 
 
-def index_delete_path(path, recursive=False, crawlbot=False):
+def index_delete_path(path, recursive=False):
     """This is the ES delete path bulk function.
     It finds all file and directory docs in path and deletes them from ES
     including the directory (path).
     Recursive will also find and delete all docs in subdirs of path.
     Stores any existing tags in reindex_file_list or reindex_dir_list.
+    Also stores filesize,items for sub directories for reindexing
+    when not recursive.
     """
     global reindex_file_list
     global reindex_dir_list
@@ -1843,16 +1902,24 @@ def index_delete_path(path, recursive=False, crawlbot=False):
     file_delete_list = []
     dir_delete_list = []
 
-    # file doc search
+    # refresh index
+    ES.indices.refresh(index=CLIARGS['index'])
 
+    # escape special characters
+    newpath = escape_chars(path)
+    # create wildcard string and check for / (root) path
+    if newpath == '\/':
+        newpathwildcard = '\/*'
+    else:
+        newpathwildcard = newpath + '\/*'
+
+    # file doc search
     if recursive:
-        # escape special characters
-        newpath = escape_chars(path)
         data = {
             "query": {
                 "query_string": {
-                    "query": "path_parent: " + newpath + " \
-                    OR path_parent: " + newpath + "\/*",
+                    "query": "path_parent: " + newpath + " OR "
+                    "path_parent: " + newpathwildcard,
                     "analyze_wildcard": "true"
                 }
             }
@@ -1861,14 +1928,12 @@ def index_delete_path(path, recursive=False, crawlbot=False):
         data = {
             "query": {
                 "query_string": {
-                    "query": "path_parent: \"" + path + "\""
+                    "query": "path_parent: " + newpath
                 }
             }
         }
 
     LOGGER.info('Searching for all files in %s' % path)
-    # refresh index
-    ES.indices.refresh(index=CLIARGS['index'])
     # search ES and start scroll
     res = ES.search(index=CLIARGS['index'], doc_type='file', scroll='1m',
                     size=1000, body=data,
@@ -1889,7 +1954,7 @@ def index_delete_path(path, recursive=False, crawlbot=False):
         res = ES.scroll(scroll_id=scroll_id, scroll='1m',
                         request_timeout=CONFIG['es_timeout'])
 
-    LOGGER.info('Found %s files in %s' % (len(file_id_list), path))
+    LOGGER.info('Found %s files for %s' % (len(file_id_list), path))
 
     # add file id's to delete_list
     for i in file_id_list:
@@ -1901,27 +1966,20 @@ def index_delete_path(path, recursive=False, crawlbot=False):
         }
         file_delete_list.append(d)
 
-    if (len(file_id_list) > 0 or crawlbot):
+    if len(file_delete_list) > 0:
         # bulk delete files in ES
         LOGGER.info('Bulk deleting files in ES index')
-        # wait for ES health to be at least yellow
-        ES.cluster.health(wait_for_status='yellow',
-                          request_timeout=CONFIG['es_timeout'])
-        helpers.bulk(ES, file_delete_list, index=CLIARGS['index'], doc_type='file',
-                     chunk_size=CONFIG['es_chunksize'],
-                     request_timeout=CONFIG['es_timeout'])
+        index_bulk_add(0, file_delete_list, 'file')
 
     # directory doc search
     if recursive:
-        # escape special characters
-        newpath = escape_chars(path)
         data = {
             'query': {
                 'query_string': {
-                    'query': '(path_parent: ' + newpath + ' OR \
-                    path_parent: ' + newpath + '\/*) OR (filename: "'
-                    + os.path.basename(path) + '" AND path_parent: "'
-                    + os.path.abspath(os.path.join(path, os.pardir)) + '")',
+                    'query': '(path_parent: ' + newpath + ') OR '
+                             '(path_parent: ' + newpathwildcard + ') OR (filename: "'
+                             + os.path.basename(path) + '" AND path_parent: "'
+                             + os.path.abspath(os.path.join(path, os.pardir)) + '")',
                     'analyze_wildcard': 'true'
                 }
             }
@@ -1930,16 +1988,14 @@ def index_delete_path(path, recursive=False, crawlbot=False):
         data = {
             'query': {
                 'query_string': {
-                    'query': '(path_parent: "' + path + '") OR (filename: "'
-                    + os.path.basename(path) + '" AND path_parent: "'
-                    + os.path.abspath(os.path.join(path, os.pardir)) + '")'
+                    'query': '(path_parent: ' + newpath + ') OR (filename: "'
+                             + os.path.basename(path) + '" AND path_parent: "'
+                             + os.path.abspath(os.path.join(path, os.pardir)) + '")'
                 }
             }
         }
 
     LOGGER.info('Searching for all directories in %s' % path)
-    # refresh index
-    #ES.indices.refresh(index=CLIARGS['index'])
     # search ES and start scroll
     res = ES.search(index=CLIARGS['index'], doc_type='directory', scroll='1m',
                     size=1000, body=data, request_timeout=CONFIG['es_timeout'])
@@ -1948,18 +2004,20 @@ def index_delete_path(path, recursive=False, crawlbot=False):
         for hit in res['hits']['hits']:
             # add directory doc id to dir_id_list
             dir_id_list.append(hit['_id'])
-            # add directory path info inc. tags to reindex_dir_list
+            # add directory path info inc. tags, filesize, items to reindex_dir_list
             reindex_dir_list.append([hit['_source']['path_parent'] +
                                      '/' + hit['_source']['filename'],
                                      hit['_source']['tag'],
-                                     hit['_source']['tag_custom']])
+                                     hit['_source']['tag_custom'],
+                                     hit['_source']['filesize'],
+                                     hit['_source']['items']])
         # get ES scroll id
         scroll_id = res['_scroll_id']
         # use ES scroll api
         res = ES.scroll(scroll_id=scroll_id, scroll='1m',
                         request_timeout=CONFIG['es_timeout'])
 
-    LOGGER.info('Found %s directories in %s' % (len(dir_id_list), path))
+    LOGGER.info('Found %s directories for %s' % (len(dir_id_list), path))
 
     # add dir id's to delete_list
     for i in dir_id_list:
@@ -1971,71 +2029,62 @@ def index_delete_path(path, recursive=False, crawlbot=False):
         }
         dir_delete_list.append(d)
 
-    if (len(dir_id_list) > 0 or crawlbot):
+    if len(dir_delete_list) > 0:
         # bulk delete directories in ES
         LOGGER.info('Bulk deleting directories in ES index')
-        # wait for ES health to be at least yellow
-        ES.cluster.health(wait_for_status='yellow',
-                          request_timeout=CONFIG['es_timeout'])
-        helpers.bulk(ES, dir_delete_list, index=CLIARGS['index'],
-                     doc_type='directory',
-                     chunk_size=CONFIG['es_chunksize'],
-                     request_timeout=CONFIG['es_timeout'])
+        index_bulk_add(0, dir_delete_list, 'directory')
 
 
-def index_get_docs(doctype='directory', path=None):
+def index_get_docs(doctype='directory', copytags=False, index=None):
     """This is the ES get docs function.
-    It finds all docs (by doctype) in ES if no path provided or
-    will find all docs in path (non-recursive) and returns doclist
+    It finds all docs (by doctype) in ES and returns doclist
     which contains doc id, fullpath and mtime for all docs.
+    If copytags is True will return tags from previous index.
     """
     doclist = []
 
-    if not path:
-        LOGGER.info('Searching for all %s docs in index', doctype)
-        # doc search
+    if index is None:
+        index = CLIARGS['index']
+
+    if copytags:
+        LOGGER.info('Searching for all %s docs with tags in %s', doctype, index)
+        data = {
+            '_source': ['path_parent', 'filename', 'tag', 'tag_custom'],
+            'query': {
+                'query_string': {
+                    'query': 'tag:(NOT "") OR tag_custom:(NOT "")'
+                }
+            }
+        }
+    else:
+        LOGGER.info('Searching for all %s docs in %s', doctype, index)
         data = {
             '_source': ['path_parent', 'filename', 'last_modified'],
             'query': {
                 'match_all': {}
             }
         }
-    else:
-        LOGGER.info('Searching for %s in %s', doctype, path)
-        pd = os.path.abspath(os.path.join(path, os.pardir))
-        f = os.path.basename(path)
-        # directory doc search
-        data = {
-            '_source': ['path_parent', 'filename', 'last_modified'],
-            'query': {
-                'query_string': {
-                    'query': 'path_parent: "' + path + '" OR \
-                    (path_parent: "' + pd + '" AND filename: "' + f + '")'
-                }
-            }
-        }
 
     # refresh index
-    ES.indices.refresh(index=CLIARGS['index'])
+    ES.indices.refresh(index)
     # search ES and start scroll
-    res = ES.search(index=CLIARGS['index'], doc_type=doctype, scroll='1m',
+    res = ES.search(index=index, doc_type=doctype, scroll='1m',
                     size=1000, body=data, request_timeout=CONFIG['es_timeout'])
 
     while res['hits']['hits'] and len(res['hits']['hits']) > 0:
         for hit in res['hits']['hits']:
-            docid = hit['_id']
-            # check if / (root) directory or directory in root
-            if hit['_source']['path_parent'] == '/':
-                fullpath = hit['_source']['path_parent'] + \
-                    hit['_source']['filename']
+            fullpath = os.path.abspath(os.path.join(hit['_source']['path_parent'], hit['_source']['filename']))
+            if copytags:
+                tag = hit['_source']['tag']
+                tag_custom = hit['_source']['tag_custom']
+                doclist.append([fullpath, tag, tag_custom, doctype])
             else:
-                fullpath = hit['_source']['path_parent'] + '/' + \
-                    hit['_source']['filename']
-            # convert es time to unix time format
-            mtime = time.mktime(datetime.strptime(
-                hit['_source']['last_modified'],
-                '%Y-%m-%dT%H:%M:%S').timetuple())
-            doclist.append([docid, fullpath, mtime, doctype])
+                docid = hit['_id']
+                # convert es time to unix time format
+                mtime = time.mktime(datetime.strptime(
+                    hit['_source']['last_modified'],
+                    '%Y-%m-%dT%H:%M:%S').timetuple())
+                doclist.append([docid, fullpath, mtime, doctype])
         # get ES scroll id
         scroll_id = res['_scroll_id']
         # use ES scroll api
@@ -2061,17 +2110,13 @@ def index_tag_dupe(threadnum, dupelist):
                 '_index': CLIARGS['index'],
                 '_type': 'file',
                 '_id': f['id'],
-                'doc': {'dupe_md5': item['filehash']}
+                'doc': {'dupe_md5': item['md5sum']}
             }
             file_id_list.append(d)
-    if VERBOSE:
-        LOGGER.info('[thread-%s]: Bulk updating files in ES index', threadnum)
-    # wait for ES health to be at least yellow
-    ES.cluster.health(wait_for_status='yellow',
-                      request_timeout=CONFIG['es_timeout'])
-    helpers.bulk(ES, file_id_list, index=CLIARGS['index'], doc_type='file',
-                 chunk_size=CONFIG['es_chunksize'],
-                 request_timeout=CONFIG['es_timeout'])
+    if len(file_id_list) > 0:
+        if VERBOSE:
+            LOGGER.info('[thread-%s]: Bulk updating files in ES index', threadnum)
+        index_bulk_add(threadnum, file_id_list, 'file')
 
 
 def tag_dupes(threadnum, hashgroup, dupelist):
@@ -2193,6 +2238,8 @@ def tag_dupes(threadnum, hashgroup, dupelist):
                         md5sum.update(data)
                         data = f.read(read_size)
                 md5sum = md5sum.hexdigest()
+                # update hashgroup's md5sum key
+                hashgroup['md5sum'] = md5sum
                 if VERBOSE:
                     LOGGER.info('[thread-%s] MD5: %s', threadnum, md5sum)
             except (IOError, OSError):
@@ -2258,7 +2305,7 @@ def populate_hashgroup(key):
         }
     }
     # refresh index
-    #ES.indices.refresh(index=CLIARGS['index'])
+    # ES.indices.refresh(index=CLIARGS['index'])
     res = ES.search(index=CLIARGS['index'], doc_type='file', size="1000",
                     body=data, request_timeout=CONFIG['es_timeout'])
 
@@ -2267,11 +2314,11 @@ def populate_hashgroup(key):
         hashgroup_files.append(
             {'id': hit['_id'],
              'filename': hit['_source']['path_parent'] + "/" +
-                hit['_source']['filename']})
+                         hit['_source']['filename']})
         dupe_count += 1
 
     # add filehash group to queue
-    fhg = {'filehash': key, 'files': hashgroup_files}
+    fhg = {'filehash': key, 'files': hashgroup_files, 'md5sum': ''}
 
     return fhg
 
@@ -2346,47 +2393,6 @@ def convert_size(size_bytes):
     p = math.pow(1024, i)
     s = round(size_bytes / p, 2)
     return "%s %s" % (s, size_name[i])
-
-
-def print_stats(stats_type):
-    """This is the print stats function
-    It outputs stats at the end of runtime.
-    """
-    elapsedtime = time.time() - STARTTIME
-    if stats_type is "crawl":
-        # add stats to ES
-        add_crawl_stats(STARTTIME, time.time(), elapsedtime)
-    sys.stdout.flush()
-    LOGGER.disabled = True
-
-    if stats_type is 'crawl':
-        sys.stdout.write("\n\033[%s********************************* \
-CRAWL STATS *********************************\033[0m\n" % BANNER_COLOR)
-        sys.stdout.write("\033[%s Directories: %s\033[0m" % (BANNER_COLOR,
-                                                             total_dirs))
-        sys.stdout.write("\033[%s / Skipped: %s\033[0m\n" % (
-            BANNER_COLOR, total_dirs_skipped))
-        sys.stdout.write(
-            "\033[%s Files: %s (%s)\033[0m"
-            % (BANNER_COLOR, total_files, convert_size(total_file_size)))
-        sys.stdout.write(
-            "\033[%s / Skipped: %s (%s)\033[0m\n"
-            % (BANNER_COLOR, total_files_skipped,
-               convert_size(total_file_size_skipped)))
-
-    elif stats_type is 'updating_dupe':
-        sys.stdout.write("\n\033[%s********************************* \
-DUPES STATS *********************************\033[0m\n" % BANNER_COLOR)
-        sys.stdout.write("\033[%s Files checked: %s \
-(%s filehash groups)\033[0m\n" % (BANNER_COLOR, dupe_count, total_hash_groups))
-        sys.stdout.write("\033[%s Duplicates tagged: \
-%s\033[0m\n" % (BANNER_COLOR, total_dupes))
-
-    sys.stdout.write("\033[%s Elapsed time: \
-%s\033[0m\n" % (BANNER_COLOR, get_time(elapsedtime)))
-    sys.stdout.write("\033[%s******************************************\
-*************************************\033[0m\n\n" % BANNER_COLOR)
-    sys.stdout.flush()
 
 
 def gource():
@@ -2477,8 +2483,8 @@ def run_command(threadnum, command_dict, clientsock, lock):
 
     try:
         action = command_dict['action']
-        pythonpath = CONFIG['listener_python_path']
-        diskoverpath = CONFIG['listener_diskover_path']
+        pythonpath = CONFIG['python_path']
+        diskoverpath = CONFIG['diskover_path']
 
         # set up command for different action
         if action == 'crawl':
@@ -2507,21 +2513,6 @@ def run_command(threadnum, command_dict, clientsock, lock):
                 cmd = [
                     pythonpath, '-u', diskoverpath, '-t', threads,
                     '-i', index, '-d', path, '-r', '--progress']
-
-        elif action == 'dirsize':
-            try:
-                path = command_dict['path']
-            except KeyError:
-                path = None
-                pass
-            if path:
-                cmd = [
-                    pythonpath, '-u', diskoverpath, '-t', threads,
-                    '-i', index, '-S', path, '--progress']
-            else:
-                cmd = [
-                    pythonpath, '-u', diskoverpath, '-t', threads,
-                    '-i', index, '-S', '--progress']
 
         elif action == 'kill':
             taskid = command_dict['taskid']
@@ -2684,14 +2675,12 @@ def start_socket_server():
         # start listener
         serversock.listen(max_connections)
 
-        threads = []
         # set up the threads and start them
         for i in range(max_connections):
             # create thread
             t = threading.Thread(target=socket_thread_handler, args=(i, q, lock))
             t.daemon = True
             t.start()
-            threads.append(t)
 
         while True:
             LOGGER.info("Waiting for connection, listening on %s port %s TCP"
@@ -2719,126 +2708,15 @@ def start_socket_server():
         sys.exit(0)
 
 
-def log_setup():
-    """This is the log set up function.
-    It configures log output for diskover.
-    """
-    diskover_logger = logging.getLogger('diskover')
-    diskover_logger.setLevel(logging.INFO)
-    es_logger = logging.getLogger('elasticsearch')
-    es_logger.setLevel(logging.WARNING)
-    urllib3_logger = logging.getLogger('urllib3')
-    urllib3_logger.setLevel(logging.WARNING)
-    requests_logger = logging.getLogger('requests')
-    requests_logger.setLevel(logging.WARNING)
-    logging.addLevelName(
-        logging.INFO, "\033[1;32m%s\033[1;0m"
-                      % logging.getLevelName(logging.INFO))
-    logging.addLevelName(
-        logging.WARNING, "\033[1;31m%s\033[1;0m"
-                         % logging.getLevelName(logging.WARNING))
-    logging.addLevelName(
-        logging.ERROR, "\033[1;41m%s\033[1;0m"
-                       % logging.getLevelName(logging.ERROR))
-    logging.addLevelName(
-        logging.DEBUG, "\033[1;33m%s\033[1;0m"
-                       % logging.getLevelName(logging.DEBUG))
-    logformatter = '%(asctime)s [%(levelname)s][%(name)s] %(message)s'
-    loglevel = logging.INFO
-    logging.basicConfig(format=logformatter, level=loglevel)
-    if CLIARGS['verbose']:
-        diskover_logger.setLevel(logging.INFO)
-        es_logger.setLevel(logging.INFO)
-        urllib3_logger.setLevel(logging.INFO)
-        requests_logger.setLevel(logging.INFO)
-    if CLIARGS['debug']:
-        diskover_logger.setLevel(logging.DEBUG)
-        es_logger.setLevel(logging.DEBUG)
-        urllib3_logger.setLevel(logging.DEBUG)
-        requests_logger.setLevel(logging.DEBUG)
-    if CLIARGS['quiet'] or CLIARGS['progress'] or \
-            CLIARGS['gourcert'] or CLIARGS['gourcemt']:
-        diskover_logger.disabled = True
-        es_logger.disabled = True
-        urllib3_logger.disabled = True
-        requests_logger.disabled = True
-
-    # check if we want to run with verbose logging
-    verbose = False
-    if CLIARGS['verbose'] or CLIARGS['debug']:
-        verbose = True
-
-    return diskover_logger, verbose
-
-
-def start_crawl_bot(dirlist):
-    """This is the crawl bot function.
-    It uses dirlist which contains paths and their mtimes
-    and scans for any changes to directories in that list
-    and updates directories which have newer mtime.
-    """
-    global total_dirs
-
-    LOGGER.info('diskover crawl bot starting up')
-    LOGGER.info('randomly scanning for changes every %s sec', CONFIG['botsleep'])
-    LOGGER.info('*** press Ctrl-c to shutdown ***')
-
-    try:
-        i = len(dirlist) - 1
-        t = time.time()
-        c = 0
-        n = 1
-        last_path = '';
-        while True:
-            if (time.time() - t >= 60):
-                t = get_time(time.time() - STARTTIME)
-                # display stats if 1 min elapsed
-                LOGGER.info('### crawlbot stats: %s dirs checked (%s dir/s), %s dirs updated, running for %s ###',
-                            n, round(n / 60, 1), c, t)
-                t = time.time()
-                n = 1
-            total_dirs = 0
-            li = randint(0, i)
-            path = dirlist[li][1]
-            mtime_utc = dirlist[li][2]
-            # pick a new path if same as last time
-            if path == last_path:
-                continue
-            last_path = path
-            if VERBOSE:
-                LOGGER.info('checking %s', path)
-            try:
-                mtime_now_utc = time.mktime(time.gmtime(os.lstat(path).st_mtime))
-            except (IOError, OSError):
-                if VERBOSE:
-                    LOGGER.error('Error crawling directory %s', path, exc_info=True)
-                continue
-            if (mtime_now_utc == mtime_utc):
-                pass
-            else:
-                c += 1
-                LOGGER.info('*** mtime changed! reindexing directory ***')
-                # delete existing path docs
-                index_delete_path(path, crawlbot=True)
-                # reindex path
-                worker_setup_crawl(path, crawlbot=True)
-                if CLIARGS['dirsize']:
-                    dirlist_path = index_get_docs('directory', path)
-                    # update directory size
-                    worker_setup_dirsizes(dirlist_path, crawlbot=True)
-            time.sleep(CONFIG['botsleep'])
-            n += 1
-    except KeyboardInterrupt:
-        print('\nCtrl-c keyboard interrupt received, exiting')
-    sys.exit(0)
-
-
 if __name__ == "__main__":
     # load config file into CONFIG dictionary
     CONFIG = load_config()
 
     # parse cli arguments into CLIARGS dictionary
     CLIARGS = vars(parse_cli_args(CONFIG['index']))
+
+    # set up logging
+    LOGGER, VERBOSE = log_setup()
 
     # load any available plugins
     plugins = load_plugins()
@@ -2851,23 +2729,14 @@ if __name__ == "__main__":
 
     # check index name
     if CLIARGS['index'] == "diskover" or \
-            CLIARGS['index'].split('-')[0] != "diskover":
+                    CLIARGS['index'].split('-')[0] != "diskover":
         print('Please name your index: diskover-<string>')
         sys.exit(0)
-
-    if not CLIARGS['gourcert'] and not CLIARGS['gourcemt']:
-        # check we are root
-        if os.geteuid():
-            print('Please run as root')
-            sys.exit(1)
 
     if not CLIARGS['quiet'] and not CLIARGS['progress'] and \
             not CLIARGS['gourcert'] and not CLIARGS['gourcemt']:
         # print random banner
         print_banner()
-
-    # set up logging
-    LOGGER, VERBOSE = log_setup()
 
     # check for listen socket cli flag
     if CLIARGS['listen']:
@@ -2904,103 +2773,94 @@ if __name__ == "__main__":
             # remove any trailing slash unless root /
             if path is not '/':
                 path = path.rstrip(os.path.sep)
-    # check if file exists if only indexing single file
-    elif CLIARGS['file']:
-        # check if file exists
-        if not os.path.exists(CLIARGS['file']):
-            LOGGER.error("File not found, exiting")
-            sys.exit(1)
-
-    LOGGER.debug('Excluded files: %s', CONFIG['excluded_files'])
-    LOGGER.debug('Excluded dirs: %s', CONFIG['excluded_dirs'])
-
-    # check if we are just indexing single file -f option
+    # check if file exists if only indexing single file -f
     if CLIARGS['file']:
-        try:
-            path = os.path.abspath(os.path.join(CLIARGS['file'], os.pardir))
-            name = os.path.basename(CLIARGS['file'])
-            # create instance using scandir class
-            entry = GenericDirEntry(path, name)
-            # index file in Elasticsearch
-            get_file_meta(0, entry, [], singlefile=True)
+        # check if file exists
+        if not os.path.exists(CLIARGS['file']) or not \
+                os.path.isfile(CLIARGS['file']):
+            LOGGER.error("File not found or not a file, exiting")
+            sys.exit(1)
+        else:
+            filepath = os.path.abspath(CLIARGS['file'])
+            try:
+                # index file in Elasticsearch
+                get_file_meta(0, filepath, singlefile=True)
+                sys.exit(0)
+            except KeyboardInterrupt:
+                print('\nCtrl-c keyboard interrupt received, exiting')
             sys.exit(0)
-        except KeyboardInterrupt:
-            print('\nCtrl-c keyboard interrupt received, exiting')
-        sys.exit(0)
 
-    # Set up Queue and lock for worker threads
+    # set up Queue for crawl workers
     if CLIARGS['breadthfirst']:
-        q = Queue.PriorityQueue(maxsize=1000)
+        q = Queue.PriorityQueue(maxsize=CONFIG['queuesize'])
     else:
-        q = Queue.Queue(maxsize=1000)
+        q = Queue.Queue(maxsize=CONFIG['queuesize'])
+    # set up Queue for dir size workers
+    dirsizeq = Queue.Queue(maxsize=CONFIG['queuesize'])
+    # set up lock for threading
     lock = threading.RLock()
 
     # tag duplicate files if cli argument
     if CLIARGS['finddupes']:
         # Set up worker threads for duplicate file checker queue
         worker_setup_dupes()
-        if not CLIARGS['quiet'] and not CLIARGS['progress']:
-            sys.stdout.write('\n')
-            sys.stdout.flush()
-            LOGGER.info('Finished checking for dupes')
-            print_stats(stats_type='updating_dupe')
+        LOGGER.info('Finished checking for dupes')
+        print_stats(stats_type='updating_dupe')
         # exit we're all done!
-        sys.exit(0)
-
-    # start crawlbot if cli argument
-    if CLIARGS['crawlbot']:
-        dirlist = index_get_docs('directory')
-        start_crawl_bot(dirlist)
-        sys.exit(0)
-
-    # calculate dir sizes if cli argument
-    if CLIARGS['dirsize']:
-        if CLIARGS['dirsize'] is "all":
-            # look in ES for all directory docs and add to queue
-            dirlist = index_get_docs('directory')
-        else:
-            # use directory from cli arg
-            fp = os.path.abspath(CLIARGS['dirsize']).rstrip(os.path.sep)
-            dirlist = index_get_docs('directory', fp)
-        # Set up worker threads for calculating dir sizes
-        worker_setup_dirsizes(dirlist)
-        if not CLIARGS['quiet'] and not CLIARGS['progress']:
-            sys.stdout.write("\n")
-            sys.stdout.flush()
-        LOGGER.info('Finished updating directory sizes')
         sys.exit(0)
 
     # copy tags from index2 to index if cli argument
     if CLIARGS['copytags']:
-        # look in ES for all directory docs and add to queue
-        dirlist = index_get_docs('directory')
-        # look in ES for all file docs and add to queue
-        filelist = index_get_docs('file')
-        # Set up worker threads for collecting tags
+        # look in index2 for all directory docs with tags and add to queue
+        dirlist = index_get_docs('directory', copytags=True, index=CLIARGS['copytags'][0])
+        # look in index2 for all file docs with tags and add to queue
+        filelist = index_get_docs('file', copytags=True, index=CLIARGS['copytags'][0])
+        # Set up worker threads for copying tags
         worker_setup_copytags(dirlist, filelist)
-        if not CLIARGS['quiet'] and not CLIARGS['progress']:
-            sys.stdout.write("\n")
-            sys.stdout.flush()
         LOGGER.info('Finished copying tags')
         sys.exit(0)
 
-    # create Elasticsearch index
-    index_create()
+    # check for calculate rootdir flag and update top rootdir's filesize/items
+    # usually used for parallel crawls
+    if CLIARGS['calcrootdir']:
+        LOGGER.info('Calculating rootdir doc\'s filesize/items')
+        calc_rootdir_size(path)
+        LOGGER.info('Finished updating rootdir doc')
+        sys.exit(0)
+
+    LOGGER.debug('Excluded files: %s', CONFIG['excluded_files'])
+    LOGGER.debug('Excluded dirs: %s', CONFIG['excluded_dirs'])
+
+    # warn if not running as root
+    if not CLIARGS['gourcert'] and not CLIARGS['gourcemt']:
+        if os.geteuid():
+            LOGGER.warning('Not running as root, you may not be able to crawl all files')
+
+    # warn if indexing 0 Byte empty files
+    if CLIARGS['minsize'] == 0:
+        LOGGER.warning('You are indexing 0 Byte empty files (-s 0)')
+
+    # start crawlbot if cli argument
+    if CLIARGS['crawlbot']:
+        # Set up Bot Queue for worker threads
+        botq = Queue.Queue(CONFIG['queuesize'])
+        botdirlist = index_get_docs('directory')
+        # Set up worker threads for crawlbot
+        worker_setup_crawlbot(botdirlist)
+        sys.exit(0)
 
     # check if we are reindexing and remove existing docs in Elasticsearch
+    # before crawling and reindexing
     if CLIARGS['reindex']:
         index_delete_path(path)
     elif CLIARGS['reindexrecurs']:
         index_delete_path(path, recursive=True)
 
+    # create Elasticsearch index
+    index_create(CLIARGS['index'])
     # Set up worker threads and start crawling from top rootdir path
     worker_setup_crawl(path)
-
-    # Calculate directory sizes and print stats
-    if not CLIARGS['quiet'] and not CLIARGS['progress']:
-        sys.stdout.write("\n")
-        sys.stdout.flush()
-        LOGGER.info('Finished crawling')
-        print_stats(stats_type='crawl')
+    # Print and update ES crawl stats
+    print_stats(stats_type='crawl')
     # exit, we're all done!
     sys.exit(0)
