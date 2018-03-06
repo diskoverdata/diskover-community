@@ -75,7 +75,7 @@ $ cd /path/you/want/to/crawl
 $ python /path/to/diskover.py
 ```
 
-**Defaults for crawl with no flags is to index from . (current directory) and files >0 Bytes and 0 days modified time. Empty files are skipped. Use -h to see cli options.**
+**Defaults for crawl with no flags is to index from . (current directory) and files >0 Bytes and 0 days modified time. Empty files and directores are skipped (unless you use -s 0 and -e flags). Use -h to see cli options.**
 
 A successfull crawl should look like this:
 
