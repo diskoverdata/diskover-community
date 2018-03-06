@@ -68,11 +68,11 @@ $ sudo pip install -r requirements.txt
 
 ## Getting Started
 
-Start diskover as root user with:
+Start diskover with:
 
 ```sh
 $ cd /path/you/want/to/crawl
-$ sudo python /path/to/diskover.py
+$ python /path/to/diskover.py
 ```
 
 **Defaults for crawl with no flags is to index from . (current directory) and files >0 Bytes and 0 days modified time. Empty files are skipped. Use -h to see cli options.**
