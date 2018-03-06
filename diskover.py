@@ -167,7 +167,7 @@ def add_crawl_stats(event, elapsedtime=None):
     """
     if event == "stop":
         data = {
-            "path": os.path.abspath(CLIARGS['rootdir']),
+            "path": rootdir_path,
             "event": "stop",
             "elapsed_time": elapsedtime,
             "indexing_date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
@@ -175,7 +175,7 @@ def add_crawl_stats(event, elapsedtime=None):
         ES.index(index=CLIARGS['index'], doc_type='crawlstat', body=data)
     else:
         data = {
-            "path": os.path.abspath(CLIARGS['rootdir']),
+            "path": rootdir_path,
             "event": "start",
             "elapsed_time": "",
             "indexing_date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
@@ -748,7 +748,7 @@ def get_dir_meta(path):
                 dirmeta_dict['tag_custom'] = sublist[2]
                 # copy over any existing subdir item/filesize
                 # only for non-recursive reindexing
-                if CLIARGS['reindex'] and fullpath != CLIARGS['rootdir']:
+                if CLIARGS['reindex'] and fullpath != rootdir_path:
                     dirmeta_dict['filesize'] = sublist[3]
                     dirmeta_dict['items'] = sublist[4]
                 break
@@ -774,8 +774,8 @@ def get_dir_meta(path):
 def get_file_meta(threadnum, path, singlefile=False):
     """This is the get file meta data function.
     It scrapes file meta and ignores files smaller
-    than 'minsize' Bytes, newer than 'daysold' old
-    and in 'excluded_files'. Returns file meta dict.
+    than minsize Bytes, newer than mtime
+    and in excluded_files. Returns file meta dict.
     """
     global total_files
     global total_file_size
@@ -839,7 +839,7 @@ def get_file_meta(threadnum, path, singlefile=False):
         mtime_unix = stat.st_mtime
         mtime_utc = \
             datetime.utcfromtimestamp(mtime_unix).strftime('%Y-%m-%dT%H:%M:%S')
-        # Convert time in days to seconds
+        # Convert time in days (mtime cli arg) to seconds
         time_sec = CLIARGS['mtime'] * 86400
         file_mtime_sec = time.time() - mtime_unix
         # Only process files modified at least x days ago
@@ -1030,7 +1030,7 @@ def crawl_worker(threadnum):
                 # add size/item up the tree to all dirs above
                 dirpath = os.path.abspath(os.path.join(dirmeta['path_parent'], dirmeta['filename']))
                 pathtree = dirpath.split('/')
-                n = CLIARGS['rootdir'].count(os.path.sep)
+                n = rootdir_path.count(os.path.sep)
                 for i in range(n, len(pathtree)-1):
                     pathtree = pathtree[:-1]
                     p = '/'.join(pathtree)
@@ -2768,11 +2768,11 @@ if __name__ == "__main__":
             LOGGER.error("Rootdir path not found or not a directory, exiting")
             sys.exit(1)
         else:
-            # get absolute path
-            path = os.path.abspath(CLIARGS['rootdir'])
+            # set rootdir_path to absolute path
+            rootdir_path = os.path.abspath(CLIARGS['rootdir'])
             # remove any trailing slash unless root /
-            if path is not '/':
-                path = path.rstrip(os.path.sep)
+            if rootdir_path is not '/':
+                rootdir_path = rootdir_path.rstrip(os.path.sep)
     # check if file exists if only indexing single file -f
     if CLIARGS['file']:
         # check if file exists
@@ -2824,7 +2824,7 @@ if __name__ == "__main__":
     # usually used for parallel crawls
     if CLIARGS['calcrootdir']:
         LOGGER.info('Calculating rootdir doc\'s filesize/items')
-        calc_rootdir_size(path)
+        calc_rootdir_size(rootdir_path)
         LOGGER.info('Finished updating rootdir doc')
         sys.exit(0)
 
@@ -2852,14 +2852,14 @@ if __name__ == "__main__":
     # check if we are reindexing and remove existing docs in Elasticsearch
     # before crawling and reindexing
     if CLIARGS['reindex']:
-        index_delete_path(path)
+        index_delete_path(rootdir_path)
     elif CLIARGS['reindexrecurs']:
-        index_delete_path(path, recursive=True)
+        index_delete_path(rootdir_path, recursive=True)
 
     # create Elasticsearch index
     index_create(CLIARGS['index'])
     # Set up worker threads and start crawling from top rootdir path
-    worker_setup_crawl(path)
+    worker_setup_crawl(rootdir_path)
     # Print and update ES crawl stats
     print_stats(stats_type='crawl')
     # exit, we're all done!
