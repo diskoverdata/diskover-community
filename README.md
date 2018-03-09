@@ -47,6 +47,7 @@ Kibana dashboards/saved searches/visualizations and support for Gource<br>
 * [diskover-web](https://github.com/shirosaidev/diskover-web) (diskover's web file manager and analytics app)
 * [Kibana](https://www.elastic.co/products/kibana) (for visualizing Elasticsearch data, tested on Kibana 5.4.2, 5.6.4)
 * [X-Pack](https://www.elastic.co/downloads/x-pack) (for graphs, reports, monitoring and http auth)
+* [GNU parallel](https://www.gnu.org/software/parallel/) (for running parallel diskover crawls using diskover-mp.sh)
 * [Gource](http://gource.io) (for Gource visualizations of diskover Elasticsearch data)
 
 ### Download
@@ -63,7 +64,7 @@ $ cd diskover
 You need to have at least **Python 2.7. or Python 3.5.** and have installed required Python dependencies using `pip`.
 
 ```sh
-$ sudo pip install -r requirements.txt
+$ pip install -r requirements.txt
 ```
 
 ## Getting Started
