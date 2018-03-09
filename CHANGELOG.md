@@ -1,8 +1,26 @@
 # Diskover Change Log
 
-## [1.5.0] = 2018-03-06
+## [1.5.0-beta.3] = 2018-03-09
 ### notice
 - requires diskover-web >= v1.5.0
+- this is a pre-release beta for v1.5.0
+### added
+- you can now specify how many threads for crawling directory meta as well as file meta, this should help out users with directories that have tons of files
+-w and -W cli flags for setting crawl worker threads for directories (-w) and files (-W), separated the control of threading for each
+-c --calcrootdir flag to calculate rootdir size after running parallel crawls (used by diskover-mp.sh)
+### changed
+- diskover-mp.sh ver 1.2 - improved parallel crawls
+- improved crawl progress bar to show separate dir and file percents
+- added function for checking file and extension excludes check_file_excludes
+- check for excludes of files/directories is now also done at beginning to reduce parallel crawl times
+- crawl_stat mapping for elapsed_time field to type float, issues with long and crawl taking less than 0 seconds
+### fixed
+- bug with directory items count not matching exact number of sub dir/file docs
+
+## [1.5.0-beta.1] = 2018-03-06
+### notice
+- requires diskover-web >= v1.5.0
+- this is a pre-release beta for v1.5.0
 ### added
 - faster crawling and directory size calculations (directory sizes/items are now calculated during crawl)
 - faster tag copying from previous index to new index

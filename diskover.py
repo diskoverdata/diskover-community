@@ -55,7 +55,7 @@ import uuid
 IS_PY3 = sys.version_info >= (3, 0)
 
 # version
-DISKOVER_VERSION = '1.5.0'
+DISKOVER_VERSION = '1.5.0-beta.3'
 __version__ = DISKOVER_VERSION
 BANNER_COLOR = '35m'
 # totals for crawl stats output
@@ -81,6 +81,8 @@ socket_tasks = {}
 clientlist = []
 # last percent for progress output
 last_percents = 0
+dir_last_percents = 0
+file_last_percents = 0
 # get seconds since epoch used for elapsed time
 STARTTIME = time.time()
 # lists to hold file and dir info for reindexing (for preserving tags)
@@ -177,7 +179,7 @@ def add_crawl_stats(event, elapsedtime=None):
         data = {
             "path": rootdir_path,
             "event": "start",
-            "elapsed_time": "",
+            "elapsed_time": 0,
             "indexing_date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
         }
         ES.index(index=CLIARGS['index'], doc_type='crawlstat', body=data)
@@ -219,7 +221,8 @@ def print_banner():
        |    |  \|  |/  ___/  |/ /  _ \  \/ // __ \_  __ \\ /)___(\\
        |    `   \  |\___ \|    <  <_> )   /\  ___/|  | \/ (='.'=)
       /_______  /__/____  >__|_ \____/ \_/  \___  >__|   (\\")_(\\")
-              \/        \/     \/   v%s      \/
+              \/        \/     \/               \/
+                          v%s
                           https://shirosaidev.github.io/diskover
                           Crawling all your stuff.
                           Support diskover on Patreon or PayPal :)\033[0m
@@ -234,7 +237,8 @@ def print_banner():
 /:/\:\__\ /\/::\__\ /\:\:\__\ /::-"\__\ /:/\:\__\ |::L/\__\ /::\:\__\ /::\:\__\\
 \:\/:/  / \::/\/__/ \:\:\/__/ \;:;-",-" \:\/:/  / |::::/  / \:\:\/  / \;:::/  /
  \::/  /   \:\__\    \::/  /   |:|  |    \::/  /   L;;/__/   \:\/  /   |:\/__/
-  \/__/     \/__/     \/__/     \|__|     \/__/    v%s     \/__/     \|__|
+  \/__/     \/__/     \/__/     \|__|     \/__/               \/__/     \|__|
+                                      v%s
                                       https://shirosaidev.github.io/diskover
                                       Bringing light to the darkness.
                                       Support diskover on Patreon or PayPal :)\033[0m
@@ -247,7 +251,8 @@ def print_banner():
     _/    _/        _/_/_/  _/  _/      _/_/    _/      _/    _/_/    _/  _/_/
    _/    _/  _/  _/_/      _/_/      _/    _/  _/      _/  _/_/_/_/  _/_/
   _/    _/  _/      _/_/  _/  _/    _/    _/    _/  _/    _/        _/
- _/_/_/    _/  _/_/_/    _/    _/    _/_/        _/ v%s _/_/_/  _/
+ _/_/_/    _/  _/_/_/    _/    _/    _/_/        _/       _/_/_/  _/
+                              v%s
                               https://shirosaidev.github.io/diskover
                               "I didn't even know that was there."
                               Support diskover on Patreon or PayPal :)\033[0m
@@ -262,7 +267,8 @@ def print_banner():
      /'_` \/\ \  /',__\\\ \ , <    / __`\/\ \/\ \  /'__`\/\`'__\\  ('>
     /\ \L\ \ \ \/\__, `\\\ \ \\\`\ /\ \L\ \ \ \_/ |/\  __/\ \ \/   /rr
     \ \___,_\ \_\/\____/ \ \_\ \_\ \____/\ \___/ \ \____\\\ \\_\\  *\))_
-     \/__,_ /\/_/\/___/   \/_/\/_/\/___/  \/__/   \/____/ \\/_/ v%s
+     \/__,_ /\/_/\/___/   \/_/\/_/\/___/  \/__/   \/____/ \\/_/
+                      v%s
                       https://shirosaidev.github.io/diskover
                       "Holy s*i# there are so many temp files."
                       Support diskover on Patreon or PayPal :)\033[0m
@@ -479,7 +485,11 @@ def parse_cli_args(indexname):
     parser.add_argument("-e", "--indexemptydirs", action="store_true",
                         help="Index empty directories (default: don't index)")
     parser.add_argument("-t", "--threads", default=8, type=int,
-                        help="Number of threads to use (default: 8)")
+                        help="Number of worker threads for crawlbot, copytags, tagdupes (default: 8)")
+    parser.add_argument("-w", "--dirthreads", default=4, type=int,
+                        help="Number of dir worker (dir meta crawler) threads (default: 4)")
+    parser.add_argument("-W", "--filethreads", default=4, type=int,
+                        help="Number of file worker (file meta crawler) threads (default: 4)")
     parser.add_argument("-i", "--index", default=indexname,
                         help="Elasticsearch index name (default: from config)")
     parser.add_argument("-n", "--nodelete", action="store_true",
@@ -631,12 +641,67 @@ def print_progress_bar(iteration, total, prefix='', suffix='',
         sys.stdout.flush()
 
 
+def print_progress_bar_crawl(it_dir, tot_dir, it_file, tot_file, finished=False):
+    """This is the create terminal progress bar function.
+    It outputs a progress bar and shows progress of the queue.
+    """
+    global dir_last_percents
+    global file_last_percents
+    decimals = 0
+    bar_length = 10
+    str_format = "{0:." + str(decimals) + "f}"
+
+    try:
+        dir_percents = int(str_format.format(100 * (it_dir / float(tot_dir))))
+    except ZeroDivisionError:
+        dir_percents = 0
+    try:
+        file_percents = int(str_format.format(100 * (it_file / float(tot_file))))
+    except ZeroDivisionError:
+        file_percents = 0
+    # return if percent has not changed
+    if dir_percents <= dir_last_percents and \
+                    file_percents <= file_last_percents and not finished:
+        with lock:
+            dir_last_percents = dir_percents
+            file_last_percents = file_percents
+        return
+    # calculate number of iterations per second and eta
+    time_diff = time.time() - STARTTIME
+    it_per_sec_dir = int(round(it_dir / time_diff, 1))
+    try:
+        eta_dir = (tot_dir - it_dir) / it_per_sec_dir
+    except ZeroDivisionError:
+        eta_dir = 0
+    try:
+        filled_length_dir = int(round(bar_length * it_dir / float(tot_dir)))
+    except ZeroDivisionError:
+        filled_length_dir = 0
+    bar_dir = '█' * filled_length_dir + ' ' * (bar_length - filled_length_dir)
+    it_per_sec_file = int(round(it_file / time_diff, 1))
+    try:
+        eta_file = (tot_file - it_file) / it_per_sec_file
+    except ZeroDivisionError:
+        eta_file = 0
+    eta = get_time(eta_dir + eta_file)
+    try:
+        filled_length_file = int(round(bar_length * it_file / float(tot_file)))
+    except ZeroDivisionError:
+        filled_length_file = 0
+    bar_file = '█' * filled_length_file + ' ' * (bar_length - filled_length_file)
+    sys.stdout.write('\r\033[' + BANNER_COLOR + '\033[1m'+str(dir_percents)+'%|'+bar_dir+'|'+str(it_dir)+'/'+str(tot_dir)+', '+str(it_per_sec_dir)+' dir/s\033[0m  \033[' + BANNER_COLOR + '\033[1m'+str(file_percents)+'%|'+bar_file+'|'+str(it_file)+'/'+str(tot_file)+', '+str(it_per_sec_file)+' file/s '+str(eta)+'\033[0m')
+    sys.stdout.flush()
+    with lock:
+        dir_last_percents = dir_percents
+        file_last_percents = file_percents
+    if finished and not CLIARGS['progress']:
+        sys.stdout.write('\n')
+        sys.stdout.flush()
+
+
 def update_progress(threadnum=0, bulkadddirs=False, finished=False, n=None):
     """Updates progress on screen."""
-    if CLIARGS['quiet'] or VERBOSE or CLIARGS['crawlbot']:
-        return
-    # limit only thread 0 to print output
-    if threadnum > 0:
+    if CLIARGS['quiet'] or VERBOSE or CLIARGS['crawlbot'] or threadnum > 0:
         return
     if CLIARGS['finddupes']:
         t = total_hash_groups
@@ -659,20 +724,24 @@ def update_progress(threadnum=0, bulkadddirs=False, finished=False, n=None):
             i = 0
         prefix = "Copying:"
         it_name = "doc"
-    else:
-        t = total_dirs
-        i = t - q.qsize()
-        if i < 0:
-            i = 0
-        prefix = "Crawling:"
-        it_name = "dir"
+    elif CLIARGS['rootdir']:
+        i_dir = total_dirs - q.qsize()
+        if i_dir < 0:
+            i_dir = 0
+        i_file = total_files - fileq.qsize()
+        if i_file < 0:
+            i_file = 0
+        i = i_dir + i_file
+        t = total_dirs + total_files
+        print_progress_bar_crawl(i_dir, total_dirs, i_file, total_files, finished=finished)
+        return
     if finished:
         i = t
-    print_progress_bar(i, t, prefix, '%s/%s' % (i, t), it_name,
-                       finished=finished)
+        print_progress_bar(i, t, prefix, '%s/%s' % (i, t), it_name,
+                           finished=finished)
 
 
-def get_dir_meta(path):
+def get_dir_meta(path, threadnum):
     """This is the get directory meta data function.
     It gets directory meta and adds to Elasticsearch.
     Returns dir meta dict.
@@ -738,7 +807,8 @@ def get_dir_meta(path):
             "group": group,
             "tag": "",
             "tag_custom": "",
-            "indexing_date": indextime_utc
+            "indexing_date": indextime_utc,
+            "indexing_thread": threadnum
         }
 
         # search for and copy over any existing tags and filesize/items
@@ -809,26 +879,9 @@ def get_file_meta(threadnum, path, singlefile=False):
             return None
 
         # check if file is in exluded_files list
-        if filename in CONFIG['excluded_files'] or \
-                (filename.startswith('.') and u'.*'
-                in CONFIG['excluded_files']):
-            if VERBOSE:
-                LOGGER.info('[thread-%s]: Skipping (excluded file) %s',
-                            threadnum, path)
-            if not singlefile:
-                with lock:
-                    total_files_skipped_excluded += 1
-                    total_file_size_skipped_excluded += size
-            return None
-
-        # get file extension and check excluded_files
         extension = os.path.splitext(filename)[1][1:].strip().lower()
         LOGGER.debug('Extension: <%s>', extension)
-        if (not extension and 'NULLEXT' in CONFIG['excluded_files']) \
-                or '*.' + extension in CONFIG['excluded_files']:
-            if VERBOSE:
-                LOGGER.info('[thread-%s]: Skipping (excluded file) %s',
-                            threadnum, path)
+        if check_file_excludes(filename, extension, path, threadnum):
             if not singlefile:
                 with lock:
                     total_files_skipped_excluded += 1
@@ -965,30 +1018,20 @@ def get_file_meta(threadnum, path, singlefile=False):
     return filemeta_dict
 
 
-def crawl_worker(threadnum):
-    """This is the crawl worker function.
-    It gets a directory from the Queue and scrapes
-    it's meta and it's file's meta and any subdirs
-    are added into the queue. Meta is added to
-    dirlist and filelist. Meta data for size and items
-    are added to dirlist for calculating
-    directory sizes at end of crawl.
+def crawl_dir_worker(threadnum):
+    """This is the crawl directory worker function.
+    It gets a directory from the dir Queue and scrapes
+    it's meta and any files are added into the Queue.
     It runs in infinite loop until all worker thread
     tasks are finished (Queue empty).
-    When filelist reach max es_chunksize
-    the lists will be bulk added to ES. dirlist is
-    not bulk added until end of crawl.
     """
     global dirlist
-
-    # create list to hold files
-    filelist = []
 
     while True:
         if CLIARGS['nice']:
             time.sleep(.01)
         if VERBOSE:
-            LOGGER.info('[thread-%s]: Looking for the next path in the queue',
+            LOGGER.info('[thread-%s]: Looking for the next item in the dir queue',
                         threadnum)
         # get a path from the Queue
         if CLIARGS['breadthfirst']:
@@ -996,9 +1039,6 @@ def crawl_worker(threadnum):
         else:
             item = q.get()
         if item is None:
-            # add filelist to ES and empty it
-            if len(filelist) > 0:
-                index_bulk_add(threadnum, filelist, 'file')
             update_progress(threadnum, finished=True)
             # stop thread's infinite loop
             q.task_done()
@@ -1010,33 +1050,103 @@ def crawl_worker(threadnum):
                 LOGGER.info('[thread-%s]: Crawling directory meta: %s',
                             threadnum, root)
             # get directory meta data and add to dirmeta
-            dirmeta = get_dir_meta(root)
-            for f in files:
-                p = os.path.abspath(os.path.join(root, f))
-                if VERBOSE:
-                    LOGGER.info('[thread-%s]: Crawling file meta: %s',
-                                threadnum, p)
-                # get file meta data and add to filelist
-                filemeta = get_file_meta(threadnum, p)
-                if filemeta is not None:
-                    filelist.append(filemeta)
-                    # update dirlist directory's filesize and items fields
-                    dirmeta['filesize'] += filemeta['filesize']
-                    dirmeta['items'] += 1
+            dirmeta = get_dir_meta(root, threadnum)
+            # add 1 to items up the tree to all dirs above
+            pathtree = root.split('/')
+            n = rootdir_path.count(os.path.sep)
+            for i in range(n, len(pathtree) - 1):
+                pathtree = pathtree[:-1]
+                p = '/'.join(pathtree)
+                while True:
+                    try:
+                        with lock:
+                            dirlist[p]['items'] += 1
+                            break
+                    except KeyError:
+                        pass
+                        time.sleep(0.001)
+                        continue
             if dirmeta is not None:
                 with lock:
                     # add dirmeta to dirlist
-                    dirlist[root]['meta'] = dirmeta
+                    dirlist[root] = dirmeta
+            for f in files:
+                if VERBOSE:
+                    p = os.path.abspath(os.path.join(root, f))
+                    LOGGER.info('[thread-%s]: Adding file to queue: %s',
+                                threadnum, p)
+                # add file to queue
+                fileq.put((root, f))
+        # update progress bar
+        update_progress(threadnum)
+        # task is done
+        q.task_done()
+
+
+def crawl_file_worker(threadnum):
+    """This is the crawl file worker function.
+    It gets a file from the file Queue and scrapes
+    it's meta. Meta is added to filelist.
+    File size is added to dirlist for parent directory and
+    all directories above in tree.
+    It runs in infinite loop until all worker thread
+    tasks are finished (Queue empty).
+    When filelist reach max es_chunksize it will be
+    bulk added to ES and emptied.
+    """
+    global dirlist
+
+    # create list to hold files
+    filelist = []
+
+    while True:
+        if CLIARGS['nice']:
+            time.sleep(.01)
+        if VERBOSE:
+            LOGGER.info('[thread-%s]: Looking for the next item in the file queue',
+                        threadnum)
+        # get a path from the Queue
+        item = fileq.get()
+        if item is None:
+            # add filelist to ES and empty it
+            if len(filelist) > 0:
+                index_bulk_add(threadnum, filelist, 'file')
+            update_progress(threadnum, finished=True)
+            # stop thread's infinite loop
+            fileq.task_done()
+            break
+        else:
+            (root, file) = item
+            fullpath = os.path.abspath(os.path.join(root, file))
+            # start gathering meta for file
+            if VERBOSE:
+                LOGGER.info('[thread-%s]: Crawling file meta: %s',
+                            threadnum, fullpath)
+            # get file meta data and add to filelist
+            filemeta = get_file_meta(threadnum, fullpath)
+            if filemeta is not None:
+                filelist.append(filemeta)
+                # update dirlist directory's filesize and items fields
+                with lock:
+                    dirlist[root]['filesize'] += filemeta['filesize']
+                    dirlist[root]['items'] += 1
                 # add size/item up the tree to all dirs above
-                dirpath = os.path.abspath(os.path.join(dirmeta['path_parent'], dirmeta['filename']))
-                pathtree = dirpath.split('/')
+                pathtree = root.split('/')
                 n = rootdir_path.count(os.path.sep)
                 for i in range(n, len(pathtree)-1):
                     pathtree = pathtree[:-1]
                     p = '/'.join(pathtree)
-                    with lock:
-                        dirlist[p]['size'] += dirmeta['filesize']
-                        dirlist[p]['items'] += dirmeta['items']
+                    while True:
+                        try:
+                            with lock:
+                                dirlist[p]['filesize'] += filemeta['filesize']
+                                dirlist[p]['items'] += 1
+                                break
+                        except KeyError:
+                            pass
+                            time.sleep(0.001)
+                            continue
+
         # when filelist reaches max chunk size, bulk add to ES and empty it
         if len(filelist) >= CONFIG['es_chunksize']:
             index_bulk_add(threadnum, filelist, 'file')
@@ -1044,7 +1154,7 @@ def crawl_worker(threadnum):
         # update progress bar
         update_progress(threadnum)
         # task is done
-        q.task_done()
+        fileq.task_done()
 
 
 def copytag_worker(threadnum):
@@ -1227,6 +1337,26 @@ def check_dir_excludes(path):
         return False
 
 
+def check_file_excludes(filename, extension, path, threadnum):
+    """Return Boolean if path or ext in excluded_files list"""
+    # check for filename in excluded_files
+    if filename in CONFIG['excluded_files'] or \
+            (filename.startswith('.') and u'.*'
+            in CONFIG['excluded_files']):
+        if VERBOSE:
+            LOGGER.info('[thread-%s]: Skipping (excluded file) %s',
+                        threadnum, path)
+        return True
+    # check for extension in excluded_files
+    if (not extension and 'NULLEXT' in CONFIG['excluded_files']) \
+            or '*.' + extension in CONFIG['excluded_files']:
+        if VERBOSE:
+            LOGGER.info('[thread-%s]: Skipping (excluded file) %s',
+                        threadnum, path)
+        return True
+    return False
+
+
 def escape_chars(text):
     """This is the escape special characters function.
     It returns escaped path strings for ES queries.
@@ -1343,7 +1473,8 @@ def start_crawl(path):
     global total_dirs_skipped_empty
     global total_dirs_skipped_excluded
 
-    LOGGER.info('Starting crawl for %s using %s threads', path, CLIARGS['threads'])
+    LOGGER.info('Starting crawl for %s using %s dir threads / %s file threads',
+                path, CLIARGS['dirthreads'], CLIARGS['filethreads'])
     try:
         # set maxdepth level
         level = CLIARGS['maxdepth']
@@ -1370,10 +1501,10 @@ def start_crawl(path):
                 continue
             excluded = check_dir_excludes(root)
             if excluded is False:
-                dirlist[root] = {'meta': {}, 'size': 0, 'items': 0}
+                dirlist[root] = {}
                 if CLIARGS['breadthfirst']:
                     if VERBOSE:
-                        LOGGER.info("Adding path to queue: %s (depth:%s)",
+                        LOGGER.info("Adding path to dir queue: %s (depth:%s)",
                                     root, depth)
                     # add priority and path tuple to queue
                     q.put((depth, (root, dirs, files)))
@@ -1397,30 +1528,31 @@ def start_crawl(path):
                 del dirs[:]
                 del files[:]
         # put None into the queue to trigger final ES bulk operations
-        for i in range(int(CLIARGS['threads'])):
+        for i in range(int(CLIARGS['dirthreads'])):
             if CLIARGS['breadthfirst']:
                 q.put((9999, None))
             else:
                 q.put(None)
         # block until all tasks are done
         q.join()
+        for i in range(int(CLIARGS['filethreads'])):
+            fileq.put(None)
+        fileq.join()
         LOGGER.info('Finished crawling')
 
         if len(dirlist) > 0:
             dirlist_bulk = []
             LOGGER.info('Bulk indexing directories')
-            n = 1
+            x = 1
             for path in dirlist:
-                dirlist[path]['meta']['filesize'] += dirlist[path]['size']
-                dirlist[path]['meta']['items'] += dirlist[path]['items']
-                dirlist_bulk.append(dirlist[path]['meta'])
-                update_progress(0, bulkadddirs=True, n=n)
+                dirlist_bulk.append(dirlist[path])
+                update_progress(0, bulkadddirs=True, n=x)
                 if len(dirlist_bulk) >= CONFIG['es_chunksize']:
                     index_bulk_add(0, dirlist_bulk, 'directory')
                     del dirlist_bulk[:]
-                n += 1
+                x += 1
             index_bulk_add(0, dirlist_bulk, 'directory')
-            update_progress(0, bulkadddirs=True, finished=True, n=n)
+            update_progress(0, bulkadddirs=True, finished=True, n=x)
             LOGGER.info('Finished indexing directories')
 
     except KeyboardInterrupt:
@@ -1428,11 +1560,13 @@ def start_crawl(path):
         print('\nCtrl-c keyboard interrupt received')
         print("Attempting to close worker threads")
         # stop workers
-        for i in range(int(CLIARGS['threads'])):
+        for i in range(int(CLIARGS['dirthreads'])):
             if CLIARGS['breadthfirst']:
                 q.put((9999, None))
             else:
                 q.put(None)
+        for i in range(int(CLIARGS['filethreads'])):
+            fileq.put(None)
         print("\nThreads successfully closed, sayonara!")
         sys.exit(0)
 
@@ -1443,10 +1577,17 @@ def worker_setup_crawl(path):
     crawloop is set to True if running in bot mode.
     """
 
-    # set up the threads and start them
-    for i in range(int(CLIARGS['threads'])):
+    # set up the threads for dir crawlers (meta scrapers) and start them
+    for i in range(int(CLIARGS['dirthreads'])):
         # create thread
-        t = threading.Thread(target=crawl_worker, args=(i,))
+        t = threading.Thread(target=crawl_dir_worker, args=(i,))
+        t.daemon = True
+        t.start()
+
+    # set up the threads for file crawlers (meta scrapers) and start them
+    for i in range(int(CLIARGS['filethreads'])):
+        # create thread
+        t = threading.Thread(target=crawl_file_worker, args=(i,))
         t.daemon = True
         t.start()
 
@@ -1454,10 +1595,11 @@ def worker_setup_crawl(path):
     if not IS_PY3:
         path = unicode(path)
 
+    # add crawl stats to ES
+    add_crawl_stats(event='start')
+
     if not CLIARGS['crawlbot'] and not CLIARGS['reindex'] \
             and not CLIARGS['reindexrecurs']:
-        # add crawl stats to ES
-        add_crawl_stats(event='start')
         # add disk space info to ES
         add_diskspace(path)
 
@@ -1722,7 +1864,7 @@ def index_create(indexname):
                         "type": "keyword"
                     },
                     "elapsed_time": {
-                        "type": "long"
+                        "type": "float"
                     },
                     "indexing_date": {
                         "type": "date"
@@ -1766,6 +1908,9 @@ def index_create(indexname):
                     },
                     "indexing_date": {
                         "type": "date"
+                    },
+                    "indexing_thread": {
+                        "type": "integer"
                     }
                 }
             },
@@ -2477,8 +2622,12 @@ def run_command(threadnum, command_dict, clientsock, lock):
     # try to get threads from command or use default
     try:
         threads = str(command_dict['threads'])
+        dirthreads = str(command_dict['dirthreads'])
+        filethreads = str(command_dict['filethreads'])
     except KeyError:
         threads = str(CLIARGS['threads'])
+        dirthreads = str(CLIARGS['dirthreads'])
+        filethreads = str(CLIARGS['filethreads'])
         pass
 
     try:
@@ -2490,8 +2639,8 @@ def run_command(threadnum, command_dict, clientsock, lock):
         if action == 'crawl':
             path = command_dict['path']
             cmd = [
-                pythonpath, '-u', diskoverpath, '-t', threads,
-                '-i', index, '-d', path, '--progress']
+                pythonpath, '-u', diskoverpath, '--dirthreads', dirthreads,
+                '--filethreads', filethreads, '-i', index, '-d', path, '--progress']
 
         elif action == 'finddupes':
             cmd = [
@@ -2507,12 +2656,12 @@ def run_command(threadnum, command_dict, clientsock, lock):
             path = command_dict['path']
             if recursive == 'true':
                 cmd = [
-                    pythonpath, '-u', diskoverpath, '-t', threads,
-                    '-i', index, '-d', path, '-R', '--progress']
+                    pythonpath, '-u', diskoverpath, '--dirthreads', dirthreads,
+                    '--filethreads', filethreads, '-i', index, '-d', path, '-R', '--progress']
             else:
                 cmd = [
-                    pythonpath, '-u', diskoverpath, '-t', threads,
-                    '-i', index, '-d', path, '-r', '--progress']
+                    pythonpath, '-u', diskoverpath, '--dirthreads', dirthreads,
+                    '--filethreads', filethreads, '-i', index, '-d', path, '-r', '--progress']
 
         elif action == 'kill':
             taskid = command_dict['taskid']
@@ -2768,11 +2917,16 @@ if __name__ == "__main__":
             LOGGER.error("Rootdir path not found or not a directory, exiting")
             sys.exit(1)
         else:
+            LOGGER.debug('Excluded dirs: %s', CONFIG['excluded_dirs'])
             # set rootdir_path to absolute path
             rootdir_path = os.path.abspath(CLIARGS['rootdir'])
             # remove any trailing slash unless root /
             if rootdir_path is not '/':
                 rootdir_path = rootdir_path.rstrip(os.path.sep)
+            # check exclude
+            if check_dir_excludes(rootdir_path):
+                LOGGER.info("Directory in exclude list, exiting")
+                sys.exit(0)
     # check if file exists if only indexing single file -f
     if CLIARGS['file']:
         # check if file exists
@@ -2781,7 +2935,12 @@ if __name__ == "__main__":
             LOGGER.error("File not found or not a file, exiting")
             sys.exit(1)
         else:
+            LOGGER.debug('Excluded files: %s', CONFIG['excluded_files'])
             filepath = os.path.abspath(CLIARGS['file'])
+            # check exclude
+            if check_dir_excludes(filepath):
+                LOGGER.info("File in exclude list, exiting")
+                sys.exit(0)
             try:
                 # index file in Elasticsearch
                 get_file_meta(0, filepath, singlefile=True)
@@ -2790,13 +2949,13 @@ if __name__ == "__main__":
                 print('\nCtrl-c keyboard interrupt received, exiting')
             sys.exit(0)
 
-    # set up Queue for crawl workers
+    # set up Queue for wokers, used by directory crawl, copytags, crawlbot, etc.
     if CLIARGS['breadthfirst']:
         q = Queue.PriorityQueue(maxsize=CONFIG['queuesize'])
     else:
         q = Queue.Queue(maxsize=CONFIG['queuesize'])
-    # set up Queue for dir size workers
-    dirsizeq = Queue.Queue(maxsize=CONFIG['queuesize'])
+    # set up Queue for file crawl workers
+    fileq = Queue.Queue(maxsize=CONFIG['queuesize'])
     # set up lock for threading
     lock = threading.RLock()
 
@@ -2827,9 +2986,6 @@ if __name__ == "__main__":
         calc_rootdir_size(rootdir_path)
         LOGGER.info('Finished updating rootdir doc')
         sys.exit(0)
-
-    LOGGER.debug('Excluded files: %s', CONFIG['excluded_files'])
-    LOGGER.debug('Excluded dirs: %s', CONFIG['excluded_dirs'])
 
     # warn if not running as root
     if not CLIARGS['gourcert'] and not CLIARGS['gourcemt']:
