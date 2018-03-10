@@ -45,10 +45,11 @@ Kibana dashboards/saved searches/visualizations and support for Gource<br>
 ### Optional Installs
 
 * [diskover-web](https://github.com/shirosaidev/diskover-web) (diskover's web file manager and analytics app)
-* [Kibana](https://www.elastic.co/products/kibana) (for visualizing Elasticsearch data, tested on Kibana 5.4.2, 5.6.4)
-* [X-Pack](https://www.elastic.co/downloads/x-pack) (for graphs, reports, monitoring and http auth)
+* [sharesniffer](https://github.com/shirosaidev/sharesniffer) (for scanning your network for file shares and auto-mounting for crawls)
 * [GNU parallel](https://www.gnu.org/software/parallel/) (for running parallel diskover crawls using diskover-mp.sh)
-* [Gource](http://gource.io) (for Gource visualizations of diskover Elasticsearch data)
+* [Kibana](https://www.elastic.co/products/kibana) (for visualizing Elasticsearch data, tested on Kibana 5.4.2, 5.6.4)
+* [X-Pack](https://www.elastic.co/downloads/x-pack) (Kibana plugin for graphs, reports, monitoring and http auth)
+* [Gource](http://gource.io) (for Gource visualizations of diskover Elasticsearch data, see videos above)
 
 ### Download
 
