@@ -31,7 +31,7 @@ feature_row:
     image_path: https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-treemap-screenshot.png?raw=true
     alt: "open-source"
     title: "Open-Source"
-    excerpt: "Built using Python + PHP + HTML5 + Javascript + D3.js. diskover is easy to install and runs on macOS or Linux."
+    excerpt: "Built using Python + PHP + HTML5 + Javascript + D3.js. diskover has minimal requirements and runs on macOS or Linux."
     url: "https://github.com/shirosaidev/diskover"
     btn_class: "btn--primary"
     btn_label: "Learn More"
