@@ -12,7 +12,7 @@ excerpt: '<img src="https://github.com/shirosaidev/diskover/raw/master/docs/disk
 {::nomarkdown}<iframe style="display: inline-block;" src="https://ghbtns.com/github-btn.html?user=shirosaidev&repo=diskover&type=star&count=true&size=large" frameborder="0" scrolling="0" width="160px" height="30px"></iframe> <iframe style="display: inline-block;" src="https://ghbtns.com/github-btn.html?user=shirosaidev&repo=diskover&type=fork&count=true&size=large" frameborder="0" scrolling="0" width="158px" height="30px"></iframe>{:/nomarkdown}'
 feature_row:
   - image_path: https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-filetree-screenshot.png?raw=true
-    alt: "fast fs crawler"
+    alt: "file system crawler"
     title: "File System Crawler"
     excerpt: "diskover crawls your storage servers over nfs/smb and scrapes file/directory meta data into Elasticsearch."
     url: "https://github.com/shirosaidev/diskover"
@@ -20,15 +20,15 @@ feature_row:
     btn_label: "Learn More"
   - image_path: https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-dashboard-screenshot.png?raw=true
     alt: "analyze metadata"
-    title: "Index File Meta Data"
-    excerpt: "Built on Python + PHP + HTML5 + CSS3 + D3.js. diskover is easy to install and has minimal requirements."
+    title: "Visualize Your Storage"
+    excerpt: "Identify old and unused files and give better insights into data change, duplicate files and wasted disk space."
     url: "https://github.com/shirosaidev/diskover"
     btn_class: "btn--primary"
     btn_label: "Learn More"
   - image_path: https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-treemap-screenshot.png?raw=true
-    alt: "storage analytics"
-    title: "Search Storage Servers"
-    excerpt: "Identify old and unused files and give better insights into data change, duplicate files and wasted disk space."
+    alt: "open-source"
+    title: "Open-source"
+    excerpt: "Built using Python + PHP + HTML5 + Javascript + D3.js. diskover is easy to install, runs on macOS or Linux and has minimal requirements."
     url: "https://github.com/shirosaidev/diskover"
     btn_class: "btn--primary"
     btn_label: "Learn More"
