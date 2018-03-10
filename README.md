@@ -28,6 +28,8 @@ Kibana dashboards/saved searches/visualizations and support for Gource<br>
 
 ### diskover Gource videos
 
+<iframe width="560" height="315" src="https://www.youtube.com/embed/qKLJjZ0TMqA?rel=0" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+
 * [File modifications over time](https://youtu.be/InlfK8GQ-kM)
 * [Realtime file crawl using 8 threads](https://youtu.be/qKLJjZ0TMqA)
 
