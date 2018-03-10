@@ -15,7 +15,7 @@ Using diskover, users can identify old and unused files and give better insights
 
 diskover is written and maintained by Chris Park (shirosai) and runs on Linux and OS X/macOS using Python 2/3.
 
-<div align="center"><img src="https://github.com/shirosaidev/diskover/blob/master/docs/diskover-diagram1-dark.png?raw=true" alt="diskover diagram" width="800" height="525"/></div>
+<div align="center"><img src="https://github.com/shirosaidev/diskover/blob/master/docs/diskover-diagram1.png?raw=true" alt="diskover diagram" width="800" height="525"/></div>
 
 ## Screenshots
 
