@@ -28,8 +28,8 @@ Kibana dashboards/saved searches/visualizations and support for Gource<br>
 
 ### diskover Gource videos
 
-[![gource video](https://img.youtube.com/vi/InlfK8GQ-kM/0.jpg)](https://youtu.be/InlfK8GQ-kM)
-[![gource video](https://img.youtube.com/vi/qKLJjZ0TMqA/0.jpg)](https://youtu.be/qKLJjZ0TMqA)
+<a href="https://youtu.be/InlfK8GQ-kM"><img align="left" width="400" src="https://img.youtube.com/vi/InlfK8GQ-kM/0.jpg" alt="gource video"></a>
+<a href="https://youtu.be/qKLJjZ0TMqA"><img width="400" src="https://img.youtube.com/vi/qKLJjZ0TMqA/0.jpg" alt="gource video"></a>
 
 ## Installation Guide
 
