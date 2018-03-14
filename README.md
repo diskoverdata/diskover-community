@@ -39,10 +39,13 @@ Kibana dashboards/saved searches/visualizations and support for Gource<br>
 
 * `Linux or OS X/macOS` (tested on OS X 10.11.6, Ubuntu 16.04)
 * `Python 2.7. or Python 3.5.` (tested on Python 2.7.14, 3.5.3)
-* `Python elasticsearch client module` [elasticsearch](https://pypi.python.org/pypi/elasticsearch) (tested on 5.4.0, 5.5.1)
-* `Python requests module` [requests](https://pypi.python.org/pypi/requests)
-* `Python scandir module` [scandir](https://pypi.python.org/pypi/scandir)
-* `Elasticsearch` (local or [AWS ES Service](https://aws.amazon.com/elasticsearch-service/), tested on Elasticsearch 5.4.2, 5.6.4)
+* `Python elasticsearch client module`
+* `Python requests module`
+* `Python scandir module`
+* `Python progressbar2 module`
+* `Python blessings module`
+* `Elasticsearch 5` (local or [AWS ES Service](https://aws.amazon.com/elasticsearch-service/), tested on Elasticsearch 5.4.2, 5.6.4) Elasticsearch 6 is not supported yet.
+Install the above Python modules using pip.
 
 ### Optional Installs
 
