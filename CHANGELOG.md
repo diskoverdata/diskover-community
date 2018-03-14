@@ -1,5 +1,20 @@
 # Diskover Change Log
 
+## [1.5.0-beta.4] = 2018-03-14
+### notice
+- requires diskover-web >= v1.5.0
+- this is a pre-release beta for v1.5.0
+### added
+- requirements for progressbar2 and blessings (ncurses) python modules, install with pip
+- re module for regular expression searches for wildcards in directory excludes (example tmp* or /dir1/tmp* will now work)
+- ability to send json data to diskover socket server using curl (see wiki for how to)
+- an additional diskspace doc is now added for every reindex of a directory (also for crawlbot)
+### changed
+- better progress bars using progressbar2 and blessings (ncurses) python modules
+- removed --progress flag (json output)
+### fixed
+- crawlbot bugs and crawlbot using high cpu
+
 ## [1.5.0-beta.3] = 2018-03-09
 ### notice
 - requires diskover-web >= v1.5.0

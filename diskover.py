@@ -37,10 +37,12 @@ except ImportError:
 from random import randint
 from datetime import datetime
 from subprocess import Popen, PIPE
+from blessings import Terminal
 import os
 import sys
 import imp
 import time
+import progressbar
 import argparse
 import hashlib
 import logging
@@ -51,11 +53,13 @@ import socket
 import pwd
 import grp
 import uuid
+import re
+
 
 IS_PY3 = sys.version_info >= (3, 0)
 
 # version
-DISKOVER_VERSION = '1.5.0-beta.3'
+DISKOVER_VERSION = '1.5.0-beta.4'
 __version__ = DISKOVER_VERSION
 BANNER_COLOR = '35m'
 # totals for crawl stats output
@@ -71,6 +75,8 @@ total_dupes = 0
 total_dirs = 0
 total_dirs_skipped_empty = 0
 total_dirs_skipped_excluded = 0
+total_dirs_processed = 0
+total_files_processed = 0
 total_hash_groups = 0
 dupe_count = 0
 # dictionaries to hold all directory paths (used for directory calculation)
@@ -79,10 +85,6 @@ dirlist = {}
 socket_tasks = {}
 # list of socket client
 clientlist = []
-# last percent for progress output
-last_percents = 0
-dir_last_percents = 0
-file_last_percents = 0
 # get seconds since epoch used for elapsed time
 STARTTIME = time.time()
 # lists to hold file and dir info for reindexing (for preserving tags)
@@ -291,7 +293,7 @@ def print_stats(stats_type):
         # add stats to ES
         add_crawl_stats(event='stop', elapsedtime=elapsedtime)
     # don't print stats if running quiet or just showing progress
-    if CLIARGS['quiet'] or CLIARGS['progress']:
+    if CLIARGS['quiet']:
         return
     # print out stats
     sys.stdout.write("\n")
@@ -529,8 +531,6 @@ def parse_cli_args(indexname):
                         help="Increase output verbosity")
     parser.add_argument("--debug", action="store_true",
                         help="Debug message output")
-    parser.add_argument("--progress", action="store_true",
-                        help="Only output progress (json)")
     parser.add_argument("--listplugins", action="store_true",
                         help="List plugins")
     parser.add_argument("-V", "--version", action="version",
@@ -577,7 +577,7 @@ def log_setup():
         es_logger.setLevel(logging.DEBUG)
         urllib3_logger.setLevel(logging.DEBUG)
         requests_logger.setLevel(logging.DEBUG)
-    if CLIARGS['quiet'] or CLIARGS['progress'] or \
+    if CLIARGS['quiet'] or \
             CLIARGS['gourcert'] or CLIARGS['gourcemt']:
         diskover_logger.disabled = True
         es_logger.disabled = True
@@ -592,153 +592,51 @@ def log_setup():
     return diskover_logger, verbose
 
 
-def print_progress_bar(iteration, total, prefix='', suffix='',
-                       it_name='it', finished=False):
-    """This is the create terminal progress bar function.
-    It outputs a progress bar and shows progress of the queue.
-    If progressonly is True will only output progress in json.
+def calc_progress(queue=None):
+    """This is the calculate progress function.
+    It calculates percent complete, eta, and iterations
+    per sec. based on queue sizes and crawl counts.
+    Returns percents, it_per_sec, eta.
     """
-    global last_percents
-    decimals = 0
-    bar_length = 20
-    str_format = "{0:." + str(decimals) + "f}"
 
+    tot_dir = total_dirs + total_dirs_skipped_empty + total_dirs_skipped_excluded + q.qsize()
+    tot_file = total_files + total_files_skipped_excluded + \
+               total_file_size_skipped_mtime + total_file_size_skipped_size + fileq.qsize()
+    it_dir = total_dirs_processed
+    it_file = total_files_processed
     try:
-        percents = int(str_format.format(100 * (iteration / float(total))))
-    except ZeroDivisionError:
-        percents = 0
-    # return if percent has not changed
-    if percents <= last_percents and not finished:
-        with lock:
-            last_percents = percents
-        return
-    # calculate number of iterations per second and eta
-    time_diff = time.time() - STARTTIME
-    it_per_sec = round(iteration / time_diff, 1)
-    try:
-        eta = get_time((total - iteration) / it_per_sec)
-    except ZeroDivisionError:
-        eta = get_time(0)
-    try:
-        filled_length = int(round(bar_length * iteration / float(total)))
-    except ZeroDivisionError:
-        filled_length = 0
-    bar = '█' * filled_length + ' ' * (bar_length - filled_length)
-    # only output progress
-    if CLIARGS['progress']:
-        sys.stdout.write(
-            '{"msg": "progress", "percent": %s, "eta": "%s", "it_per_sec": %s, "it_name": "%s"}\n'
-            % (percents, eta, it_per_sec, it_name))
-    else:  # show progress bar
-        sys.stdout.write(
-            '\r\033[' + BANNER_COLOR + '\033[1m%s %s%s|%s| %s [%s, %s %s/s]\033[0m'
-            % (prefix, percents, '%', bar, suffix, eta, it_per_sec, it_name))
-    sys.stdout.flush()
-    with lock:
-        last_percents = percents
-    if finished and not CLIARGS['progress']:
-        sys.stdout.write('\n')
-        sys.stdout.flush()
-
-
-def print_progress_bar_crawl(it_dir, tot_dir, it_file, tot_file, finished=False):
-    """This is the create terminal progress bar function.
-    It outputs a progress bar and shows progress of the queue.
-    """
-    global dir_last_percents
-    global file_last_percents
-    decimals = 0
-    bar_length = 10
-    str_format = "{0:." + str(decimals) + "f}"
-
-    try:
-        dir_percents = int(str_format.format(100 * (it_dir / float(tot_dir))))
+        dir_percents = 100 * it_dir/tot_dir
     except ZeroDivisionError:
         dir_percents = 0
+    if dir_percents > 100:
+        dir_percents = 100
     try:
-        file_percents = int(str_format.format(100 * (it_file / float(tot_file))))
+        file_percents = 100 * it_file/tot_file
     except ZeroDivisionError:
         file_percents = 0
-    # return if percent has not changed
-    if dir_percents <= dir_last_percents and \
-                    file_percents <= file_last_percents and not finished:
-        with lock:
-            dir_last_percents = dir_percents
-            file_last_percents = file_percents
-        return
+    if file_percents > 100:
+        file_percents = 100
     # calculate number of iterations per second and eta
     time_diff = time.time() - STARTTIME
-    it_per_sec_dir = int(round(it_dir / time_diff, 1))
+    it_per_sec_dir = it_dir/time_diff
     try:
-        eta_dir = (tot_dir - it_dir) / it_per_sec_dir
+        eta_dir = (tot_dir - it_dir)/it_per_sec_dir
     except ZeroDivisionError:
         eta_dir = 0
+    it_per_sec_file = it_file/time_diff
     try:
-        filled_length_dir = int(round(bar_length * it_dir / float(tot_dir)))
-    except ZeroDivisionError:
-        filled_length_dir = 0
-    bar_dir = '█' * filled_length_dir + ' ' * (bar_length - filled_length_dir)
-    it_per_sec_file = int(round(it_file / time_diff, 1))
-    try:
-        eta_file = (tot_file - it_file) / it_per_sec_file
+        eta_file = (tot_file - it_file)/it_per_sec_file
     except ZeroDivisionError:
         eta_file = 0
     eta = get_time(eta_dir + eta_file)
-    try:
-        filled_length_file = int(round(bar_length * it_file / float(tot_file)))
-    except ZeroDivisionError:
-        filled_length_file = 0
-    bar_file = '█' * filled_length_file + ' ' * (bar_length - filled_length_file)
-    sys.stdout.write('\r\033[' + BANNER_COLOR + '\033[1m'+str(dir_percents)+'%|'+bar_dir+'|'+str(it_dir)+'/'+str(tot_dir)+', '+str(it_per_sec_dir)+' dir/s\033[0m  \033[' + BANNER_COLOR + '\033[1m'+str(file_percents)+'%|'+bar_file+'|'+str(it_file)+'/'+str(tot_file)+', '+str(it_per_sec_file)+' file/s '+str(eta)+'\033[0m')
-    sys.stdout.flush()
-    with lock:
-        dir_last_percents = dir_percents
-        file_last_percents = file_percents
-    if finished and not CLIARGS['progress']:
-        sys.stdout.write('\n')
-        sys.stdout.flush()
-
-
-def update_progress(threadnum=0, bulkadddirs=False, finished=False, n=None):
-    """Updates progress on screen."""
-    if CLIARGS['quiet'] or VERBOSE or CLIARGS['crawlbot'] or threadnum > 0:
-        return
-    if CLIARGS['finddupes']:
-        t = total_hash_groups
-        i = t - q.qsize()
-        if i < 0:
-            i = 0
-        prefix = "Checking:"
-        it_name = "hg"
-    elif bulkadddirs:
-        t = len(dirlist)
-        i = t - n
-        if i < 0:
-            i = 0
-        prefix = "Indexing:"
-        it_name = "dir"
-    elif CLIARGS['copytags']:
-        t = total_dirs + total_files
-        i = t - q.qsize()
-        if i < 0:
-            i = 0
-        prefix = "Copying:"
-        it_name = "doc"
-    elif CLIARGS['rootdir']:
-        i_dir = total_dirs - q.qsize()
-        if i_dir < 0:
-            i_dir = 0
-        i_file = total_files - fileq.qsize()
-        if i_file < 0:
-            i_file = 0
-        i = i_dir + i_file
-        t = total_dirs + total_files
-        print_progress_bar_crawl(i_dir, total_dirs, i_file, total_files, finished=finished)
-        return
-    if finished:
-        i = t
-        print_progress_bar(i, t, prefix, '%s/%s' % (i, t), it_name,
-                           finished=finished)
+    percents = int((dir_percents + file_percents) / 2)
+    it_per_sec = int((it_per_sec_file + it_per_sec_dir) / 2)
+    if queue == 'dir':
+        return dir_percents, int(it_per_sec_dir), eta_dir
+    elif queue == 'file':
+        return file_percents, int(it_per_sec_file), eta_file
+    else:
+        return percents, it_per_sec, eta
 
 
 def get_dir_meta(path, threadnum):
@@ -875,6 +773,8 @@ def get_file_meta(threadnum, path, singlefile=False):
             if not singlefile:
                 with lock:
                     total_files_skipped_size += 1
+                    if not CLIARGS['quiet']:
+                        pbar_files.update(total_files + total_files_skipped_size)
                     total_file_size_skipped_size += size
             return None
 
@@ -885,6 +785,8 @@ def get_file_meta(threadnum, path, singlefile=False):
             if not singlefile:
                 with lock:
                     total_files_skipped_excluded += 1
+                    if not CLIARGS['quiet']:
+                        pbar_files.update(total_files + total_files_skipped_excluded)
                     total_file_size_skipped_excluded += size
             return None
 
@@ -903,6 +805,8 @@ def get_file_meta(threadnum, path, singlefile=False):
             if not singlefile:
                 with lock:
                     total_files_skipped_mtime += 1
+                    if not CLIARGS['quiet']:
+                        pbar_files.update(total_files + total_files_skipped_mtime)
                     total_file_size_skipped_mtime += size
             return None
 
@@ -910,6 +814,11 @@ def get_file_meta(threadnum, path, singlefile=False):
         if not singlefile:
             with lock:
                 total_files += 1
+                if not CLIARGS['quiet']:
+                    pbar_files.update(total_files +
+                                      total_files_skipped_excluded +
+                                      total_files_skipped_mtime +
+                                      total_files_skipped_size)
                 total_file_size += size
 
         # get access time
@@ -1026,6 +935,7 @@ def crawl_dir_worker(threadnum):
     tasks are finished (Queue empty).
     """
     global dirlist
+    global total_dirs_processed
 
     while True:
         if CLIARGS['nice']:
@@ -1038,8 +948,8 @@ def crawl_dir_worker(threadnum):
             (pri, item) = q.get()
         else:
             item = q.get()
+
         if item is None:
-            update_progress(threadnum, finished=True)
             # stop thread's infinite loop
             q.task_done()
             break
@@ -1077,9 +987,33 @@ def crawl_dir_worker(threadnum):
                                 threadnum, p)
                 # add file to queue
                 fileq.put((root, f))
-        # update progress bar
-        update_progress(threadnum)
         # task is done
+        with lock:
+            total_dirs_processed += 1
+        # update progress bars
+        if threadnum == 0 and not CLIARGS['quiet']:
+            percents, it_per_sec, eta = calc_progress(queue='dir')
+            its = str(it_per_sec) + ' dirs/s' + '\t(' + str(CLIARGS['dirthreads']) + ' threads)'
+            progress_print_dirits.write(string=its)
+            pbar_dirq.update(percents)
+
+        if not CLIARGS['quiet']:
+            # update progress bar
+            try:
+                i_dir = total_dirs - q.qsize()
+                if i_dir < 0:
+                    i_dir = 0
+                i_file = total_files - fileq.qsize()
+                if i_file < 0:
+                    i_file = 0
+                i = i_dir + i_file
+                t = total_dirs + total_files
+                pbar_percent = int(100 * (i / t))
+            except ZeroDivisionError:
+                pbar_percent = 0
+            pbar_proc.update(pbar_percent)
+
+        # mark task done in q
         q.task_done()
 
 
@@ -1095,6 +1029,7 @@ def crawl_file_worker(threadnum):
     bulk added to ES and emptied.
     """
     global dirlist
+    global total_files_processed
 
     # create list to hold files
     filelist = []
@@ -1107,11 +1042,11 @@ def crawl_file_worker(threadnum):
                         threadnum)
         # get a path from the Queue
         item = fileq.get()
+
         if item is None:
             # add filelist to ES and empty it
             if len(filelist) > 0:
                 index_bulk_add(threadnum, filelist, 'file')
-            update_progress(threadnum, finished=True)
             # stop thread's infinite loop
             fileq.task_done()
             break
@@ -1151,9 +1086,33 @@ def crawl_file_worker(threadnum):
         if len(filelist) >= CONFIG['es_chunksize']:
             index_bulk_add(threadnum, filelist, 'file')
             del filelist[:]
-        # update progress bar
-        update_progress(threadnum)
         # task is done
+        with lock:
+            total_files_processed += 1
+        # update progress bars
+        if threadnum == 0 and not CLIARGS['quiet']:
+            percents, it_per_sec, eta = calc_progress(queue='file')
+            its = str(it_per_sec) + ' files/s' + '\t(' + str(CLIARGS['filethreads']) + ' threads)'
+            progress_print_fileits.write(string=its)
+            pbar_fileq.update(percents)
+
+        if not CLIARGS['quiet']:
+            # update progress bar
+            try:
+                i_dir = total_dirs - q.qsize()
+                if i_dir < 0:
+                    i_dir = 0
+                i_file = total_files - fileq.qsize()
+                if i_file < 0:
+                    i_file = 0
+                i = i_dir + i_file
+                t = total_dirs + total_files
+                pbar_percent = int(100 * (i / t))
+            except ZeroDivisionError:
+                pbar_percent = 0
+            pbar_proc.update(pbar_percent)
+
+        # mark task done in q
         fileq.task_done()
 
 
@@ -1179,7 +1138,6 @@ def copytag_worker(threadnum):
             del dir_id_list[:]
             index_bulk_add(threadnum, file_id_list, 'file')
             del file_id_list[:]
-            update_progress(threadnum, finished=True)
             # stop thread's infinite loop
             q.task_done()
             break
@@ -1217,7 +1175,6 @@ def copytag_worker(threadnum):
 
             # mark task done if no matching path in index and continue
             if len(res['hits']['hits']) == 0:
-                update_progress(threadnum)
                 q.task_done()
                 continue
 
@@ -1245,7 +1202,13 @@ def copytag_worker(threadnum):
                 index_bulk_add(threadnum, file_id_list, 'file')
                 del file_id_list[:]
 
-            update_progress(threadnum)
+            if not CLIARGS['quiet']:
+                # update progress bar
+                try:
+                    pbar_percent = int(100 * (total_dirs + total_files - q.qsize()) / (total_dirs + total_files))
+                except ZeroDivisionError:
+                    pbar_percent = 0
+                pbar_proc.update(pbar_percent)
 
             # task is done
             q.task_done()
@@ -1276,6 +1239,7 @@ def crawlbot_worker(threadnum):
         mtime_utc = item[1]
 
         if item is None:
+            LOGGER.info('Shutting down botq thread %s', threadnum)
             # stop thread's infinite loop
             botq.task_done()
             break
@@ -1312,7 +1276,9 @@ def crawlbot_worker(threadnum):
                 # delete existing path docs (non-recursive)
                 index_delete_path(path)
                 # reindex path
-                worker_setup_crawl(path)
+                start_crawl(path)
+                elapsedtime = time.time() - STARTTIME
+                add_crawl_stats(event='stop', elapsedtime=elapsedtime)
             # task is done
             botq.task_done()
             time.sleep(CONFIG['botsleep'])
@@ -1333,8 +1299,17 @@ def check_dir_excludes(path):
         if VERBOSE:
             LOGGER.info('Skipping (.* dir) %s', path)
         return True
-    else:
-        return False
+    # skip any dirs that are found in reg exp check
+    for d in CONFIG['excluded_dirs']:
+        if d == '.*':
+            continue
+        found_dir = re.match(d, os.path.basename(path))
+        found_path = re.match(d, path)
+        if found_dir or found_path:
+            if VERBOSE:
+                LOGGER.info('Skipping (excluded dir) %s', path)
+            return True
+    return False
 
 
 def check_file_excludes(filename, extension, path, threadnum):
@@ -1473,6 +1448,16 @@ def start_crawl(path):
     global total_dirs_skipped_empty
     global total_dirs_skipped_excluded
 
+    # set unicode path for python2
+    if not IS_PY3:
+        path = unicode(path)
+
+    # add crawl stats to ES
+    add_crawl_stats(event='start')
+
+    # add disk space info to ES index
+    add_diskspace(path)
+
     LOGGER.info('Starting crawl for %s using %s dir threads / %s file threads',
                 path, CLIARGS['dirthreads'], CLIARGS['filethreads'])
     try:
@@ -1492,12 +1477,21 @@ def start_crawl(path):
             LOGGER.info(
                 'Walking tree (depth-first, maxdepth:%s)'
                 % level)
+        # make room for the progress bars
+        if not CLIARGS['quiet'] and not CLIARGS['crawlbot']:
+            for x in range(3):
+                print('\n')
+        # start walking the tree
+        i = 1
         for root, dirs, files in walk(path):
+            if not CLIARGS['quiet'] and not CLIARGS['crawlbot']:
+                pbar_dirs.update(i)
             depth = root.count(os.path.sep) - num_sep  # priority for breadth-first
             if len(dirs) == 0 and len(files) == 0 and not CLIARGS['indexemptydirs']:
                 if VERBOSE:
                     LOGGER.info('Skipping directory (empty): %s', root)
                 total_dirs_skipped_empty += 1
+                i += 1
                 continue
             excluded = check_dir_excludes(root)
             if excluded is False:
@@ -1527,6 +1521,7 @@ def start_crawl(path):
                     LOGGER.info('Maxdepth reached')
                 del dirs[:]
                 del files[:]
+            i += 1
         # put None into the queue to trigger final ES bulk operations
         for i in range(int(CLIARGS['dirthreads'])):
             if CLIARGS['breadthfirst']:
@@ -1535,24 +1530,41 @@ def start_crawl(path):
                 q.put(None)
         # block until all tasks are done
         q.join()
+        if not CLIARGS['quiet'] and not CLIARGS['crawlbot']:
+            pbar_dirs.finish()
+            pbar_dirq.finish()
         for i in range(int(CLIARGS['filethreads'])):
             fileq.put(None)
         fileq.join()
+        if not CLIARGS['quiet'] and not CLIARGS['crawlbot']:
+            pbar_fileq.finish()
+            pbar_files.finish()
+            pbar_proc.finish()
         LOGGER.info('Finished crawling')
 
-        if len(dirlist) > 0:
+        n = len(dirlist)
+        if n > 0:
             dirlist_bulk = []
             LOGGER.info('Bulk indexing directories')
+            if not CLIARGS['quiet']:
+                pbar_proc.start()
             x = 1
             for path in dirlist:
+                if not CLIARGS['quiet']:
+                    # update progress bar
+                    try:
+                        pbar_percent = int(100 * (x / n))
+                    except ZeroDivisionError:
+                        pbar_percent = 0
+                    pbar_proc.update(pbar_percent)
                 dirlist_bulk.append(dirlist[path])
-                update_progress(0, bulkadddirs=True, n=x)
                 if len(dirlist_bulk) >= CONFIG['es_chunksize']:
                     index_bulk_add(0, dirlist_bulk, 'directory')
                     del dirlist_bulk[:]
                 x += 1
             index_bulk_add(0, dirlist_bulk, 'directory')
-            update_progress(0, bulkadddirs=True, finished=True, n=x)
+            if not CLIARGS['quiet']:
+                pbar_proc.finish()
             LOGGER.info('Finished indexing directories')
 
     except KeyboardInterrupt:
@@ -1568,13 +1580,14 @@ def start_crawl(path):
         for i in range(int(CLIARGS['filethreads'])):
             fileq.put(None)
         print("\nThreads successfully closed, sayonara!")
+        # Print and update ES crawl stats
+        print_stats(stats_type='crawl')
         sys.exit(0)
 
 
-def worker_setup_crawl(path):
+def worker_setup_crawl():
     """This is the worker setup function for directory crawling.
     It sets up the worker threads to process items in the Queue.
-    crawloop is set to True if running in bot mode.
     """
 
     # set up the threads for dir crawlers (meta scrapers) and start them
@@ -1590,21 +1603,6 @@ def worker_setup_crawl(path):
         t = threading.Thread(target=crawl_file_worker, args=(i,))
         t.daemon = True
         t.start()
-
-    # set unicode path for python2
-    if not IS_PY3:
-        path = unicode(path)
-
-    # add crawl stats to ES
-    add_crawl_stats(event='start')
-
-    if not CLIARGS['crawlbot'] and not CLIARGS['reindex'] \
-            and not CLIARGS['reindexrecurs']:
-        # add disk space info to ES
-        add_diskspace(path)
-
-    # start crawling the path
-    start_crawl(path)
 
 
 def worker_setup_crawlbot(botdirlist):
@@ -1628,15 +1626,16 @@ def worker_setup_crawlbot(botdirlist):
         t.start()
 
     try:
-        t = time.time()
+        t = STARTTIME
         # start infinite loop and randomly pick directories from dirlist
         # in future will create better algorithm for this
         while True:
-            # get a new dirlist after 1 hour to pick up any new directories which have been added
+            # get a new dirlist every 1 hour to pick up any new directories which have been added
             if time.time() - t >= 3600:
-                t = get_time(time.time() - STARTTIME)
+                t = time.time()
+                elapsed = get_time(t - STARTTIME)
                 LOGGER.info(
-                    '### crawlbot main thread: getting new dirlist from ES, crawlbot has been running for %s ###', t)
+                    '### crawlbot main thread: getting new dirlist from ES, crawlbot has been running for %s ###', elapsed)
                 botdirlist = index_get_docs('directory')
             # random pick from dirlist
             i = len(botdirlist) - 1
@@ -1686,6 +1685,8 @@ def worker_setup_copytags(dirlist, filelist):
             q.put(None)
         # block until all tasks are done
         q.join()
+        if not CLIARGS['quiet']:
+            pbar_proc.finish()
 
     except KeyboardInterrupt:
         LOGGER.disabled = True
@@ -1722,6 +1723,8 @@ def worker_setup_dupes():
             q.put(None)
         # block until all tasks are done
         q.join()
+        if not CLIARGS['quiet']:
+            pbar_proc.finish()
 
     except KeyboardInterrupt:
         LOGGER.disabled = True
@@ -1756,7 +1759,6 @@ def dupes_worker(threadnum):
                 # update existing index and tag dupe files dupe_md5 field
                 index_tag_dupe(threadnum, dupelist)
                 del dupelist[:]
-            update_progress(threadnum, finished=True)
             # end thread's infinite loop
             q.task_done()
             break
@@ -1766,7 +1768,13 @@ def dupes_worker(threadnum):
             # process the duplicate files in hashgroup and return dupelist
             dupelist = tag_dupes(threadnum, hashgroup, dupelist)
 
-        update_progress(threadnum)
+        if not CLIARGS['quiet']:
+            # update progress bar
+            try:
+                pbar_percent = int(100 * (total_hash_groups - q.qsize()) / total_hash_groups)
+            except ZeroDivisionError:
+                pbar_percent = 0
+            pbar_proc.update(pbar_percent)
 
         # task is done
         q.task_done()
@@ -2639,13 +2647,13 @@ def run_command(threadnum, command_dict, clientsock, lock):
         if action == 'crawl':
             path = command_dict['path']
             cmd = [
-                pythonpath, '-u', diskoverpath, '--dirthreads', dirthreads,
-                '--filethreads', filethreads, '-i', index, '-d', path, '--progress']
+                pythonpath, '-u', diskoverpath, '-w', dirthreads,
+                '-W', filethreads, '-i', index, '-d', path, '-q']
 
         elif action == 'finddupes':
             cmd = [
                 pythonpath, '-u', diskoverpath, '-t', threads,
-                '-i', index, '--finddupes', '--progress']
+                '-i', index, '-D', '-q']
 
         elif action == 'reindex':
             try:
@@ -2656,27 +2664,26 @@ def run_command(threadnum, command_dict, clientsock, lock):
             path = command_dict['path']
             if recursive == 'true':
                 cmd = [
-                    pythonpath, '-u', diskoverpath, '--dirthreads', dirthreads,
-                    '--filethreads', filethreads, '-i', index, '-d', path, '-R', '--progress']
+                    pythonpath, '-u', diskoverpath, '-w', dirthreads,
+                    '-W', filethreads, '-i', index, '-d', path, '-R', '-q']
             else:
                 cmd = [
-                    pythonpath, '-u', diskoverpath, '--dirthreads', dirthreads,
-                    '--filethreads', filethreads, '-i', index, '-d', path, '-r', '--progress']
+                    pythonpath, '-u', diskoverpath, '-w', dirthreads,
+                    '-W', filethreads, '-i', index, '-d', path, '-r', '-q']
 
         elif action == 'kill':
             taskid = command_dict['taskid']
             LOGGER.info("[thread-%s]: Kill task message received! (taskid:%s)",
                         threadnum, taskid)
-            message = b'{"msg": "exit"}\n'
+            # do something here to kill task (future)
+            message = b'{"msg": "taskkilled"}\n'
             clientsock.send(message)
-            LOGGER.debug(message)
             return
 
         else:
             LOGGER.warning("Unknown action")
-            message = b'{"msg": "error"}\n'
+            message = b'{"error": "unknown action"}\n'
             clientsock.send(message)
-            LOGGER.debug(message)
             return
 
         # run command using subprocess
@@ -2684,43 +2691,36 @@ def run_command(threadnum, command_dict, clientsock, lock):
         taskid = str(uuid.uuid4()).encode('utf-8')
 
         # start process
-        process = Popen(cmd, stdout=PIPE)
+        process = Popen(cmd, stdout=PIPE, stderr=PIPE)
+
         # add process to socket_tasks dict
         with lock:
             socket_tasks[taskid] = process
 
-        message = b'{"msg": "taskid", "id": "%s"}\n' % taskid
+        message = b'{"msg": "taskstart", "taskid": "' + taskid + b'"}\n'
         clientsock.send(message)
-        LOGGER.debug(message)
 
         LOGGER.info("[thread-%s]: Running command (taskid:%s)",
-                    threadnum, taskid)
+                    threadnum, taskid.decode('utf-8'))
         LOGGER.info(cmd)
-        # send each stdout line to client
-        while True:
-            nextline = process.stdout.readline()
-            if nextline != b'\n' and nextline != b'':
-                message = nextline + '\n'.encode('utf-8')
-                clientsock.send(nextline)
-                LOGGER.debug(nextline)
-            else:
-                break
+
+        output = process.communicate()[0]
 
         # send exit msg to client
-        output = process.communicate()[0]
         exitcode = str(process.returncode).encode('utf-8')
+        LOGGER.debug('Command output:')
+        LOGGER.debug(output)
         elapsedtime = str(get_time(time.time() - starttime)).encode('utf-8')
-        LOGGER.info("Command exit code: %s, elapsed time: %s"
-                    % (exitcode, elapsedtime))
-        message = b'{"msg": "exit", "exitcode": %s, "elapsedtime": "%s"}\n' % (exitcode, elapsedtime)
+        LOGGER.info("Finished command (taskid:%s), exit code: %s, elapsed time: %s"
+                    % (taskid.decode('utf-8'), exitcode.decode('utf-8'), elapsedtime.decode('utf-8')))
+        message = b'{"msg": "taskfinish", "taskid": "%s", "exitcode": %s, "elapsedtime": "%s"}\n' \
+                  % (taskid, exitcode, elapsedtime)
         clientsock.send(message)
-        LOGGER.debug(message)
 
-    except KeyError:
-        LOGGER.warning("Invalid command")
-        message = b'{"msg": "error"}\n'
+    except ValueError:
+        LOGGER.warning("Value error")
+        message = b'{"error": "value error"}\n'
         clientsock.send(message)
-        LOGGER.debug(message)
         pass
 
     except socket.error as e:
@@ -2740,6 +2740,8 @@ def socket_thread_handler(threadnum, q, lock):
             LOGGER.debug(clientsock)
             LOGGER.debug(addr)
             data = clientsock.recv(BUFF)
+            data = data.decode('utf-8')
+            LOGGER.debug('Data:')
             LOGGER.debug(data)
             if not data:
                 # close connection to client
@@ -2749,7 +2751,7 @@ def socket_thread_handler(threadnum, q, lock):
                 q.task_done()
                 continue
             # check if ping msg
-            elif data == b'ping':
+            elif data == 'ping':
                 LOGGER.info("[thread-%s]: Got ping from %s"
                             % (threadnum, str(addr)))
                 # send pong reply
@@ -2757,12 +2759,12 @@ def socket_thread_handler(threadnum, q, lock):
                 clientsock.send(message)
                 LOGGER.debug(message)
             else:
+                # strip away any headers sent by curl
+                data = data.split('\r\n')[-1]
                 LOGGER.info("[thread-%s]: Got command from %s"
                             % (threadnum, str(addr)))
-                # get JSON command
-                LOGGER.debug(data)
                 # load json and store in dict
-                command_dict = json.loads(data.decode('utf-8'))
+                command_dict = json.loads(data)
                 LOGGER.debug(command_dict)
                 # run command from json data
                 run_command(threadnum, command_dict, clientsock, lock)
@@ -2776,7 +2778,7 @@ def socket_thread_handler(threadnum, q, lock):
         except (ValueError, TypeError) as e:
             LOGGER.warning("[thread-%s]: Invalid JSON from %s: (%s)"
                            % (threadnum, str(addr), e))
-            message = b'{"msg": "error"}\n'
+            message = b'{"msg": "error", "error": ' + e + b'}\n'
             clientsock.send(message)
             LOGGER.debug(message)
             # close connection to client
@@ -2882,7 +2884,7 @@ if __name__ == "__main__":
         print('Please name your index: diskover-<string>')
         sys.exit(0)
 
-    if not CLIARGS['quiet'] and not CLIARGS['progress'] and \
+    if not CLIARGS['quiet'] and \
             not CLIARGS['gourcert'] and not CLIARGS['gourcemt']:
         # print random banner
         print_banner()
@@ -2959,6 +2961,41 @@ if __name__ == "__main__":
     # set up lock for threading
     lock = threading.RLock()
 
+    # set up our Terminal and progress bars
+    if not CLIARGS['quiet']:
+        term = Terminal()
+        class bar_printer(object):
+            def __init__(self, location):
+                self.location = location
+            def write(self, string):
+                with term.location(*self.location):
+                    sys.stdout.write(term.cyan + term.bold + string + term.normal)
+            def flush(self):
+                with term.location(*self.location):
+                    progressbar.streams.flush()
+                    #sys.stdout.flush()
+        progress_print_percent = bar_printer((0, term.height - 1))
+        progress_print_files = bar_printer((0, term.height - 2))
+        progress_print_fileits = bar_printer((0, term.height - 3))
+        progress_print_fileq = bar_printer((0, term.height - 4))
+        progress_print_dirs = bar_printer((0, term.height - 5))
+        progress_print_dirits = bar_printer((0, term.height - 6))
+        progress_print_dirq = bar_printer((0, term.height - 7))
+        widgetsf = ['Crawled: ', progressbar.Counter(), ' files (', progressbar.Timer(), ')']
+        pbar_files = progressbar.ProgressBar(widgets=widgetsf, fd=progress_print_files,
+                                             max_value=progressbar.UnknownLength)
+        widgetsfq = ['FileQ Consumption: ', progressbar.Bar('=', '[', '] '), progressbar.Percentage()]
+        pbar_fileq = progressbar.ProgressBar(widgets=widgetsfq, fd=progress_print_fileq)
+        widgetsd = ['Crawled: ', progressbar.Counter(), ' directories (', progressbar.Timer(), ')']
+        pbar_dirs = progressbar.ProgressBar(widgets=widgetsd, fd=progress_print_dirs,
+                                            max_value=progressbar.UnknownLength)
+        widgetsdq = ['DirQ Consumption: ', progressbar.Bar('=', '[', '] '), progressbar.Percentage()]
+        pbar_dirq = progressbar.ProgressBar(widgets=widgetsdq, fd=progress_print_dirq)
+        widgets = ['Processing: ', progressbar.Bar('=', '[', '] '), progressbar.Percentage(),
+                   ' (', progressbar.ETA(), ')']
+        pbar_proc = progressbar.ProgressBar(widgets=widgets, fd=progress_print_percent,
+                                            max_value=100)
+
     # tag duplicate files if cli argument
     if CLIARGS['finddupes']:
         # Set up worker threads for duplicate file checker queue
@@ -2998,8 +3035,10 @@ if __name__ == "__main__":
 
     # start crawlbot if cli argument
     if CLIARGS['crawlbot']:
+        # set up file/directory meta scraper threads
+        worker_setup_crawl()
         # Set up Bot Queue for worker threads
-        botq = Queue.Queue(CONFIG['queuesize'])
+        botq = Queue.Queue(maxsize=CLIARGS['threads'])
         botdirlist = index_get_docs('directory')
         # Set up worker threads for crawlbot
         worker_setup_crawlbot(botdirlist)
@@ -3014,8 +3053,10 @@ if __name__ == "__main__":
 
     # create Elasticsearch index
     index_create(CLIARGS['index'])
-    # Set up worker threads and start crawling from top rootdir path
-    worker_setup_crawl(rootdir_path)
+    # set up file/directory meta scraper threads
+    worker_setup_crawl()
+    # start crawling from top rootdir path
+    start_crawl(rootdir_path)
     # Print and update ES crawl stats
     print_stats(stats_type='crawl')
     # exit, we're all done!
