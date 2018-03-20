@@ -21,7 +21,7 @@ except ImportError:
     except ImportError:
         raise ImportError('elasticsearch module not installed')
 from datetime import datetime
-import diskover_redis_worker
+import diskover_worker_bot
 import diskover_socket_server
 import diskover_gource
 import diskover_crawlbot
@@ -1055,7 +1055,7 @@ def calc_dir_sizes():
         count += 1
         dirbatch.append(d)
         if len(dirbatch) >= cliargs['batchsize']:
-            q.enqueue(diskover_redis_worker.calc_dir_size,
+            q.enqueue(diskover_worker_bot.calc_dir_size,
                     args=(dirbatch, cliargs,))
             del dirbatch[:]
             count = 0
@@ -1112,7 +1112,7 @@ def crawl_tree(path, cliargs):
                 batch.append((root, files))
                 count += 1
                 if count >= batchsize:
-                    q.enqueue(diskover_redis_worker.scrape_tree_meta,
+                    q.enqueue(diskover_worker_bot.scrape_tree_meta,
                                           args=(batch, cliargs,))
                     count = 0
                     del batch[:]
@@ -1143,7 +1143,7 @@ def crawl_tree(path, cliargs):
             #    time.sleep(2)
 
         # add any remaining in batch to queue
-        q.enqueue(diskover_redis_worker.scrape_tree_meta,
+        q.enqueue(diskover_worker_bot.scrape_tree_meta,
                               args=(batch, cliargs,))
         totaljobs += 1
 
@@ -1245,12 +1245,12 @@ if __name__ == "__main__":
         # look in index2 for all directory docs with tags and add to queue
         dirlist = index_get_docs('directory', copytags=True, index=cliargs['copytags'][0])
         for path in dirlist:
-            q.enqueue(diskover_redis_worker.tag_copier,
+            q.enqueue(diskover_worker_bot.tag_copier,
                       args=(path, cliargs,))
         # look in index2 for all file docs with tags and add to queue
         filelist = index_get_docs('file', copytags=True, index=cliargs['copytags'][0])
         for path in filelist:
-            q.enqueue(diskover_redis_worker.tag_copier,
+            q.enqueue(diskover_worker_bot.tag_copier,
                       args=(path, cliargs,))
         if len(dirlist) == 0 and len(filelist) == 0:
             logger.info('No tags to copy')
