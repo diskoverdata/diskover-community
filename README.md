@@ -81,15 +81,14 @@ $ pip install -r requirements.txt
 Start diskover main job dispatcher with:
 
 ```sh
-$ cd /path/you/want/to/crawl
-$ python /path/to/diskover.py
+$ python /path/to/diskover.py -d /rootpath/you/want/to/crawl
 ```
 
 Start diskover worker bots (as many as you want) with:
 
 ```sh
 $ cd /path/with/diskover
-$ python /path/to/diskover_worker_bot.py
+$ python diskover_worker_bot.py
 ```
 
 Worker bots can be added during a crawl to help with the queue. To run a worker bot in burst mode (quit after all jobs done), use the -b flag.
