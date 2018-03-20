@@ -3,10 +3,11 @@
 ## [1.5.0-beta.5] = 2018-03-21
 ### notice
 - requires Redis
-- requires rq and redis python modules
+- requires rq and redis python modules (pip install)
 - requires diskover-web >= v1.5.0-beta.5
 - this is a pre-release beta for v1.5.0
 - ** crawlbot continuous scanner (-B) is very buggy, hoping to have it more stable in later releases **
+- recommended to pip install rq-dashboard (rq-dashboard is used for monitoring rq redis queue)
 ### added
 - diskover_redis_worker.py - worker bot module for processing Redis queue
 - requirement for Redis
@@ -14,6 +15,7 @@
 - new options in diskover.cfg for redis
 - -b --batchsize flags to diskover.py for controling the batch size (num of dirs) to enqueue for each worker bot to process
 - -a --adaptivebatch for auto-adjusting batch size during crawl
+- config option in diskover.cfg for ES to wait for at least yellow status before bulk uploading (default is False)
 ### changed
 - removed python Queue and using Redis for enqueuing jobs
 - no longer using threading, switched to using workers (diskover_redis_worker.py), run multiple workers to consume queue jobs
