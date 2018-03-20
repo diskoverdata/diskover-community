@@ -39,10 +39,13 @@ Kibana dashboards/saved searches/visualizations and support for Gource<br>
 
 * `Linux or OS X/macOS` (tested on OS X 10.11.6, Ubuntu 16.04)
 * `Python 2.7. or Python 3.5.` (tested on Python 2.7.14, 3.5.3)
-* `Python elasticsearch client module` [elasticsearch](https://pypi.python.org/pypi/elasticsearch) (tested on 5.4.0, 5.5.1)
-* `Python requests module` [requests](https://pypi.python.org/pypi/requests)
-* `Python scandir module` [scandir](https://pypi.python.org/pypi/scandir)
-* `Elasticsearch` (local or [AWS ES Service](https://aws.amazon.com/elasticsearch-service/), tested on Elasticsearch 5.4.2, 5.6.4)
+* `Python elasticsearch client module`
+* `Python requests module`
+* `Python scandir module`
+* `Python progressbar2 module`
+* `Python blessings module`
+* `Elasticsearch 5` (local or [AWS ES Service](https://aws.amazon.com/elasticsearch-service/), tested on Elasticsearch 5.4.2, 5.6.4) Elasticsearch 6 is not supported yet.
+Install the above Python modules using pip.
 
 ### Optional Installs
 
@@ -83,34 +86,7 @@ $ python /path/to/diskover.py
 
 A successfull crawl should look like this:
 
-```
-   ___       ___       ___       ___       ___       ___       ___       ___
-  /\  \     /\  \     /\  \     /\__\     /\  \     /\__\     /\  \     /\  \
- /::\  \   _\:\  \   /::\  \   /:/ _/_   /::\  \   /:/ _/_   /::\  \   /::\  \
-/:/\:\__\ /\/::\__\ /\:\:\__\ /::-"\__\ /:/\:\__\ |::L/\__\ /::\:\__\ /::\:\__\
-\:\/:/  / \::/\/__/ \:\:\/__/ \;:;-",-" \:\/:/  / |::::/  / \:\:\/  / \;:::/  /
- \::/  /   \:\__\    \::/  /   |:|  |    \::/  /   L;;/__/   \:\/  /   |:\/__/
-  \/__/     \/__/     \/__/     \|__|     \/__/    v1.4.1     \/__/     \|__|
-                                      https://shirosaidev.github.io/diskover
-                                      Bringing light to the darkness.
-                                      Support diskover on Patreon :)
-
-    
-2017-12-20 15:08:41,664 [INFO][diskover] Connecting to Elasticsearch
-2017-12-20 15:08:41,676 [INFO][diskover] Checking ES index: diskover-index
-2017-12-20 15:08:41,680 [WARNING][diskover] ES index exists, deleting
-2017-12-20 15:08:41,968 [INFO][diskover] Creating ES index
-2017-12-20 15:08:42,192 [INFO][diskover] Adding disk space info to ES index
-2017-12-20 15:08:42,197 [INFO][diskover] Starting crawl using 20 threads
-Crawling: 100%|████████████████████| 10147/10147 [0h:00m:00s, 322.7 dir/s]
-2017-12-20 15:09:13,107 [INFO][diskover] Finished crawling
-
-********************************* CRAWL STATS *********************************
- Directories: 10147 / Skipped: 92
- Files: 64267 (54.01 GB) / Skipped: 1211 (46.21 GB)
- Elapsed time: 0h:00m:31s
-*******************************************************************************
-```
+<img width="500" src="docs/diskover-crawling-screenshot.png?raw=true" alt="diskover crawling">
 
 ## User Guide
 
