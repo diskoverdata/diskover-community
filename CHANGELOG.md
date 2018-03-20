@@ -1,5 +1,25 @@
 # Diskover Change Log
 
+## [1.5.0-beta.5] = 2018-03-21
+### notice
+- requires Redis
+- requires rq and redis python modules
+- requires diskover-web >= v1.5.0-beta.5
+- this is a pre-release beta for v1.5.0
+- ** crawlbot continuous scanner (-B) is very buggy, hoping to have it more stable in later releases **
+### added
+- diskover_redis_worker.py - worker bot module for processing Redis queue
+- requirement for Redis
+- requirement for rq and redis python modules
+- new options in diskover.cfg for redis
+- -b --batchsize flags to diskover.py for controling the batch size (num of dirs) to enqueue for each worker bot to process
+- -a --adaptivebatch for auto-adjusting batch size during crawl
+### changed
+- removed python Queue and using Redis for enqueuing jobs
+- no longer using threading, switched to using workers (diskover_redis_worker.py), run multiple workers to consume queue jobs
+- moved dupes, gource, socket server, crawlbot, redis worker into their own modules diskover_<module>.py
+- removed dependency for blessings
+
 ## [1.5.0-beta.4] = 2018-03-14
 ### notice
 - requires diskover-web >= v1.5.0
