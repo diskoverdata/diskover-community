@@ -38,19 +38,23 @@ Kibana dashboards/saved searches/visualizations and support for Gource<br>
 ### Requirements
 
 * `Linux or OS X/macOS` (tested on OS X 10.11.6, Ubuntu 16.04)
-* `Python 2.7. or Python 3.5.` (tested on Python 2.7.14, 3.5.3)
+* `Python 2.7. or Python 3.5./3.6.` (tested on Python 2.7.14, 3.5.3, 3.6.4)
 * `Python elasticsearch client module`
 * `Python requests module`
 * `Python scandir module`
 * `Python progressbar2 module`
-* `Python blessings module`
+* `Python redis module`
+* `Python rq module`
 * `Elasticsearch 5` (local or [AWS ES Service](https://aws.amazon.com/elasticsearch-service/), tested on Elasticsearch 5.4.2, 5.6.4) Elasticsearch 6 is not supported yet.
+* `Redis` (tested on 4.0.8)
+
 Install the above Python modules using pip.
 
 ### Optional Installs
 
 * [diskover-web](https://github.com/shirosaidev/diskover-web) (diskover's web file manager and analytics app)
 * [sharesniffer](https://github.com/shirosaidev/sharesniffer) (for scanning your network for file shares and auto-mounting for crawls)
+* [Redis RQ Dashboard](https://github.com/nvie/rq-dashboard) (for monitoring redis queue)
 * [GNU parallel](https://www.gnu.org/software/parallel/) (for running parallel diskover crawls using diskover-mp.sh)
 * [Kibana](https://www.elastic.co/products/kibana) (for visualizing Elasticsearch data, tested on Kibana 5.4.2, 5.6.4)
 * [X-Pack](https://www.elastic.co/downloads/x-pack) (Kibana plugin for graphs, reports, monitoring and http auth)
@@ -75,18 +79,24 @@ $ pip install -r requirements.txt
 
 ## Getting Started
 
-Start diskover with:
+Edit diskover config (diskover.cfg) for your environment.
+
+Start diskover worker bots (as many as you want) with:
 
 ```sh
-$ cd /path/you/want/to/crawl
-$ python /path/to/diskover.py
+$ cd /path/with/diskover
+$ python diskover_worker_bot.py
+```
+
+Worker bots can be added during a crawl to help with the queue. To run a worker bot in burst mode (quit after all jobs done), use the -b flag.
+
+Start diskover main job dispatcher and file tree crawler with:
+
+```sh
+$ python /path/to/diskover.py -d /rootpath/you/want/to/crawl
 ```
 
 **Defaults for crawl with no flags is to index from . (current directory) and files >0 Bytes and 0 days modified time. Empty files and directores are skipped (unless you use -s 0 and -e flags). Use -h to see cli options.**
-
-A successfull crawl should look like this:
-
-<img width="500" src="docs/diskover-crawling-screenshot.png?raw=true" alt="diskover crawling">
 
 ## User Guide
 
