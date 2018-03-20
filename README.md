@@ -38,7 +38,7 @@ Kibana dashboards/saved searches/visualizations and support for Gource<br>
 ### Requirements
 
 * `Linux or OS X/macOS` (tested on OS X 10.11.6, Ubuntu 16.04)
-* `Python 2.7. or Python 3.5.` (tested on Python 2.7.14, 3.5.3)
+* `Python 2.7. or Python 3.5./3.6.` (tested on Python 2.7.14, 3.5.3, 3.6.4)
 * `Python elasticsearch client module`
 * `Python requests module`
 * `Python scandir module`
@@ -47,6 +47,7 @@ Kibana dashboards/saved searches/visualizations and support for Gource<br>
 * `Python rq module`
 * `Elasticsearch 5` (local or [AWS ES Service](https://aws.amazon.com/elasticsearch-service/), tested on Elasticsearch 5.4.2, 5.6.4) Elasticsearch 6 is not supported yet.
 * `Redis` (tested on 4.0.8)
+
 Install the above Python modules using pip.
 
 ### Optional Installs
@@ -78,11 +79,7 @@ $ pip install -r requirements.txt
 
 ## Getting Started
 
-Start diskover main job dispatcher with:
-
-```sh
-$ python /path/to/diskover.py -d /rootpath/you/want/to/crawl
-```
+Edit diskover config (diskover.cfg) for your environment.
 
 Start diskover worker bots (as many as you want) with:
 
@@ -92,6 +89,12 @@ $ python diskover_worker_bot.py
 ```
 
 Worker bots can be added during a crawl to help with the queue. To run a worker bot in burst mode (quit after all jobs done), use the -b flag.
+
+Start diskover main job dispatcher and file tree crawler with:
+
+```sh
+$ python /path/to/diskover.py -d /rootpath/you/want/to/crawl
+```
 
 **Defaults for crawl with no flags is to index from . (current directory) and files >0 Bytes and 0 days modified time. Empty files and directores are skipped (unless you use -s 0 and -e flags). Use -h to see cli options.**
 
