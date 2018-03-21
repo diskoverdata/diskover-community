@@ -43,13 +43,15 @@ import math
 import re
 import os
 import sys
+import threading
 
 
-version = '1.5.0-beta.5'
+version = '1.5.0-beta.6'
 __version__ = version
 
 IS_PY3 = sys.version_info >= (3, 0)
 
+totaljobs = 0
 
 def print_banner(version):
     """This is the print banner function.
@@ -1063,6 +1065,55 @@ def calc_dir_sizes():
     logger.info('Directories have all been enqueued, calculating in background')
 
 
+def treewalk(path, num_sep, level, batchsize, workers, bar):
+    global totaljobs
+    batch = []
+    count = 0
+    for root, dirs, files in walk(path):
+        if not dir_excluded(root, config, cliargs['verbose']):
+            if len(dirs) == 0 and len(files) == 0 and not cliargs['indexemptydirs']:
+                continue
+            batch.append((root, files))
+            count += 1
+            if count >= batchsize:
+                q.enqueue(diskover_worker_bot.scrape_tree_meta,
+                          args=(batch, cliargs,))
+                count = 0
+                del batch[:]
+                totaljobs += 1
+
+            # check if at maxdepth level and delete dirs/files lists to not
+            # descend further down the tree
+            num_sep_this = root.count(os.path.sep)
+            if num_sep + level <= num_sep_this:
+                del dirs[:]
+                del files[:]
+        else:  # directory excluded
+            del dirs[:]
+            del files[:]
+
+        if not cliargs['quiet']:
+            try:
+                percent = int("{0:.0f}".format(100 * ((totaljobs - len(q)) / float(totaljobs))))
+                bar.update(percent)
+            except ZeroDivisionError:
+                bar.update(0)
+            except ValueError:
+                bar.update(0)
+
+        if cliargs['adaptivebatch']:
+            batchsize = len(workers) * 20 + len(q)
+
+        # while len(Worker.all(queue=q)) == 0:
+        #    logger.info('Waiting for diskover worker bots to start...')
+        #    time.sleep(2)
+
+    # add any remaining in batch to queue
+    q.enqueue(diskover_worker_bot.scrape_tree_meta,
+              args=(batch, cliargs,))
+    totaljobs += 1
+
+
 def crawl_tree(path, cliargs):
     """This is the crawl tree function.
     It walks the tree and adds tuple of root, dirs, files
@@ -1078,12 +1129,8 @@ def crawl_tree(path, cliargs):
         logger.info('Found %s diskover RQ worker bots', len(workers))
         logger.info('Enqueueing crawl to diskover worker bots for %s...', path)
 
-        totaljobs = 0
-
         # adaptive batch algorithm
         # batchsize = worker count * 20 + len(q)
-        batch = []
-        count = 0
         if cliargs['adaptivebatch']:
             batchsize = len(workers) * 20 + len(q)
             logger.info("Sending adaptive batches to worker bots")
@@ -1105,54 +1152,29 @@ def crawl_tree(path, cliargs):
         # set current depth
         num_sep = path.count(os.path.sep)
 
-        for root, dirs, files in walk(path):
-            if not dir_excluded(root, config, cliargs['verbose']):
-                if len(dirs) == 0 and len(files) == 0 and not cliargs['indexemptydirs']:
-                    continue
-                batch.append((root, files))
-                count += 1
-                if count >= batchsize:
-                    q.enqueue(diskover_worker_bot.scrape_tree_meta,
-                                          args=(batch, cliargs,))
-                    count = 0
-                    del batch[:]
-                    totaljobs += 1
+        thread_list = []
+        # set up threads to parallel crawl directories at rootdir
+        for entry in scandir(path):
+            if entry.is_dir(follow_symlinks=False):
+                thread = threading.Thread(target=treewalk,
+                                          args=(entry.path, num_sep, level, batchsize,
+                                                workers, bar,))
+                thread.start()
+                thread_list.append(thread)
 
-                # check if at maxdepth level and delete dirs/files lists to not
-                # descend further down the tree
-                num_sep_this = root.count(os.path.sep)
-                if num_sep + level <= num_sep_this:
-                    del dirs[:]
-                    del files[:]
-            else:  # directory excluded
-                del dirs[:]
-                del files[:]
+        # wait for the threads to finish
+        for thread in thread_list:
+            thread.join()
 
-            if not cliargs['quiet']:
-                try:
-                    percent = int("{0:.0f}".format(100 * ((totaljobs-len(q)) / float(totaljobs))))
-                    bar.update(percent)
-                except ZeroDivisionError:
-                    bar.update(0)
-
-            if cliargs['adaptivebatch']:
-                batchsize = len(workers) * 20 + len(q)
-
-            #while len(Worker.all(queue=q)) == 0:
-            #    logger.info('Waiting for diskover worker bots to start...')
-            #    time.sleep(2)
-
-        # add any remaining in batch to queue
-        q.enqueue(diskover_worker_bot.scrape_tree_meta,
-                              args=(batch, cliargs,))
-        totaljobs += 1
-
+        # wait for queue to be empty
         while True:
             if not cliargs['quiet']:
                 try:
                     percent = int("{0:.0f}".format(100 * ((totaljobs - len(q)) / float(totaljobs))))
                     bar.update(percent)
                 except ZeroDivisionError:
+                    bar.update(0)
+                except ValueError:
                     bar.update(0)
             if len(q) == 0:
                 break
@@ -1308,7 +1330,7 @@ if __name__ == "__main__":
 
     # create Elasticsearch index
     index_create(cliargs['index'])
-    time.sleep(.1)
+    time.sleep(.5)
 
     # add disk space info to es index
     add_diskspace(cliargs['index'], rootdir_path)

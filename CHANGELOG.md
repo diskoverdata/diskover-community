@@ -1,5 +1,12 @@
 # Diskover Change Log
 
+## [1.5.0-beta.6] = 2018-03-21
+### added
+- threading module to diskover.py to parallel tree walk from each directory in rootdir and enqueue those directories into Redis
+for worker bots to process
+### changed
+- removed RLock from diskover_socket_server.py, using python global threading lock
+
 ## [1.5.0-beta.5] = 2018-03-21
 ### notice
 - requires Redis
@@ -21,6 +28,7 @@
 - no longer using threading, switched to using workers (diskover_worker_bot.py), run multiple workers to consume queue jobs
 - moved dupes, gource, socket server, crawlbot, redis worker into their own modules diskover_<module>.py
 - removed dependency for blessings
+- removed diskover-mp.sh and requirement for parallel. diskover_worker_bots.py can be run in parallel to help with the redis queue.
 
 ## [1.5.0-beta.4] = 2018-03-14
 ### notice
