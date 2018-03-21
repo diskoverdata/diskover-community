@@ -12,7 +12,7 @@ LICENSE for the full license text.
 """
 
 import diskover
-import diskover_redis_worker
+import diskover_worker_bot
 import base64
 import hashlib
 import os
@@ -266,7 +266,7 @@ def dupes_finder(es, q, cliargs, logger):
 
     # add hash keys to Queue
     for bucket in res['aggregations']['dupe_filehash']['buckets']:
-        q.enqueue(diskover_redis_worker.dupes_process_hashkey,
+        q.enqueue(diskover_worker_bot.dupes_process_hashkey,
                   args=(bucket['key'], cliargs,))
 
     logger.info('All file hashes have been enqueued')

@@ -9,7 +9,7 @@
 - ** crawlbot continuous scanner (-B) is very buggy, hoping to have it more stable in later releases **
 - recommended to pip install rq-dashboard (rq-dashboard is used for monitoring rq redis queue)
 ### added
-- diskover_redis_worker.py - worker bot module for processing Redis queue
+- diskover_worker_bot.py - worker bot module for processing Redis queue
 - requirement for Redis
 - requirement for rq and redis python modules
 - new options in diskover.cfg for redis
@@ -18,7 +18,7 @@
 - config option in diskover.cfg for ES to wait for at least yellow status before bulk uploading (default is False)
 ### changed
 - removed python Queue and using Redis for enqueuing jobs
-- no longer using threading, switched to using workers (diskover_redis_worker.py), run multiple workers to consume queue jobs
+- no longer using threading, switched to using workers (diskover_worker_bot.py), run multiple workers to consume queue jobs
 - moved dupes, gource, socket server, crawlbot, redis worker into their own modules diskover_<module>.py
 - removed dependency for blessings
 
