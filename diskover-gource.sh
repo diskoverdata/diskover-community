@@ -9,14 +9,14 @@
 #
 
 # gource settings
-RESOLUTION="1280x720"
+RESOLUTION="1920x1080"
 SECPERDAY=1
 AUTOSKIPSEC=1
 MAXFILELAG=0.1 # should be set to same in diskover.cfg
 OTHEROPTIONS="" # "--hide filenames" for example
 
 # script version
-VERSION="1.0"
+VERSION="1.1"
 
 # display help if no args or -h flag
 if [ $# -eq 0 ] || [ "$1" == "-h" ] || [ "$1" == "--help" ]; then
@@ -79,7 +79,7 @@ function rungource {
     # check stdin
     if [[ -p /dev/stdin ]]; then
       echo seeing stdin data stream, starting gource
-      TITLE="diskover file system crawler (realtime crawl by worker thread)"
+      TITLE="diskover file system crawler (realtime crawl by worker bot)"
       gource --title "$TITLE" --key -$RESOLUTION --seconds-per-day $SECPERDAY \
         --auto-skip-seconds $AUTOSKIPSEC --max-file-lag $MAXFILELAG $OTHEROPTIONS --realtime --log-format custom -
     else

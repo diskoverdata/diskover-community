@@ -53,7 +53,7 @@ def gource(es, cliargs):
                 d = str(int(time.mktime(datetime.strptime(
                     hit['_source']['indexing_date'],
                     '%Y-%m-%dT%H:%M:%S.%f').timetuple())))
-                u = str(hit['_source']['indexing_thread'])
+                u = str(hit['_source']['worker_name'])
                 t = 'A'
             elif cliargs['gourcemt']:
                 d = str(int(time.mktime(datetime.strptime(
