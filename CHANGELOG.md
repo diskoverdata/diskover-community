@@ -1,11 +1,28 @@
 # Diskover Change Log
 
+## [1.5.0-beta.7] = 2018-03-22
+### added
+- caching of uid/gid owner group names to help speed up crawl times and reduce lookups on directory services
+- improved adaptive batch
+- faster crawl times
+- workerbot section to diskover.cfg with log settings
+- ver 1.1 of diskover-bot-launcher.sh, better log handling
+(logs will be named diskover_bot_worker_<workername>_<time>_log and default is stored in /tmp, change dir in diskover.cfg)
+### changed
+- seperate redis connection for each worker and es connection is loaded only once when worker starts
+- renamed diskover.cfg to diskover.cfg.sample to help with updates (copy diskover.cfg.sample to diskover.cfg if you don't have)
+### fixed
+- bug where some directories sizes were not getting calculated at end of crawl (index was not being refreshed)
+
 ## [1.5.0-beta.6] = 2018-03-21
 ### added
 - threading module to diskover.py to parallel tree walk from each directory in rootdir and enqueue those directories into Redis
 for worker bots to process
 ### changed
 - removed RLock from diskover_socket_server.py, using python global threading lock
+- diskover-gource.sh to ver 1.1
+### fixed
+- bug in diskover_gource.py
 
 ## [1.5.0-beta.5] = 2018-03-21
 ### notice

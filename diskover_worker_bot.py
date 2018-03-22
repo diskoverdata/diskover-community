@@ -12,7 +12,7 @@ LICENSE for the full license text.
 """
 
 import diskover
-import diskover_dupes
+from redis import Redis
 from rq import Worker, Connection
 import argparse
 from datetime import datetime
@@ -22,22 +22,76 @@ import socket
 import pwd
 import grp
 import time
+import logging
 
+
+# cache uid/gid names
+uids = []
+gids = []
+owners = {}
+groups = {}
+
+# create Elasticsearch connection
+es = diskover.elasticsearch_connect(diskover.config)
 
 def parse_cli_args():
     """This is the parse CLI arguments function.
     It parses command line arguments.
     """
-
     parser = argparse.ArgumentParser()
     parser.add_argument("-b", "--burst", action="store_true",
-                        help="Burst mode, worker will quit after all work is done")
-    parser.add_argument("-q", "--quiet", action="store_true",
-                        help="Show less output")
-    parser.add_argument("-v", "--verbose", action="store_true",
-                        help="Show more output")
+                        help="Burst mode (worker will quit after all work is done)")
     args = parser.parse_args()
     return args
+
+
+def bot_log_setup(cliargs):
+    bot_logger = logging.getLogger('diskover_worker_bot')
+    bot_logger.setLevel(logging.INFO)
+    rq_logger = logging.getLogger('rq.worker')
+    rq_logger.setLevel(logging.WARNING)
+    es_logger = logging.getLogger('elasticsearch')
+    es_logger.setLevel(logging.WARNING)
+
+    if diskover.config['botlogs'] == "True" or \
+            diskover.config['botlogs'] == "true":
+        botlogfile = 'diskover_bot_worker_' + get_worker_name() \
+                     + '_' + str(int(time.time())) + '_log'
+        fh = logging.FileHandler(os.path.join(diskover.config['botlogfiledir'], botlogfile))
+        fh.setLevel(logging.INFO)
+        bot_logger.addHandler(fh)
+
+    logging.addLevelName(
+        logging.INFO, "\033[1;32m%s\033[1;0m"
+                      % logging.getLevelName(logging.INFO))
+    logging.addLevelName(
+        logging.WARNING, "\033[1;31m%s\033[1;0m"
+                         % logging.getLevelName(logging.WARNING))
+    logging.addLevelName(
+        logging.ERROR, "\033[1;41m%s\033[1;0m"
+                       % logging.getLevelName(logging.ERROR))
+    logging.addLevelName(
+        logging.DEBUG, "\033[1;33m%s\033[1;0m"
+                       % logging.getLevelName(logging.DEBUG))
+    logformatter = '%(asctime)s [%(levelname)s][%(name)s] %(message)s'
+
+    loglevel = logging.INFO
+    logging.basicConfig(format=logformatter, level=loglevel)
+
+    if cliargs['verbose']:
+        bot_logger.setLevel(logging.INFO)
+        rq_logger.setLevel(logging.INFO)
+        es_logger.setLevel(logging.INFO)
+    if cliargs['debug']:
+        bot_logger.setLevel(logging.DEBUG)
+        rq_logger.setLevel(logging.DEBUG)
+        es_logger.setLevel(logging.DEBUG)
+    if cliargs['quiet']:
+        bot_logger.disabled = True
+        rq_logger.disabled = True
+        es_logger.disabled = True
+
+    return bot_logger
 
 
 def get_worker_name():
@@ -65,29 +119,48 @@ def get_dir_meta(path, cliargs):
         # get user id of owner
         uid = lstat_path.st_uid
         # try to get owner user name
-        try:
-            owner = pwd.getpwuid(uid).pw_name.split('\\')
-            # remove domain before owner
-            if len(owner) == 2:
-                owner = owner[1]
-            else:
-                owner = owner[0]
-        # if we can't find the owner's user name, use the uid number
-        except KeyError:
-            owner = uid
+        # first check cache
+        if uid in uids:
+            owner = owners[uid]
+        # not in cache
+        else:
+            try:
+                owner = pwd.getpwuid(uid).pw_name.split('\\')
+                # remove domain before owner
+                if len(owner) == 2:
+                    owner = owner[1]
+                else:
+                    owner = owner[0]
+            # if we can't find the owner's user name, use the uid number
+            except KeyError:
+                owner = uid
+            # store it in cache
+            if not uid in uids:
+                uids.append(uid)
+                owners[uid] = owner
         # get group id
         gid = lstat_path.st_gid
+        group = gid
         # try to get group name
-        try:
-            group = grp.getgrgid(gid).gr_name.split('\\')
-            # remove domain before group
-            if len(group) == 2:
-                group = group[1]
-            else:
-                group = group[0]
-        # if we can't find the group name, use the gid number
-        except KeyError:
-            group = gid
+        # first check cache
+        if gid in gids:
+            group = groups[gid]
+        # not in cache
+        else:
+            try:
+                group = grp.getgrgid(gid).gr_name.split('\\')
+                # remove domain before group
+                if len(group) == 2:
+                    group = group[1]
+                else:
+                    group = group[0]
+            # if we can't find the group name, use the gid number
+            except KeyError:
+                group = gid
+            # store in cache
+            if not gid in gids:
+                gids.append(gid)
+                groups[gid] = group
 
         filename = os.path.basename(path)
         parentdir = os.path.abspath(os.path.join(path, os.pardir))
@@ -171,29 +244,48 @@ def get_file_meta(path, cliargs):
         # get user id of owner
         uid = stat.st_uid
         # try to get owner user name
-        try:
-            owner = pwd.getpwuid(uid).pw_name.split('\\')
-            # remove domain before owner
-            if len(owner) == 2:
-                owner = owner[1]
-            else:
-                owner = owner[0]
-        # if we can't find the owner's user name, use the uid number
-        except KeyError:
-            owner = uid
+        # first check cache
+        if uid in uids:
+            owner = owners[uid]
+        # not in cache
+        else:
+            try:
+                owner = pwd.getpwuid(uid).pw_name.split('\\')
+                # remove domain before owner
+                if len(owner) == 2:
+                    owner = owner[1]
+                else:
+                    owner = owner[0]
+            # if we can't find the owner's user name, use the uid number
+            except KeyError:
+                owner = uid
+            # store it in cache
+            if not uid in uids:
+                uids.append(uid)
+                owners[uid] = owner
         # get group id
         gid = stat.st_gid
+        group = gid
         # try to get group name
-        try:
-            group = grp.getgrgid(gid).gr_name.split('\\')
-            # remove domain before group
-            if len(group) == 2:
-                group = group[1]
-            else:
-                group = group[0]
-        # if we can't find the group name, use the gid number
-        except KeyError:
-            group = gid
+        # first check cache
+        if gid in gids:
+            group = groups[gid]
+        # not in cache
+        else:
+            try:
+                group = grp.getgrgid(gid).gr_name.split('\\')
+                # remove domain before group
+                if len(group) == 2:
+                    group = group[1]
+                else:
+                    group = group[0]
+            # if we can't find the group name, use the gid number
+            except KeyError:
+                group = gid
+            # store in cache
+            if not gid in gids:
+                gids.append(gid)
+                groups[gid] = group
         # get inode number
         inode = stat.st_ino
         # get number of hardlinks
@@ -250,12 +342,13 @@ def calc_dir_size(dirlist, cliargs):
     to create a total filesize and item count for each dir.
     Updates dir doc's filesize and items fields.
     """
-    # create Elasticsearch connection
-    es = diskover.elasticsearch_connect(diskover.config)
+    bot_logger = bot_log_setup(cliargs)
+    jobstart = time.time()
+    bot_logger.info('*** Calculating directory sizes...')
 
     for path in dirlist:
         totalsize = 0
-        totalitems = 0
+        totalitems = 1  # 1 for the directory itself
 
         # file doc search with aggregate for sum filesizes
         # escape special characters
@@ -311,15 +404,16 @@ def calc_dir_size(dirlist, cliargs):
         # ES id of directory doc
         directoryid = path[0]
 
-        # update filesize field for directory (path) doc
+        # update filesize and items fields for directory (path) doc
         es.update(index=cliargs['index'], id=directoryid, doc_type='directory',
                   body={"doc": {'filesize': totalsize, 'items': totalitems}})
+
+    elapsed_time = round(time.time() - jobstart, 3)
+    bot_logger.info('*** FINISHED CALC DIR, Elapsed Time: ' + str(elapsed_time))
     return True
 
 
-def es_bulk_adder(result, cliargs):
-    # create Elasticsearch connection
-    es = diskover.elasticsearch_connect(diskover.config)
+def es_bulk_adder(result, cliargs, bot_logger):
     dirlist = []
     filelist = []
     crawltimelist = []
@@ -334,20 +428,23 @@ def es_bulk_adder(result, cliargs):
         elif item[0] == 'crawltime':
             crawltimelist.append(item)
             totalcrawltime += item[2]
+    bot_logger.info('*** Bulk adding to ES index...')
     diskover.index_bulk_add(es, dirlist, 'directory', diskover.config, cliargs)
     diskover.index_bulk_add(es, filelist, 'file', diskover.config, cliargs)
-    for item in crawltimelist:
-        diskover.add_crawl_stats(es, cliargs['index'], item[1], item[2], worker_name)
+    diskover.add_crawl_stats_bulk(es, crawltimelist, worker_name, diskover.config, cliargs)
 
     data = {"worker_name": worker_name, "dir_count": len(dirlist),
             "file_count": len(filelist), "bulk_time": round(time.time() - starttime, 3),
             "crawl_time": round(totalcrawltime, 3),
             "indexing_date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")}
     es.index(index=cliargs['index'], doc_type='worker', body=data)
+    elapsed_time = round(time.time() - starttime, 3)
+    bot_logger.info('*** FINISHED BULK ADDING, Elapsed Time: ' + str(elapsed_time))
     return True
 
 
 def scrape_tree_meta(paths, cliargs):
+    bot_logger = bot_log_setup(cliargs)
     jobstart = time.time()
     tree = []
     for path in paths:
@@ -362,9 +459,9 @@ def scrape_tree_meta(paths, cliargs):
                 tree.append(('file', fmeta))
         tree.append(('crawltime', root, (time.time() - starttime)))
 
-    es_bulk_adder(tree, cliargs)
+    es_bulk_adder(tree, cliargs, bot_logger)
     elapsed_time = round(time.time()-jobstart, 3)
-    print('*** FINISHED JOB, Elapsed Time: %s' % elapsed_time)
+    bot_logger.info('*** FINISHED JOB, Elapsed Time: ' + str(elapsed_time))
     return True
 
 
@@ -372,6 +469,8 @@ def dupes_process_hashkey(hashkey, cliargs):
     """This is the duplicate file worker function.
     It processes hash keys in the dupes Queue.
     """
+    import diskover_dupes
+    bot_logger = bot_log_setup(cliargs)
     jobstart = time.time()
     # find all files in ES matching hashkey
     hashgroup = diskover_dupes.populate_hashgroup(hashkey, cliargs)
@@ -380,7 +479,7 @@ def dupes_process_hashkey(hashkey, cliargs):
     if hashgroup:
         diskover_dupes.index_dupes(hashgroup, cliargs)
     elapsed_time = round(time.time() - jobstart, 3)
-    print('*** FINISHED JOB, Elapsed Time: ', elapsed_time)
+    bot_logger.info('*** FINISHED JOB, Elapsed Time: ' + str(elapsed_time))
     return True
 
 
@@ -390,10 +489,8 @@ def tag_copier(path, cliargs):
     same path and copies any existing tags (from index2)
     Updates index's doc's tag and tag_custom fields.
     """
+    bot_logger = bot_log_setup(cliargs)
     jobstart = time.time()
-
-    # create Elasticsearch connection
-    es = diskover.elasticsearch_connect(diskover.config)
 
     dir_id_list = []
     file_id_list = []
@@ -413,9 +510,6 @@ def tag_copier(path, cliargs):
             }
         }
     }
-
-    # refresh index
-    # ES.indices.refresh(index=CLIARGS['index'])
 
     # check if file or directory
     if path[3] is 'directory':
@@ -450,7 +544,7 @@ def tag_copier(path, cliargs):
     diskover.index_bulk_add(es, file_id_list, 'file', diskover.config, cliargs)
 
     elapsed_time = round(time.time() - jobstart, 3)
-    print('*** FINISHED JOB, Elapsed Time: ', elapsed_time)
+    bot_logger.info('*** FINISHED JOB, Elapsed Time: ' + str(elapsed_time))
     return True
 
 
@@ -458,36 +552,28 @@ if __name__ == '__main__':
     # parse cli arguments into cliargs dictionary
     cliargs_bot = vars(parse_cli_args())
 
-    if cliargs_bot['verbose']:
-        loglevel = 1
-    elif cliargs_bot['quiet']:
-        loglevel = 0
-    else:
-        loglevel = None
+    # create Reddis connection
+    redis_conn = Redis(host=diskover.config['redis_host'], port=diskover.config['redis_port'],
+                       password=diskover.config['redis_password'])
 
-    if not cliargs_bot['quiet']:
-        print("""\033[31m
-    
-         ___  _ ____ _  _ ____ _  _ ____ ____     ;
-         |__> | ==== |-:_ [__]  \/  |=== |--<    ["]
-         ____ ____ ____ _  _ _    ___  ____ ___ /[_]\\
-         |___ |--< |--| |/\| |___ |==] [__]  |   ] [ v%s
-         
-         Redis RQ worker bot for diskover crawler
-         Crawling all your stuff.
-    
-    
-        \033[0m""" % (diskover.version))
+    # Redis queue names
+    listen = ['diskover_crawl']
 
-    with Connection(diskover.redis_conn):
-        w = Worker(diskover.listen)
+    print("""\033[31m
+    
+     ___  _ ____ _  _ ____ _  _ ____ ____     ;
+     |__> | ==== |-:_ [__]  \/  |=== |--<    ["]
+     ____ ____ ____ _  _ _    ___  ____ ___ /[_]\\
+     |___ |--< |--| |/\| |___ |==] [__]  |   ] [ v%s
+     
+     Redis RQ worker bot for diskover crawler
+     Crawling all your stuff.
+
+    \033[0m""" % (diskover.version))
+
+    with Connection(redis_conn):
+        w = Worker(listen)
         if cliargs_bot['burst']:
-            if loglevel:
-                w.work(burst=True, logging_level=loglevel)
-            else:
-                w.work(burst=True)
+            w.work(burst=True)
         else:
-            if loglevel is not None:
-                w.work(logging_level=loglevel)
-            else:
-                w.work()
+            w.work()

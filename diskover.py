@@ -21,11 +21,6 @@ except ImportError:
     except ImportError:
         raise ImportError('elasticsearch module not installed')
 from datetime import datetime
-import diskover_worker_bot
-import diskover_socket_server
-import diskover_gource
-import diskover_crawlbot
-import diskover_dupes
 from scandir import scandir, walk
 try:
     import configparser as ConfigParser
@@ -46,7 +41,7 @@ import sys
 import threading
 
 
-version = '1.5.0-beta.6'
+version = '1.5.0-beta.7'
 __version__ = version
 
 IS_PY3 = sys.version_info >= (3, 0)
@@ -231,6 +226,14 @@ def load_config():
         configsettings['redis_password'] = config.get('redis', 'password')
     except Exception:
         configsettings['redis_password'] = ""
+    try:
+        configsettings['botlogs'] = config.get('workerbot', 'botlogs')
+    except Exception:
+        configsettings['botlogs'] = "False"
+    try:
+        configsettings['botlogfiledir'] = config.get('workerbot', 'logfiledir')
+    except Exception:
+        configsettings['botlogfiledir'] = "/tmp"
     try:
         configsettings['listener_host'] = \
             int(config.get('socketlistener', 'host'))
@@ -834,6 +837,18 @@ def add_crawl_stats(es, index, path, crawltime, worker_name=None):
     es.index(index=index, doc_type='crawlstat', body=data)
 
 
+def add_crawl_stats_bulk(es, crawltimelist, worker_name, config, cliargs):
+    crawlstats = []
+    for item in crawltimelist:
+        crawlstats.append({
+            "path": item[1],
+            "worker_name": worker_name,
+            "crawl_time": round(item[2], 3),
+            "indexing_date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
+        })
+    index_bulk_add(es, crawlstats, 'crawlstat', config, cliargs)
+
+
 def dir_excluded(path, config, verbose):
     """Return True if path in excluded_dirs list,
     False if not in the list"""
@@ -945,9 +960,9 @@ def parse_cli_args(indexname):
     parser.add_argument("-M", "--maxdepth", type=int, default=100,
                         help="Maximum directory depth to crawl (default: \
                         100)")
-    parser.add_argument("-b", "--batchsize", type=int, default=50,
+    parser.add_argument("-b", "--batchsize", type=int, default=100,
                         help="Batch size (dir count) for sending to worker bots (default: \
-                            50)")
+                            100)")
     parser.add_argument("-a", "--adaptivebatch", action="store_true",
                         help="Adaptive batch size for sending to worker bots (intelligent crawl)")
     parser.add_argument("-r", "--reindex", action="store_true",
@@ -995,6 +1010,7 @@ def log_setup():
     urllib3_logger.setLevel(logging.WARNING)
     requests_logger = logging.getLogger('requests')
     requests_logger.setLevel(logging.WARNING)
+
     logging.addLevelName(
         logging.INFO, "\033[1;32m%s\033[1;0m"
                       % logging.getLevelName(logging.INFO))
@@ -1008,8 +1024,10 @@ def log_setup():
         logging.DEBUG, "\033[1;33m%s\033[1;0m"
                        % logging.getLevelName(logging.DEBUG))
     logformatter = '%(asctime)s [%(levelname)s][%(name)s] %(message)s'
+
     loglevel = logging.INFO
     logging.basicConfig(format=logformatter, level=loglevel)
+
     if cliargs['verbose']:
         diskover_logger.setLevel(logging.INFO)
         es_logger.setLevel(logging.INFO)
@@ -1037,6 +1055,7 @@ def progress_bar():
 
 
 def calc_dir_sizes():
+    import diskover_worker_bot
     logger.info('Waiting for diskover bots to be done with any crawl jobs...')
     busyworkers = []
     while True:
@@ -1044,10 +1063,13 @@ def calc_dir_sizes():
         for worker in workers:
             if worker._state == "busy":
                 busyworkers.append(worker._name)
-        if len(busyworkers) == 0:
+        if len(busyworkers) == 0 and len(q) == 0:
             break
         del busyworkers[:]
         time.sleep(1)
+
+    # refresh index
+    es.indices.refresh(index=cliargs['index'])
 
     logger.info('Getting diskover bots to calculate directory sizes...')
     dirlist = index_get_docs()
@@ -1062,14 +1084,19 @@ def calc_dir_sizes():
             del dirbatch[:]
             count = 0
 
+    # add any remaining in batch to queue
+    q.enqueue(diskover_worker_bot.calc_dir_size,
+              args=(dirbatch, cliargs,))
+
     logger.info('Directories have all been enqueued, calculating in background')
 
 
 def treewalk(path, num_sep, level, batchsize, workers, bar):
+    import diskover_worker_bot
     global totaljobs
     batch = []
     count = 0
-    for root, dirs, files in walk(path):
+    for root, dirs, files in walk(path, topdown=True):
         if not dir_excluded(root, config, cliargs['verbose']):
             if len(dirs) == 0 and len(files) == 0 and not cliargs['indexemptydirs']:
                 continue
@@ -1102,7 +1129,7 @@ def treewalk(path, num_sep, level, batchsize, workers, bar):
                 bar.update(0)
 
         if cliargs['adaptivebatch']:
-            batchsize = len(workers) * 20 + len(q)
+            batchsize = len(workers) * 10 + len(q)
 
         # while len(Worker.all(queue=q)) == 0:
         #    logger.info('Waiting for diskover worker bots to start...')
@@ -1130,9 +1157,9 @@ def crawl_tree(path, cliargs):
         logger.info('Enqueueing crawl to diskover worker bots for %s...', path)
 
         # adaptive batch algorithm
-        # batchsize = worker count * 20 + len(q)
+        # batchsize = worker count * 10 + len(q)
         if cliargs['adaptivebatch']:
-            batchsize = len(workers) * 20 + len(q)
+            batchsize = len(workers) * 10 + len(q)
             logger.info("Sending adaptive batches to worker bots")
         elif cliargs['batchsize']:
             batchsize = cliargs['batchsize']
@@ -1234,6 +1261,7 @@ if __name__ == "__main__":
 
     # check for listen socket cli flag to start socket server
     if cliargs['listen']:
+        import diskover_socket_server
         diskover_socket_server.start_socket_server(cliargs, logger, cliargs['verbose'])
         sys.exit(0)
 
@@ -1243,6 +1271,7 @@ if __name__ == "__main__":
     # check for gource cli flags
     if cliargs['gourcert'] or cliargs['gourcemt']:
         try:
+            import diskover_gource
             diskover_gource.gource(es, cliargs)
         except KeyboardInterrupt:
             print('\nCtrl-c keyboard interrupt received, exiting')
@@ -1253,6 +1282,8 @@ if __name__ == "__main__":
 
     # tag duplicate files if cli argument
     if cliargs['finddupes']:
+        import diskover_worker_bot
+        import diskover_dupes
         wait_for_worker_bots()
         # Set up worker threads for duplicate file checker queue
         diskover_dupes.dupes_finder(es, q, cliargs, logger)
@@ -1262,6 +1293,7 @@ if __name__ == "__main__":
 
     # copy tags from index2 to index if cli argument
     if cliargs['copytags']:
+        import diskover_worker_bot
         wait_for_worker_bots()
         logger.info('Copying tags from %s to %s', cliargs['copytags'][0], cliargs['index'])
         # look in index2 for all directory docs with tags and add to queue
@@ -1315,6 +1347,8 @@ if __name__ == "__main__":
 
     # start crawlbot if cli argument
     if cliargs['crawlbot']:
+        import diskover_crawlbot
+        import diskover_worker_bot
         wait_for_worker_bots()
         botdirlist = index_get_docs('directory')
         # Set up worker threads for crawlbot
