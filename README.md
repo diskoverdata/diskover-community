@@ -87,7 +87,7 @@ $ cd /path/with/diskover
 $ python diskover_worker_bot.py
 ```
 
-Worker bots can be added during a crawl to help with the queue. To run a worker bot in burst mode (quit after all jobs done), use the -b flag. Run `diskover-bot-launcher.sh` to spawn and kill multiple bots.
+Worker bots can be added during a crawl to help with the queue. To run a worker bot in burst mode (quit after all jobs done), use the -b flag. If the queue is empty these bots will die, so use `rq info` or `rq-dashboard` to see if they are running. Run `diskover-bot-launcher.sh` to spawn and kill multiple bots.
 
 Start diskover main job dispatcher and file tree crawler with:
 
