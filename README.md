@@ -53,7 +53,7 @@ Install the above Python modules using pip.
 ### Optional Installs
 
 * [diskover-web](https://github.com/shirosaidev/diskover-web) (diskover's web file manager and analytics app)
-* [Redis RQ Dashboard](https://github.com/nvie/rq-dashboard) (for monitoring redis queue)
+* [Redis RQ Dashboard](https://python-rq.org/docs/monitoring/) (for monitoring redis queue)
 * [sharesniffer](https://github.com/shirosaidev/sharesniffer) (for scanning your network for file shares and auto-mounting for crawls)
 * [Kibana](https://www.elastic.co/products/kibana) (for visualizing Elasticsearch data, tested on Kibana 5.4.2, 5.6.4)
 * [X-Pack](https://www.elastic.co/downloads/x-pack) (Kibana plugin for graphs, reports, monitoring and http auth)
@@ -87,7 +87,7 @@ $ cd /path/with/diskover
 $ python diskover_worker_bot.py
 ```
 
-Worker bots can be added during a crawl to help with the queue. To run a worker bot in burst mode (quit after all jobs done), use the -b flag.
+Worker bots can be added during a crawl to help with the queue. To run a worker bot in burst mode (quit after all jobs done), use the -b flag. If the queue is empty these bots will die, so use `rq info` or `rq-dashboard` to see if they are running. Run `diskover-bot-launcher.sh` to spawn and kill multiple bots.
 
 Start diskover main job dispatcher and file tree crawler with:
 
