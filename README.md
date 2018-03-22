@@ -53,7 +53,7 @@ Install the above Python modules using pip.
 ### Optional Installs
 
 * [diskover-web](https://github.com/shirosaidev/diskover-web) (diskover's web file manager and analytics app)
-* [Redis RQ Dashboard](https://github.com/nvie/rq-dashboard) (for monitoring redis queue)
+* [Redis RQ Dashboard](https://python-rq.org/docs/monitoring/) (for monitoring redis queue)
 * [sharesniffer](https://github.com/shirosaidev/sharesniffer) (for scanning your network for file shares and auto-mounting for crawls)
 * [Kibana](https://www.elastic.co/products/kibana) (for visualizing Elasticsearch data, tested on Kibana 5.4.2, 5.6.4)
 * [X-Pack](https://www.elastic.co/downloads/x-pack) (Kibana plugin for graphs, reports, monitoring and http auth)
