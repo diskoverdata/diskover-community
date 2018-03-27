@@ -64,6 +64,8 @@ readsize = 65536
 ; continuous scanner
 ; time to sleep (seconds) between checking for directory changes
 sleeptime = 0.1
+; number of threads for checking directories
+threads = 8
 
 [gource]
 ; should be set to same in diskover-gource.sh
