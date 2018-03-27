@@ -1,5 +1,24 @@
 # Diskover Change Log
 
+## [1.5.0-beta.8] = 2018-03-27
+### notice
+- requires Redis
+- requires rq and redis python modules (pip install)
+- requires diskover-web >= v1.5.0-beta.5
+- this is a pre-release beta for v1.5.0
+- ** crawlbot continuous scanner (-B) is still buggy, hoping to have it stable in final release **
+- recommended to pip install rq-dashboard (rq-dashboard is used for monitoring rq redis queue)
+### added
+- threading to crawlbot continuous scanner
+- threads setting in diskover.cfg for crawlbot continuous scanner, default is 8, for searching for mtime changes in directories in existing index
+### changed
+- chunksize (es bulk size) in diskover.cfg.sample to 1000 from 500 (help speed up crawl times)
+- maxsize (es connection count) in diskover.cfg.sample to 20 from 10 (help speed up crawl times)
+### fixed
+- rootdir files not getting indexed
+- bugs with reindexing and crawlbot continuous scanner
+- various bug fixes
+
 ## [1.5.0-beta.7] = 2018-03-22
 ### added
 - caching of uid/gid owner group names to help speed up crawl times and reduce lookups on directory services

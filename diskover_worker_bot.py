@@ -34,6 +34,10 @@ groups = {}
 # create Elasticsearch connection
 es = diskover.elasticsearch_connect(diskover.config)
 
+# create Reddis connection
+redis_conn = Redis(host=diskover.config['redis_host'], port=diskover.config['redis_port'],
+                       password=diskover.config['redis_password'])
+
 def parse_cli_args():
     """This is the parse CLI arguments function.
     It parses command line arguments.
@@ -98,7 +102,7 @@ def get_worker_name():
     return '{0}.{1}'.format(socket.gethostname().partition('.')[0], os.getppid())
 
 
-def get_dir_meta(path, cliargs):
+def get_dir_meta(path, cliargs, reindex_dict):
     """This is the get directory meta data function.
     It gets directory metadata and returns dir meta dict.
     """
@@ -140,7 +144,6 @@ def get_dir_meta(path, cliargs):
                 owners[uid] = owner
         # get group id
         gid = lstat_path.st_gid
-        group = gid
         # try to get group name
         # first check cache
         if gid in gids:
@@ -182,6 +185,13 @@ def get_dir_meta(path, cliargs):
             "worker_name": get_worker_name()
         }
 
+        # search for and copy over any existing tags from reindex_dict
+        for sublist in reindex_dict['directory']:
+            if sublist[0] == fullpath:
+                dirmeta_dict['tag'] = sublist[1]
+                dirmeta_dict['tag_custom'] = sublist[2]
+                break
+
         # check plugins for adding extra meta data to dirmeta_dict
         for plugin in diskover.plugins:
             try:
@@ -198,7 +208,7 @@ def get_dir_meta(path, cliargs):
     return dirmeta_dict
 
 
-def get_file_meta(path, cliargs):
+def get_file_meta(path, cliargs, reindex_dict):
     """This is the get file meta data function.
     It scrapes file meta and ignores files smaller
     than minsize Bytes, newer than mtime
@@ -265,7 +275,6 @@ def get_file_meta(path, cliargs):
                 owners[uid] = owner
         # get group id
         gid = stat.st_gid
-        group = gid
         # try to get group name
         # first check cache
         if gid in gids:
@@ -318,6 +327,13 @@ def get_file_meta(path, cliargs):
             "indexing_date": indextime_utc,
             "worker_name": get_worker_name()
         }
+
+        # search for and copy over any existing tags from reindex_dict
+        for sublist in reindex_dict['file']:
+            if sublist[0] == path:
+                filemeta_dict['tag'] = sublist[1]
+                filemeta_dict['tag_custom'] = sublist[2]
+                break
 
         # check plugins for adding extra meta data to filemeta_dict
         for plugin in diskover.plugins:
@@ -392,7 +408,7 @@ def calc_dir_size(dirlist, cliargs):
             }
 
         # search ES and start scroll
-        res = es.search(index=cliargs['index'], doc_type='file,directory', body=data,
+        res = es.search(index=cliargs['index'], doc_type='file', body=data,
                         request_timeout=diskover.config['es_timeout'])
 
         # add total files to items
@@ -400,6 +416,37 @@ def calc_dir_size(dirlist, cliargs):
 
         # total file size sum
         totalsize = res['aggregations']['total_size']['value']
+
+        # directory doc search and add to total items
+        # check if / (root) path
+        if newpath == '\/':
+            data = {
+                "size": 0,
+                "query": {
+                    "query_string": {
+                        "query": "path_parent: " + newpath + "*",
+                        "analyze_wildcard": "true"
+                    }
+                }
+            }
+        else:
+            data = {
+                "size": 0,
+                "query": {
+                    "query_string": {
+                        "query": "path_parent: " + newpath + " \
+                                OR path_parent: " + newpath + "\/*",
+                        "analyze_wildcard": "true"
+                    }
+                }
+            }
+
+        # search ES and start scroll
+        res = es.search(index=cliargs['index'], doc_type='directory', body=data,
+                        request_timeout=diskover.config['es_timeout'])
+
+        # add total files to items
+        totalitems += res['hits']['total']
 
         # ES id of directory doc
         directoryid = path[0]
@@ -410,16 +457,16 @@ def calc_dir_size(dirlist, cliargs):
 
     elapsed_time = round(time.time() - jobstart, 3)
     bot_logger.info('*** FINISHED CALC DIR, Elapsed Time: ' + str(elapsed_time))
-    return True
 
 
 def es_bulk_adder(result, cliargs, bot_logger):
+    worker_name = get_worker_name()
+    starttime = time.time()
     dirlist = []
     filelist = []
     crawltimelist = []
     totalcrawltime = 0
-    worker_name = get_worker_name()
-    starttime = time.time()
+
     for item in result:
         if item[0] == 'directory':
             dirlist.append(item[1])
@@ -428,41 +475,44 @@ def es_bulk_adder(result, cliargs, bot_logger):
         elif item[0] == 'crawltime':
             crawltimelist.append(item)
             totalcrawltime += item[2]
+
     bot_logger.info('*** Bulk adding to ES index...')
     diskover.index_bulk_add(es, dirlist, 'directory', diskover.config, cliargs)
     diskover.index_bulk_add(es, filelist, 'file', diskover.config, cliargs)
-    diskover.add_crawl_stats_bulk(es, crawltimelist, worker_name, diskover.config, cliargs)
-
-    data = {"worker_name": worker_name, "dir_count": len(dirlist),
-            "file_count": len(filelist), "bulk_time": round(time.time() - starttime, 3),
-            "crawl_time": round(totalcrawltime, 3),
-            "indexing_date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")}
-    es.index(index=cliargs['index'], doc_type='worker', body=data)
+    if not cliargs['reindex'] and not cliargs['reindexrecurs']:
+        diskover.add_crawl_stats_bulk(es, crawltimelist, worker_name, diskover.config, cliargs)
+        data = {"worker_name": worker_name, "dir_count": len(dirlist),
+                "file_count": len(filelist), "bulk_time": round(time.time() - starttime, 10),
+                "crawl_time": round(totalcrawltime, 10),
+                "indexing_date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")}
+        es.index(index=cliargs['index'], doc_type='worker', body=data)
     elapsed_time = round(time.time() - starttime, 3)
     bot_logger.info('*** FINISHED BULK ADDING, Elapsed Time: ' + str(elapsed_time))
-    return True
 
 
-def scrape_tree_meta(paths, cliargs):
+def scrape_tree_meta(paths, cliargs, reindex_dict):
     bot_logger = bot_log_setup(cliargs)
     jobstart = time.time()
     tree = []
+
     for path in paths:
         starttime = time.time()
         root, files = path
-        dmeta = get_dir_meta(root, cliargs)
+        dmeta = get_dir_meta(root, cliargs, reindex_dict)
         if dmeta:
             tree.append(('directory', dmeta))
         for file in files:
-            fmeta = get_file_meta(os.path.join(root, file), cliargs)
+            fmeta = get_file_meta(os.path.join(root, file), cliargs, reindex_dict)
             if fmeta:
                 tree.append(('file', fmeta))
-        tree.append(('crawltime', root, (time.time() - starttime)))
+        if dmeta or fmeta:
+            tree.append(('crawltime', root, (time.time() - starttime)))
 
-    es_bulk_adder(tree, cliargs, bot_logger)
+    if len(tree) > 0:
+        es_bulk_adder(tree, cliargs, bot_logger)
+
     elapsed_time = round(time.time()-jobstart, 3)
     bot_logger.info('*** FINISHED JOB, Elapsed Time: ' + str(elapsed_time))
-    return True
 
 
 def dupes_process_hashkey(hashkey, cliargs):
@@ -471,16 +521,16 @@ def dupes_process_hashkey(hashkey, cliargs):
     """
     import diskover_dupes
     bot_logger = bot_log_setup(cliargs)
+    bot_logger.info('*** Processing Hash Key: ' + hashkey)
     jobstart = time.time()
     # find all files in ES matching hashkey
-    hashgroup = diskover_dupes.populate_hashgroup(hashkey, cliargs)
+    hashgroup = diskover_dupes.populate_hashgroup(hashkey, cliargs, bot_logger)
     # process the duplicate files in hashgroup
-    hashgroup = diskover_dupes.verify_dupes(hashgroup, cliargs)
+    hashgroup = diskover_dupes.verify_dupes(hashgroup, cliargs, bot_logger)
     if hashgroup:
-        diskover_dupes.index_dupes(hashgroup, cliargs)
+        diskover_dupes.index_dupes(hashgroup, cliargs, bot_logger)
     elapsed_time = round(time.time() - jobstart, 3)
     bot_logger.info('*** FINISHED JOB, Elapsed Time: ' + str(elapsed_time))
-    return True
 
 
 def tag_copier(path, cliargs):
@@ -545,16 +595,11 @@ def tag_copier(path, cliargs):
 
     elapsed_time = round(time.time() - jobstart, 3)
     bot_logger.info('*** FINISHED JOB, Elapsed Time: ' + str(elapsed_time))
-    return True
 
 
 if __name__ == '__main__':
     # parse cli arguments into cliargs dictionary
     cliargs_bot = vars(parse_cli_args())
-
-    # create Reddis connection
-    redis_conn = Redis(host=diskover.config['redis_host'], port=diskover.config['redis_port'],
-                       password=diskover.config['redis_password'])
 
     # Redis queue names
     listen = ['diskover_crawl']

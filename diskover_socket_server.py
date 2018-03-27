@@ -31,7 +31,7 @@ socket_tasks = {}
 clientlist = []
 
 
-def socket_thread_handler(threadnum, q, lock, cliargs, logger, verbose):
+def socket_thread_handler(threadnum, q, cliargs, logger, verbose):
     """This is the socket thread handler function.
     It runs the command msg sent from client.
     """
@@ -70,7 +70,7 @@ def socket_thread_handler(threadnum, q, lock, cliargs, logger, verbose):
                 command_dict = json.loads(data)
                 logger.debug(command_dict)
                 # run command from json data
-                run_command(threadnum, command_dict, clientsock, lock, cliargs, logger, verbose)
+                run_command(threadnum, command_dict, clientsock, cliargs, logger, verbose)
 
             # close connection to client
             clientsock.close()
@@ -112,7 +112,6 @@ def start_socket_server(cliargs, logger, verbose):
 
     # Queue for socket threads
     q = Queue.Queue(maxsize=max_connections)
-    lock = threading.RLock()
 
     try:
         # create TCP socket object
@@ -133,7 +132,7 @@ def start_socket_server(cliargs, logger, verbose):
         for i in range(max_connections):
             # create thread
             t = threading.Thread(target=socket_thread_handler,
-                                 args=(i, q, lock, cliargs, logger, verbose,))
+                                 args=(i, q, cliargs, logger, verbose,))
             t.daemon = True
             t.start()
 
@@ -163,7 +162,7 @@ def start_socket_server(cliargs, logger, verbose):
         sys.exit(0)
 
 
-def run_command(threadnum, command_dict, clientsock, lock, cliargs, logger, verbose):
+def run_command(threadnum, command_dict, clientsock, cliargs, logger, verbose):
     """This is the run command function.
     It runs commands from the listener socket
     using values in command_dict.
@@ -240,8 +239,7 @@ def run_command(threadnum, command_dict, clientsock, lock, cliargs, logger, verb
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         # add process to socket_tasks dict
-        with lock:
-            socket_tasks[taskid] = process
+        socket_tasks[taskid] = process
 
         message = b'{"msg": "taskstart", "taskid": "' + taskid + b'"}\n'
         clientsock.send(message)

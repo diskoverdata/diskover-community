@@ -16,9 +16,74 @@ from random import randint
 import time
 import sys
 import os
+import threading
 
 
-def start_crawlbot_scanner(rootdir_path, botdirlist, cliargs, logger):
+def bot_thread(threadnum, cliargs, logger, rootdir_path, botdirlist, reindex_dict):
+    starttime = time.time()
+    t = time.time()
+    c = 0
+    n = 0
+    s = 0
+    last_path = ''
+    # start infinite loop and randomly pick directories from dirlist
+    # in future will create better algorithm for this
+    while True:
+        # every 1 hour get a new dirlist to pick up any new directories which have been added
+        # every 1 hour update disk space info in es index
+        # every 1 hour calculate directory sizes
+        if time.time() - t >= 3600:
+            t = time.time()
+            elapsed = diskover.get_time(t - starttime)
+            logger.info(
+                '*** crawlbot thread: getting new dirlist from ES, crawlbot has been running for %s', elapsed)
+            botdirlist = diskover.index_get_docs(doctype='directory')
+            # add disk space info to es index
+            diskover.add_diskspace(cliargs['index'], rootdir_path)
+            # calculate directory sizes and items
+            diskover.calc_dir_sizes()
+        # check directory's mtime on disk
+        if time.time() - t >= 60:
+            t = diskover.get_time(time.time() - starttime)
+            # display stats if 1 min elapsed
+            logger.info(
+                '### crawlbot thread-%s: %s dirs checked (%s dir/s), %s dirs updated, %s same dir hits, running for %s ###',
+                threadnum, n, round(n / (time.time() - starttime), 2), c, s, t)
+            t = time.time()
+        # random pick from dirlist
+        i = len(botdirlist) - 1
+        li = randint(0, i)
+        path = botdirlist[li][1]
+        mtime_utc = botdirlist[li][2]
+        # pick a new path if same as last time
+        if path == last_path:
+            s += 1
+            continue
+        last_path = path
+        # check directory's mtime on disk
+        try:
+            mtime_now_utc = time.mktime(time.gmtime(os.lstat(path).st_mtime))
+        except (IOError, OSError):
+            if cliargs['verbose']:
+                logger.info('Error crawling directory %s' % path)
+            continue
+        if (mtime_now_utc == mtime_utc):
+            if cliargs['verbose']:
+                logger.info('Mtime unchanged: %s' % path)
+        else:
+            c += 1
+            logger.info('*** Mtime changed! Reindexing: %s' % path)
+            # delete existing path docs (non-recursive)
+            reindex_dict = diskover.index_delete_path(cliargs, logger, path, reindex_dict)
+            # start crawling
+            diskover.crawl_tree(path, cliargs, logger, reindex_dict)
+            # calculate directory size for path
+            diskover.calc_dir_sizes(path=path)
+        time.sleep(diskover.config['botsleep'])
+        n += 1
+
+
+def start_crawlbot_scanner(cliargs, logger, rootdir_path, botdirlist, reindex_dict):
     """This is the start crawl bot continuous scanner function.
     It grabs all the directory docs from botdirlist which
     contains paths and their mtimes and randomly picks a
@@ -27,55 +92,21 @@ def start_crawlbot_scanner(rootdir_path, botdirlist, cliargs, logger):
     """
 
     logger.info('diskover crawl bot continuous scanner starting up')
-    logger.info('Randomly scanning for changes every %s sec', diskover.config['botsleep'])
+    logger.info('Randomly scanning for changes every %s sec using %s threads',
+                diskover.config['botsleep'], diskover.config['botthreads'])
     logger.info('*** Press Ctrl-c to shutdown ***')
 
+    threadlist = []
     try:
-        starttime = time.time()
-        t = time.time()
-        # start infinite loop and randomly pick directories from dirlist
-        # in future will create better algorithm for this
-        while True:
-            # every 1 hour get a new dirlist to pick up any new directories which have been added
-            # every 1 hour update disk space info in es index
-            # every 1 hour calculate directory sizes
-            if time.time() - t >= 3600:
-                t = time.time()
-                elapsed = diskover.get_time(t - starttime)
-                logger.info(
-                    '*** crawlbot main thread: getting new dirlist from ES, crawlbot has been running for %s', elapsed)
-                botdirlist = diskover.index_get_docs('directory')
-                # add disk space info to es index
-                diskover.add_diskspace(cliargs['index'], rootdir_path)
-                # calculate directory sizes and items
-                diskover.calc_dir_sizes()
-            # random pick from dirlist
-            i = len(botdirlist) - 1
-            li = randint(0, i)
-            path = botdirlist[li][1]
-            mtime_utc = botdirlist[li][2]
-
-            # check directory's mtime on disk
-            try:
-                mtime_now_utc = time.mktime(time.gmtime(os.lstat(path).st_mtime))
-            except (IOError, OSError):
-                if cliargs['verbose']:
-                    logger.info('Error crawling directory %s' % path)
-                time.sleep(diskover.config['botsleep'])
-                continue
-            if (mtime_now_utc == mtime_utc):
-                if cliargs['verbose']:
-                    logger.info('Mtime unchanged: %s' % path)
-                time.sleep(diskover.config['botsleep'])
-                continue
-            else:
-                logger.info('*** Mtime changed! Reindexing: %s' % path)
-                # delete existing path docs (non-recursive)
-                diskover.index_delete_path(path)
-                # start crawling
-                diskover.crawl_tree(path, cliargs)
-            time.sleep(diskover.config['botsleep'])
-
+        for i in range(diskover.config['botthreads']):
+            thread = threading.Thread(target=bot_thread,
+                                      args=(i, cliargs, logger, rootdir_path,
+                                            botdirlist, reindex_dict,))
+            thread.daemon = True
+            threadlist.append(thread)
+            thread.start()
+        for t in threadlist:
+            t.join()
     except KeyboardInterrupt:
         print('Ctrl-c keyboard interrupt, shutting down...')
         sys.exit(0)

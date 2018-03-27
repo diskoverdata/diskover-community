@@ -41,7 +41,7 @@ import sys
 import threading
 
 
-version = '1.5.0-beta.7'
+version = '1.5.0-beta.8'
 __version__ = version
 
 IS_PY3 = sys.version_info >= (3, 0)
@@ -265,6 +265,11 @@ def load_config():
     except Exception:
         configsettings['botsleep'] = 0.1
     try:
+        configsettings['botthreads'] = \
+            float(config.get('crawlbot', 'botthreads'))
+    except Exception:
+        configsettings['botthreads'] = 8
+    try:
         configsettings['gource_maxfilelag'] = \
             float(config.get('gource', 'maxfilelag'))
     except Exception:
@@ -349,7 +354,13 @@ def index_create(indexname):
     if es.indices.exists(index=indexname):
         # check if nodelete, reindex, cli argument
         # and don't delete existing index
-        if cliargs['nodelete']:
+        if cliargs['reindex']:
+            logger.info('Reindexing (non-recursive, preserving tags)')
+            return
+        elif cliargs['reindexrecurs']:
+            logger.info('Reindexing (recursive, preserving tags)')
+            return
+        elif cliargs['nodelete']:
             logger.info('Adding to es index')
             return
         # delete existing index
@@ -552,51 +563,14 @@ def index_bulk_add(es, doclist, doctype, config, cliargs):
                  request_timeout=config['es_timeout'])
 
 
-def index_delete_file(file_dict):
-    """This is the es delete file function.
-    It finds all files that have same path and deletes them from es.
-    Only intended to delete single file, use index_delete_path for bulk delete
-    of files in same directory.
-    """
-    global reindex_file_list
-
-    # get the file id
-    data = {
-        "query": {
-            "query_string": {
-                "query": "path_parent: \"" + file_dict['path_parent'] + "\" "
-                "AND filename: \"" + file_dict['filename'] + "\""
-            }
-        }
-    }
-
-    # refresh index
-    es.indices.refresh(index=cliargs['index'])
-    # search es
-    res = es.search(index=cliargs['index'], doc_type='file', body=data,
-                    request_timeout=config['es_timeout'])
-
-    for hit in res['hits']['hits']:
-        # store any tags
-        reindex_file_list.append([hit['_source']['path_parent'] +
-                                  '/' + hit['_source']['filename'],
-                                  hit['_source']['tag'],
-                                  hit['_source']['tag_custom']])
-        # delete the file in es
-        es.delete(index=cliargs['index'], doc_type="file", id=hit['_id'])
-
-
-def index_delete_path(path, recursive=False):
+def index_delete_path(path, reindex_dict, recursive=False):
     """This is the es delete path bulk function.
     It finds all file and directory docs in path and deletes them from es
     including the directory (path).
     Recursive will also find and delete all docs in subdirs of path.
-    Stores any existing tags in reindex_file_list or reindex_dir_list.
-    Also stores filesize,items for sub directories for reindexing
-    when not recursive.
+    Stores any existing tags in reindex_dict.
+    Returns reindex_dict.
     """
-    global reindex_file_list
-    global reindex_dir_list
     file_id_list = []
     dir_id_list = []
     file_delete_list = []
@@ -644,10 +618,10 @@ def index_delete_path(path, recursive=False):
             # add doc id to file_id_list
             file_id_list.append(hit['_id'])
             # add file path info inc. tags to reindex_file_list
-            reindex_file_list.append([hit['_source']['path_parent'] +
+            reindex_dict['file'].append((hit['_source']['path_parent'] +
                                       '/' + hit['_source']['filename'],
                                       hit['_source']['tag'],
-                                      hit['_source']['tag_custom']])
+                                      hit['_source']['tag_custom']))
         # get es scroll id
         scroll_id = res['_scroll_id']
         # use es scroll api
@@ -705,12 +679,10 @@ def index_delete_path(path, recursive=False):
             # add directory doc id to dir_id_list
             dir_id_list.append(hit['_id'])
             # add directory path info inc. tags, filesize, items to reindex_dir_list
-            reindex_dir_list.append([hit['_source']['path_parent'] +
+            reindex_dict['directory'].append((hit['_source']['path_parent'] +
                                      '/' + hit['_source']['filename'],
                                      hit['_source']['tag'],
-                                     hit['_source']['tag_custom'],
-                                     hit['_source']['filesize'],
-                                     hit['_source']['items']])
+                                     hit['_source']['tag_custom']))
         # get es scroll id
         scroll_id = res['_scroll_id']
         # use es scroll api
@@ -734,12 +706,15 @@ def index_delete_path(path, recursive=False):
         logger.info('Bulk deleting directories in es index')
         index_bulk_add(es, dir_delete_list, 'directory', config, cliargs)
 
+    return reindex_dict
 
-def index_get_docs(doctype='directory', copytags=False, index=None):
+
+def index_get_docs(doctype='directory', copytags=False, index=None, path=None):
     """This is the es get docs function.
     It finds all docs (by doctype) in es and returns doclist
     which contains doc id, fullpath and mtime for all docs.
     If copytags is True will return tags from previous index.
+    If path is specified will return just documents in and under directory path.
     """
     doclist = []
 
@@ -757,13 +732,34 @@ def index_get_docs(doctype='directory', copytags=False, index=None):
             }
         }
     else:
-        logger.info('Searching for all %s docs in %s', doctype, index)
-        data = {
-            '_source': ['path_parent', 'filename', 'last_modified'],
-            'query': {
-                'match_all': {}
+        if not path:
+            logger.info('Searching for all %s docs in %s', doctype, index)
+            data = {
+                '_source': ['path_parent', 'filename', 'last_modified'],
+                'query': {
+                    'match_all': {}
+                }
             }
-        }
+        else:
+            # escape special characters
+            newpath = escape_chars(path)
+            # create wildcard string and check for / (root) path
+            if newpath == '\/':
+                newpathwildcard = '\/*'
+            else:
+                newpathwildcard = newpath + '\/*'
+            logger.info('Searching for all %s docs in %s for path %s', doctype, index, path)
+            data = {
+                '_source': ['path_parent', 'filename', 'last_modified'],
+                'query': {
+                        'query_string': {
+                            'query': '(path_parent: ' + newpath + ') OR '
+                             '(path_parent: ' + newpathwildcard + ') OR (filename: "'
+                             + os.path.basename(path) + '" AND path_parent: "'
+                             + os.path.abspath(os.path.join(path, os.pardir)) + '")',
+                    }
+                }
+            }
 
     # refresh index
     es.indices.refresh(index)
@@ -831,7 +827,7 @@ def add_crawl_stats(es, index, path, crawltime, worker_name=None):
     data = {
         "path": path,
         "worker_name": worker_name,
-        "crawl_time": round(crawltime, 3),
+        "crawl_time": round(crawltime, 10),
         "indexing_date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
     }
     es.index(index=index, doc_type='crawlstat', body=data)
@@ -843,7 +839,7 @@ def add_crawl_stats_bulk(es, crawltimelist, worker_name, config, cliargs):
         crawlstats.append({
             "path": item[1],
             "worker_name": worker_name,
-            "crawl_time": round(item[2], 3),
+            "crawl_time": round(item[2], 10),
             "indexing_date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
         })
     index_bulk_add(es, crawlstats, 'crawlstat', config, cliargs)
@@ -1054,7 +1050,7 @@ def progress_bar():
     return bar
 
 
-def calc_dir_sizes():
+def calc_dir_sizes(path=None):
     import diskover_worker_bot
     logger.info('Waiting for diskover bots to be done with any crawl jobs...')
     busyworkers = []
@@ -1072,7 +1068,10 @@ def calc_dir_sizes():
     es.indices.refresh(index=cliargs['index'])
 
     logger.info('Getting diskover bots to calculate directory sizes...')
-    dirlist = index_get_docs()
+    if path:
+        dirlist = index_get_docs(path=path)
+    else:
+        dirlist = index_get_docs()
     dirbatch = []
     count = 0
     for d in dirlist:
@@ -1091,23 +1090,20 @@ def calc_dir_sizes():
     logger.info('Directories have all been enqueued, calculating in background')
 
 
-def treewalk(path, num_sep, level, batchsize, workers, bar):
+def treewalk(path, num_sep, level, batchsize, workers, bar, cliargs, reindex_dict):
     import diskover_worker_bot
     global totaljobs
     batch = []
-    count = 0
-    for root, dirs, files in walk(path, topdown=True):
+    for root, dirs, files in walk(path):
         if not dir_excluded(root, config, cliargs['verbose']):
             if len(dirs) == 0 and len(files) == 0 and not cliargs['indexemptydirs']:
                 continue
             batch.append((root, files))
-            count += 1
-            if count >= batchsize:
+            if len(batch) >= batchsize:
                 q.enqueue(diskover_worker_bot.scrape_tree_meta,
-                          args=(batch, cliargs,))
-                count = 0
-                del batch[:]
+                          args=(batch, cliargs, reindex_dict,))
                 totaljobs += 1
+                del batch[:]
 
             # check if at maxdepth level and delete dirs/files lists to not
             # descend further down the tree
@@ -1137,16 +1133,18 @@ def treewalk(path, num_sep, level, batchsize, workers, bar):
 
     # add any remaining in batch to queue
     q.enqueue(diskover_worker_bot.scrape_tree_meta,
-              args=(batch, cliargs,))
+              args=(batch, cliargs, reindex_dict,))
     totaljobs += 1
 
 
-def crawl_tree(path, cliargs):
+def crawl_tree(path, cliargs, logger, reindex_dict):
     """This is the crawl tree function.
     It walks the tree and adds tuple of root, dirs, files
     to redis queue for rq workers to scrape meta and upload
     to ES index.
     """
+    import diskover_worker_bot
+    global totaljobs
 
     try:
         while len(Worker.all(queue=q)) == 0:
@@ -1179,13 +1177,22 @@ def crawl_tree(path, cliargs):
         # set current depth
         num_sep = path.count(os.path.sep)
 
+        root_files = []
+        for entry in scandir(path):
+            if entry.is_file(follow_symlinks=False):
+                root_files.append(entry.name)
+         # enqueue rootdir files
+        q.enqueue(diskover_worker_bot.scrape_tree_meta,
+              args=([(path, root_files)], cliargs, reindex_dict,))
+        totaljobs += 1
+
         thread_list = []
         # set up threads to parallel crawl directories at rootdir
         for entry in scandir(path):
             if entry.is_dir(follow_symlinks=False):
                 thread = threading.Thread(target=treewalk,
                                           args=(entry.path, num_sep, level, batchsize,
-                                                workers, bar,))
+                                                workers, bar, cliargs, reindex_dict,))
                 thread.start()
                 thread_list.append(thread)
 
@@ -1226,12 +1233,18 @@ def wait_for_worker_bots():
 # load config file into config dictionary
 config = load_config()
 
+# create Elasticsearch connection
+es = elasticsearch_connect(config)
+
 # create Reddis connection
 redis_conn = Redis(host=config['redis_host'], port=config['redis_port'],
                    password=config['redis_password'])
 
 # Redis queue names
 listen = ['diskover_crawl']
+
+# set up Redis q
+q = Queue(listen[0], connection=redis_conn, default_timeout=86400)
 
 # load any available plugins
 plugins = load_plugins()
@@ -1265,9 +1278,6 @@ if __name__ == "__main__":
         diskover_socket_server.start_socket_server(cliargs, logger, cliargs['verbose'])
         sys.exit(0)
 
-    # create Elasticsearch connection
-    es = elasticsearch_connect(config)
-
     # check for gource cli flags
     if cliargs['gourcert'] or cliargs['gourcemt']:
         try:
@@ -1276,9 +1286,6 @@ if __name__ == "__main__":
         except KeyboardInterrupt:
             print('\nCtrl-c keyboard interrupt received, exiting')
         sys.exit(0)
-
-    # set up Redis q
-    q = Queue(listen[0], connection=redis_conn, default_timeout=86400)
 
     # tag duplicate files if cli argument
     if cliargs['finddupes']:
@@ -1297,12 +1304,12 @@ if __name__ == "__main__":
         wait_for_worker_bots()
         logger.info('Copying tags from %s to %s', cliargs['copytags'][0], cliargs['index'])
         # look in index2 for all directory docs with tags and add to queue
-        dirlist = index_get_docs('directory', copytags=True, index=cliargs['copytags'][0])
+        dirlist = index_get_docs(doctype='directory', copytags=True, index=cliargs['copytags'][0])
         for path in dirlist:
             q.enqueue(diskover_worker_bot.tag_copier,
                       args=(path, cliargs,))
         # look in index2 for all file docs with tags and add to queue
-        filelist = index_get_docs('file', copytags=True, index=cliargs['copytags'][0])
+        filelist = index_get_docs(doctype='file', copytags=True, index=cliargs['copytags'][0])
         for path in filelist:
             q.enqueue(diskover_worker_bot.tag_copier,
                       args=(path, cliargs,))
@@ -1336,6 +1343,7 @@ if __name__ == "__main__":
         if dir_excluded(rootdir_path, config, cliargs['verbose']):
             logger.info("Directory in exclude list, exiting")
             sys.exit(0)
+        cliargs['rootdir'] = rootdir_path
 
     # warn if not running as root
     if os.geteuid():
@@ -1345,22 +1353,24 @@ if __name__ == "__main__":
     if cliargs['minsize'] == 0:
         logger.warning('You are indexing 0 Byte empty files (-s 0)')
 
+    # check if we are reindexing and remove existing docs in Elasticsearch
+    # before crawling and reindexing
+    reindex_dict = {'file': [], 'directory': []}
+    if cliargs['reindex']:
+        reindex_dict = index_delete_path(rootdir_path, reindex_dict)
+    elif cliargs['reindexrecurs']:
+        reindex_dict = index_delete_path(rootdir_path, reindex_dict, recursive=True)
+
     # start crawlbot if cli argument
     if cliargs['crawlbot']:
         import diskover_crawlbot
         import diskover_worker_bot
         wait_for_worker_bots()
-        botdirlist = index_get_docs('directory')
+        botdirlist = index_get_docs(doctype='directory')
         # Set up worker threads for crawlbot
-        diskover_crawlbot.start_crawlbot_scanner(rootdir_path, botdirlist, cliargs, logger)
+        diskover_crawlbot.start_crawlbot_scanner(cliargs, logger,
+                                                 rootdir_path, botdirlist, reindex_dict)
         sys.exit(0)
-
-    # check if we are reindexing and remove existing docs in Elasticsearch
-    # before crawling and reindexing
-    if cliargs['reindex']:
-        index_delete_path(rootdir_path)
-    elif cliargs['reindexrecurs']:
-        index_delete_path(rootdir_path, recursive=True)
 
     # create Elasticsearch index
     index_create(cliargs['index'])
@@ -1372,12 +1382,14 @@ if __name__ == "__main__":
     starttime = time.time()
 
     # start crawling
-    crawl_tree(rootdir_path, cliargs)
+    crawl_tree(rootdir_path, cliargs, logger, reindex_dict)
 
     # calculate directory sizes and items
-    calc_dir_sizes()
-
-    # add crawl stats to es
-    add_crawl_stats(es, cliargs['index'], rootdir_path, (time.time() - starttime), "main")
+    if cliargs['reindex'] or cliargs['reindexrecurs']:
+        calc_dir_sizes(path=rootdir_path)
+    else:
+        # add crawl stats to es
+        add_crawl_stats(es, cliargs['index'], rootdir_path, (time.time() - starttime), "main")
+        calc_dir_sizes()
 
     logger.info('Dispatcher is DONE! Sayonara!')
