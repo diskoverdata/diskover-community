@@ -41,7 +41,7 @@ import sys
 import threading
 
 
-version = '1.5.0-beta.8'
+version = '1.5.0-beta.9'
 __version__ = version
 
 IS_PY3 = sys.version_info >= (3, 0)
@@ -873,7 +873,7 @@ def dir_excluded(path, config, verbose):
     return False
 
 
-def file_excluded(filename, extension, path, config, verbose):
+def file_excluded(filename, extension, path, config, logger, verbose):
     """Return True if path or ext in excluded_files list,
     False if not in the list"""
     # check for filename in excluded_files
