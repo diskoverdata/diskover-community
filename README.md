@@ -80,7 +80,7 @@ $ pip install -r requirements.txt
 
 Copy diskover config `diskover.cfg.sample` to `diskover.cfg` and edit for your environment.
 
-Start diskover worker bots (as many as you want) with:
+Start diskover worker bots (as many as you want, a good number might be cores x 2) with:
 
 ```sh
 $ cd /path/with/diskover
