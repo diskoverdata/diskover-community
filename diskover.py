@@ -41,7 +41,7 @@ import sys
 import threading
 
 
-version = '1.5.0-beta.9'
+version = '1.5.0-beta.10'
 __version__ = version
 
 IS_PY3 = sys.version_info >= (3, 0)
@@ -956,9 +956,9 @@ def parse_cli_args(indexname):
     parser.add_argument("-M", "--maxdepth", type=int, default=100,
                         help="Maximum directory depth to crawl (default: \
                         100)")
-    parser.add_argument("-b", "--batchsize", type=int, default=100,
+    parser.add_argument("-b", "--batchsize", type=int, default=5,
                         help="Batch size (dir count) for sending to worker bots (default: \
-                            100)")
+                            5)")
     parser.add_argument("-a", "--adaptivebatch", action="store_true",
                         help="Adaptive batch size for sending to worker bots (intelligent crawl)")
     parser.add_argument("-r", "--reindex", action="store_true",
@@ -1073,14 +1073,20 @@ def calc_dir_sizes(path=None):
     else:
         dirlist = index_get_docs()
     dirbatch = []
+    batchsize = cliargs['batchsize']
     count = 0
     for d in dirlist:
         count += 1
         dirbatch.append(d)
-        if len(dirbatch) >= cliargs['batchsize']:
+        if len(dirbatch) >= batchsize:
             q.enqueue(diskover_worker_bot.calc_dir_size,
                     args=(dirbatch, cliargs,))
             del dirbatch[:]
+            if cliargs['adaptivebatch']:
+                if len(q) == 0:
+                    batchsize = 5
+                elif len(q) > 0:
+                    batchsize = batchsize * 2
             count = 0
 
     # add any remaining in batch to queue
@@ -1104,6 +1110,11 @@ def treewalk(path, num_sep, level, batchsize, workers, bar, cliargs, reindex_dic
                           args=(batch, cliargs, reindex_dict,))
                 totaljobs += 1
                 del batch[:]
+                if cliargs['adaptivebatch']:
+                    if len(q) == 0:
+                        batchsize = 5
+                    elif len(q) > 0:
+                        batchsize = batchsize * 2
 
             # check if at maxdepth level and delete dirs/files lists to not
             # descend further down the tree
@@ -1123,9 +1134,6 @@ def treewalk(path, num_sep, level, batchsize, workers, bar, cliargs, reindex_dic
                 bar.update(0)
             except ValueError:
                 bar.update(0)
-
-        if cliargs['adaptivebatch']:
-            batchsize = len(workers) * 10 + len(q)
 
         # while len(Worker.all(queue=q)) == 0:
         #    logger.info('Waiting for diskover worker bots to start...')
@@ -1154,10 +1162,8 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
         logger.info('Found %s diskover RQ worker bots', len(workers))
         logger.info('Enqueueing crawl to diskover worker bots for %s...', path)
 
-        # adaptive batch algorithm
-        # batchsize = worker count * 10 + len(q)
         if cliargs['adaptivebatch']:
-            batchsize = len(workers) * 10 + len(q)
+            batchsize = 5
             logger.info("Sending adaptive batches to worker bots")
         elif cliargs['batchsize']:
             batchsize = cliargs['batchsize']

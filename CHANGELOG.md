@@ -1,5 +1,18 @@
 # Diskover Change Log
 
+## [1.5.0-beta.10] = 2018-03-30
+### notice
+- requires Redis
+- requires rq and redis python modules (pip install)
+- requires diskover-web >= v1.5.0-beta.5
+- this is a pre-release beta for v1.5.0
+- ** crawlbot continuous scanner (-B) is still buggy, hoping to have it stable in final release **
+- recommended to pip install rq-dashboard (rq-dashboard is used for monitoring rq redis queue)
+### changed
+- set default batch size to 5 (adjust using -b n if you find workers being idle (set lower number) or queue too large (set higher number))
+- improved adaptivebatch algorithm to try and reduce idle workers
+- adaptivebatch applies to directory calculations now too
+
 ## [1.5.0-beta.9] = 2018-03-29
 ### notice
 - requires Redis
