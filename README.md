@@ -92,7 +92,7 @@ Worker bots can be added during a crawl to help with the queue. To run a worker 
 Start diskover main job dispatcher and file tree crawler with:
 
 ```sh
-$ python /path/to/diskover.py -d /rootpath/you/want/to/crawl
+$ python /path/to/diskover.py -d /rootpath/you/want/to/crawl -i diskover-indexname -a
 ```
 
 **Defaults for crawl with no flags is to index from . (current directory) and files >0 Bytes and 0 days modified time. Empty files and directores are skipped (unless you use -s 0 and -e flags). Use -h to see cli options.**
