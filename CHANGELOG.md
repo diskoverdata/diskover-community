@@ -1,5 +1,18 @@
 # Diskover Change Log
 
+## [1.5.0-beta.11] = 2018-03-31
+### notice
+- requires Redis
+- requires rq and redis python modules (pip install)
+- requires diskover-web >= v1.5.0-beta.5
+- this is a pre-release beta for v1.5.0
+- ** crawlbot continuous scanner (-B) is still buggy, hoping to have it stable in final release **
+- recommended to pip install rq-dashboard (rq-dashboard is used for monitoring rq redis queue)
+### changed
+- removed adding file filesizes to directory doc during crawl (was causing issues with calculating directory sizes)
+### fixed
+- bug with directory size/items calculations
+
 ## [1.5.0-beta.10] = 2018-03-30
 ### notice
 - requires Redis

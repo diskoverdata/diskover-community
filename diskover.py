@@ -1074,9 +1074,7 @@ def calc_dir_sizes(path=None):
         dirlist = index_get_docs()
     dirbatch = []
     batchsize = cliargs['batchsize']
-    count = 0
     for d in dirlist:
-        count += 1
         dirbatch.append(d)
         if len(dirbatch) >= batchsize:
             q.enqueue(diskover_worker_bot.calc_dir_size,
@@ -1087,7 +1085,6 @@ def calc_dir_sizes(path=None):
                     batchsize = 5
                 elif len(q) > 0:
                     batchsize = batchsize * 2
-            count = 0
 
     # add any remaining in batch to queue
     q.enqueue(diskover_worker_bot.calc_dir_size,

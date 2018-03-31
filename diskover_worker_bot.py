@@ -354,8 +354,8 @@ def get_file_meta(path, cliargs, reindex_dict, bot_logger):
 
 def calc_dir_size(dirlist, cliargs):
     """This is the calculate directory size worker function.
-    It gets a directory list from the Queue and searches ES for all sub dirs
-    in each directory (recursive) and sums their filesizes and items
+    It gets a directory list from the Queue and searches ES for all files
+    in each directory (recursive) and sums their filesizes
     to create a total filesize and item count for each dir.
     Updates dir doc's filesize and items fields.
     """
@@ -364,6 +364,8 @@ def calc_dir_size(dirlist, cliargs):
     bot_logger.info('*** Calculating directory sizes...')
 
     for path in dirlist:
+        totalsize = 0
+        totalitems = 1  # itself
         # file doc search with aggregate for sum filesizes
         # escape special characters
         newpath = diskover.escape_chars(path[1])
@@ -388,11 +390,6 @@ def calc_dir_size(dirlist, cliargs):
                         "sum": {
                             "field": "filesize"
                         }
-                    },
-                    "total_items": {
-                        "sum": {
-                            "field": "items"
-                        }
                     }
                 }
             }
@@ -401,10 +398,8 @@ def calc_dir_size(dirlist, cliargs):
                 "size": 0,
                 "query": {
                     "query_string": {
-                        'query': '(path_parent: ' + newpath + ') '
-                                'OR (path_parent: ' + newpathwildcard + ') OR (filename: "'
-                                 + os.path.basename(path[1]) + '" AND path_parent: "'
-                                 + os.path.abspath(os.path.join(path[1], os.pardir)) + '")',
+                        'query': 'path_parent: ' + newpath + ' '
+                                'OR path_parent: ' + newpathwildcard,
                                  'analyze_wildcard': 'true'
                     }
                 },
@@ -413,24 +408,28 @@ def calc_dir_size(dirlist, cliargs):
                         "sum": {
                             "field": "filesize"
                         }
-                    },
-                    "total_items": {
-                        "sum": {
-                            "field": "items"
-                        }
                     }
                 }
             }
+
+        # search ES and start scroll
+        res = es.search(index=cliargs['index'], doc_type='file', body=data,
+                        request_timeout=diskover.config['es_timeout'])
+
+        # total items sum
+        totalitems += res['hits']['total']
+
+        # total file size sum
+        totalsize += res['aggregations']['total_size']['value']
+
+        # directory doc search (subdirs)
 
         # search ES and start scroll
         res = es.search(index=cliargs['index'], doc_type='directory', body=data,
                         request_timeout=diskover.config['es_timeout'])
 
         # total items sum
-        totalitems = res['aggregations']['total_items']['value']
-
-        # total file size sum
-        totalsize = res['aggregations']['total_size']['value']
+        totalitems += res['hits']['total']
 
         # ES id of directory doc
         directoryid = path[0]
@@ -483,15 +482,12 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
         starttime = time.time()
         root, files = path
         dmeta = get_dir_meta(root, cliargs, reindex_dict)
+        if dmeta:
+            tree.append(('directory', dmeta))
         for file in files:
             fmeta = get_file_meta(os.path.join(root, file), cliargs, reindex_dict, bot_logger)
             if fmeta:
                 tree.append(('file', fmeta))
-                if dmeta:
-                    dmeta['filesize'] += fmeta['filesize']
-                    dmeta['items'] += 1
-        if dmeta:
-            tree.append(('directory', dmeta))
         if dmeta or fmeta:
             tree.append(('crawltime', root, (time.time() - starttime)))
 
