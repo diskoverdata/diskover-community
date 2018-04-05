@@ -481,14 +481,13 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
     for path in paths:
         starttime = time.time()
         root, files = path
-        dmeta = get_dir_meta(root, cliargs, reindex_dict)
-        if dmeta:
-            tree.append(('directory', dmeta))
         for file in files:
             fmeta = get_file_meta(os.path.join(root, file), cliargs, reindex_dict, bot_logger)
             if fmeta:
                 tree.append(('file', fmeta))
-        if dmeta or fmeta:
+        dmeta = get_dir_meta(root, cliargs, reindex_dict)
+        if dmeta:
+            tree.append(('directory', dmeta))
             tree.append(('crawltime', root, (time.time() - starttime)))
 
     if len(tree) > 0:

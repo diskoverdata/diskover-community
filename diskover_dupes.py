@@ -131,20 +131,32 @@ def verify_dupes(hashgroup, cliargs, bot_logger):
     for key, value in list(hashgroup_bytes.items()):
         if cliargs['verbose']:
             bot_logger.info('Comparing MD5 sums for filehash: %s' % key)
+        md5_sum_chunk = []
         for filename in value:
             if cliargs['verbose']:
                 bot_logger.info('Checking MD5: %s' % filename)
             # get md5 sum, don't load whole file into memory,
-            # load in x KB at a time
+            # load in x KB at a time (chunk)
             try:
                 read_size = diskover.config['md5_readsize']
                 md5sum = hashlib.md5()
+                chunk = 0
                 with open(filename, 'rb') as f:
                     while True:
                         data = f.read(read_size)
                         if not data:
                             break
                         md5sum.update(data)
+                        # add data block md5 sum to md5_sum_chunk if it doesn't exist
+                        # if it exists, check if the previous file chunk is different
+                        # and break out of loop to stop md5 check since file is different
+                        try:
+                            md5chunk = md5_sum_chunk[chunk]
+                            if md5chunk != md5sum:
+                                break
+                        except IndexError:
+                            md5_sum_chunk.append(md5sum)
+                        chunk += 1
                 md5sum = md5sum.hexdigest()
                 # update hashgroup's md5sum key
                 hashgroup['md5sum'] = md5sum
@@ -158,6 +170,7 @@ def verify_dupes(hashgroup, cliargs, bot_logger):
             # create new key for each md5sum and set value as new list and
             # add file
             hashgroup_md5.setdefault(md5sum, []).append(filename)
+        del md5_sum_chunk[:]
 
     # remove any md5sum key that only has 1 item (no duplicate)
     for key, value in list(hashgroup_md5.items()):

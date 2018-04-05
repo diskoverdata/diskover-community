@@ -41,7 +41,7 @@ import sys
 import threading
 
 
-version = '1.5.0-beta.11'
+version = '1.5.0-beta.12'
 __version__ = version
 
 IS_PY3 = sys.version_info >= (3, 0)
@@ -864,12 +864,14 @@ def dir_excluded(path, config, verbose):
     for d in config['excluded_dirs']:
         if d == '.*':
             continue
-        found_dir = re.match(d, os.path.basename(path))
-        found_path = re.match(d, path)
-        if found_dir or found_path:
-            if verbose:
-                logger.info('Skipping (excluded dir) %s', path)
-            return True
+        # only look for match if wildcard at end of excluded directory
+        if d.endswith('*'):
+            found_dir = re.match(d, os.path.basename(path))
+            found_path = re.match(d, path)
+            if found_dir or found_path:
+                if verbose:
+                    logger.info('Skipping (excluded dir) %s', path)
+                return True
     return False
 
 
@@ -899,7 +901,7 @@ def escape_chars(text):
     chr_dict = {'/': '\\/', '(': '\\(', ')': '\\)', '[': '\\[', ']': '\\]',
                 ' ': '\\ ', '&': '\\&', '<': '\\<', '>': '\\>', '+': '\\+', '-': '\\-',
                 '|': '\\|', '!': '\\!', '{': '\\{', '}': '\\}', '^': '\\^', '~': '\\~',
-                '?': '\\?', ':': '\\:'}
+                '?': '\\?', ':': '\\:', '=': '\\='}
     def char_trans(text, chr_dict):
         for key, value in chr_dict.items():
             text = text.replace(key, value)
@@ -1050,7 +1052,7 @@ def progress_bar():
     return bar
 
 
-def calc_dir_sizes(path=None):
+def calc_dir_sizes(path=None, addstats=False):
     import diskover_worker_bot
     logger.info('Waiting for diskover bots to be done with any crawl jobs...')
     busyworkers = []
@@ -1063,6 +1065,10 @@ def calc_dir_sizes(path=None):
             break
         del busyworkers[:]
         time.sleep(1)
+
+    if addstats:
+        # add elapsed time crawl stat to es
+        add_crawl_stats(es, cliargs['index'], rootdir_path, (time.time() - starttime), "main")
 
     # refresh index
     es.indices.refresh(index=cliargs['index'])
@@ -1391,8 +1397,6 @@ if __name__ == "__main__":
     if cliargs['reindex'] or cliargs['reindexrecurs']:
         calc_dir_sizes(path=rootdir_path)
     else:
-        # add crawl stats to es
-        add_crawl_stats(es, cliargs['index'], rootdir_path, (time.time() - starttime), "main")
-        calc_dir_sizes()
+        calc_dir_sizes(addstats=True)
 
     logger.info('Dispatcher is DONE! Sayonara!')

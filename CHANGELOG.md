@@ -1,5 +1,22 @@
 # Diskover Change Log
 
+## [1.5.0-beta.12] = 2018-04-05
+### notice
+- requires Redis
+- requires rq and redis python modules (pip install)
+- requires diskover-web >= v1.5.0-beta.5
+- this is a pre-release beta for v1.5.0
+- ** crawlbot continuous scanner (-B) is still buggy, hoping to have it stable in final release **
+- recommended to pip install rq-dashboard (rq-dashboard is used for monitoring rq redis queue)
+### added
+- = (equals sign) to escape_chars function
+### changed
+- when running dupes check, file md5 sums are now checked in chunks against previous file rather than comparing whole md5 sum
+- crawl elapsed time now gets set when all crawl jobs are finished (workers done all crawl jobs), before dir sizes are calculated
+### fixed
+- directories not getting indexed which had similar name to excluded directory, example Cache in dir excludes was not indexing
+directories named Caches, if you want you can exclude all similar directories using wildcard such as Cache*
+
 ## [1.5.0-beta.11] = 2018-03-31
 ### notice
 - requires Redis
