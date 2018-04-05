@@ -41,7 +41,7 @@ import sys
 import threading
 
 
-version = '1.5.0-beta.10'
+version = '1.5.0-beta.11'
 __version__ = version
 
 IS_PY3 = sys.version_info >= (3, 0)
