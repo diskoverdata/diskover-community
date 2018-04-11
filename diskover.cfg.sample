@@ -36,6 +36,9 @@ replicas = 1
 host = 127.0.0.1
 port = 6379
 ;password =
+; how long directory times lives in Redis (seconds) (default 1 week)
+; used for -I index2 when comparing directory times to get metadata from index2 instead of off disk
+dirtimesttl = 604800
 
 [workerbot]
 ; enable bot logs (True or False)
