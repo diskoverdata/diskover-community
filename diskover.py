@@ -41,7 +41,7 @@ import sys
 import threading
 
 
-version = '1.5.0-beta.12'
+version = '1.5.0-rc1'
 __version__ = version
 
 IS_PY3 = sys.version_info >= (3, 0)
@@ -146,14 +146,16 @@ def load_config():
     config.read(configfile)
     try:
         d = config.get('excludes', 'dirs')
-        configsettings['excluded_dirs'] = d.split(',')
+        dirs = d.split(',')
+        configsettings['excluded_dirs'] = set(dirs)
     except Exception:
-        configsettings['excluded_dirs'] = []
+        configsettings['excluded_dirs'] = set([])
     try:
         f = config.get('excludes', 'files')
-        configsettings['excluded_files'] = f.split(',')
+        files = f.split(',')
+        configsettings['excluded_files'] = set(files)
     except Exception:
-        configsettings['excluded_files'] = []
+        configsettings['excluded_files'] = set([])
     try:
         configsettings['aws'] = config.get('elasticsearch', 'aws')
     except Exception:
@@ -226,6 +228,10 @@ def load_config():
         configsettings['redis_password'] = config.get('redis', 'password')
     except Exception:
         configsettings['redis_password'] = ""
+    try:
+        configsettings['redis_dirtimesttl'] = config.get('redis', 'dirtimesttl')
+    except Exception:
+        configsettings['redis_dirtimesttl'] = 604800
     try:
         configsettings['botlogs'] = config.get('workerbot', 'botlogs')
     except Exception:
@@ -846,19 +852,19 @@ def add_crawl_stats_bulk(es, crawltimelist, worker_name, config, cliargs):
 
 
 def dir_excluded(path, config, verbose):
-    """Return True if path in excluded_dirs list,
+    """Return True if path in excluded_dirs set,
     False if not in the list"""
-    # skip any dirs in excluded dirs
+    # skip any dirs which start with . (dot) and in excluded_dirs
+    if os.path.basename(path).startswith('.') and u'.*' \
+            in config['excluded_dirs']:
+        if verbose:
+            logger.info('Skipping (.* dir) %s', path)
+        return True
+    # skip any dirs in excluded_dirs
     if os.path.basename(path) in config['excluded_dirs'] \
             or path in config['excluded_dirs']:
         if verbose:
             logger.info('Skipping (excluded dir) %s', path)
-        return True
-    # skip any dirs which start with . and in excluded dirs
-    elif os.path.basename(path).startswith('.') and u'.*' \
-            in config['excluded_dirs']:
-        if verbose:
-            logger.info('Skipping (.* dir) %s', path)
         return True
     # skip any dirs that are found in reg exp check
     for d in config['excluded_dirs']:
@@ -876,18 +882,17 @@ def dir_excluded(path, config, verbose):
 
 
 def file_excluded(filename, extension, path, config, logger, verbose):
-    """Return True if path or ext in excluded_files list,
-    False if not in the list"""
-    # check for filename in excluded_files
-    if filename in config['excluded_files'] or \
-            (filename.startswith('.') and u'.*'
-            in config['excluded_files']):
+    """Return True if path or ext in excluded_files set,
+    False if not in the set"""
+    # check for extension in and . (dot) files in excluded_files
+    if (not extension and 'NULLEXT' in config['excluded_files']) or \
+            '*.' + extension in config['excluded_files'] or \
+            (filename.startswith('.') and u'.*' in config['excluded_files']):
         if verbose:
             logger.info('Skipping (excluded file) %s', path)
         return True
-    # check for extension in excluded_files
-    if (not extension and 'NULLEXT' in config['excluded_files']) \
-            or '*.' + extension in config['excluded_files']:
+    # check for filename in excluded_files set
+    if filename in config['excluded_files']:
         if verbose:
             logger.info('Skipping (excluded file) %s', path)
         return True
@@ -952,15 +957,18 @@ def parse_cli_args(indexname):
                         help="Index empty directories (default: don't index)")
     parser.add_argument("-i", "--index", default=indexname,
                         help="Elasticsearch index name (default: from config)")
+    parser.add_argument("-I", "--index2", metavar='INDEX2', nargs=1,
+                        help="Compare directory times with previous index to get metadata \
+                            from index2 instead of off disk")
     parser.add_argument("-n", "--nodelete", action="store_true",
                         help="Add data to existing index (default: overwrite \
                         index)")
     parser.add_argument("-M", "--maxdepth", type=int, default=100,
                         help="Maximum directory depth to crawl (default: \
                         100)")
-    parser.add_argument("-b", "--batchsize", type=int, default=5,
+    parser.add_argument("-b", "--batchsize", type=int, default=25,
                         help="Batch size (dir count) for sending to worker bots (default: \
-                            5)")
+                            25)")
     parser.add_argument("-a", "--adaptivebatch", action="store_true",
                         help="Adaptive batch size for sending to worker bots (intelligent crawl)")
     parser.add_argument("-r", "--reindex", action="store_true",

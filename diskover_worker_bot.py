@@ -105,6 +105,9 @@ def get_worker_name():
 def get_dir_meta(path, cliargs, reindex_dict):
     """This is the get directory meta data function.
     It gets directory metadata and returns dir meta dict.
+    It checks if meta data is in Redis and compares times
+    mtime and ctime on disk compared to Redis and if same
+    returns sametimes string.
     """
 
     try:
@@ -118,6 +121,13 @@ def get_dir_meta(path, cliargs, reindex_dict):
         ctime_unix = lstat_path.st_ctime
         ctime_utc = datetime.utcfromtimestamp(ctime_unix) \
             .strftime('%Y-%m-%dT%H:%M:%S')
+        if cliargs['index2']:
+            # check if directory metadata cached in Redis
+            cached_times = redis_conn.get(path)
+            if cached_times:
+                # check if cached times are the same as on disk
+                if cached_times == mtime_unix + ctime_unix:
+                    return "sametimes"
         # get time now in utc
         indextime_utc = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
         # get user id of owner
@@ -204,6 +214,9 @@ def get_dir_meta(path, cliargs, reindex_dict):
 
     except (IOError, OSError):
         return None
+
+    # cache metadata in Redis
+    redis_conn.set(path, mtime_unix + ctime_unix, ex=diskover.config['redis_dirtimesttl'])
 
     return dirmeta_dict
 
@@ -473,6 +486,22 @@ def es_bulk_adder(result, cliargs, bot_logger):
     bot_logger.info('*** FINISHED BULK ADDING, Elapsed Time: ' + str(elapsed_time))
 
 
+def get_metadata(path, cliargs):
+    data = {
+        'size': 1,
+        'query': {
+            'query_string': {
+                'query': 'filename: "' + os.path.basename(path) + '" AND path_parent: "'
+                         + os.path.abspath(os.path.join(path, os.pardir)) + '")'
+            }
+        }
+    }
+    res = es.search(index=cliargs['index'], doc_type='directory', body=data,
+                    request_timeout=diskover.config['es_timeout'])
+    metadata = res['hits']['hits'][0]['_source']
+    return metadata
+
+
 def scrape_tree_meta(paths, cliargs, reindex_dict):
     bot_logger = bot_log_setup(cliargs)
     jobstart = time.time()
@@ -481,14 +510,25 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
     for path in paths:
         starttime = time.time()
         root, files = path
-        for file in files:
-            fmeta = get_file_meta(os.path.join(root, file), cliargs, reindex_dict, bot_logger)
-            if fmeta:
-                tree.append(('file', fmeta))
         dmeta = get_dir_meta(root, cliargs, reindex_dict)
-        if dmeta:
-            tree.append(('directory', dmeta))
-            tree.append(('crawltime', root, (time.time() - starttime)))
+        if dmeta == "sametimes":
+            # fetch meta data from index2 since directory times haven't changed
+            for file in files:
+                fmeta = get_metadata(os.path.join(root, file), cliargs)
+                if fmeta:
+                    tree.append(('file', fmeta))
+            dmeta = get_metadata(root, cliargs)
+            if dmeta:
+                tree.append(('directory', dmeta))
+                tree.append(('crawltime', root, (time.time() - starttime)))
+        else:  # get meta off disk since not in Redis or times different
+            for file in files:
+                fmeta = get_file_meta(os.path.join(root, file), cliargs, reindex_dict, bot_logger)
+                if fmeta:
+                    tree.append(('file', fmeta))
+            if dmeta:
+                tree.append(('directory', dmeta))
+                tree.append(('crawltime', root, (time.time() - starttime)))
 
     if len(tree) > 0:
         es_bulk_adder(tree, cliargs, bot_logger)

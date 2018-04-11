@@ -1,5 +1,20 @@
 # Diskover Change Log
 
+## [1.5.0-rc1] = 2018-04-11
+### notice
+- requires Redis
+- requires rq and redis python modules (pip install)
+- requires diskover-web >= v1.5.0-rc1
+- this is a release candidate for v1.5.0
+- ** crawlbot continuous scanner (-B) is buggy, hoping to have it stable in final release **
+- recommended to pip install rq-dashboard (rq-dashboard is used for monitoring rq redis queue)
+### added
+- mtime + ctime for directories is now stored in Redis to help speed up indexing of directories which don't change
+from previous index (index2) to new index (when using -I flag). When crawling, directory mtime + ctime are checked and
+if same as in Redis cache then meta data for directory and all it's files is used from index2 instead of off disk.
+- -I index2 cli option for setting prev index when doing directory comparison (see above)
+- dirtimesttl option in Redis section in diskover.cfg.sample for setting how long directory times are stored in Redis (default 1 week)
+
 ## [1.5.0-beta.12] = 2018-04-05
 ### notice
 - requires Redis
