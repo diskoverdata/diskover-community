@@ -20,7 +20,7 @@ indexname = diskover-index
 ; timeout for connection to ES (default is 10)
 timeout = 30
 ; number of connections kept open to ES when crawling (default is 10)
-maxsize = 10
+maxsize = 20
 ; max retries for ES operations (default is 0)
 maxretries = 10
 ; wait for at least yellow status before bulk uploading (default is False), set to True if you want to wait
