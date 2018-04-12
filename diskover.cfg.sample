@@ -26,7 +26,7 @@ maxretries = 10
 ; wait for at least yellow status before bulk uploading (default is False), set to True if you want to wait
 wait = False
 ; chunk size for ES bulk operations (default is 500)
-chunksize = 500
+chunksize = 1000
 ; number of shards for index (default is 5)
 shards = 5
 ; number of replicas for index (default is 1)
