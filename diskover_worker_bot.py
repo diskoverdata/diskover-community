@@ -123,7 +123,7 @@ def get_dir_meta(path, cliargs, reindex_dict):
             .strftime('%Y-%m-%dT%H:%M:%S')
         if cliargs['index2']:
             # check if directory metadata cached in Redis
-            cached_times = redis_conn.get(path.encode('utf-8', errors='ignore').decode('utf-8').strip())
+            cached_times = redis_conn.get(path)
             if cached_times:
                 # check if cached times are the same as on disk
                 if cached_times == mtime_unix + ctime_unix:
@@ -180,8 +180,8 @@ def get_dir_meta(path, cliargs, reindex_dict):
         fullpath = os.path.abspath(os.path.join(parentdir, filename))
 
         dirmeta_dict = {
-            "filename": filename.encode('utf-8', errors='ignore').decode('utf-8').strip(),
-            "path_parent": parentdir.encode('utf-8', errors='ignore').decode('utf-8').strip(),
+            "filename": filename,
+            "path_parent": parentdir,
             "filesize": 0,
             "items": 1,  # itself
             "last_modified": mtime_utc,
@@ -216,8 +216,7 @@ def get_dir_meta(path, cliargs, reindex_dict):
         return None
 
     # cache metadata in Redis
-    redis_conn.set(path.encode('utf-8', errors='ignore').decode('utf-8').strip(),
-                   mtime_unix + ctime_unix, ex=diskover.config['redis_dirtimesttl'])
+    redis_conn.set(path, mtime_unix + ctime_unix, ex=diskover.config['redis_dirtimesttl'])
 
     return dirmeta_dict
 
@@ -324,9 +323,9 @@ def get_file_meta(path, cliargs, reindex_dict, bot_logger):
 
         # create file metadata dictionary
         filemeta_dict = {
-            "filename": filename.encode('utf-8', errors='ignore').decode('utf-8').strip(),
-            "extension": extension.encode('utf-8', errors='ignore').decode('utf-8').strip(),
-            "path_parent": parentdir.encode('utf-8', errors='ignore').decode('utf-8').strip(),
+            "filename": filename,
+            "extension": extension,
+            "path_parent": parentdir,
             "filesize": size,
             "owner": owner,
             "group": group,
