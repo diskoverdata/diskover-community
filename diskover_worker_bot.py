@@ -180,8 +180,8 @@ def get_dir_meta(path, cliargs, reindex_dict):
         fullpath = os.path.abspath(os.path.join(parentdir, filename))
 
         dirmeta_dict = {
-            "filename": filename,
-            "path_parent": parentdir,
+            "filename": filename.encode('utf-8', errors='ignore').decode('utf-8').strip(),
+            "path_parent": parentdir.encode('utf-8', errors='ignore').decode('utf-8').strip(),
             "filesize": 0,
             "items": 1,  # itself
             "last_modified": mtime_utc,
@@ -216,7 +216,8 @@ def get_dir_meta(path, cliargs, reindex_dict):
         return None
 
     # cache metadata in Redis
-    redis_conn.set(path, mtime_unix + ctime_unix, ex=diskover.config['redis_dirtimesttl'])
+    redis_conn.set(path.encode('utf-8', errors='ignore').decode('utf-8').strip(),
+                   mtime_unix + ctime_unix, ex=diskover.config['redis_dirtimesttl'])
 
     return dirmeta_dict
 
@@ -323,9 +324,9 @@ def get_file_meta(path, cliargs, reindex_dict, bot_logger):
 
         # create file metadata dictionary
         filemeta_dict = {
-            "filename": filename,
-            "extension": extension,
-            "path_parent": parentdir,
+            "filename": filename.encode('utf-8', errors='ignore').decode('utf-8').strip(),
+            "extension": extension.encode('utf-8', errors='ignore').decode('utf-8').strip(),
+            "path_parent": parentdir.encode('utf-8', errors='ignore').decode('utf-8').strip(),
             "filesize": size,
             "owner": owner,
             "group": group,
