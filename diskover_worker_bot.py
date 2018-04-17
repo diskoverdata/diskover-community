@@ -123,7 +123,7 @@ def get_dir_meta(path, cliargs, reindex_dict):
             .strftime('%Y-%m-%dT%H:%M:%S')
         if cliargs['index2']:
             # check if directory metadata cached in Redis
-            cached_times = redis_conn.get(path)
+            cached_times = redis_conn.get(path.encode('utf-8', errors='ignore').decode('utf-8').strip())
             if cached_times:
                 # check if cached times are the same as on disk
                 if cached_times == mtime_unix + ctime_unix:
