@@ -475,7 +475,7 @@ def es_bulk_adder(result, cliargs, bot_logger):
     bot_logger.info('*** Bulk adding to ES index...')
     diskover.index_bulk_add(es, dirlist, 'directory', diskover.config, cliargs)
     diskover.index_bulk_add(es, filelist, 'file', diskover.config, cliargs)
-    if not cliargs['reindex'] and not cliargs['reindexrecurs']:
+    if not cliargs['reindex'] and not cliargs['reindexrecurs'] and not cliargs['crawlbot']:
         diskover.add_crawl_stats_bulk(es, crawltimelist, worker_name, diskover.config, cliargs)
         data = {"worker_name": worker_name, "dir_count": len(dirlist),
                 "file_count": len(filelist), "bulk_time": round(time.time() - starttime, 10),
@@ -584,7 +584,7 @@ def tag_copier(path, cliargs):
     }
 
     # check if file or directory
-    if path[3] is 'directory':
+    if path[3] == 'directory':
         # search ES
         res = es.search(index=cliargs['index'], doc_type='directory', body=data,
                         request_timeout=diskover.config['es_timeout'])
@@ -594,6 +594,7 @@ def tag_copier(path, cliargs):
 
     # mark task done if no matching path in index and continue
     if len(res['hits']['hits']) == 0:
+        bot_logger.info('*** No matching path found in index')
         return True
 
     # existing tag in index2

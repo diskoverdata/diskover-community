@@ -1,5 +1,11 @@
 # Diskover Change Log
 
+## [1.5.0-rc2] = 2018-04-20
+### fixed
+- bug fixes for crawlbot continuous scanner (-B)
+- tag copying from index2 to index (-C)
+- set root path (-d) to unicode if using python2
+
 ## [1.5.0-rc1] = 2018-04-11
 ### notice
 - requires Redis

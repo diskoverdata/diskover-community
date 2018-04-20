@@ -41,7 +41,7 @@ import sys
 import threading
 
 
-version = '1.5.0-rc1'
+version = '1.5.0-rc2'
 __version__ = version
 
 IS_PY3 = sys.version_info >= (3, 0)
@@ -569,7 +569,7 @@ def index_bulk_add(es, doclist, doctype, config, cliargs):
                  request_timeout=config['es_timeout'])
 
 
-def index_delete_path(path, reindex_dict, recursive=False):
+def index_delete_path(path, cliargs, logger, reindex_dict, recursive=False):
     """This is the es delete path bulk function.
     It finds all file and directory docs in path and deletes them from es
     including the directory (path).
@@ -715,7 +715,7 @@ def index_delete_path(path, reindex_dict, recursive=False):
     return reindex_dict
 
 
-def index_get_docs(doctype='directory', copytags=False, index=None, path=None):
+def index_get_docs(cliargs, logger, doctype='directory', copytags=False, index=None, path=None):
     """This is the es get docs function.
     It finds all docs (by doctype) in es and returns doclist
     which contains doc id, fullpath and mtime for all docs.
@@ -1060,7 +1060,7 @@ def progress_bar():
     return bar
 
 
-def calc_dir_sizes(path=None, addstats=False):
+def calc_dir_sizes(cliargs, logger, path=None, addstats=False):
     import diskover_worker_bot
     logger.info('Waiting for diskover bots to be done with any crawl jobs...')
     busyworkers = []
@@ -1083,9 +1083,9 @@ def calc_dir_sizes(path=None, addstats=False):
 
     logger.info('Getting diskover bots to calculate directory sizes...')
     if path:
-        dirlist = index_get_docs(path=path)
+        dirlist = index_get_docs(cliargs, logger, path=path)
     else:
-        dirlist = index_get_docs()
+        dirlist = index_get_docs(cliargs, logger)
     dirbatch = []
     batchsize = cliargs['batchsize']
     for d in dirlist:
@@ -1198,7 +1198,7 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
         for entry in scandir(path):
             if entry.is_file(follow_symlinks=False):
                 root_files.append(entry.name)
-         # enqueue rootdir files
+        # enqueue rootdir files
         q.enqueue(diskover_worker_bot.scrape_tree_meta,
               args=([(path, root_files)], cliargs, reindex_dict,))
         totaljobs += 1
@@ -1321,12 +1321,12 @@ if __name__ == "__main__":
         wait_for_worker_bots()
         logger.info('Copying tags from %s to %s', cliargs['copytags'][0], cliargs['index'])
         # look in index2 for all directory docs with tags and add to queue
-        dirlist = index_get_docs(doctype='directory', copytags=True, index=cliargs['copytags'][0])
+        dirlist = index_get_docs(cliargs, logger, doctype='directory', copytags=True, index=cliargs['copytags'][0])
         for path in dirlist:
             q.enqueue(diskover_worker_bot.tag_copier,
                       args=(path, cliargs,))
         # look in index2 for all file docs with tags and add to queue
-        filelist = index_get_docs(doctype='file', copytags=True, index=cliargs['copytags'][0])
+        filelist = index_get_docs(cliargs, logger, doctype='file', copytags=True, index=cliargs['copytags'][0])
         for path in filelist:
             q.enqueue(diskover_worker_bot.tag_copier,
                       args=(path, cliargs,))
@@ -1361,6 +1361,9 @@ if __name__ == "__main__":
             logger.info("Directory in exclude list, exiting")
             sys.exit(0)
         cliargs['rootdir'] = rootdir_path
+        # convert to unicode if python2
+        if not IS_PY3:
+            rootdir_path = unicode(rootdir_path)
 
     # warn if not running as root
     if os.geteuid():
@@ -1374,19 +1377,18 @@ if __name__ == "__main__":
     # before crawling and reindexing
     reindex_dict = {'file': [], 'directory': []}
     if cliargs['reindex']:
-        reindex_dict = index_delete_path(rootdir_path, reindex_dict)
+        reindex_dict = index_delete_path(rootdir_path, cliargs, logger, reindex_dict)
     elif cliargs['reindexrecurs']:
-        reindex_dict = index_delete_path(rootdir_path, reindex_dict, recursive=True)
+        reindex_dict = index_delete_path(rootdir_path, cliargs, logger, reindex_dict, recursive=True)
 
     # start crawlbot if cli argument
     if cliargs['crawlbot']:
         import diskover_crawlbot
         import diskover_worker_bot
         wait_for_worker_bots()
-        botdirlist = index_get_docs(doctype='directory')
+        botdirlist = index_get_docs(cliargs, logger, doctype='directory')
         # Set up worker threads for crawlbot
-        diskover_crawlbot.start_crawlbot_scanner(cliargs, logger,
-                                                 rootdir_path, botdirlist, reindex_dict)
+        diskover_crawlbot.start_crawlbot_scanner(cliargs, logger, rootdir_path, botdirlist, reindex_dict)
         sys.exit(0)
 
     # create Elasticsearch index
@@ -1403,8 +1405,8 @@ if __name__ == "__main__":
 
     # calculate directory sizes and items
     if cliargs['reindex'] or cliargs['reindexrecurs']:
-        calc_dir_sizes(path=rootdir_path)
+        calc_dir_sizes(cliargs, logger, path=rootdir_path)
     else:
-        calc_dir_sizes(addstats=True)
+        calc_dir_sizes(cliargs, logger, addstats=True)
 
     logger.info('Dispatcher is DONE! Sayonara!')
