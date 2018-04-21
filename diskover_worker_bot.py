@@ -102,7 +102,7 @@ def get_worker_name():
     return '{0}.{1}'.format(socket.gethostname().partition('.')[0], os.getppid())
 
 
-def get_dir_meta(path, cliargs, reindex_dict):
+def get_dir_meta(path, cliargs, reindex_dict, bot_logger):
     """This is the get directory meta data function.
     It gets directory metadata and returns dir meta dict.
     It checks if meta data is in Redis and compares times
@@ -123,10 +123,11 @@ def get_dir_meta(path, cliargs, reindex_dict):
             .strftime('%Y-%m-%dT%H:%M:%S')
         if cliargs['index2']:
             # check if directory metadata cached in Redis
-            cached_times = redis_conn.get(path)
+            cached_times = float(redis_conn.get(path).decode('utf-8'))
             if cached_times:
                 # check if cached times are the same as on disk
-                if cached_times == mtime_unix + ctime_unix:
+                current_times = float(mtime_unix + ctime_unix)
+                if cached_times == current_times:
                     return "sametimes"
         # get time now in utc
         indextime_utc = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
@@ -487,19 +488,45 @@ def es_bulk_adder(result, cliargs, bot_logger):
 
 
 def get_metadata(path, cliargs):
+    dir_source = ""
     data = {
         'size': 1,
         'query': {
             'query_string': {
                 'query': 'filename: "' + os.path.basename(path) + '" AND path_parent: "'
-                         + os.path.abspath(os.path.join(path, os.pardir)) + '")'
+                         + os.path.abspath(os.path.join(path, os.pardir)) + '"'
             }
         }
     }
-    res = es.search(index=cliargs['index'], doc_type='directory', body=data,
+    res = es.search(index=cliargs['index2'], doc_type='directory', body=data,
                     request_timeout=diskover.config['es_timeout'])
-    metadata = res['hits']['hits'][0]['_source']
-    return metadata
+    try:
+        dir_source = res['hits']['hits'][0]['_source']
+    except IndexError:
+        pass
+
+    data = {
+        'query': {
+            'query_string': {
+                'query': 'path_parent: "' + path + '"'
+            }
+        }
+    }
+
+    files_source = []
+    res = es.search(index=cliargs['index2'], doc_type='file', scroll='1m',
+                    size=1000, body=data, request_timeout=diskover.config['es_timeout'])
+
+    while res['hits']['hits'] and len(res['hits']['hits']) > 0:
+        for hit in res['hits']['hits']:
+            files_source.append(hit['_source'])
+        # get es scroll id
+        scroll_id = res['_scroll_id']
+        # use es scroll api
+        res = es.scroll(scroll_id=scroll_id, scroll='1m',
+                        request_timeout=diskover.config['es_timeout'])
+
+    return dir_source, files_source
 
 
 def scrape_tree_meta(paths, cliargs, reindex_dict):
@@ -510,18 +537,27 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
     for path in paths:
         starttime = time.time()
         root, files = path
-        dmeta = get_dir_meta(root, cliargs, reindex_dict)
+        dmeta = get_dir_meta(root, cliargs, reindex_dict, bot_logger)
         if dmeta == "sametimes":
-            # fetch meta data from index2 since directory times haven't changed
-            for file in files:
-                fmeta = get_metadata(os.path.join(root, file), cliargs)
-                if fmeta:
-                    tree.append(('file', fmeta))
-            dmeta = get_metadata(root, cliargs)
-            if dmeta:
-                tree.append(('directory', dmeta))
+            # fetch meta data for directory and all it's files (doc sources) from index2 since
+            # directory times haven't changed
+            dir_source, files_source = get_metadata(root, cliargs)
+            worker = get_worker_name()
+            datenow = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
+            for file_source in files_source:
+                # update indexed at time
+                file_source['indexing_date'] = datenow
+                # update worker name
+                file_source['worker_name'] = worker
+                tree.append(('file', file_source))
+            if dir_source:
+                # update indexed at time
+                dir_source['indexing_date'] = datenow
+                # update worker name
+                dir_source['worker_name'] = worker
+                tree.append(('directory', dir_source))
                 tree.append(('crawltime', root, (time.time() - starttime)))
-        else:  # get meta off disk since not in Redis or times different
+        else:  # get meta off disk since times different in Redis than on disk
             for file in files:
                 fmeta = get_file_meta(os.path.join(root, file), cliargs, reindex_dict, bot_logger)
                 if fmeta:

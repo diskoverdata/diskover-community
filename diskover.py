@@ -48,6 +48,9 @@ IS_PY3 = sys.version_info >= (3, 0)
 
 totaljobs = 0
 
+adaptivebatch_startsize = 5
+
+
 def print_banner(version):
     """This is the print banner function.
     It prints a random banner.
@@ -1087,7 +1090,10 @@ def calc_dir_sizes(cliargs, logger, path=None, addstats=False):
     else:
         dirlist = index_get_docs(cliargs, logger)
     dirbatch = []
-    batchsize = cliargs['batchsize']
+    if cliargs['adaptivebatch']:
+        batchsize = adaptivebatch_startsize
+    else:
+        batchsize = cliargs['batchsize']
     for d in dirlist:
         dirbatch.append(d)
         if len(dirbatch) >= batchsize:
@@ -1096,9 +1102,10 @@ def calc_dir_sizes(cliargs, logger, path=None, addstats=False):
             del dirbatch[:]
             if cliargs['adaptivebatch']:
                 if len(q) == 0:
-                    batchsize = 5
+                    batchsize = adaptivebatch_startsize
                 elif len(q) > 0:
                     batchsize = batchsize * 2
+                cliargs['batchsize'] = batchsize
 
     # add any remaining in batch to queue
     q.enqueue(diskover_worker_bot.calc_dir_size,
@@ -1123,9 +1130,10 @@ def treewalk(path, num_sep, level, batchsize, workers, bar, cliargs, reindex_dic
                 del batch[:]
                 if cliargs['adaptivebatch']:
                     if len(q) == 0:
-                        batchsize = 5
+                        batchsize = adaptivebatch_startsize
                     elif len(q) > 0:
                         batchsize = batchsize * 2
+                    cliargs['batchsize'] = batchsize
 
             # check if at maxdepth level and delete dirs/files lists to not
             # descend further down the tree
@@ -1174,9 +1182,10 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
         logger.info('Enqueueing crawl to diskover worker bots for %s...', path)
 
         if cliargs['adaptivebatch']:
-            batchsize = 5
+            batchsize = adaptivebatch_startsize
+            cliargs['batchsize'] = batchsize
             logger.info("Sending adaptive batches to worker bots")
-        elif cliargs['batchsize']:
+        else:
             batchsize = cliargs['batchsize']
             logger.info("Sending batches of %s to worker bots", batchsize)
 

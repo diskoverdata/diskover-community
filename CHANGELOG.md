@@ -1,7 +1,15 @@
 # Diskover Change Log
 
-## [1.5.0-rc2] = 2018-04-20
+## [1.5.0-rc2] = 2018-04-21
+### added
+- adaptivebatch_startsize global variable
+### changed
+- when using adaptivebatch, batchsize cliarg is updated during crawl to show current batchsize in worker output
+- improved speed of using -I flag to get meta data (doc source) from previous index instead of disk when comparing
+directory times
 ### fixed
+- using second index (index2) when comparing directory sizes to get meta data from previous index instead of
+off disk (-I)
 - bug fixes for crawlbot continuous scanner (-B)
 - tag copying from index2 to index (-C)
 - set root path (-d) to unicode if using python2
