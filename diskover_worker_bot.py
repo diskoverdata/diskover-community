@@ -122,9 +122,10 @@ def get_dir_meta(path, cliargs, reindex_dict, bot_logger):
         ctime_utc = datetime.utcfromtimestamp(ctime_unix) \
             .strftime('%Y-%m-%dT%H:%M:%S')
         if cliargs['index2']:
-            # check if directory metadata cached in Redis
-            cached_times = float(redis_conn.get(path).decode('utf-8'))
-            if cached_times:
+            # check if directory times cached in Redis
+            redis_dirtime = redis_conn.get(path)
+            if redis_dirtime:
+                cached_times = float(redis_dirtime.decode('utf-8'))
                 # check if cached times are the same as on disk
                 current_times = float(mtime_unix + ctime_unix)
                 if cached_times == current_times:

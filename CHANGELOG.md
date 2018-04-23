@@ -1,6 +1,6 @@
 # Diskover Change Log
 
-## [1.5.0-rc2] = 2018-04-21
+## [1.5.0-rc2] = 2018-04-23
 ### added
 - adaptivebatch_startsize global variable
 ### changed
