@@ -4,6 +4,8 @@
 ### added
 - adaptivebatch_maxsize global variable to control max size (number of directories in batch) sent to Redis (set to 500)
 - @, ', " to escape_chars function in diskover.py
+- added includes section to diskover.cfg to whitelist dirs/files
+
 ### changed
 - improved -a adaptivebatch algorithm
 - adaptivebatch_startsize is now set to 10 (prev was 5)

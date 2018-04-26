@@ -161,6 +161,18 @@ def load_config():
     except Exception:
         configsettings['excluded_files'] = set([])
     try:
+        d = config.get('includes', 'dirs')
+        dirs = d.split(',')
+        configsettings['included_dirs'] = set(dirs)
+    except Exception:
+        configsettings['included_dirs'] = set([])
+    try:
+        f = config.get('includes', 'files')
+        files = f.split(',')
+        configsettings['included_files'] = set(files)
+    except Exception:
+        configsettings['included_files'] = set([])
+    try:
         configsettings['aws'] = config.get('elasticsearch', 'aws')
     except Exception:
         configsettings['aws'] = "False"
@@ -858,15 +870,16 @@ def add_crawl_stats_bulk(es, crawltimelist, worker_name, config, cliargs):
 def dir_excluded(path, config, verbose):
     """Return True if path in excluded_dirs set,
     False if not in the list"""
+    # return if directory in included list (whitelist)
+    if os.path.basename(path) in config['included_dirs'] or path in config['included_dirs']:
+        return False
     # skip any dirs which start with . (dot) and in excluded_dirs
-    if os.path.basename(path).startswith('.') and u'.*' \
-            in config['excluded_dirs']:
+    if os.path.basename(path).startswith('.') and u'.*' in config['excluded_dirs']:
         if verbose:
             logger.info('Skipping (.* dir) %s', path)
         return True
     # skip any dirs in excluded_dirs
-    if os.path.basename(path) in config['excluded_dirs'] \
-            or path in config['excluded_dirs']:
+    if os.path.basename(path) in config['excluded_dirs'] or path in config['excluded_dirs']:
         if verbose:
             logger.info('Skipping (excluded dir) %s', path)
         return True
@@ -888,6 +901,9 @@ def dir_excluded(path, config, verbose):
 def file_excluded(filename, extension, path, config, logger, verbose):
     """Return True if path or ext in excluded_files set,
     False if not in the set"""
+    # return if filename in included list (whitelist)
+    if filename in config['included_files']:
+        return False
     # check for extension in and . (dot) files in excluded_files
     if (not extension and 'NULLEXT' in config['excluded_files']) or \
             '*.' + extension in config['excluded_files'] or \
