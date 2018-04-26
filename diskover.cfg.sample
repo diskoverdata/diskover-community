@@ -5,9 +5,9 @@ dirs = .*,.snapshot,.Snapshot
 files = .*,Thumbs.db,.DS_Store,._.DS_Store,.localized,desktop.ini
 
 [includes]
-; directory names and absolute paths you want to include (whitelist), case-sensitive, can include wildcard (.* or tmp* or /dir/dirname* etc)
+; directory names and absolute paths you want to include (whitelist), case-sensitive
 dirs = .recycle
-; files you want to include (whitelist), case-sensitive, can include wildcards (.*, *.doc or NULLEXT for files with no extension)
+; files you want to include (whitelist), case-sensitive
 ;files =
 
 [elasticsearch]
