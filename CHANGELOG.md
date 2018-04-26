@@ -1,5 +1,15 @@
 # Diskover Change Log
 
+## [1.5.0-rc3] = 2018-04-26
+### added
+- adaptivebatch_maxsize global variable to control max size (number of directories in batch) sent to Redis (set to 500)
+- @, ', " to escape_chars function in diskover.py
+### changed
+- improved -a adaptivebatch algorithm
+- adaptivebatch_startsize is now set to 10 (prev was 5)
+### fixed
+- unicode issues with sending paths to Redis which contain special characters
+
 ## [1.5.0-rc2] = 2018-04-23
 ### added
 - adaptivebatch_startsize global variable

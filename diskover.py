@@ -41,14 +41,15 @@ import sys
 import threading
 
 
-version = '1.5.0-rc2'
+version = '1.5.0-rc3'
 __version__ = version
 
 IS_PY3 = sys.version_info >= (3, 0)
 
 totaljobs = 0
 
-adaptivebatch_startsize = 5
+adaptivebatch_startsize = 10
+adaptivebatch_maxsize = 500
 
 
 def print_banner(version):
@@ -909,7 +910,7 @@ def escape_chars(text):
     chr_dict = {'/': '\\/', '(': '\\(', ')': '\\)', '[': '\\[', ']': '\\]',
                 ' ': '\\ ', '&': '\\&', '<': '\\<', '>': '\\>', '+': '\\+', '-': '\\-',
                 '|': '\\|', '!': '\\!', '{': '\\{', '}': '\\}', '^': '\\^', '~': '\\~',
-                '?': '\\?', ':': '\\:', '=': '\\='}
+                '?': '\\?', ':': '\\:', '=': '\\=', '\'': '\\\'', '"': '\\"', '@': '\\@'}
     def char_trans(text, chr_dict):
         for key, value in chr_dict.items():
             text = text.replace(key, value)
@@ -1102,9 +1103,11 @@ def calc_dir_sizes(cliargs, logger, path=None, addstats=False):
             del dirbatch[:]
             if cliargs['adaptivebatch']:
                 if len(q) == 0:
-                    batchsize = adaptivebatch_startsize
+                    if (batchsize - 10) >= adaptivebatch_startsize:
+                        batchsize = batchsize - 10
                 elif len(q) > 0:
-                    batchsize = batchsize * 2
+                    if (batchsize + 10) <= adaptivebatch_maxsize:
+                        batchsize = batchsize + 10
                 cliargs['batchsize'] = batchsize
 
     # add any remaining in batch to queue
@@ -1130,9 +1133,11 @@ def treewalk(path, num_sep, level, batchsize, workers, bar, cliargs, reindex_dic
                 del batch[:]
                 if cliargs['adaptivebatch']:
                     if len(q) == 0:
-                        batchsize = adaptivebatch_startsize
+                        if (batchsize - 10) >= adaptivebatch_startsize:
+                            batchsize = batchsize - 10
                     elif len(q) > 0:
-                        batchsize = batchsize * 2
+                        if (batchsize + 10) <= adaptivebatch_maxsize:
+                            batchsize = batchsize + 10
                     cliargs['batchsize'] = batchsize
 
             # check if at maxdepth level and delete dirs/files lists to not
@@ -1274,6 +1279,7 @@ q = Queue(listen[0], connection=redis_conn, default_timeout=86400)
 
 # load any available plugins
 plugins = load_plugins()
+
 
 if __name__ == "__main__":
     # parse cli arguments into cliargs dictionary

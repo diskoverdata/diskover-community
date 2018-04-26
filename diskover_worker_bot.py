@@ -123,7 +123,7 @@ def get_dir_meta(path, cliargs, reindex_dict, bot_logger):
             .strftime('%Y-%m-%dT%H:%M:%S')
         if cliargs['index2']:
             # check if directory times cached in Redis
-            redis_dirtime = redis_conn.get(path)
+            redis_dirtime = redis_conn.get(path.encode('utf-8', errors='ignore'))
             if redis_dirtime:
                 cached_times = float(redis_dirtime.decode('utf-8'))
                 # check if cached times are the same as on disk
@@ -217,8 +217,9 @@ def get_dir_meta(path, cliargs, reindex_dict, bot_logger):
     except (IOError, OSError):
         return None
 
-    # cache metadata in Redis
-    redis_conn.set(path, mtime_unix + ctime_unix, ex=diskover.config['redis_dirtimesttl'])
+    # cache directory times in Redis
+    redis_conn.set(path.encode('utf-8', errors='ignore'), mtime_unix + ctime_unix,
+                   ex=diskover.config['redis_dirtimesttl'])
 
     return dirmeta_dict
 
