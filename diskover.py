@@ -41,7 +41,7 @@ import sys
 import threading
 
 
-version = '1.5.0-rc3'
+version = '1.5.0-rc4'
 __version__ = version
 
 IS_PY3 = sys.version_info >= (3, 0)
@@ -296,6 +296,21 @@ def load_config():
             float(config.get('gource', 'maxfilelag'))
     except Exception:
         configsettings['gource_maxfilelag'] = 5
+    try:
+        configsettings['qumulo_host'] = \
+            config.get('qumulo', 'cluster')
+    except Exception:
+        configsettings['qumulo_host'] = ""
+    try:
+        configsettings['qumulo_api_user'] = \
+            config.get('qumulo', 'api_user')
+    except Exception:
+        configsettings['qumulo_api_user'] = ""
+    try:
+        configsettings['qumulo_api_password'] = \
+            config.get('qumulo', 'api_password')
+    except Exception:
+        configsettings['qumulo_api_password'] = ""
 
     return configsettings
 
@@ -390,174 +405,183 @@ def index_create(indexname):
             logger.warning('es index exists, deleting')
             es.indices.delete(index=indexname, ignore=[400, 404])
     # set up es index mappings and create new index
-    mappings = {
-        "settings": {
-            "index" : {
-                "number_of_shards": config['index_shards'],
-                "number_of_replicas": config['index_replicas']
-            }
-        },
-        "mappings": {
-            "diskspace": {
-                "properties": {
-                    "path": {
-                        "type": "keyword"
-                    },
-                    "total": {
-                        "type": "long"
-                    },
-                    "used": {
-                        "type": "long"
-                    },
-                    "free": {
-                        "type": "long"
-                    },
-                    "available": {
-                        "type": "long"
-                    },
-                    "indexing_date": {
-                        "type": "date"
-                    }
+    if cliargs['qumulo']:
+        mappings = diskover_qumulo.get_qumulo_mappings(config)
+    else:
+        mappings = {
+            "settings": {
+                "index" : {
+                    "number_of_shards": config['index_shards'],
+                    "number_of_replicas": config['index_replicas']
                 }
             },
-            "crawlstat": {
-                "properties": {
-                    "path": {
-                        "type": "keyword"
-                    },
-                    "worker_name": {
-                        "type": "keyword"
-                    },
-                    "crawl_time": {
-                        "type": "float"
-                    },
-                    "indexing_date": {
-                        "type": "date"
+            "mappings": {
+                "diskspace": {
+                    "properties": {
+                        "path": {
+                            "type": "keyword"
+                        },
+                        "total": {
+                            "type": "long"
+                        },
+                        "used": {
+                            "type": "long"
+                        },
+                        "free": {
+                            "type": "long"
+                        },
+                        "available": {
+                            "type": "long"
+                        },
+                        "indexing_date": {
+                            "type": "date"
+                        }
                     }
-                }
-            },
-            "worker": {
-                "properties": {
-                    "worker_name": {
-                        "type": "keyword"
-                    },
-                    "dir_count": {
-                        "type": "integer"
-                    },
-                    "file_count": {
-                        "type": "integer"
-                    },
-                    "bulk_time": {
-                        "type": "float"
-                    },
-                    "crawl_time": {
-                        "type": "float"
-                    },
-                    "indexing_date": {
-                        "type": "date"
+                },
+                "crawlstat": {
+                    "properties": {
+                        "path": {
+                            "type": "keyword"
+                        },
+                        "worker_name": {
+                            "type": "keyword"
+                        },
+                        "crawl_time": {
+                            "type": "float"
+                        },
+                        "indexing_date": {
+                            "type": "date"
+                        }
                     }
-                }
-            },
-            "directory": {
-                "properties": {
-                    "filename": {
-                        "type": "keyword"
-                    },
-                    "path_parent": {
-                        "type": "keyword"
-                    },
-                    "filesize": {
-                        "type": "long"
-                    },
-                    "items": {
-                        "type": "long"
-                    },
-                    "owner": {
-                        "type": "keyword"
-                    },
-                    "group": {
-                        "type": "keyword"
-                    },
-                    "last_modified": {
-                        "type": "date"
-                    },
-                    "last_access": {
-                        "type": "date"
-                    },
-                    "last_change": {
-                        "type": "date"
-                    },
-                    "tag": {
-                        "type": "keyword"
-                    },
-                    "tag_custom": {
-                        "type": "keyword"
-                    },
-                    "indexing_date": {
-                        "type": "date"
-                    },
-                    "worker_name": {
-                        "type": "keyword"
+                },
+                "worker": {
+                    "properties": {
+                        "worker_name": {
+                            "type": "keyword"
+                        },
+                        "dir_count": {
+                            "type": "integer"
+                        },
+                        "file_count": {
+                            "type": "integer"
+                        },
+                        "bulk_time": {
+                            "type": "float"
+                        },
+                        "crawl_time": {
+                            "type": "float"
+                        },
+                        "indexing_date": {
+                            "type": "date"
+                        }
                     }
-                }
-            },
-            "file": {
-                "properties": {
-                    "filename": {
-                        "type": "keyword"
-                    },
-                    "extension": {
-                        "type": "keyword"
-                    },
-                    "path_parent": {
-                        "type": "keyword"
-                    },
-                    "filesize": {
-                        "type": "long"
-                    },
-                    "owner": {
-                        "type": "keyword"
-                    },
-                    "group": {
-                        "type": "keyword"
-                    },
-                    "last_modified": {
-                        "type": "date"
-                    },
-                    "last_access": {
-                        "type": "date"
-                    },
-                    "last_change": {
-                        "type": "date"
-                    },
-                    "hardlinks": {
-                        "type": "integer"
-                    },
-                    "inode": {
-                        "type": "long"
-                    },
-                    "filehash": {
-                        "type": "keyword"
-                    },
-                    "tag": {
-                        "type": "keyword"
-                    },
-                    "tag_custom": {
-                        "type": "keyword"
-                    },
-                    "dupe_md5": {
-                        "type": "keyword"
-                    },
-                    "indexing_date": {
-                        "type": "date"
-                    },
-                    "worker_name": {
-                        "type": "keyword"
+                },
+                "directory": {
+                    "properties": {
+                        "filename": {
+                            "type": "keyword"
+                        },
+                        "path_parent": {
+                            "type": "keyword"
+                        },
+                        "filesize": {
+                            "type": "long"
+                        },
+                        "items": {
+                            "type": "long"
+                        },
+                        "owner": {
+                            "type": "keyword"
+                        },
+                        "group": {
+                            "type": "keyword"
+                        },
+                        "last_modified": {
+                            "type": "date"
+                        },
+                        "last_access": {
+                            "type": "date"
+                        },
+                        "last_change": {
+                            "type": "date"
+                        },
+                        "hardlinks": {
+                            "type": "integer"
+                        },
+                        "inode": {
+                            "type": "long"
+                        },
+                        "tag": {
+                            "type": "keyword"
+                        },
+                        "tag_custom": {
+                            "type": "keyword"
+                        },
+                        "indexing_date": {
+                            "type": "date"
+                        },
+                        "worker_name": {
+                            "type": "keyword"
+                        }
+                    }
+                },
+                "file": {
+                    "properties": {
+                        "filename": {
+                            "type": "keyword"
+                        },
+                        "extension": {
+                            "type": "keyword"
+                        },
+                        "path_parent": {
+                            "type": "keyword"
+                        },
+                        "filesize": {
+                            "type": "long"
+                        },
+                        "owner": {
+                            "type": "keyword"
+                        },
+                        "group": {
+                            "type": "keyword"
+                        },
+                        "last_modified": {
+                            "type": "date"
+                        },
+                        "last_access": {
+                            "type": "date"
+                        },
+                        "last_change": {
+                            "type": "date"
+                        },
+                        "hardlinks": {
+                            "type": "integer"
+                        },
+                        "inode": {
+                            "type": "long"
+                        },
+                        "filehash": {
+                            "type": "keyword"
+                        },
+                        "tag": {
+                            "type": "keyword"
+                        },
+                        "tag_custom": {
+                            "type": "keyword"
+                        },
+                        "dupe_md5": {
+                            "type": "keyword"
+                        },
+                        "indexing_date": {
+                            "type": "date"
+                        },
+                        "worker_name": {
+                            "type": "keyword"
+                        }
                     }
                 }
             }
         }
-    }
 
     # check plugins for additional mappings
     for plugin in plugins:
@@ -744,7 +768,7 @@ def index_get_docs(cliargs, logger, doctype='directory', copytags=False, index=N
         index = cliargs['index']
 
     if copytags:
-        logger.info('Searching for all %s docs with tags in %s', doctype, index)
+        logger.info('Searching for all %s docs with tags in %s...', doctype, index)
         data = {
             '_source': ['path_parent', 'filename', 'tag', 'tag_custom'],
             'query': {
@@ -755,7 +779,7 @@ def index_get_docs(cliargs, logger, doctype='directory', copytags=False, index=N
         }
     else:
         if not path:
-            logger.info('Searching for all %s docs in %s', doctype, index)
+            logger.info('Searching for all %s docs in %s...', doctype, index)
             data = {
                 '_source': ['path_parent', 'filename', 'last_modified'],
                 'query': {
@@ -770,7 +794,7 @@ def index_get_docs(cliargs, logger, doctype='directory', copytags=False, index=N
                 newpathwildcard = '\/*'
             else:
                 newpathwildcard = newpath + '\/*'
-            logger.info('Searching for all %s docs in %s for path %s', doctype, index, path)
+            logger.info('Searching for all %s docs in %s for path %s...', doctype, index, path)
             data = {
                 '_source': ['path_parent', 'filename', 'last_modified'],
                 'query': {
@@ -867,7 +891,7 @@ def add_crawl_stats_bulk(es, crawltimelist, worker_name, config, cliargs):
     index_bulk_add(es, crawlstats, 'crawlstat', config, cliargs)
 
 
-def dir_excluded(path, config, verbose):
+def dir_excluded(path, config, logger, verbose):
     """Return True if path in excluded_dirs set,
     False if not in the list"""
     # return if directory in included list (whitelist)
@@ -1005,6 +1029,8 @@ def parse_cli_args(indexname):
     parser.add_argument("-B", "--crawlbot", action="store_true",
                         help="Starts up crawl bot continuous scanner \
                             to scan for dir changes in index")
+    parser.add_argument("--qumulo", action="store_true",
+                        help="Qumulo storage type, use Qumulo api instead of scandir")
     parser.add_argument("--gourcert", action="store_true",
                         help="Get realtime crawl data from ES for gource")
     parser.add_argument("--gourcemt", action="store_true",
@@ -1098,6 +1124,9 @@ def calc_dir_sizes(cliargs, logger, path=None, addstats=False):
         # add elapsed time crawl stat to es
         add_crawl_stats(es, cliargs['index'], rootdir_path, (time.time() - starttime), "main")
 
+    # sleep a little bit before refreshing index
+    time.sleep(2)
+
     # refresh index
     es.indices.refresh(index=cliargs['index'])
 
@@ -1111,12 +1140,15 @@ def calc_dir_sizes(cliargs, logger, path=None, addstats=False):
         batchsize = adaptivebatch_startsize
     else:
         batchsize = cliargs['batchsize']
+    if cliargs['verbose'] or cliargs['debug']:
+        logger.info('Batch size: %s' % batchsize)
     for d in dirlist:
         dirbatch.append(d)
         if len(dirbatch) >= batchsize:
             q.enqueue(diskover_worker_bot.calc_dir_size,
                     args=(dirbatch, cliargs,))
             del dirbatch[:]
+            batchsize_prev = batchsize
             if cliargs['adaptivebatch']:
                 if len(q) == 0:
                     if (batchsize - 10) >= adaptivebatch_startsize:
@@ -1125,6 +1157,9 @@ def calc_dir_sizes(cliargs, logger, path=None, addstats=False):
                     if (batchsize + 10) <= adaptivebatch_maxsize:
                         batchsize = batchsize + 10
                 cliargs['batchsize'] = batchsize
+                if cliargs['verbose'] or cliargs['debug']:
+                    if batchsize_prev != batchsize:
+                        logger.info('Batch size: %s' % batchsize)
 
     # add any remaining in batch to queue
     q.enqueue(diskover_worker_bot.calc_dir_size,
@@ -1138,7 +1173,7 @@ def treewalk(path, num_sep, level, batchsize, workers, bar, cliargs, reindex_dic
     global totaljobs
     batch = []
     for root, dirs, files in walk(path):
-        if not dir_excluded(root, config, cliargs['verbose']):
+        if not dir_excluded(root, config, logger, cliargs['verbose']):
             if len(dirs) == 0 and len(files) == 0 and not cliargs['indexemptydirs']:
                 continue
             batch.append((root, files))
@@ -1147,6 +1182,7 @@ def treewalk(path, num_sep, level, batchsize, workers, bar, cliargs, reindex_dic
                           args=(batch, cliargs, reindex_dict,))
                 totaljobs += 1
                 del batch[:]
+                batchsize_prev = batchsize
                 if cliargs['adaptivebatch']:
                     if len(q) == 0:
                         if (batchsize - 10) >= adaptivebatch_startsize:
@@ -1155,6 +1191,9 @@ def treewalk(path, num_sep, level, batchsize, workers, bar, cliargs, reindex_dic
                         if (batchsize + 10) <= adaptivebatch_maxsize:
                             batchsize = batchsize + 10
                     cliargs['batchsize'] = batchsize
+                    if cliargs['verbose'] or cliargs['debug']:
+                        if batchsize_prev != batchsize:
+                            logger.info('Batch size: %s' % batchsize)
 
             # check if at maxdepth level and delete dirs/files lists to not
             # descend further down the tree
@@ -1166,7 +1205,7 @@ def treewalk(path, num_sep, level, batchsize, workers, bar, cliargs, reindex_dic
             del dirs[:]
             del files[:]
 
-        if not cliargs['quiet']:
+        if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
             try:
                 percent = int("{0:.0f}".format(100 * ((totaljobs - len(q)) / float(totaljobs))))
                 bar.update(percent)
@@ -1174,10 +1213,6 @@ def treewalk(path, num_sep, level, batchsize, workers, bar, cliargs, reindex_dic
                 bar.update(0)
             except ValueError:
                 bar.update(0)
-
-        # while len(Worker.all(queue=q)) == 0:
-        #    logger.info('Waiting for diskover worker bots to start...')
-        #    time.sleep(2)
 
     # add any remaining in batch to queue
     q.enqueue(diskover_worker_bot.scrape_tree_meta,
@@ -1206,13 +1241,19 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
             batchsize = adaptivebatch_startsize
             cliargs['batchsize'] = batchsize
             logger.info("Sending adaptive batches to worker bots")
+            if cliargs['verbose'] or cliargs['debug']:
+                logger.info('Batch size: %s' % batchsize)
         else:
             batchsize = cliargs['batchsize']
+            if cliargs['verbose'] or cliargs['debug']:
+                logger.info('Batch size: %s' % batchsize)
             logger.info("Sending batches of %s to worker bots", batchsize)
 
-        if not cliargs['quiet']:
+        if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
             bar = progress_bar()
             bar.start()
+        else:
+            bar = None
 
         # set maxdepth level to 1 if reindex or crawlbot (non-recursive)
         if cliargs['reindex'] or cliargs['crawlbot']:
@@ -1224,32 +1265,37 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
         # set current depth
         num_sep = path.count(os.path.sep)
 
-        root_files = []
-        for entry in scandir(path):
-            if entry.is_file(follow_symlinks=False):
-                root_files.append(entry.name)
-        # enqueue rootdir files
-        q.enqueue(diskover_worker_bot.scrape_tree_meta,
-              args=([(path, root_files)], cliargs, reindex_dict,))
-        totaljobs += 1
+        if cliargs['qumulo']:
+            # walk tree using Qumulo api
+            diskover_qumulo.qumulo_treewalk(path, qumulo_ip, qumulo_ses, num_sep, level, batchsize,
+                                            workers, bar, cliargs, logger, reindex_dict)
+        else:
+            root_files = []
+            for entry in scandir(path):
+                if entry.is_file(follow_symlinks=False):
+                    root_files.append(entry.name)
+            # enqueue rootdir files
+            q.enqueue(diskover_worker_bot.scrape_tree_meta,
+                      args=([(path, root_files)], cliargs, reindex_dict,))
+            totaljobs += 1
 
-        thread_list = []
-        # set up threads to parallel crawl directories at rootdir
-        for entry in scandir(path):
-            if entry.is_dir(follow_symlinks=False):
-                thread = threading.Thread(target=treewalk,
-                                          args=(entry.path, num_sep, level, batchsize,
-                                                workers, bar, cliargs, reindex_dict,))
-                thread.start()
-                thread_list.append(thread)
+            thread_list = []
+            # set up threads to parallel crawl directories at rootdir
+            for entry in scandir(path):
+                if entry.is_dir(follow_symlinks=False):
+                    thread = threading.Thread(target=treewalk,
+                                              args=(entry.path, num_sep, level, batchsize,
+                                                    workers, bar, cliargs, reindex_dict,))
+                    thread.start()
+                    thread_list.append(thread)
 
-        # wait for the threads to finish
-        for thread in thread_list:
-            thread.join()
+            # wait for the threads to finish
+            for thread in thread_list:
+                thread.join()
 
         # wait for queue to be empty
         while True:
-            if not cliargs['quiet']:
+            if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
                 try:
                     percent = int("{0:.0f}".format(100 * ((totaljobs - len(q)) / float(totaljobs))))
                     bar.update(percent)
@@ -1264,7 +1310,7 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
         print("Ctrl-c keyboard interrupt, shutting down...")
         sys.exit(0)
 
-    if not cliargs['quiet']:
+    if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
         bar.finish()
     logger.info('Finished crawling!')
 
@@ -1304,6 +1350,10 @@ if __name__ == "__main__":
     # set up logging
     logger = log_setup()
 
+    if not cliargs['quiet'] and not cliargs['gourcert'] and not cliargs['gourcemt']:
+        # print random banner
+        print_banner(version)
+
     # list plugins
     if cliargs['listplugins']:
         print("diskover plugins:")
@@ -1315,10 +1365,13 @@ if __name__ == "__main__":
                     cliargs['index'].split('-')[0] != "diskover":
         print('Please name your index: diskover-<string>')
         sys.exit(0)
-
-    if not cliargs['quiet'] and not cliargs['gourcert'] and not cliargs['gourcemt']:
-        # print random banner
-        print_banner(version)
+    # check index name for Qumulo storage
+    if cliargs['qumulo']:
+        if cliargs['index'] == "diskover-qumulo" or \
+                (cliargs['index'].split('-')[0] != "diskover" or
+                         cliargs['index'].split('-')[1] != "qumulo"):
+            print('Please name your index: diskover-qumulo-<string>')
+            sys.exit(0)
 
     # check for listen socket cli flag to start socket server
     if cliargs['listen']:
@@ -1376,29 +1429,47 @@ if __name__ == "__main__":
         logger.info("Plugins loaded: %s", plugins_list)
 
     # check if rootdir exists
-    if not os.path.exists(cliargs['rootdir']) or not \
-            os.path.isdir(cliargs['rootdir']):
-        logger.error("Rootdir path not found or not a directory, exiting")
-        sys.exit(1)
-    else:
-        logger.debug('Excluded dirs: %s', config['excluded_dirs'])
-        # set rootdir_path to absolute path
-        rootdir_path = os.path.abspath(cliargs['rootdir'])
-        # remove any trailing slash unless root /
-        if rootdir_path is not '/':
-            rootdir_path = rootdir_path.rstrip(os.path.sep)
-        # check exclude
-        if dir_excluded(rootdir_path, config, cliargs['verbose']):
-            logger.info("Directory in exclude list, exiting")
+    if cliargs['qumulo']:
+        if IS_PY3:
+            print('Python 3 not supported using --qumulo, please use Python 2.7.')
             sys.exit(0)
-        cliargs['rootdir'] = rootdir_path
-        # convert to unicode if python2
-        if not IS_PY3:
-            rootdir_path = unicode(rootdir_path)
-
-    # warn if not running as root
-    if os.geteuid():
-        logger.warning('Not running as root, you may not be able to crawl all files')
+        try:
+            import diskover_qumulo
+        except ImportError:
+            raise ImportError("Can't find diskover_qumulo module")
+        logger.info('Using Qumulo storage api instead of scandir (--qumulo)')
+        global qumulo_ip
+        global qumulo_ses
+        qumulo_ip, qumulo_ses = diskover_qumulo.qumulo_connection()
+        logger.info('Connected to Qumulo api at %s' % qumulo_ip)
+        # check using qumulo api
+        try:
+            diskover_qumulo.qumulo_get_file_attr(cliargs['rootdir'], qumulo_ip, qumulo_ses)
+        except ValueError:
+            logger.error("Rootdir path not found or not a directory, exiting")
+            sys.exit(1)
+    else:
+        # warn if not running as root
+        if os.geteuid():
+            logger.warning('Not running as root, you may not be able to crawl all files')
+        if not os.path.exists(cliargs['rootdir']) or not \
+                os.path.isdir(cliargs['rootdir']):
+            logger.error("Rootdir path not found or not a directory, exiting")
+            sys.exit(1)
+    logger.debug('Excluded dirs: %s', config['excluded_dirs'])
+    # set rootdir_path to absolute path
+    rootdir_path = os.path.abspath(cliargs['rootdir'])
+    # remove any trailing slash unless root /
+    if rootdir_path != '/':
+        rootdir_path = rootdir_path.rstrip(os.path.sep)
+    # check exclude
+    if dir_excluded(rootdir_path, config, logger, cliargs['verbose']):
+        logger.info("Directory in exclude list, exiting")
+        sys.exit(0)
+    cliargs['rootdir'] = rootdir_path
+    # convert to unicode if python2
+    if not IS_PY3:
+        rootdir_path = unicode(rootdir_path)
 
     # warn if indexing 0 Byte empty files
     if cliargs['minsize'] == 0:
@@ -1427,7 +1498,10 @@ if __name__ == "__main__":
     time.sleep(.5)
 
     # add disk space info to es index
-    add_diskspace(cliargs['index'], rootdir_path)
+    if cliargs['qumulo']:
+        diskover_qumulo.qumulo_add_diskspace(es, cliargs['index'], rootdir_path, qumulo_ip, qumulo_ses, logger)
+    else:
+        add_diskspace(cliargs['index'], rootdir_path)
 
     starttime = time.time()
 

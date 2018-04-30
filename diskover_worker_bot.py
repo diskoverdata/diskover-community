@@ -177,6 +177,9 @@ def get_dir_meta(path, cliargs, reindex_dict, bot_logger):
                 gids.append(gid)
                 groups[gid] = group
 
+        inode = lstat_path.st_ino
+        hardlinks = lstat_path.st_nlink
+
         filename = os.path.basename(path)
         parentdir = os.path.abspath(os.path.join(path, os.pardir))
         fullpath = os.path.abspath(os.path.join(parentdir, filename))
@@ -189,6 +192,8 @@ def get_dir_meta(path, cliargs, reindex_dict, bot_logger):
             "last_modified": mtime_utc,
             "last_access": atime_utc,
             "last_change": ctime_utc,
+            "hardlinks": hardlinks,
+            "inode": inode,
             "owner": owner,
             "group": group,
             "tag": "",
@@ -491,12 +496,13 @@ def es_bulk_adder(result, cliargs, bot_logger):
 
 def get_metadata(path, cliargs):
     dir_source = ""
+    filename = diskover.escape_chars(os.path.basename(path))
+    parent_dir = diskover.escape_chars(os.path.abspath(os.path.join(path, os.pardir)))
     data = {
         'size': 1,
         'query': {
             'query_string': {
-                'query': 'filename: "' + os.path.basename(path) + '" AND path_parent: "'
-                         + os.path.abspath(os.path.join(path, os.pardir)) + '"'
+                'query': 'filename: ' + filename + ' AND path_parent: ' + parent_dir
             }
         }
     }
@@ -510,7 +516,7 @@ def get_metadata(path, cliargs):
     data = {
         'query': {
             'query_string': {
-                'query': 'path_parent: "' + path + '"'
+                'query': 'path_parent: ' + parent_dir
             }
         }
     }
@@ -535,15 +541,25 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
     bot_logger = bot_log_setup(cliargs)
     jobstart = time.time()
     tree = []
+    if cliargs['qumulo']:
+        import diskover_qumulo
 
     for path in paths:
         starttime = time.time()
         root, files = path
-        dmeta = get_dir_meta(root, cliargs, reindex_dict, bot_logger)
+        if cliargs['qumulo']:
+            if root['path'] != '/':
+                root_path = root['path'].rstrip(os.path.sep)
+            else:
+                root_path = root['path']
+            dmeta = diskover_qumulo.qumulo_get_dir_meta(root, cliargs, reindex_dict, bot_logger, redis_conn)
+        else:
+            root_path = root
+            dmeta = get_dir_meta(root, cliargs, reindex_dict, bot_logger)
         if dmeta == "sametimes":
             # fetch meta data for directory and all it's files (doc sources) from index2 since
             # directory times haven't changed
-            dir_source, files_source = get_metadata(root, cliargs)
+            dir_source, files_source = get_metadata(root_path, cliargs)
             worker = get_worker_name()
             datenow = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
             for file_source in files_source:
@@ -558,15 +574,18 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
                 # update worker name
                 dir_source['worker_name'] = worker
                 tree.append(('directory', dir_source))
-                tree.append(('crawltime', root, (time.time() - starttime)))
+                tree.append(('crawltime', root_path, (time.time() - starttime)))
         else:  # get meta off disk since times different in Redis than on disk
             for file in files:
-                fmeta = get_file_meta(os.path.join(root, file), cliargs, reindex_dict, bot_logger)
+                if cliargs['qumulo']:
+                    fmeta = diskover_qumulo.qumulo_get_file_meta(file, cliargs, reindex_dict, bot_logger)
+                else:
+                    fmeta = get_file_meta(os.path.join(root, file), cliargs, reindex_dict, bot_logger)
                 if fmeta:
                     tree.append(('file', fmeta))
             if dmeta:
                 tree.append(('directory', dmeta))
-                tree.append(('crawltime', root, (time.time() - starttime)))
+                tree.append(('crawltime', root_path, (time.time() - starttime)))
 
     if len(tree) > 0:
         es_bulk_adder(tree, cliargs, bot_logger)

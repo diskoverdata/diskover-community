@@ -1,11 +1,25 @@
 # Diskover Change Log
 
+## [1.5.0-rc4] = 2018-05-01
+### notice
+- Qumulo api support is beta and supports only Python 2.7.
+- Qumulo requires python module qumulo-api, install using pip (no python 3 module)
+- no file/dir access times in diskover-qumulo-name indices, not supported in Qumulo api
+### added
+- Qumulo api support, new --qumulo cli option, Qumulo api will be used instead of scandir, requires index names diskover-qumulo-<string>
+- diskover_qumulo.py module
+- different ES index mappings for qumulo (removed last_access, added creation_time) (Qumulo api does not have file access time)
+- hardlinks, inode fields to directory mappings/docs
+### fixed
+- occasional issue where not all directories were getting calculated (added sleep before index refresh and getting directory docs)
+- progress bar showing when running in debug or verbose
+- unicode decode errors when using -I and paths with special characters
+
 ## [1.5.0-rc3] = 2018-04-26
 ### added
 - adaptivebatch_maxsize global variable to control max size (number of directories in batch) sent to Redis (set to 500)
 - @, ', " to escape_chars function in diskover.py
 - added includes section to diskover.cfg to whitelist dirs/files
-
 ### changed
 - improved -a adaptivebatch algorithm
 - adaptivebatch_startsize is now set to 10 (prev was 5)
