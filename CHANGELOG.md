@@ -1,6 +1,6 @@
 # Diskover Change Log
 
-## [1.5.0-rc4] = 2018-05-01
+## [1.5.0-rc4] = 2018-05-02
 ### notice
 - Qumulo api support is beta and supports only Python 2.7.
 - Qumulo requires python module qumulo-api, install using pip (no python 3 module)
@@ -12,6 +12,7 @@
 - qumulo section to diskover.cfg.sample
 - hardlinks, inode fields to directory mappings/docs
 - improved screen output logging for worker bots
+- $ to escape_chars function
 ### changed
 - moved file_excluded function to diskover_worker_bot.py module
 ### fixed
