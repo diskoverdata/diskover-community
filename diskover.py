@@ -1153,15 +1153,7 @@ def treewalk(path, num_sep, level, batchsize, workers, bar, cliargs, reindex_dic
     batch = []
 
     for root, dirs, files in walk(path):
-        if cliargs['qumulo']:
-            if root['path'] != '/':
-                root_path = root['path'].rstrip(os.path.sep)
-            else:
-                root_path = root['path']
-        else:
-            root_path = root
-
-        if not dir_excluded(root_path, config, cliargs['verbose']):
+        if not dir_excluded(root, config, cliargs['verbose']):
             if len(dirs) == 0 and len(files) == 0 and not cliargs['indexemptydirs']:
                 continue
 
