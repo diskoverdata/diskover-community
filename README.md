@@ -58,6 +58,7 @@ Install the above Python modules using pip.
 * [Kibana](https://www.elastic.co/products/kibana) (for visualizing Elasticsearch data, tested on Kibana 5.4.2, 5.6.4)
 * [X-Pack](https://www.elastic.co/downloads/x-pack) (Kibana plugin for graphs, reports, monitoring and http auth)
 * [Gource](http://gource.io) (for Gource visualizations of diskover Elasticsearch data, see videos above)
+* `Python qumulo-api module` (for using Qumulo storage api, --qumulo cli option, install with pip, Python 2.7. only)
 
 ### Download
 
