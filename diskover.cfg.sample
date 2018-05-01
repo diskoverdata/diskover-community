@@ -76,3 +76,11 @@ threads = 8
 [gource]
 ; should be set to same in diskover-gource.sh
 maxfilelag = 0.1
+
+[qumulo]
+; Qumulo host
+;cluster = 172.16.129.10
+; Qumulo api user
+;api_user = admin
+; Qumulo api password
+;api_password = admin

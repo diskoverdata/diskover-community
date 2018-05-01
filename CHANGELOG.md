@@ -9,6 +9,7 @@
 - Qumulo api support, new --qumulo cli option, Qumulo api will be used instead of scandir, requires index names diskover-qumulo-<string>
 - diskover_qumulo.py module
 - different ES index mappings for qumulo (removed last_access, added creation_time) (Qumulo api does not have file access time)
+- qumulo section to diskover.cfg.sample
 - hardlinks, inode fields to directory mappings/docs
 ### fixed
 - occasional issue where not all directories were getting calculated (added sleep before index refresh and getting directory docs)
