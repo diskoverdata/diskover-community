@@ -485,10 +485,10 @@ def get_metadata(path, cliargs):
     filename = diskover.escape_chars(os.path.basename(path))
     parent_dir = diskover.escape_chars(os.path.abspath(os.path.join(path, os.pardir)))
     data = {
-        'size': 1,
-        'query': {
-            'query_string': {
-                'query': 'filename: ' + filename + ' AND path_parent: ' + parent_dir
+        "size": 1,
+        "query": {
+            "query_string": {
+                "query": "filename: " + filename + " AND path_parent: " + parent_dir
             }
         }
     }
@@ -500,9 +500,9 @@ def get_metadata(path, cliargs):
         pass
 
     data = {
-        'query': {
-            'query_string': {
-                'query': 'path_parent: ' + parent_dir
+        "query": {
+            "query_string": {
+                "query": "path_parent: " + parent_dir
             }
         }
     }
