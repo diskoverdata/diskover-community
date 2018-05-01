@@ -11,6 +11,9 @@
 - different ES index mappings for qumulo (removed last_access, added creation_time) (Qumulo api does not have file access time)
 - qumulo section to diskover.cfg.sample
 - hardlinks, inode fields to directory mappings/docs
+- improved screen output logging for worker bots
+### changed
+- moved file_excluded function to diskover_worker_bot.py module
 ### fixed
 - occasional issue where not all directories were getting calculated (added sleep before index refresh and getting directory docs)
 - progress bar showing when running in debug or verbose

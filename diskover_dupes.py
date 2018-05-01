@@ -17,11 +17,12 @@ import base64
 import hashlib
 import os
 
-def index_dupes(hashgroup, cliargs, bot_logger):
+def index_dupes(hashgroup, cliargs):
     """This is the ES dupe_md5 tag update function.
     It updates a file's dupe_md5 field to be md5sum of file
     if it's marked as a duplicate.
     """
+    bot_logger = diskover_worker_bot.bot_logger
     # create Elasticsearch connection
     es = diskover.elasticsearch_connect(diskover.config)
     file_id_list = []
@@ -41,7 +42,7 @@ def index_dupes(hashgroup, cliargs, bot_logger):
         diskover.index_bulk_add(es, file_id_list, 'file', diskover.config, cliargs)
 
 
-def verify_dupes(hashgroup, cliargs, bot_logger):
+def verify_dupes(hashgroup, cliargs):
     """This is the verify dupes function.
     It processes files in hashgroup to verify if they are duplicate.
     The first few bytes at beginning and end of files are
@@ -50,6 +51,8 @@ def verify_dupes(hashgroup, cliargs, bot_logger):
     is updated to their md5sum.
     Returns hashgroup.
     """
+
+    bot_logger = diskover_worker_bot.bot_logger
 
     if cliargs['verbose']:
         bot_logger.info('Processing %s files in hashgroup: %s' %
@@ -193,10 +196,12 @@ def verify_dupes(hashgroup, cliargs, bot_logger):
         return None
 
 
-def populate_hashgroup(key, cliargs, bot_logger):
+def populate_hashgroup(key, cliargs):
     """Searches ES for all files matching hashgroup key (filehash)
     and returns dict containing matching files.
     """
+
+    bot_logger = diskover_worker_bot.bot_logger
 
     # create Elasticsearch connection
     es = diskover.elasticsearch_connect(diskover.config)

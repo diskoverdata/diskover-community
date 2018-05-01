@@ -891,7 +891,7 @@ def add_crawl_stats_bulk(es, crawltimelist, worker_name, config, cliargs):
     index_bulk_add(es, crawlstats, 'crawlstat', config, cliargs)
 
 
-def dir_excluded(path, config, logger, verbose):
+def dir_excluded(path, config, verbose):
     """Return True if path in excluded_dirs set,
     False if not in the list"""
     # return if directory in included list (whitelist)
@@ -919,27 +919,6 @@ def dir_excluded(path, config, logger, verbose):
                 if verbose:
                     logger.info('Skipping (excluded dir) %s', path)
                 return True
-    return False
-
-
-def file_excluded(filename, extension, path, config, logger, verbose):
-    """Return True if path or ext in excluded_files set,
-    False if not in the set"""
-    # return if filename in included list (whitelist)
-    if filename in config['included_files']:
-        return False
-    # check for extension in and . (dot) files in excluded_files
-    if (not extension and 'NULLEXT' in config['excluded_files']) or \
-            '*.' + extension in config['excluded_files'] or \
-            (filename.startswith('.') and u'.*' in config['excluded_files']):
-        if verbose:
-            logger.info('Skipping (excluded file) %s', path)
-        return True
-    # check for filename in excluded_files set
-    if filename in config['excluded_files']:
-        if verbose:
-            logger.info('Skipping (excluded file) %s', path)
-        return True
     return False
 
 
@@ -1172,10 +1151,20 @@ def treewalk(path, num_sep, level, batchsize, workers, bar, cliargs, reindex_dic
     import diskover_worker_bot
     global totaljobs
     batch = []
+
     for root, dirs, files in walk(path):
-        if not dir_excluded(root, config, logger, cliargs['verbose']):
+        if cliargs['qumulo']:
+            if root['path'] != '/':
+                root_path = root['path'].rstrip(os.path.sep)
+            else:
+                root_path = root['path']
+        else:
+            root_path = root
+
+        if not dir_excluded(root_path, config, cliargs['verbose']):
             if len(dirs) == 0 and len(files) == 0 and not cliargs['indexemptydirs']:
                 continue
+
             batch.append((root, files))
             if len(batch) >= batchsize:
                 q.enqueue(diskover_worker_bot.scrape_tree_meta,
@@ -1201,6 +1190,7 @@ def treewalk(path, num_sep, level, batchsize, workers, bar, cliargs, reindex_dic
             if num_sep + level <= num_sep_this:
                 del dirs[:]
                 del files[:]
+
         else:  # directory excluded
             del dirs[:]
             del files[:]
@@ -1268,7 +1258,7 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
         if cliargs['qumulo']:
             # walk tree using Qumulo api
             diskover_qumulo.qumulo_treewalk(path, qumulo_ip, qumulo_ses, num_sep, level, batchsize,
-                                            workers, bar, cliargs, logger, reindex_dict)
+                                            workers, bar, cliargs, reindex_dict)
         else:
             root_files = []
             for entry in scandir(path):
@@ -1463,7 +1453,7 @@ if __name__ == "__main__":
     if rootdir_path != '/':
         rootdir_path = rootdir_path.rstrip(os.path.sep)
     # check exclude
-    if dir_excluded(rootdir_path, config, logger, cliargs['verbose']):
+    if dir_excluded(rootdir_path, config, cliargs['verbose']):
         logger.info("Directory in exclude list, exiting")
         sys.exit(0)
     cliargs['rootdir'] = rootdir_path
@@ -1496,6 +1486,10 @@ if __name__ == "__main__":
     # create Elasticsearch index
     index_create(cliargs['index'])
     time.sleep(.5)
+
+    # check if using prev index for metadata
+    if cliargs['index2']:
+        logger.info('Using %s for metadata cache' % cliargs['index2'][0])
 
     # add disk space info to es index
     if cliargs['qumulo']:

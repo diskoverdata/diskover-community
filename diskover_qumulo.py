@@ -25,6 +25,8 @@ import ujson
 from datetime import datetime
 import time
 import hashlib
+import pwd
+import grp
 
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -78,8 +80,8 @@ def qumulo_get_file_attr(path, ip, ses):
         'name': d['name'],
         'path': d['path'],
         'size': d['size'],
-        'owner': d['owner'],
-        'group': d['group'],
+        'owner': d['owner_details']['id_value'],
+        'group': d['group_details']['id_value'],
         'creation_time': d['creation_time'].partition('.')[0].rstrip('Z'),
         'modification_time': d['modification_time'].partition('.')[0].rstrip('Z'),
         'change_time': d['change_time'].partition('.')[0].rstrip('Z'),
@@ -105,8 +107,8 @@ def qumulo_api_walk(top, ip, ses):
                 'name': d['name'],
                 'path': d['path'],
                 'size': d['size'],
-                'owner': d['owner'],
-                'group': d['group'],
+                'owner': d['owner_details']['id_value'],
+                'group': d['group_details']['id_value'],
                 'creation_time': d['creation_time'].partition('.')[0].rstrip('Z'),
                 'modification_time': d['modification_time'].partition('.')[0].rstrip('Z'),
                 'change_time': d['change_time'].partition('.')[0].rstrip('Z'),
@@ -125,15 +127,18 @@ def qumulo_api_walk(top, ip, ses):
             yield entry
 
 
-def qumulo_treewalk(path, ip, ses, num_sep, level, batchsize,
-                    workers, bar, cliargs, logger, reindex_dict):
+def qumulo_treewalk(path, ip, ses, num_sep, level, batchsize, workers, bar, cliargs, reindex_dict):
     batch = []
+
     for root, dirs, files in qumulo_api_walk(path, ip, ses):
         if root['path'] != '/':
             root_path = root['path'].rstrip(os.path.sep)
-        if not diskover.dir_excluded(root_path, diskover.config, logger, cliargs['verbose']):
+        else:
+            root_path = root['path']
+        if not diskover.dir_excluded(root_path, diskover.config, cliargs['verbose']):
             if len(dirs) == 0 and len(files) == 0 and not cliargs['indexemptydirs']:
                 continue
+
             batch.append((root, files))
             if len(batch) >= batchsize:
                 diskover.q.enqueue(diskover_worker_bot.scrape_tree_meta,
@@ -151,7 +156,7 @@ def qumulo_treewalk(path, ip, ses, num_sep, level, batchsize,
                     cliargs['batchsize'] = batchsize
                     if cliargs['verbose'] or cliargs['debug']:
                         if batchsize_prev != batchsize:
-                            logger.info('Batch size: %s' % batchsize)
+                            diskover.logger.info('Batch size: %s' % batchsize)
 
             # check if at maxdepth level and delete dirs/files lists to not
             # descend further down the tree
@@ -159,6 +164,7 @@ def qumulo_treewalk(path, ip, ses, num_sep, level, batchsize,
             if num_sep + level <= num_sep_this:
                 del dirs[:]
                 del files[:]
+
         else:  # directory excluded
             del dirs[:]
             del files[:]
@@ -179,7 +185,7 @@ def qumulo_treewalk(path, ip, ses, num_sep, level, batchsize,
     diskover.totaljobs += 1
 
 
-def qumulo_get_dir_meta(path, cliargs, reindex_dict, bot_logger, redis_conn):
+def qumulo_get_dir_meta(path, cliargs, reindex_dict, redis_conn):
     if path['path'] != '/':
         fullpath = path['path'].rstrip(os.path.sep)
     else:
@@ -200,6 +206,50 @@ def qumulo_get_dir_meta(path, cliargs, reindex_dict, bot_logger, redis_conn):
                 return "sametimes"
     # get time now in utc
     indextime_utc = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
+    # get user id of owner
+    uid = int(path['owner'])
+    # try to get owner user name
+    # first check cache
+    if uid in diskover_worker_bot.uids:
+        owner = diskover_worker_bot.owners[uid]
+    # not in cache
+    else:
+        try:
+            owner = pwd.getpwuid(uid).pw_name.split('\\')
+            # remove domain before owner
+            if len(owner) == 2:
+                owner = owner[1]
+            else:
+                owner = owner[0]
+        # if we can't find the owner's user name, use the uid number
+        except KeyError:
+            owner = uid
+        # store it in cache
+        if not uid in diskover_worker_bot.uids:
+            diskover_worker_bot.uids.append(uid)
+            diskover_worker_bot.owners[uid] = owner
+    # get group id
+    gid = int(path['group'])
+    # try to get group name
+    # first check cache
+    if gid in diskover_worker_bot.gids:
+        group = diskover_worker_bot.groups[gid]
+    # not in cache
+    else:
+        try:
+            group = grp.getgrgid(gid).gr_name.split('\\')
+            # remove domain before group
+            if len(group) == 2:
+                group = group[1]
+            else:
+                group = group[0]
+        # if we can't find the group name, use the gid number
+        except KeyError:
+            group = gid
+        # store in cache
+        if not gid in diskover_worker_bot.gids:
+            diskover_worker_bot.gids.append(gid)
+            diskover_worker_bot.groups[gid] = group
 
     filename = path['name']
     parentdir = os.path.abspath(os.path.join(fullpath, os.pardir))
@@ -214,8 +264,8 @@ def qumulo_get_dir_meta(path, cliargs, reindex_dict, bot_logger, redis_conn):
         "last_change": ctime_utc,
         "hardlinks": path['num_links'],
         "inode": path['id'],
-        "owner": path['owner'],
-        "group": path['group'],
+        "owner": owner,
+        "group": group,
         "tag": "",
         "tag_custom": "",
         "indexing_date": indextime_utc,
@@ -246,13 +296,12 @@ def qumulo_get_dir_meta(path, cliargs, reindex_dict, bot_logger, redis_conn):
     return dirmeta_dict
 
 
-def qumulo_get_file_meta(path, cliargs, reindex_dict, bot_logger):
+def qumulo_get_file_meta(path, cliargs, reindex_dict):
     filename = path['name']
 
     # check if file is in exluded_files list
     extension = os.path.splitext(filename)[1][1:].strip().lower()
-    if diskover.file_excluded(filename, extension, path['path'],
-                              diskover.config, bot_logger, cliargs['verbose']):
+    if diskover_worker_bot.file_excluded(filename, extension, path['path'], cliargs['verbose']):
         return None
 
     # get file size (bytes)
@@ -285,6 +334,50 @@ def qumulo_get_file_meta(path, cliargs, reindex_dict, bot_logger):
     indextime_utc = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
     # get absolute path of parent directory
     parentdir = os.path.abspath(os.path.join(path['path'], os.pardir))
+    # get user id of owner
+    uid = int(path['owner'])
+    # try to get owner user name
+    # first check cache
+    if uid in diskover_worker_bot.uids:
+        owner = diskover_worker_bot.owners[uid]
+    # not in cache
+    else:
+        try:
+            owner = pwd.getpwuid(uid).pw_name.split('\\')
+            # remove domain before owner
+            if len(owner) == 2:
+                owner = owner[1]
+            else:
+                owner = owner[0]
+        # if we can't find the owner's user name, use the uid number
+        except KeyError:
+            owner = uid
+        # store it in cache
+        if not uid in diskover_worker_bot.uids:
+            diskover_worker_bot.uids.append(uid)
+            diskover_worker_bot.owners[uid] = owner
+    # get group id
+    gid = int(path['group'])
+    # try to get group name
+    # first check cache
+    if gid in diskover_worker_bot.gids:
+        group = diskover_worker_bot.groups[gid]
+    # not in cache
+    else:
+        try:
+            group = grp.getgrgid(gid).gr_name.split('\\')
+            # remove domain before group
+            if len(group) == 2:
+                group = group[1]
+            else:
+                group = group[0]
+        # if we can't find the group name, use the gid number
+        except KeyError:
+            group = gid
+        # store in cache
+        if not gid in diskover_worker_bot.gids:
+            diskover_worker_bot.gids.append(gid)
+            diskover_worker_bot.groups[gid] = group
 
     # create file metadata dictionary
     filemeta_dict = {
@@ -292,8 +385,8 @@ def qumulo_get_file_meta(path, cliargs, reindex_dict, bot_logger):
         "extension": extension,
         "path_parent": parentdir,
         "filesize": size,
-        "owner": path['owner'],
-        "group": path['group'],
+        "owner": owner,
+        "group": group,
         "last_modified": mtime_utc,
         "creation_time": creation_time_utc,
         "last_change": ctime_utc,
