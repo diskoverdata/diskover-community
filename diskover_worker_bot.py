@@ -484,6 +484,8 @@ def get_metadata(path, cliargs):
     dir_source = ""
     filename = diskover.escape_chars(os.path.basename(path))
     parent_dir = diskover.escape_chars(os.path.abspath(os.path.join(path, os.pardir)))
+    fullpath = diskover.escape_chars(os.path.abspath(path))
+
     data = {
         "size": 1,
         "query": {
@@ -502,7 +504,7 @@ def get_metadata(path, cliargs):
     data = {
         "query": {
             "query_string": {
-                "query": "path_parent: " + parent_dir
+                "query": "path_parent: " + fullpath
             }
         }
     }
