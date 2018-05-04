@@ -51,6 +51,8 @@ def qumulo_connect_api(qumulo_cluster_ips, qumulo_api_user, qumulo_api_password)
     rc = RestClient(ip, 8000)
     creds = rc.login(qumulo_api_user, qumulo_api_password)
     ses = requests.Session()
+    adapter = requests.adapters.HTTPAdapter(pool_maxsize=100)
+    ses.mount('https://', adapter)
     headers = {"Authorization": "Bearer %s" % str(creds.bearer_token)}
     ses.headers.update(headers)
     return ip, ses
@@ -90,7 +92,7 @@ def qumulo_get_file_attr(path, ip, ses):
     return path_dict
 
 
-def qumulo_api_walk(top, ip, ses):
+def qumulo_api_listdir(top, ip, ses):
     url = 'https://%s:8000/v1/files/%s/entries/?limit=1000000' % (ip, urllib.quote(top, safe=''))
     resp = ses.get(url, verify=False)
     items = ujson.loads(resp.text)['files']
@@ -116,6 +118,12 @@ def qumulo_api_walk(top, ip, ses):
             }
             nondirs.append(file)
 
+    return dirs, nondirs
+
+
+def qumulo_api_walk(top, ip, ses):
+    dirs, nondirs = qumulo_api_listdir(top, ip, ses)
+
     root = qumulo_get_file_attr(top, ip, ses)
 
     # Yield before recursion
@@ -127,7 +135,7 @@ def qumulo_api_walk(top, ip, ses):
             yield entry
 
 
-def qumulo_treewalk(path, ip, ses, num_sep, level, batchsize, workers, bar, cliargs, reindex_dict):
+def qumulo_treewalk(path, ip, ses, num_sep, level, batchsize, bar, cliargs, reindex_dict):
     batch = []
 
     for root, dirs, files in qumulo_api_walk(path, ip, ses):

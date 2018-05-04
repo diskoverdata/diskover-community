@@ -508,7 +508,6 @@ def get_metadata(path, cliargs):
             }
         }
     }
-
     files_source = []
     res = es.search(index=cliargs['index2'], doc_type='file', scroll='1m',
                     size=1000, body=data, request_timeout=diskover.config['es_timeout'])

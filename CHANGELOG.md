@@ -1,5 +1,12 @@
 # Diskover Change Log
 
+## [1.5.0-rc5] = 2018-05-04
+### added
+- threaded crawling for each top level subdir when using --qumulo (Qumulo api)
+- qumulo_api_listdir function to diskover_qumulo.py module
+### changed
+- qumulo_api_walk function to use qumulo_api_listdir
+
 ## [1.5.0-rc4] = 2018-05-02
 ### notice
 - Qumulo api support is beta and supports only Python 2.7.

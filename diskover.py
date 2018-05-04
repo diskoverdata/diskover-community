@@ -41,7 +41,7 @@ import sys
 import threading
 
 
-version = '1.5.0-rc4'
+version = '1.5.0-rc5'
 __version__ = version
 
 IS_PY3 = sys.version_info >= (3, 0)
@@ -1147,7 +1147,7 @@ def calc_dir_sizes(cliargs, logger, path=None, addstats=False):
     logger.info('Directories have all been enqueued, calculating in background')
 
 
-def treewalk(path, num_sep, level, batchsize, workers, bar, cliargs, reindex_dict):
+def treewalk(path, num_sep, level, batchsize, bar, cliargs, reindex_dict):
     import diskover_worker_bot
     global totaljobs
     batch = []
@@ -1222,7 +1222,7 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
         if cliargs['adaptivebatch']:
             batchsize = adaptivebatch_startsize
             cliargs['batchsize'] = batchsize
-            logger.info("Sending adaptive batches to worker bots")
+            logger.info("Sending adaptive batches to worker bots (-a)")
             if cliargs['verbose'] or cliargs['debug']:
                 logger.info('Batch size: %s' % batchsize)
         else:
@@ -1248,9 +1248,27 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
         num_sep = path.count(os.path.sep)
 
         if cliargs['qumulo']:
-            # walk tree using Qumulo api
-            diskover_qumulo.qumulo_treewalk(path, qumulo_ip, qumulo_ses, num_sep, level, batchsize,
-                                            workers, bar, cliargs, reindex_dict)
+            qumulo_ip, qumulo_ses = diskover_qumulo.qumulo_connection()
+            # use qumulo api to get dir list
+            dirs, files = diskover_qumulo.qumulo_api_listdir(path, qumulo_ip, qumulo_ses)
+            # enqueue rootdir files
+            root = diskover_qumulo.qumulo_get_file_attr(path, qumulo_ip, qumulo_ses)
+            q.enqueue(diskover_worker_bot.scrape_tree_meta,
+                      args=([(root, files)], cliargs, reindex_dict,))
+            totaljobs += 1
+
+            thread_list = []
+            # set up threads to parallel crawl directories at rootdir using qumulo api
+            for d_path in dirs:
+                thread = threading.Thread(target=diskover_qumulo.qumulo_treewalk,
+                                          args=(d_path, qumulo_ip, qumulo_ses, num_sep,
+                                                level, batchsize, bar, cliargs, reindex_dict,))
+                thread.start()
+                thread_list.append(thread)
+
+            # wait for the threads to finish
+            for thread in thread_list:
+                thread.join()
         else:
             root_files = []
             for entry in scandir(path):
@@ -1267,7 +1285,7 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
                 if entry.is_dir(follow_symlinks=False):
                     thread = threading.Thread(target=treewalk,
                                               args=(entry.path, num_sep, level, batchsize,
-                                                    workers, bar, cliargs, reindex_dict,))
+                                                    bar, cliargs, reindex_dict,))
                     thread.start()
                     thread_list.append(thread)
 
@@ -1415,13 +1433,8 @@ if __name__ == "__main__":
         if IS_PY3:
             print('Python 3 not supported using --qumulo, please use Python 2.7.')
             sys.exit(0)
-        try:
-            import diskover_qumulo
-        except ImportError:
-            raise ImportError("Can't find diskover_qumulo module")
-        logger.info('Using Qumulo storage api instead of scandir (--qumulo)')
-        global qumulo_ip
-        global qumulo_ses
+        import diskover_qumulo
+        logger.info('Connecting to Qumulo storage api... (--qumulo)')
         qumulo_ip, qumulo_ses = diskover_qumulo.qumulo_connection()
         logger.info('Connected to Qumulo api at %s' % qumulo_ip)
         # check using qumulo api
@@ -1481,7 +1494,7 @@ if __name__ == "__main__":
 
     # check if using prev index for metadata
     if cliargs['index2']:
-        logger.info('Using %s for metadata cache' % cliargs['index2'][0])
+        logger.info('Using %s for metadata cache (-I)' % cliargs['index2'][0])
 
     # add disk space info to es index
     if cliargs['qumulo']:
