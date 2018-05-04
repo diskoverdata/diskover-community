@@ -6,6 +6,8 @@
 - qumulo_api_listdir function to diskover_qumulo.py module
 ### changed
 - qumulo_api_walk function to use qumulo_api_listdir
+### fixed
+- issue with diskover_qumulo.py module and urllib.quote with paths with special characters like è (needed to encode utf-8)
 
 ## [1.5.0-rc4] = 2018-05-02
 ### notice

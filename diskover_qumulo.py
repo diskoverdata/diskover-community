@@ -72,10 +72,8 @@ def qumulo_connection():
 
 
 def qumulo_get_file_attr(path, ip, ses):
-    url = 'https://%s:8000/v1/files/%s/info/attributes' % (ip, urllib.quote(path, safe=''))
+    url = 'https://%s:8000/v1/files/%s/info/attributes' % (ip, urllib.quote(path.encode('utf-8'), safe=''))
     resp = ses.get(url, verify=False)
-    if resp.status_code == 404:
-        raise ValueError("Path not found")
     d = ujson.loads(resp.text)
     path_dict = {
         'id': d['id'],
@@ -93,7 +91,7 @@ def qumulo_get_file_attr(path, ip, ses):
 
 
 def qumulo_api_listdir(top, ip, ses):
-    url = 'https://%s:8000/v1/files/%s/entries/?limit=1000000' % (ip, urllib.quote(top, safe=''))
+    url = 'https://%s:8000/v1/files/%s/entries/?limit=1000000' % (ip, urllib.quote(top.encode('utf-8'), safe=''))
     resp = ses.get(url, verify=False)
     items = ujson.loads(resp.text)['files']
 
