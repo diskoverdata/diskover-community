@@ -1,5 +1,11 @@
 # Diskover Change Log
 
+## [1.5.0-rc6] = 2018-05-08
+### notice
+- requires diskover-web >= v1.5.0-rc5
+### added
+- items_files and items_subdirs fields (es mappings) for directory doc type for storing total files and subdirs items when calculating directory sizes
+
 ## [1.5.0-rc5] = 2018-05-04
 ### added
 - threaded crawling for each top level subdir when using --qumulo (Qumulo api)

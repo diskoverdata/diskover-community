@@ -176,7 +176,9 @@ def get_dir_meta(path, cliargs, reindex_dict):
             "filename": filename,
             "path_parent": parentdir,
             "filesize": 0,
-            "items": 1,  # itself
+            "items": 1,  # 1 for itself
+            "items_files": 0,
+            "items_subdirs": 0,
             "last_modified": mtime_utc,
             "last_access": atime_utc,
             "last_change": ctime_utc,
@@ -372,7 +374,9 @@ def calc_dir_size(dirlist, cliargs):
 
     for path in dirlist:
         totalsize = 0
-        totalitems = 1  # itself
+        totalitems = 1  # 1 for itself
+        totalitems_files = 0
+        totalitems_subdirs = 0
         # file doc search with aggregate for sum filesizes
         # escape special characters
         newpath = diskover.escape_chars(path[1])
@@ -424,7 +428,7 @@ def calc_dir_size(dirlist, cliargs):
                         request_timeout=diskover.config['es_timeout'])
 
         # total items sum
-        totalitems += res['hits']['total']
+        totalitems_files += res['hits']['total']
 
         # total file size sum
         totalsize += res['aggregations']['total_size']['value']
@@ -436,14 +440,19 @@ def calc_dir_size(dirlist, cliargs):
                         request_timeout=diskover.config['es_timeout'])
 
         # total items sum
-        totalitems += res['hits']['total']
+        totalitems_subdirs += res['hits']['total']
 
         # ES id of directory doc
         directoryid = path[0]
 
+        # total items
+        totalitems += totalitems_files + totalitems_subdirs
+
         # update filesize and items fields for directory (path) doc
         es.update(index=cliargs['index'], id=directoryid, doc_type='directory',
-                  body={"doc": {'filesize': totalsize, 'items': totalitems}})
+                  body={"doc": {'filesize': totalsize, 'items': totalitems,
+                                'items_files': totalitems_files,
+                                'items_subdirs': totalitems_subdirs}})
 
     elapsed_time = round(time.time() - jobstart, 3)
     bot_logger.info('*** FINISHED CALC DIR, Elapsed Time: ' + str(elapsed_time))

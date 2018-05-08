@@ -490,6 +490,12 @@ def index_create(indexname):
                         "items": {
                             "type": "long"
                         },
+                        "items_files": {
+                            "type": "long"
+                        },
+                        "items_subdirs": {
+                            "type": "long"
+                        },
                         "owner": {
                             "type": "keyword"
                         },

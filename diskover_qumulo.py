@@ -264,7 +264,9 @@ def qumulo_get_dir_meta(path, cliargs, reindex_dict, redis_conn):
         "filename": filename,
         "path_parent": parentdir,
         "filesize": 0,
-        "items": 1,  # itself
+        "items": 1,  # 1 for itself
+        "items_files": 0,
+        "items_subdirs": 0,
         "last_modified": mtime_utc,
         "creation_time": creation_time_utc,
         "last_change": ctime_utc,
@@ -532,6 +534,12 @@ def get_qumulo_mappings(config):
                         "type": "long"
                     },
                     "items": {
+                        "type": "long"
+                    },
+                    "items_files": {
+                        "type": "long"
+                    },
+                    "items_subdirs": {
                         "type": "long"
                     },
                     "owner": {
