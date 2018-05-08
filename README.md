@@ -19,7 +19,8 @@ diskover is written and maintained by Chris Park (shirosai) and runs on Linux an
 
 ## Screenshots
 
-<img align="left"width="400" src="https://github.com/shirosaidev/diskover/raw/master/docs/diskover-crawler-terminal-screenshot.png?raw=true" alt="diskover crawler"><img align="left" width="400" src="https://github.com/shirosaidev/diskover/raw/master/docs/diskover-workerbot-terminal-screenshot.png?raw=true" alt="diskover worker bot"><br>
+diskover crawler and workerbots running in terminal<br>
+<img align="left" width="400" src="https://github.com/shirosaidev/diskover/raw/master/docs/diskover-crawler-terminal-screenshot.png?raw=true" alt="diskover crawler"><img align="left" width="400" src="https://github.com/shirosaidev/diskover/raw/master/docs/diskover-workerbot-terminal-screenshot.png?raw=true" alt="diskover worker bot"><br>
 [diskover-web](https://github.com/shirosaidev/diskover-web) (diskover's web file manager, analytics app, file system search engine, rest-api)<br>
 <img align="left" width="400" src="https://github.com/shirosaidev/diskover-web/raw/master/docs/diskover-web-dashboard-screenshot.png?raw=true" alt="diskover-web dashboard">
 <img align="left" width="400" src="https://github.com/shirosaidev/diskover-web/raw/master/docs/diskover-web-filetree-screenshot.png?raw=true" alt="diskover-web file tree">
