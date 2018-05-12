@@ -213,49 +213,55 @@ def qumulo_get_dir_meta(path, cliargs, reindex_dict, redis_conn):
     # get time now in utc
     indextime_utc = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
     # get user id of owner
-    uid = int(path['owner'])
-    # try to get owner user name
-    # first check cache
-    if uid in diskover_worker_bot.uids:
-        owner = diskover_worker_bot.owners[uid]
-    # not in cache
-    else:
-        try:
-            owner = pwd.getpwuid(uid).pw_name.split('\\')
-            # remove domain before owner
-            if len(owner) == 2:
-                owner = owner[1]
-            else:
-                owner = owner[0]
-        # if we can't find the owner's user name, use the uid number
-        except KeyError:
-            owner = uid
-        # store it in cache
-        if not uid in diskover_worker_bot.uids:
-            diskover_worker_bot.uids.append(uid)
-            diskover_worker_bot.owners[uid] = owner
+    try:
+        uid = int(path['owner'])
+        # try to get owner user name
+        # first check cache
+        if uid in diskover_worker_bot.uids:
+            owner = diskover_worker_bot.owners[uid]
+        # not in cache
+        else:
+            try:
+                owner = pwd.getpwuid(uid).pw_name.split('\\')
+                # remove domain before owner
+                if len(owner) == 2:
+                    owner = owner[1]
+                else:
+                    owner = owner[0]
+            # if we can't find the owner's user name, use the uid number
+            except KeyError:
+                owner = uid
+            # store it in cache
+            if not uid in diskover_worker_bot.uids:
+                diskover_worker_bot.uids.append(uid)
+                diskover_worker_bot.owners[uid] = owner
+    except ValueError:  # Qumulo local user type
+        owner = path['owner']
     # get group id
-    gid = int(path['group'])
-    # try to get group name
-    # first check cache
-    if gid in diskover_worker_bot.gids:
-        group = diskover_worker_bot.groups[gid]
-    # not in cache
-    else:
-        try:
-            group = grp.getgrgid(gid).gr_name.split('\\')
-            # remove domain before group
-            if len(group) == 2:
-                group = group[1]
-            else:
-                group = group[0]
-        # if we can't find the group name, use the gid number
-        except KeyError:
-            group = gid
-        # store in cache
-        if not gid in diskover_worker_bot.gids:
-            diskover_worker_bot.gids.append(gid)
-            diskover_worker_bot.groups[gid] = group
+    try:
+        gid = int(path['group'])
+        # try to get group name
+        # first check cache
+        if gid in diskover_worker_bot.gids:
+            group = diskover_worker_bot.groups[gid]
+        # not in cache
+        else:
+            try:
+                group = grp.getgrgid(gid).gr_name.split('\\')
+                # remove domain before group
+                if len(group) == 2:
+                    group = group[1]
+                else:
+                    group = group[0]
+            # if we can't find the group name, use the gid number
+            except KeyError:
+                group = gid
+            # store in cache
+            if not gid in diskover_worker_bot.gids:
+                diskover_worker_bot.gids.append(gid)
+                diskover_worker_bot.groups[gid] = group
+    except ValueError:  # Qumulo local group type
+        group = path['group']
 
     filename = path['name']
     parentdir = os.path.abspath(os.path.join(fullpath, os.pardir))

@@ -1,10 +1,12 @@
 # Diskover Change Log
 
-## [1.5.0-rc6] = 2018-05-08
+## [1.5.0-rc6] = 2018-05-12
 ### notice
 - requires diskover-web >= v1.5.0-rc5
 ### added
 - items_files and items_subdirs fields (es mappings) for directory doc type for storing total files and subdirs items when calculating directory sizes
+### fixed
+- bug causing files not to be indexed when using qumulo crawl and file/directory owner/group is local type
 
 ## [1.5.0-rc5] = 2018-05-04
 ### added
