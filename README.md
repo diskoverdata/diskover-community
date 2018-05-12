@@ -19,6 +19,9 @@ diskover is written and maintained by Chris Park (shirosai) and runs on Linux an
 
 ## Screenshots
 
+diskover crawler and workerbots running in terminal<br>
+<img align="left" width="400" src="https://github.com/shirosaidev/diskover/raw/master/docs/diskover-crawler-terminal-screenshot.png?raw=true" alt="diskover crawler">
+<img align="left" width="400" src="https://github.com/shirosaidev/diskover/raw/master/docs/diskover-workerbot-terminal-screenshot.png?raw=true" alt="diskover worker bot"><br>
 [diskover-web](https://github.com/shirosaidev/diskover-web) (diskover's web file manager, analytics app, file system search engine, rest-api)<br>
 <img align="left" width="400" src="https://github.com/shirosaidev/diskover-web/raw/master/docs/diskover-web-dashboard-screenshot.png?raw=true" alt="diskover-web dashboard">
 <img align="left" width="400" src="https://github.com/shirosaidev/diskover-web/raw/master/docs/diskover-web-filetree-screenshot.png?raw=true" alt="diskover-web file tree">
@@ -38,7 +41,7 @@ Kibana dashboards/saved searches/visualizations and support for Gource<br>
 ### Requirements
 
 * `Linux or OS X/macOS` (tested on OS X 10.11.6, Ubuntu 16.04)
-* `Python 2.7. or Python 3.5./3.6.` (tested on Python 2.7.14, 3.5.3, 3.6.4)
+* `Python 2.7. or Python 3.5./3.6.` (tested on Python 2.7.14, 3.5.3, 3.6.4) Python 3 recommended.
 * `Python elasticsearch client module`
 * `Python requests module`
 * `Python scandir module`
