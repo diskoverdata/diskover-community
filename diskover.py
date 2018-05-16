@@ -232,12 +232,11 @@ def load_config():
     except Exception:
         configsettings['index_replicas'] = 1
     try:
-        configsettings['redis_host'] = \
-            int(config.get('redis', 'host'))
+        configsettings['redis_host'] = config.get('redis', 'host')
     except Exception:
         configsettings['redis_host'] = "localhost"
     try:
-        configsettings['redis_port'] = config.get('redis', 'port')
+        configsettings['redis_port'] = int(config.get('redis', 'port'))
     except Exception:
         configsettings['redis_port'] = 6379
     try:
@@ -245,7 +244,7 @@ def load_config():
     except Exception:
         configsettings['redis_password'] = ""
     try:
-        configsettings['redis_dirtimesttl'] = config.get('redis', 'dirtimesttl')
+        configsettings['redis_dirtimesttl'] = int(config.get('redis', 'dirtimesttl'))
     except Exception:
         configsettings['redis_dirtimesttl'] = 604800
     try:
@@ -288,7 +287,7 @@ def load_config():
         configsettings['botsleep'] = 0.1
     try:
         configsettings['botthreads'] = \
-            float(config.get('crawlbot', 'botthreads'))
+            int(config.get('crawlbot', 'botthreads'))
     except Exception:
         configsettings['botthreads'] = 8
     try:

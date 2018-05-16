@@ -1,5 +1,10 @@
 # Diskover Change Log
 
+## [1.5.0-rc7] = 2018-05-16
+### fixed
+- bug when changing redis host in diskover.cfg
+- bug causing worker bots to not start (unable to connect to Redis) when running on a host other than same host as Redis/ES
+
 ## [1.5.0-rc6] = 2018-05-12
 ### notice
 - requires diskover-web >= v1.5.0-rc5
