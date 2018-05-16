@@ -74,7 +74,7 @@ $ cd diskover
 
 ### OVA image file (for vmware, etc)
 
-If you don't want to set up everything yourself, I have an OVA file running the latest version of diskover. Fastest and best way to get up and running with diskover. Contact me cpark16@gmail.com for pricing and download link.
+If you don't want to set up everything yourself, I have an OVA file running the latest version of diskover/diskover-web. Fastest and best way to get up and running with diskover. Contact me cpark16@gmail.com for pricing and download link.
 
 ### Requirements
 
