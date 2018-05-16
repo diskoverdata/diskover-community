@@ -72,6 +72,10 @@ $ cd diskover
 
 [Download latest version](https://github.com/shirosaidev/diskover/releases/latest)
 
+### OVA image file (for vmware, etc)
+
+If you don't want to set up everything yourself, I have an OVA file running the latest version of diskover. Fastest and best way to get up and running with diskover. Contact me cpark16@gmail.com for pricing and download link.
+
 ### Requirements
 
 You need to have at least **Python 2.7. or Python 3.5.** and have installed required Python dependencies using `pip`.
