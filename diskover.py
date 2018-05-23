@@ -1356,7 +1356,7 @@ def wait_for_worker_bots(logger):
 config = load_config()
 
 # location of license file
-lf = os.path.abspath(os.path.join(os.path.dirname(__file__), 'diskover_lic.lic'))
+lf = os.path.abspath(os.path.join(os.path.dirname(__file__), 'diskover.lic'))
 
 # create Elasticsearch connection
 es = elasticsearch_connect(config)
