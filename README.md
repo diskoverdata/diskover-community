@@ -21,7 +21,7 @@ diskover is written and maintained by Chris Park (shirosai) and runs on Linux an
 
 diskover crawler and workerbots running in terminal<br>
 <img align="left" width="400" src="https://github.com/shirosaidev/diskover/raw/master/docs/diskover-crawler-terminal-screenshot.png?raw=true" alt="diskover crawler">
-<img align="left" width="400" src="https://github.com/shirosaidev/diskover/raw/master/docs/diskover-workerbot-terminal-screenshot.png?raw=true" alt="diskover worker bot"><br>
+<img width="400" src="https://github.com/shirosaidev/diskover/raw/master/docs/diskover-workerbot-terminal-screenshot.png?raw=true" alt="diskover worker bot"><br>
 [diskover-web](https://github.com/shirosaidev/diskover-web) (diskover's web file manager, analytics app, file system search engine, rest-api)<br>
 <img align="left" width="400" src="https://github.com/shirosaidev/diskover-web/raw/master/docs/diskover-web-dashboard-screenshot.png?raw=true" alt="diskover-web dashboard">
 <img align="left" width="400" src="https://github.com/shirosaidev/diskover-web/raw/master/docs/diskover-web-filetree-screenshot.png?raw=true" alt="diskover-web file tree">
@@ -71,6 +71,10 @@ $ cd diskover
 ```
 
 [Download latest version](https://github.com/shirosaidev/diskover/releases/latest)
+
+### Community edition VS diskover PRO
+
+The community edition of diskover includes up to 8 worker bots. To crawl using unlimited workers you will need to purchase a license for diskover pro. diskover pro also allows searching for dupes (finddupes) and comparing index data (hotdirs). To purchase diskover PRO, <a href="mailto:cpark16@gmail.com">contact me</a> for pricing and download link.
 
 ### OVA image file (for vmware, etc)
 
