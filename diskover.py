@@ -45,9 +45,17 @@ import ctypes
 # load diskover c library for different os
 ostype = sys.platform
 if ostype == 'darwin':
-    so = ctypes.CDLL(os.path.join(os.path.dirname(__file__), 'diskover_lib_mac.so'))
+    try:
+        so = ctypes.CDLL(os.path.abspath(os.path.join(os.path.dirname(__file__), 'diskover_lib_mac.so')))
+    except OSError:
+        print("Set LD_LIBRARY_PATH env var to include diskover directory")
+        sys.exit(1)
 elif ostype == 'linux' or ostype == 'linux2':
-    so = ctypes.CDLL(os.path.join(os.path.dirname(__file__), 'diskover_lib_linux.so'))
+    try:
+        so = ctypes.CDLL(os.path.abspath(os.path.join(os.path.dirname(__file__), 'diskover_lib_linux.so')))
+    except OSError:
+        print("Set LD_LIBRARY_PATH env var to include diskover directory")
+        sys.exit(1)
 else:
     print('Unsupported operating system, diskover runs on mac and linux')
     sys.exit(1)
@@ -1347,6 +1355,9 @@ def wait_for_worker_bots(logger):
 # load config file into config dictionary
 config = load_config()
 
+# location of license file
+lf = os.path.abspath(os.path.join(os.path.dirname(__file__), 'diskover_lic.lic'))
+
 # create Elasticsearch connection
 es = elasticsearch_connect(config)
 
@@ -1360,7 +1371,7 @@ listen = ['diskover_crawl']
 # set up Redis q
 q = Queue(listen[0], connection=redis_conn, default_timeout=86400)
 
-if(so.pkc(-1,0))==1:version+=" PRO";
+if(so.pkc(lf,-1,0))==1:version+=" PRO";
 
 # load any available plugins
 plugins = load_plugins()
@@ -1397,7 +1408,7 @@ if __name__ == "__main__":
             sys.exit(0)
 
     # check workers are running
-    if(so.pkc(0,len(Worker.all(queue=q))))==0:sys.exit(0)
+    if(so.pkc(lf,0,len(Worker.all(queue=q))))==0:sys.exit(0)
 
     # check for listen socket cli flag to start socket server
     if cliargs['listen']:
@@ -1418,7 +1429,7 @@ if __name__ == "__main__":
     # pro version required
     if cliargs['finddupes']:
         import diskover_worker_bot
-        if(so.pkc(2,0))==0:sys.exit(0)
+        if(so.pkc(lf,2,0))==0:sys.exit(0)
         try:
             import diskover_pro
         except ImportError:
@@ -1451,7 +1462,7 @@ if __name__ == "__main__":
     # Only available in pro version
     if cliargs['hotdirs']:
         import diskover_worker_bot
-        if(so.pkc(1,0))==0:sys.exit(0)
+        if(so.pkc(lf,1,0))==0:sys.exit(0)
         try:
             import diskover_pro
         except ImportError:
