@@ -209,7 +209,7 @@ def get_dir_meta(path, cliargs, reindex_dict):
             except KeyError:
                 pass
 
-        if (diskover.so.pkc(diskover.lf,-1,0))==1:
+        if (diskover.pv):
             meta = {"change_percent_filesize": "", "change_percent_items": "",
                     "change_percent_items_files": "", "change_percent_items_subdirs": ""}
             dirmeta_dict.update(meta)

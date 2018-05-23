@@ -612,7 +612,7 @@ def index_create(indexname):
     for plugin in plugins:
         mappings = (plugin.add_mappings(mappings))
 
-    if (so.pkc(wd,-1,0))==1:
+    if (pv):
         mappings['mappings']['directory']['properties'].update({
             "change_percent_filesize": {
                 "type": "float"
@@ -1412,6 +1412,9 @@ def wait_for_worker_bots():
 # load config file into config dictionary
 config = load_config()
 
+pv=False
+if(so.pkc(wd,-1,0))==1:version+=" PRO";pv=True
+
 # create Elasticsearch connection
 es = elasticsearch_connect(config)
 
@@ -1424,8 +1427,6 @@ listen = ['diskover_crawl']
 
 # set up Redis q
 q = Queue(listen[0], connection=redis_conn, default_timeout=86400)
-
-if(so.pkc(wd,-1,0))==1:version+=" PRO";
 
 # load any available plugins
 plugins = load_plugins()
