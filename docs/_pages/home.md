@@ -65,6 +65,9 @@ intro:
   <tr>
     <td>multiple index data comparison</td><td>no</td><td>yes</td>
   </tr>
+  <tr>
+    <td>open source</td><td>yes</td><td>yes</td>
+  </tr>
 </table>
 <p>To purchase a license for diskover PRO, please <a href="mailto:cpark16@gmail.com">contact me</a> for pricing and download link.</p>
 <h2>Works with Amazon AWS or fully hosted on diskover-cloud</h2>
