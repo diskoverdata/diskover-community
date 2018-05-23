@@ -43,14 +43,13 @@ import ctypes
 
 
 # load diskover c library for different os
-ostype = sys.platform
-if ostype == 'darwin':
+if sys.platform == 'darwin':
     try:
         so = ctypes.CDLL(os.path.abspath(os.path.join(os.path.dirname(__file__), 'diskover_lib_mac.so')))
     except OSError:
         print("Set LD_LIBRARY_PATH env var to include diskover directory")
         sys.exit(1)
-elif ostype == 'linux' or ostype == 'linux2':
+elif sys.platform.startswith('linux'):
     try:
         so = ctypes.CDLL(os.path.abspath(os.path.join(os.path.dirname(__file__), 'diskover_lib_linux.so')))
     except OSError:
