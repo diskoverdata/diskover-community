@@ -46,7 +46,7 @@ import ctypes
 ostype = sys.platform
 if ostype == 'darwin':
     so = ctypes.CDLL(os.path.join(os.path.dirname(__file__), 'diskover_lib_mac.so'))
-elif ostype == 'linux':
+elif ostype == 'linux' or ostype == 'linux2':
     so = ctypes.CDLL(os.path.join(os.path.dirname(__file__), 'diskover_lib_linux.so'))
 else:
     print('Unsupported operating system, diskover runs on mac and linux')
