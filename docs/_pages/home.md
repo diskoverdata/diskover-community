@@ -38,7 +38,7 @@ feature_row:
 github:
   - excerpt: '{::nomarkdown}<iframe style="display: inline-block;" src="https://ghbtns.com/github-btn.html?user=shirosaidev&repo=diskover&type=star&count=true&size=large" frameborder="0" scrolling="0" width="160px" height="30px"></iframe> <iframe style="display: inline-block;" src="https://ghbtns.com/github-btn.html?user=shirosaidev&repo=diskover&type=fork&count=true&size=large" frameborder="0" scrolling="0" width="158px" height="30px"></iframe>{:/nomarkdown}'
 intro:
-  - excerpt: 'Support the development&nbsp;[<i class="fa fa-heart" aria-hidden="true"></i> Sponsor Patreon](https://www.patreon.com/diskover){: .btn .btn--primary}&nbsp;[<i class="fa fa-credit-card" aria-hidden="true"></i> Donate PayPal](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=CLF223XAS4W72){: .btn .btn--primary}&nbsp;[<i class="fa fa-shopping-cart" aria-hidden="true"></i> Buy PRO](mailto:cpark16@gmail.com){: .btn .btn--primary}'
+  - excerpt: 'Support the development&nbsp;[<i class="fa fa-heart" aria-hidden="true"></i> Sponsor Patreon](https://www.patreon.com/diskover){: .btn .btn--primary}&nbsp;[<i class="fa fa-credit-card" aria-hidden="true"></i> Donate PayPal](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=CLF223XAS4W72){: .btn .btn--primary}&nbsp;[<i class="fa fa-shopping-cart" aria-hidden="true"></i> Buy PRO](https://www.patreon.com/diskover){: .btn .btn--primary}'
 ---
 
 {% include feature_row id="intro" type="center" %}
@@ -70,7 +70,8 @@ intro:
     <td>open source</td><td>yes</td><td>yes</td>
   </tr>
 </table>
-<p>To purchase a license for diskover PRO, please <a href="mailto:cpark16@gmail.com">contact me</a> for pricing and download link.</p>
+<p>To purchase a license for diskover PRO, please <a href="https://www.patreon.com/diskover">visit Patreon</a> for pricing and license options. Licenses can also be purched using PayPal.</p>
+<div align="center">diskover PRO hot dirs analytics screenshot<br /><img src="https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-hotdirs-screenshot.png?raw=true" alt="diskover-web hotdirs" width="400" /></div>
 <h2>Works with Amazon AWS or fully hosted on diskover-cloud</h2>
 <p><img src="https://github.com/shirosaidev/diskover/blob/master/docs/_pages/amazon_web_services_logo_aws.jpg?raw=true" alt="diskover aws" align="left" width="178" height="117" hspace="20"/>diskover works on AWS using EC2 and Elasticsearch instances so you can get up and running quickly in the cloud. Crawl bots can run locally and push file system meta data into your AWS Elasticsearch. From there you can use EC2 to run diskover-web to view your data. To have all this set up for you, there is the option for fully managed diskover-cloud on AWS.</p>
 <h2>diskover ova's for VMware, etc</h2>
