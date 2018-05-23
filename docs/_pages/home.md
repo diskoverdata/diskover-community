@@ -64,6 +64,9 @@ intro:
     <td>multiple index data comparison</td><td>no</td><td>yes</td>
   </tr>
   <tr>
+    <td>vmware/vbox ova's</td><td>no</td><td>yes</td>
+  </tr>
+  <tr>
     <td>open source</td><td>yes</td><td>yes</td>
   </tr>
 </table>
