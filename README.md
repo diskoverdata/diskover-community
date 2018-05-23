@@ -79,7 +79,7 @@ The community edition of diskover includes up to 8 worker bots. To crawl using u
 
 ### OVA image file (for vmware, etc)
 
-If you don't want to set up everything yourself, I have an OVA file running the latest version of diskover/diskover-web. Fastest and best way to get up and running with diskover. <a href="mailto:cpark16@gmail.com">Contact me</a> for pricing and download link.
+If you don't want to set up everything yourself, I have an OVA file running the latest version of diskover/diskover-web. Fastest and best way to get up and running with diskover. <a href="mailto:cpark16@gmail.com">Contact me</a> for pricing and download link. diskover PRO license includes download link for ova's.
 
 ### Requirements
 
