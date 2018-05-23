@@ -59,6 +59,8 @@ else:
     print('Unsupported operating system, diskover runs on mac and linux')
     sys.exit(1)
 
+wd = os.path.abspath(os.path.dirname(__file__)).encode('utf-8')
+
 version = '1.5.0-rc8'
 __version__ = version
 
@@ -610,7 +612,7 @@ def index_create(indexname):
     for plugin in plugins:
         mappings = (plugin.add_mappings(mappings))
 
-    if (so.pkc(lf,-1,0))==1:
+    if (so.pkc(wd,-1,0))==1:
         mappings['mappings']['directory']['properties'].update({
             "change_percent_filesize": {
                 "type": "float"
@@ -1410,9 +1412,6 @@ def wait_for_worker_bots():
 # load config file into config dictionary
 config = load_config()
 
-# location of license file
-lf = os.path.abspath(os.path.join(os.path.dirname(__file__), 'diskover.lic')).encode('utf-8')
-
 # create Elasticsearch connection
 es = elasticsearch_connect(config)
 
@@ -1426,7 +1425,7 @@ listen = ['diskover_crawl']
 # set up Redis q
 q = Queue(listen[0], connection=redis_conn, default_timeout=86400)
 
-if(so.pkc(lf,-1,0))==1:version+=" PRO";
+if(so.pkc(wd,-1,0))==1:version+=" PRO";
 
 # load any available plugins
 plugins = load_plugins()
@@ -1463,7 +1462,7 @@ if __name__ == "__main__":
             sys.exit(0)
 
     # check workers are running
-    if(so.pkc(lf,0,len(Worker.all(queue=q))))==0:sys.exit(0)
+    if(so.pkc(wd,0,len(Worker.all(queue=q))))==0:sys.exit(0)
 
     # check for listen socket cli flag to start socket server
     if cliargs['listen']:
@@ -1485,7 +1484,7 @@ if __name__ == "__main__":
     if cliargs['finddupes']:
         import diskover_worker_bot
         import diskover_dupes
-        if(so.pkc(lf,2,0))==0:sys.exit(0)
+        if(so.pkc(wd,2,0))==0:sys.exit(0)
         wait_for_worker_bots()
         # Set up worker threads for duplicate file checker queue
         diskover_dupes.dupes_finder(es, q, cliargs, logger)
@@ -1519,7 +1518,7 @@ if __name__ == "__main__":
     # Only available in pro version
     if cliargs['hotdirs']:
         import diskover_worker_bot
-        if(so.pkc(lf,1,0))==0:sys.exit(0)
+        if(so.pkc(wd,1,0))==0:sys.exit(0)
         wait_for_worker_bots()
         hotdirs()
 
