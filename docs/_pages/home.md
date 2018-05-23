@@ -30,7 +30,7 @@ feature_row:
   - url: https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-treemap-screenshot.png?raw=true
     image_path: https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-treemap-screenshot.png?raw=true
     alt: "open-source"
-    title: "Open-Source"
+    title: "Open Source"
     excerpt: "Built using Python + PHP + HTML5 + Javascript + D3.js. diskover runs on Linux and macOS."
     url: "https://github.com/shirosaidev/diskover"
     btn_class: "btn--primary"
@@ -71,7 +71,7 @@ intro:
   </tr>
 </table>
 <p>To purchase a license for diskover PRO, please <a href="https://www.patreon.com/diskover">visit Patreon</a> for pricing and license options. Licenses can also be purched using PayPal.</p>
-<div align="center">diskover PRO hot dirs analytics screenshot<br /><img src="https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-hotdirs-screenshot.png?raw=true" alt="diskover-web hotdirs" width="400" /></div>
+<div align="center">diskover PRO hot dirs analytics screenshot<br /><img src="https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-hotdirs-screenshot.png?raw=true" alt="diskover-web hotdirs" width="800" /></div>
 <h2>Works with Amazon AWS or fully hosted on diskover-cloud</h2>
 <p><img src="https://github.com/shirosaidev/diskover/blob/master/docs/_pages/amazon_web_services_logo_aws.jpg?raw=true" alt="diskover aws" align="left" width="178" height="117" hspace="20"/>diskover works on AWS using EC2 and Elasticsearch instances so you can get up and running quickly in the cloud. Crawl bots can run locally and push file system meta data into your AWS Elasticsearch. From there you can use EC2 to run diskover-web to view your data. To have all this set up for you, there is the option for fully managed diskover-cloud on AWS.</p>
 <h2>diskover ova's for VMware, etc</h2>
