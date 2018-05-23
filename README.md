@@ -75,7 +75,7 @@ $ cd diskover
 
 ### Community edition VS diskover PRO
 
-The community edition of diskover includes up to 8 worker bots. To crawl using unlimited workers you will need to purchase a license for diskover pro. diskover pro also allows searching for dupes (finddupes) and comparing index data (hotdirs). To purchase diskover PRO, see diskover's Patreon page for pricing https://www.patreon.com/diskover.
+The community edition of diskover includes up to 8 worker bots. To crawl using unlimited workers you will need to purchase a license for diskover pro. diskover pro also allows searching for dupes (finddupes) and comparing index data (hotdirs). To purchase diskover PRO, see diskover's Patreon page for pricing https://www.patreon.com/diskover. You can also buy pro license using PayPal.
 
 ### OVA image file (for vmware, etc)
 
