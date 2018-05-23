@@ -52,19 +52,19 @@ intro:
 <h2>diskover versions</h2>
 <table border="0">
   <tr>
-    <td>feature</td><td>diskover community edition</td><td>diskover PRO</td>
+    <td>&nbsp;</td><td><strong>diskover community edition</strong></td><td><strong>diskover PRO</strong></td>
   </tr>
   <tr>
     <td>max worker bots</td><td>8</td><td>unlimited</td>
   </tr>
   <tr>
-    <td>duplicate finder</td><td>no</td><td>yes</td>
+    <td>duplicate file finder</td><td>no</td><td>yes</td>
   </tr>
   <tr>
-    <td>index data comparison</td><td>no</td><td>yes</td>
+    <td>multiple index data comparison</td><td>no</td><td>yes</td>
   </tr>
 </table>
-To purchase diskover PRO, please <a href="mailto:cpark16@gmail.com">contact me</a> for pricing and download link.<br />
+<p>To purchase diskover PRO, please <a href="mailto:cpark16@gmail.com">contact me</a> for pricing and download link.</p>
 <h2>Works with Amazon AWS or fully hosted on diskover-cloud</h2>
 <p><img src="https://github.com/shirosaidev/diskover/blob/master/docs/_pages/amazon_web_services_logo_aws.jpg?raw=true" alt="diskover aws" align="left" width="178" height="117" hspace="20"/>diskover works on AWS using EC2 and Elasticsearch instances so you can get up and running quickly in the cloud. Crawl bots can run locally and push file system meta data into your AWS Elasticsearch. From there you can use EC2 to run diskover-web to view your data. To have all this set up for you, there is the option for fully managed diskover-cloud on AWS.</p>
 <h2>diskover ova's for VMware, etc</h2>
