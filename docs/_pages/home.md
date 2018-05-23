@@ -7,8 +7,6 @@ header:
   overlay_image: https://github.com/shirosaidev/diskover/blob/master/docs/_pages/heatmap.png?raw=true
   cta_label: "<i class='fa fa-download' aria-hidden='true'></i> Install Community Edition"
   cta_url: "https://github.com/shirosaidev/diskover/releases/latest"
-  cta2_label: "<i class='fa fa-paypal' aria-hidden='true'></i> Buy PRO Version"
-  cta2_url: "mailto:cpark16@gmail.com"
   caption:
 excerpt: '<img src="https://github.com/shirosaidev/diskover/raw/master/docs/diskover.png?raw=true" style="width: 183px; float: left; margin: 0px 30px 10px 0px;">File system crawler, storage search engine and analytics software powered by Elasticsearch to help visualize and manage your disk space usage.<br /> <small><a href="https://github.com/shirosaidev/diskover/releases/tag/v1.5.0-rc8">Latest release v1.5.0-rc8</a></small><br /><br />
 {::nomarkdown}<iframe style="display: inline-block;" src="https://ghbtns.com/github-btn.html?user=shirosaidev&repo=diskover&type=star&count=true&size=large" frameborder="0" scrolling="0" width="160px" height="30px"></iframe> <iframe style="display: inline-block;" src="https://ghbtns.com/github-btn.html?user=shirosaidev&repo=diskover&type=fork&count=true&size=large" frameborder="0" scrolling="0" width="158px" height="30px"></iframe>{:/nomarkdown}'
@@ -40,7 +38,7 @@ feature_row:
 github:
   - excerpt: '{::nomarkdown}<iframe style="display: inline-block;" src="https://ghbtns.com/github-btn.html?user=shirosaidev&repo=diskover&type=star&count=true&size=large" frameborder="0" scrolling="0" width="160px" height="30px"></iframe> <iframe style="display: inline-block;" src="https://ghbtns.com/github-btn.html?user=shirosaidev&repo=diskover&type=fork&count=true&size=large" frameborder="0" scrolling="0" width="158px" height="30px"></iframe>{:/nomarkdown}'
 intro:
-  - excerpt: 'Support the development &nbsp; [<i class="fa fa-heart" aria-hidden="true"></i> Sponsor Patreon](https://www.patreon.com/diskover){: .btn .btn--primary} [<i class="fa fa-credit-card" aria-hidden="true"></i> Donate PayPal](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=CLF223XAS4W72){: .btn .btn--primary}'
+  - excerpt: 'Support the development &nbsp; [<i class="fa fa-heart" aria-hidden="true"></i> Sponsor Patreon](https://www.patreon.com/diskover){: .btn .btn--primary} [<i class="fa fa-cc-paypal" aria-hidden="true"></i> Donate PayPal](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=CLF223XAS4W72){: .btn .btn--primary} &nbsp; [<i class="fa fa-shopping-cart" aria-hidden="true"></i> Buy PRO](mailto:cpark16@gmail.com){: .btn .btn--primary}'
 ---
 
 {% include feature_row id="intro" type="center" %}
