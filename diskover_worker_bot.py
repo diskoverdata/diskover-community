@@ -12,10 +12,6 @@ LICENSE for the full license text.
 """
 
 import diskover
-try:
-    import diskover_pro
-except ImportError:
-    pass
 from redis import Redis
 from rq import Worker, Connection
 import argparse
@@ -212,6 +208,11 @@ def get_dir_meta(path, cliargs, reindex_dict):
                 dirmeta_dict.update(plugin.add_meta(fullpath))
             except KeyError:
                 pass
+
+        if (diskover.so.pkc(diskover.lf,-1,0))==1:
+            meta = {"change_percent_filesize": "", "change_percent_items": "",
+                    "change_percent_items_files": "", "change_percent_items_subdirs": ""}
+            dirmeta_dict.update(meta)
 
     except (IOError, OSError):
         return None
@@ -688,6 +689,89 @@ def tag_copier(path, cliargs):
 
     diskover.index_bulk_add(es, dir_id_list, 'directory', diskover.config, cliargs)
     diskover.index_bulk_add(es, file_id_list, 'file', diskover.config, cliargs)
+
+    elapsed_time = round(time.time() - jobstart, 3)
+    bot_logger.info('*** FINISHED JOB, Elapsed Time: ' + str(elapsed_time))
+
+
+def calc_hot_dirs(dirlist, cliargs):
+    """This is the calculate hotdirs worker function.
+    It gets a directory list from the Queue, iterates over the path list
+    and searches index2 for the same path and calculates change percent
+    between the two. If path not in index2, change percent is 100%.
+    Updates index's directory doc's change_percent fields.
+    """
+    jobstart = time.time()
+    bot_logger.info('*** Calculating directory change percents...')
+
+    dir_id_list = []
+    for path in dirlist:
+        # doc search (matching path) in index2
+        # filename
+        f = os.path.basename(path[1])
+        # parent path
+        p = os.path.abspath(os.path.join(path[1], os.pardir))
+
+        data = {
+            "size": 1,
+            "_source": ['filesize', 'items', 'items_files', 'items_subdirs'],
+            "query": {
+                "query_string": {
+                    "query": "filename: \"" + f + "\" AND path_parent: \"" + p + "\""
+                }
+            }
+        }
+
+        # search ES
+        res = es.search(index=cliargs['hotdirs'][0], doc_type='directory', body=data,
+                        request_timeout=diskover.config['es_timeout'])
+
+        # calculate change percent
+
+        # set change percent to 100% if no matching path in index2
+        if len(res['hits']['hits']) == 0:
+            changepercent_filesize = 100.0
+            changepercent_items = 100.0
+            changepercent_items_files = 100.0
+            changepercent_items_subdirs = 100.0
+        else:
+            source = res['hits']['hits'][0]['_source']
+            # ((new - old) / old) * 100
+            try:
+                changepercent_filesize = round(((path[2] - source['filesize'])
+                                               / source['filesize']) * 100.0, 2)
+            except ZeroDivisionError:
+                changepercent_filesize = 0.0
+            try:
+                changepercent_items = round(((path[3] - source['items'])
+                                            / source['items']) * 100.0, 2)
+            except ZeroDivisionError:
+                changepercent_items = 0.0
+            try:
+                changepercent_items_files = round(((path[4] - source['items_files'])
+                                                  / source['items_files']) * 100.0, 2)
+            except ZeroDivisionError:
+                changepercent_items_files = 0.0
+            try:
+                changepercent_items_subdirs = round(((path[5] - source['items_subdirs'])
+                                                    / source['items_subdirs']) * 100.0, 2)
+            except ZeroDivisionError:
+                changepercent_items_subdirs = 0.0
+
+        # update fields in index
+        d = {
+            '_op_type': 'update',
+            '_index': cliargs['index'],
+            '_type': 'directory',
+            '_id': path[0],
+            'doc': {'change_percent_filesize': changepercent_filesize,
+                    'change_percent_items': changepercent_items,
+                    'change_percent_items_files': changepercent_items_files,
+                    'change_percent_items_subdirs': changepercent_items_subdirs}
+        }
+        dir_id_list.append(d)
+
+    diskover.index_bulk_add(es, dir_id_list, 'directory', diskover.config, cliargs)
 
     elapsed_time = round(time.time() - jobstart, 3)
     bot_logger.info('*** FINISHED JOB, Elapsed Time: ' + str(elapsed_time))

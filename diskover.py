@@ -610,6 +610,22 @@ def index_create(indexname):
     for plugin in plugins:
         mappings = (plugin.add_mappings(mappings))
 
+    if (so.pkc(lf,-1,0))==1:
+        mappings['mappings']['directory']['properties'].update({
+            "change_percent_filesize": {
+                "type": "float"
+            },
+            "change_percent_items": {
+                "type": "float"
+            },
+            "change_percent_items_files": {
+                "type": "float"
+            },
+            "change_percent_items_subdirs": {
+                "type": "float"
+            }
+        })
+
     logger.info('Creating es index')
     es.indices.create(index=indexname, body=mappings)
 
@@ -1244,7 +1260,7 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
     global totaljobs
 
     try:
-        wait_for_worker_bots(logger)
+        wait_for_worker_bots()
         logger.info('Enqueueing crawl to diskover worker bots for %s...', path)
 
         if cliargs['adaptivebatch']:
@@ -1343,7 +1359,47 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
     logger.info('Finished crawling!')
 
 
-def wait_for_worker_bots(logger):
+def hotdirs():
+    logger.info('Getting diskover bots to calculate change percent '
+                'for directories from %s to %s',
+                         cliargs['hotdirs'][0], cliargs['index'])
+    # look in index for all directory docs and add to queue
+    dirlist = index_get_docs(cliargs, logger, doctype='directory',
+                                            hotdirs=True, index=cliargs['index'])
+    dirbatch = []
+    if cliargs['adaptivebatch']:
+        batchsize = adaptivebatch_startsize
+    else:
+        batchsize = cliargs['batchsize']
+    if cliargs['verbose'] or cliargs['debug']:
+        logger.info('Batch size: %s' % batchsize)
+    for d in dirlist:
+        dirbatch.append(d)
+        if len(dirbatch) >= batchsize:
+            q.enqueue(diskover_worker_bot.calc_hot_dirs, args=(dirbatch, cliargs,))
+            del dirbatch[:]
+            batchsize_prev = batchsize
+            if cliargs['adaptivebatch']:
+                if len(q) == 0:
+                    if (batchsize - 10) >= adaptivebatch_startsize:
+                        batchsize = batchsize - 10
+                elif len(q) > 0:
+                    if (batchsize + 10) <= adaptivebatch_maxsize:
+                        batchsize = batchsize + 10
+                cliargs['batchsize'] = batchsize
+                if cliargs['verbose'] or cliargs['debug']:
+                    if batchsize_prev != batchsize:
+                        logger.info('Batch size: %s' % batchsize)
+
+    # add any remaining in batch to queue
+    q.enqueue(diskover_worker_bot.calc_hot_dirs, args=(dirbatch, cliargs,))
+
+    logger.info('Directories have all been enqueued, calculating in background')
+    logger.info('Dispatcher is DONE! Sayonara!')
+    sys.exit(0)
+
+
+def wait_for_worker_bots():
     while len(Worker.all(queue=q)) == 0:
         logger.info('Waiting for diskover worker bots to start...')
         time.sleep(2)
@@ -1355,7 +1411,7 @@ def wait_for_worker_bots(logger):
 config = load_config()
 
 # location of license file
-lf = os.path.abspath(os.path.join(os.path.dirname(__file__), 'diskover.lic'))
+lf = os.path.abspath(os.path.join(os.path.dirname(__file__), 'diskover.lic')).encode('utf-8')
 
 # create Elasticsearch connection
 es = elasticsearch_connect(config)
@@ -1428,17 +1484,19 @@ if __name__ == "__main__":
     # pro version required
     if cliargs['finddupes']:
         import diskover_worker_bot
+        import diskover_dupes
         if(so.pkc(lf,2,0))==0:sys.exit(0)
-        try:
-            import diskover_pro
-        except ImportError:
-            raise ImportError("Can't find diskover_pro.py")
-        diskover_pro.find_dupes(es, q, cliargs, logger)
+        wait_for_worker_bots()
+        # Set up worker threads for duplicate file checker queue
+        diskover_dupes.dupes_finder(es, q, cliargs, logger)
+        logger.info('Worker bots checking for dupes in background')
+        logger.info('Dispatcher is DONE! Sayonara!')
+        sys.exit(0)
 
     # copy tags from index2 to index if cli argument
     if cliargs['copytags']:
         import diskover_worker_bot
-        wait_for_worker_bots(logger)
+        wait_for_worker_bots()
         logger.info('Copying tags from %s to %s', cliargs['copytags'][0], cliargs['index'])
         # look in index2 for all directory docs with tags and add to queue
         dirlist = index_get_docs(cliargs, logger, doctype='directory', copytags=True, index=cliargs['copytags'][0])
@@ -1462,12 +1520,8 @@ if __name__ == "__main__":
     if cliargs['hotdirs']:
         import diskover_worker_bot
         if(so.pkc(lf,1,0))==0:sys.exit(0)
-        try:
-            import diskover_pro
-        except ImportError:
-            raise ImportError("Can't find diskover_pro.py")
-        wait_for_worker_bots(logger)
-        diskover_pro.hotdirs(cliargs, logger)
+        wait_for_worker_bots()
+        hotdirs()
 
     # print plugins
     plugins_list = ""
@@ -1530,7 +1584,7 @@ if __name__ == "__main__":
     if cliargs['crawlbot']:
         import diskover_crawlbot
         import diskover_worker_bot
-        wait_for_worker_bots(logger)
+        wait_for_worker_bots()
         botdirlist = index_get_docs(cliargs, logger, doctype='directory')
         # Set up worker threads for crawlbot
         diskover_crawlbot.start_crawlbot_scanner(cliargs, logger, rootdir_path, botdirlist, reindex_dict)
