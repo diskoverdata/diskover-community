@@ -45,9 +45,9 @@ import ctypes
 # load diskover c library for different os
 ostype = sys.platform
 if ostype == 'darwin':
-    so = ctypes.CDLL('diskover_lib_mac.so')
+    so = ctypes.CDLL(os.path.join(os.path.dirname(__file__), 'diskover_lib_mac.so'))
 elif ostype == 'linux':
-    so = ctypes.CDLL('diskover_lib_linux.so')
+    so = ctypes.CDLL(os.path.join(os.path.dirname(__file__), 'diskover_lib_linux.so'))
 else:
     print('Unsupported operating system, diskover runs on mac and linux')
     sys.exit(1)
