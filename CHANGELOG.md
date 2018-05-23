@@ -1,5 +1,17 @@
 # Diskover Change Log
 
+## [1.5.0-rc8] = 2018-05-23
+### notice
+- community edition license is included
+- requires diskover-web >= v1.5.0-rc6
+- see https://shirosai.github.io/diskover for more information about upgrading to diskover PRO
+### added
+- diskover so shared c library for mac and linux
+- diskover.lic for adding diskover pro license info
+### changed
+- running more than 8 worker bots requires diskover pro license
+- running finddupes or hotdirs requires diskover pro license
+
 ## [1.5.0-rc7] = 2018-05-16
 ### fixed
 - bug when changing redis host in diskover.cfg

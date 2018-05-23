@@ -39,9 +39,20 @@ import re
 import os
 import sys
 import threading
+import ctypes
 
 
-version = '1.5.0-rc7'
+# load diskover c library for different os
+ostype = sys.platform
+if ostype == 'darwin':
+    so = ctypes.CDLL('diskover_lib_mac.so')
+elif ostype == 'linux':
+    so = ctypes.CDLL('diskover_lib_linux.so')
+else:
+    print('Unsupported operating system, diskover runs on mac and linux')
+    sys.exit(1)
+
+version = '1.5.0-rc8'
 __version__ = version
 
 IS_PY3 = sys.version_info >= (3, 0)
@@ -760,7 +771,7 @@ def index_delete_path(path, cliargs, logger, reindex_dict, recursive=False):
     return reindex_dict
 
 
-def index_get_docs(cliargs, logger, doctype='directory', copytags=False, index=None, path=None):
+def index_get_docs(cliargs, logger, doctype='directory', copytags=False, hotdirs=False, index=None, path=None):
     """This is the es get docs function.
     It finds all docs (by doctype) in es and returns doclist
     which contains doc id, fullpath and mtime for all docs.
@@ -780,6 +791,14 @@ def index_get_docs(cliargs, logger, doctype='directory', copytags=False, index=N
                 'query_string': {
                     'query': 'tag:(NOT "") OR tag_custom:(NOT "")'
                 }
+            }
+        }
+    elif hotdirs:
+        logger.info('Searching for all %s docs in %s...', doctype, index)
+        data = {
+            '_source': ['path_parent', 'filename', 'filesize', 'items', 'items_files', 'items_subdirs'],
+            'query': {
+                'match_all': {}
             }
         }
     else:
@@ -822,20 +841,18 @@ def index_get_docs(cliargs, logger, doctype='directory', copytags=False, index=N
         for hit in res['hits']['hits']:
             fullpath = os.path.abspath(os.path.join(hit['_source']['path_parent'], hit['_source']['filename']))
             if copytags:
-                tag = hit['_source']['tag']
-                tag_custom = hit['_source']['tag_custom']
-                doclist.append((fullpath, tag, tag_custom, doctype))
+                doclist.append((fullpath, hit['_source']['tag'], hit['_source']['tag_custom'], doctype))
+            elif hotdirs:
+                doclist.append((hit['_id'], fullpath, hit['_source']['filesize'], hit['_source']['items'],
+                                hit['_source']['items_files'], hit['_source']['items_subdirs']))
             else:
-                docid = hit['_id']
                 # convert es time to unix time format
                 mtime = time.mktime(datetime.strptime(
                     hit['_source']['last_modified'],
                     '%Y-%m-%dT%H:%M:%S').timetuple())
-                doclist.append((docid, fullpath, mtime, doctype))
-        # get es scroll id
-        scroll_id = res['_scroll_id']
+                doclist.append((hit['_id'], fullpath, mtime, doctype))
         # use es scroll api
-        res = es.scroll(scroll_id=scroll_id, scroll='1m',
+        res = es.scroll(scroll_id=res['_scroll_id'], scroll='1m',
                         request_timeout=config['es_timeout'])
 
     logger.info('Found %s %s docs' % (len(doclist), doctype))
@@ -1005,9 +1022,12 @@ def parse_cli_args(indexname):
                         help="Reindex directory and all subdirs (recursive)")
     parser.add_argument("-D", "--finddupes", action="store_true",
                         help="Find duplicate files in existing index and update \
-                            their dupe_md5 field")
+                            their dupe_md5 field (PRO VERSION)")
     parser.add_argument("-C", "--copytags", metavar='INDEX2', nargs=1,
                         help="Copy tags from index2 to index")
+    parser.add_argument("-H", "--hotdirs", metavar='INDEX2', nargs=1,
+                        help="Find hot dirs by calculating change percent from index2 and update \
+                                change_percent fields in index (PRO VERSION)")
     parser.add_argument("-l", "--listen", action="store_true",
                         help="Start socket server and listen for remote commands")
     parser.add_argument("-B", "--crawlbot", action="store_true",
@@ -1217,11 +1237,7 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
     global totaljobs
 
     try:
-        while len(Worker.all(queue=q)) == 0:
-            logger.info('Waiting for diskover worker bots to start...')
-            time.sleep(2)
-        workers = Worker.all(queue=q)
-        logger.info('Found %s diskover RQ worker bots', len(workers))
+        wait_for_worker_bots(logger)
         logger.info('Enqueueing crawl to diskover worker bots for %s...', path)
 
         if cliargs['adaptivebatch']:
@@ -1320,7 +1336,7 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
     logger.info('Finished crawling!')
 
 
-def wait_for_worker_bots():
+def wait_for_worker_bots(logger):
     while len(Worker.all(queue=q)) == 0:
         logger.info('Waiting for diskover worker bots to start...')
         time.sleep(2)
@@ -1343,6 +1359,8 @@ listen = ['diskover_crawl']
 
 # set up Redis q
 q = Queue(listen[0], connection=redis_conn, default_timeout=86400)
+
+if(so.pkc(-1,0))==1:version+=" PRO";
 
 # load any available plugins
 plugins = load_plugins()
@@ -1378,6 +1396,9 @@ if __name__ == "__main__":
             print('Please name your index: diskover-qumulo-<string>')
             sys.exit(0)
 
+    # check workers are running
+    if(so.pkc(0,len(Worker.all(queue=q))))==0:sys.exit(0)
+
     # check for listen socket cli flag to start socket server
     if cliargs['listen']:
         import diskover_socket_server
@@ -1394,20 +1415,20 @@ if __name__ == "__main__":
         sys.exit(0)
 
     # tag duplicate files if cli argument
+    # pro version required
     if cliargs['finddupes']:
         import diskover_worker_bot
-        import diskover_dupes
-        wait_for_worker_bots()
-        # Set up worker threads for duplicate file checker queue
-        diskover_dupes.dupes_finder(es, q, cliargs, logger)
-        logger.info('Worker bots checking for dupes in background')
-        logger.info('Dispatcher is DONE! Sayonara!')
-        sys.exit(0)
+        if(so.pkc(2,0))==0:sys.exit(0)
+        try:
+            import diskover_pro
+        except ImportError:
+            raise ImportError("Can't find diskover_pro.py")
+        diskover_pro.find_dupes(es, q, cliargs, logger)
 
     # copy tags from index2 to index if cli argument
     if cliargs['copytags']:
         import diskover_worker_bot
-        wait_for_worker_bots()
+        wait_for_worker_bots(logger)
         logger.info('Copying tags from %s to %s', cliargs['copytags'][0], cliargs['index'])
         # look in index2 for all directory docs with tags and add to queue
         dirlist = index_get_docs(cliargs, logger, doctype='directory', copytags=True, index=cliargs['copytags'][0])
@@ -1425,6 +1446,18 @@ if __name__ == "__main__":
             logger.info('Worker bots copying tags in background')
         logger.info('Dispatcher is DONE! Sayonara!')
         sys.exit(0)
+
+    # Calculate directory change percent from index2 to index if cli argument
+    # Only available in pro version
+    if cliargs['hotdirs']:
+        import diskover_worker_bot
+        if(so.pkc(1,0))==0:sys.exit(0)
+        try:
+            import diskover_pro
+        except ImportError:
+            raise ImportError("Can't find diskover_pro.py")
+        wait_for_worker_bots(logger)
+        diskover_pro.hotdirs(cliargs, logger)
 
     # print plugins
     plugins_list = ""
@@ -1487,7 +1520,7 @@ if __name__ == "__main__":
     if cliargs['crawlbot']:
         import diskover_crawlbot
         import diskover_worker_bot
-        wait_for_worker_bots()
+        wait_for_worker_bots(logger)
         botdirlist = index_get_docs(cliargs, logger, doctype='directory')
         # Set up worker threads for crawlbot
         diskover_crawlbot.start_crawlbot_scanner(cliargs, logger, rootdir_path, botdirlist, reindex_dict)

@@ -12,6 +12,10 @@ LICENSE for the full license text.
 """
 
 import diskover
+try:
+    import diskover_pro
+except ImportError:
+    pass
 from redis import Redis
 from rq import Worker, Connection
 import argparse
