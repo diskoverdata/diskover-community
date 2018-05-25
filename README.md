@@ -41,7 +41,7 @@ Kibana dashboards/saved searches/visualizations and support for Gource<br>
 
 ### Requirements
 
-* `Linux or OS X/macOS` (tested on OS X 10.11.6, Ubuntu 16.04)
+* `Linux or OS X/macOS` (tested on OS X 10.11.6, Ubuntu 16.04/18.04)
 * `Python 2.7. or Python 3.5./3.6.` (tested on Python 2.7.14, 3.5.3, 3.6.4) Python 3 recommended.
 * `Python elasticsearch client module`
 * `Python requests module`
