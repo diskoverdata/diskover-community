@@ -6,7 +6,7 @@ your file metadata into Elasticsearch.
 See README.md or https://github.com/shirosaidev/diskover
 for more information.
 
-Copyright (C) Chris Park 2017
+Copyright (C) Chris Park 2017-2018
 diskover is released under the Apache 2.0 license. See
 LICENSE for the full license text.
 """
@@ -39,25 +39,7 @@ import re
 import os
 import sys
 import threading
-import ctypes
 
-
-# load diskover c library for different os
-if sys.platform == 'darwin':
-    try:
-        so = ctypes.CDLL(os.path.abspath(os.path.join(os.path.dirname(__file__), 'diskover_lib_mac.so')))
-    except OSError as e:
-        raise OSError("Error %s" % e)
-elif sys.platform.startswith('linux'):
-    try:
-        so = ctypes.CDLL(os.path.abspath(os.path.join(os.path.dirname(__file__), 'diskover_lib_linux.so')))
-    except OSError as e:
-        raise OSError("Error %s" % e)
-else:
-    print('Unsupported operating system, diskover runs on mac and linux')
-    sys.exit(1)
-
-wd = os.path.abspath(os.path.dirname(__file__)).encode('utf-8')
 
 version = '1.5.0-rc8'
 __version__ = version
@@ -545,6 +527,18 @@ def index_create(indexname):
                         },
                         "worker_name": {
                             "type": "keyword"
+                        },
+                        "change_percent_filesize": {
+                            "type": "float"
+                        },
+                        "change_percent_items": {
+                            "type": "float"
+                        },
+                        "change_percent_items_files": {
+                            "type": "float"
+                        },
+                        "change_percent_items_subdirs": {
+                            "type": "float"
                         }
                     }
                 },
@@ -609,22 +603,6 @@ def index_create(indexname):
     # check plugins for additional mappings
     for plugin in plugins:
         mappings = (plugin.add_mappings(mappings))
-
-    if (pv):
-        mappings['mappings']['directory']['properties'].update({
-            "change_percent_filesize": {
-                "type": "float"
-            },
-            "change_percent_items": {
-                "type": "float"
-            },
-            "change_percent_items_files": {
-                "type": "float"
-            },
-            "change_percent_items_subdirs": {
-                "type": "float"
-            }
-        })
 
     logger.info('Creating es index')
     es.indices.create(index=indexname, body=mappings)
@@ -1045,12 +1023,12 @@ def parse_cli_args(indexname):
                         help="Reindex directory and all subdirs (recursive)")
     parser.add_argument("-D", "--finddupes", action="store_true",
                         help="Find duplicate files in existing index and update \
-                            their dupe_md5 field (PRO VERSION)")
+                            their dupe_md5 field")
     parser.add_argument("-C", "--copytags", metavar='INDEX2', nargs=1,
                         help="Copy tags from index2 to index")
     parser.add_argument("-H", "--hotdirs", metavar='INDEX2', nargs=1,
                         help="Find hot dirs by calculating change percent from index2 and update \
-                                change_percent fields in index (PRO VERSION)")
+                                change_percent fields in index")
     parser.add_argument("-l", "--listen", action="store_true",
                         help="Start socket server and listen for remote commands")
     parser.add_argument("-B", "--crawlbot", action="store_true",
@@ -1410,9 +1388,6 @@ def wait_for_worker_bots():
 # load config file into config dictionary
 config = load_config()
 
-pv=False
-if(so.pkc(wd,-1,0))==1:version+=" PRO";pv=True
-
 # create Elasticsearch connection
 es = elasticsearch_connect(config)
 
@@ -1460,9 +1435,6 @@ if __name__ == "__main__":
             print('Please name your index: diskover-qumulo-<string>')
             sys.exit(0)
 
-    # check workers are running
-    if(so.pkc(wd,0,len(Worker.all(queue=q))))==0:sys.exit(0)
-
     # check for listen socket cli flag to start socket server
     if cliargs['listen']:
         import diskover_socket_server
@@ -1479,11 +1451,9 @@ if __name__ == "__main__":
         sys.exit(0)
 
     # tag duplicate files if cli argument
-    # pro version required
     if cliargs['finddupes']:
         import diskover_worker_bot
         import diskover_dupes
-        if(so.pkc(wd,2,0))==0:sys.exit(0)
         wait_for_worker_bots()
         # Set up worker threads for duplicate file checker queue
         diskover_dupes.dupes_finder(es, q, cliargs, logger)
@@ -1514,10 +1484,8 @@ if __name__ == "__main__":
         sys.exit(0)
 
     # Calculate directory change percent from index2 to index if cli argument
-    # Only available in pro version
     if cliargs['hotdirs']:
         import diskover_worker_bot
-        if(so.pkc(wd,1,0))==0:sys.exit(0)
         wait_for_worker_bots()
         hotdirs()
 

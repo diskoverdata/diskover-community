@@ -1,16 +1,15 @@
 # Diskover Change Log
 
-## [1.5.0-rc8] = 2018-05-23
+## [1.5.0-rc8] = 2018-05-26
 ### notice
-- community edition license is included
 - requires diskover-web >= v1.5.0-rc6
-- see https://shirosai.github.io/diskover for more information about upgrading to diskover PRO
 ### added
-- diskover so shared c library for mac and linux
-- diskover.lic for adding diskover pro license info
-### changed
-- running more than 8 worker bots requires diskover pro license
-- running finddupes or hotdirs requires diskover pro license
+- new directory doc fields/mappings for change percents (change_percent_filesize, change_percent_items, change_percent_items_files, change_percent_items_subdirs), used by hotdirs
+- --hotdirs cli arg for calculating directory change percents between index2 to index (hot directories)
+- killredisconn.py script to kill any stale/idle redis rq worker bots (redis clients); this could happen from the worker bots cold shutdown (sigkill) instead of warm (sigint/sigterm)
+- v1.2 of diskover-bot-launcher.sh
+### fixed
+- various bug fixes
 
 ## [1.5.0-rc7] = 2018-05-16
 ### fixed

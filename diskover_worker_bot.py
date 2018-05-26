@@ -189,7 +189,11 @@ def get_dir_meta(path, cliargs, reindex_dict):
             "tag": "",
             "tag_custom": "",
             "indexing_date": indextime_utc,
-            "worker_name": get_worker_name()
+            "worker_name": get_worker_name(),
+            "change_percent_filesize": "",
+            "change_percent_items": "",
+            "change_percent_items_files": "",
+            "change_percent_items_subdirs": ""
         }
 
         # search for and copy over any existing tags from reindex_dict
@@ -208,11 +212,6 @@ def get_dir_meta(path, cliargs, reindex_dict):
                 dirmeta_dict.update(plugin.add_meta(fullpath))
             except KeyError:
                 pass
-
-        if (diskover.pv):
-            meta = {"change_percent_filesize": "", "change_percent_items": "",
-                    "change_percent_items_files": "", "change_percent_items_subdirs": ""}
-            dirmeta_dict.update(meta)
 
     except (IOError, OSError):
         return None

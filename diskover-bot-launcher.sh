@@ -3,7 +3,7 @@
 # starts multiple bots to help with diskover redis queue
 # https://github.com/shirosaidev/diskover
 #
-# Copyright (C) Chris Park 2017
+# Copyright (C) Chris Park 2017-2018
 # diskover is released under the Apache 2.0 license. See
 # LICENSE for the full license text.
 #
@@ -15,6 +15,8 @@
 PYTHON=python
 # path to diskover_worker_bot.py
 DISKOVERBOT=./diskover_worker_bot.py
+# path to killredisconn.py
+KILLREDISCONN=./killredisconn.py
 # number of bots to start (cores x 2 might be good start)
 WORKERBOTS=8
 # run bots in burst mode (quit when all jobs done)
@@ -25,7 +27,7 @@ BOTPIDS=/tmp/diskover_bot_pids
 ###########################################################
 
 
-VERSION="1.1"
+VERSION="1.2"
 
 function printhelp {
     echo "Usage: $(basename $0) [OPTION] [ROOTDIR]"
@@ -36,6 +38,7 @@ function printhelp {
     echo "  -b      burst mode (bots quit when no more jobs)"
     echo "  -s      show all bots running"
     echo "  -k      kill all bots"
+    echo "  -r      remove any stuck/idle worker bot connections in Redis"
     echo "  -V      displays version and exits"
     echo "  -h      displays this help message and exits"
     echo
@@ -46,14 +49,16 @@ function printhelp {
 }
 
 KILLBOTS=FALSE
+REMOVEBOTS=FALSE
 SHOWBOTS=FALSE
-while getopts :h?w:bskV opt; do
+while getopts :h?w:bskrV opt; do
     case "$opt" in
     h) printhelp; exit 0;;
     w) WORKERBOTS=$OPTARG;;
     b) BURST=TRUE;;
     s) SHOWBOTS=TRUE;;
     k) KILLBOTS=TRUE;;
+    r) REMOVEBOTS=TRUE;;
     V) echo "$0 v$VERSION"; exit 0;;
     ?) echo "Invalid option ${OPTARG}, use -h for help" >&2; exit 1;;
     esac
@@ -104,8 +109,14 @@ if [ $KILLBOTS == TRUE ]; then
         echo "All worker bots have been sent shutdown command"
         rm $BOTPIDS
     else
-        echo "No worker bots running or pid file can't be found"
+        echo "Pid file can't be found, killing any bots..."
+        pkill -f diskover_worker_bot.py
+        echo "All worker bots have been sent shutdown command"
     fi
+elif [ $REMOVEBOTS == TRUE ]; then
+    echo "Removing any stuck/idle worker bot connections in Redis..."
+    $PYTHON $KILLREDISCONN
+    echo "Done"
 elif [ $SHOWBOTS == TRUE ]; then
     if [ -f $BOTPIDS ]; then
         echo "Running worker bots:"
@@ -115,7 +126,8 @@ elif [ $SHOWBOTS == TRUE ]; then
             fi
         done
     else
-        echo "No worker bots running"
+        echo "Pid file can't be found, running worker bot pids:"
+        pgrep -f diskover_worker_bot.py
     fi
 else
     startbots
