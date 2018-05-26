@@ -46,15 +46,13 @@ import ctypes
 if sys.platform == 'darwin':
     try:
         so = ctypes.CDLL(os.path.abspath(os.path.join(os.path.dirname(__file__), 'diskover_lib_mac.so')))
-    except OSError:
-        print("Set LD_LIBRARY_PATH env var to include diskover directory")
-        sys.exit(1)
+    except OSError as e:
+        raise OSError("Error %s" % e)
 elif sys.platform.startswith('linux'):
     try:
         so = ctypes.CDLL(os.path.abspath(os.path.join(os.path.dirname(__file__), 'diskover_lib_linux.so')))
-    except OSError:
-        print("Set LD_LIBRARY_PATH env var to include diskover directory")
-        sys.exit(1)
+    except OSError as e:
+        raise OSError("Error %s" % e)
 else:
     print('Unsupported operating system, diskover runs on mac and linux')
     sys.exit(1)
