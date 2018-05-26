@@ -50,7 +50,14 @@ intro:
 <p>Using diskover, users can identify old and unused files and give better insights into data change, file duplication and wasted space.</p>
 <div align="center"><img src="https://github.com/shirosaidev/diskover/blob/master/docs/diskover-diagram1-dark.png?raw=true" alt="diskover diagram" width="800" height="525"/></div>
 <h2>Screenshots</h2>
-<div align="center">diskover-web hot dirs analytics<br /><img src="https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-hotdirs-screenshot.png?raw=true" alt="diskover-web hotdirs" width="400" align="left" />filetree analytics<img src="https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-filetree-screenshot.png?raw=true" alt="diskover-web filetree" width="400" /></div>
+<table border="0">
+  <tr>
+    <td>diskover-web Hot Dirs analytics<br />
+      <img src="https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-hotdirs-screenshot.png?raw=true" alt="diskover-web hotdirs" width="600" /></td>
+    <td>filetree analytics<br />
+      <img src="https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-filetree-screenshot.png?raw=true" alt="diskover-web filetree" width="400" /></td>
+  </tr>
+</table>
 <h2>Works with Amazon AWS or fully hosted on diskover-cloud</h2>
 <p><img src="https://github.com/shirosaidev/diskover/blob/master/docs/_pages/amazon_web_services_logo_aws.jpg?raw=true" alt="diskover aws" align="left" width="178" height="117" hspace="20"/>diskover works on AWS using EC2 and Elasticsearch instances so you can get up and running quickly in the cloud. Crawl bots can run locally and push file system meta data into your AWS Elasticsearch. From there you can use EC2 to run diskover-web to view your data. To have all this set up for you, there is the option for fully managed diskover-cloud on AWS.</p>
 <h2>diskover ova's for VMware, etc</h2>
