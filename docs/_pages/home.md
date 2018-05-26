@@ -52,10 +52,16 @@ intro:
 <h2>Screenshots</h2>
 <table border="0">
   <tr>
-    <td>diskover-web Hot Dirs analytics<br />
+    <td>Hot Dirs analytics<br />
       <img src="https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-hotdirs-screenshot.png?raw=true" alt="diskover-web hotdirs" width="600" /></td>
-    <td>filetree analytics<br />
-      <img src="https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-filetree-screenshot.png?raw=true" alt="diskover-web filetree" width="400" /></td>
+    <td>Filetree analytics<br />
+      <img src="https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-filetree-screenshot.png?raw=true" alt="diskover-web filetree" width="600" /></td>
+  </tr>
+  <tr>
+    <td>File search and tagging<br />
+      <img src="https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-searchresults-screenshot.png?raw=true" alt="diskover-web tagging" width="600" /></td>
+    <td>Duplicate files analytics<br />
+      <img src="https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-dupes-screenshot.png?raw=true" alt="diskover-web dupes" width="600" /></td>
   </tr>
 </table>
 <h2>Works with Amazon AWS or fully hosted on diskover-cloud</h2>
