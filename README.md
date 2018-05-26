@@ -120,7 +120,7 @@ For bugs about diskover, please use the [issues page](https://github.com/shirosa
 
 ## Sponsor diskover
 
-To continue developing diskover and keep making it better, please consider sponsoring the project on [Patreon](https://www.patreon.com/diskover) or [PayPal](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=CLF223XAS4W72). Thank you so much to all the users and supporters!
+If you are using diskover and it's helping you save storage space and want me to continue developing it, please consider sponsoring the project on [Patreon](https://www.patreon.com/diskover) or [PayPal](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=CLF223XAS4W72). Thank you so much to all the users and supporters!
 
 ## License
 
