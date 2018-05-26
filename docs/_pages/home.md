@@ -52,21 +52,27 @@ intro:
 <h2>Screenshots</h2>
 <table border="0">
   <tr>
-    <td>Hot Dirs analytics<br />
+    <td>See data changing on your disk and identify hot spots<br />
       <img src="https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-hotdirs-screenshot.png?raw=true" alt="diskover-web hotdirs" width="600" /></td>
-    <td>Filetree analytics<br />
+    <td>Visualize your file system using one of the many analytics<br />
       <img src="https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-filetree-screenshot.png?raw=true" alt="diskover-web filetree" width="600" /></td>
   </tr>
   <tr>
-    <td>File search and tagging<br />
+    <td>Tag files using default and custom tags, export file lists to csv and json<br />
       <img src="https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-searchresults-screenshot.png?raw=true" alt="diskover-web tagging" width="600" /></td>
-    <td>Duplicate files analytics<br />
+    <td>Visualize your tags and use the built-in rest-api to assist with data cleanup/moving<br />
+      <img src="https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-tags-screenshot.png?raw=true" alt="diskover-web tags" width="600" /></td>
+  </tr>
+  <tr>
+    <td>Use pre-made or create custom smart searches<br />
+      <img src="https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-smartsearches-screenshot.png?raw=true" alt="diskover-web tagging" width="600" /></td>
+    <td>Find duplicate files taking up disk space<br />
       <img src="https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-dupes-screenshot.png?raw=true" alt="diskover-web dupes" width="600" /></td>
   </tr>
   <tr>
-    <td>Search all your storage servers<br />
+    <td>Quickly search all your storage servers<br />
       <img src="https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-advancedsearch-screenshot.png?raw=true" alt="diskover-web file search" width="600" /></td>
-    <td>Use Elasticsearch query syntax<br />
+    <td>Use Elasticsearch query syntax to find files and directories<br />
       <img src="https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-simplesearch-screenshot.png?raw=true" alt="diskover-web file search es query" width="600" /></td>
   </tr>
 </table>
