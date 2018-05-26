@@ -52,15 +52,15 @@ intro:
 <h2>Screenshots</h2>
 <table border="0">
   <tr>
-    <td>See data changing on your disk and identify hot spots<br />
+    <td>See data change on your file system and identify hot spots<br />
       <img src="https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-hotdirs-screenshot.png?raw=true" alt="diskover-web hotdirs" width="600" /></td>
     <td>Visualize your file system using one of the many analytics<br />
       <img src="https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-filetree-screenshot.png?raw=true" alt="diskover-web filetree" width="600" /></td>
   </tr>
   <tr>
-    <td>Tag files using default and custom tags, export file lists to csv and json<br />
+    <td>Tag files and directories using default and custom tags, export file lists<br />
       <img src="https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-searchresults-screenshot.png?raw=true" alt="diskover-web tagging" width="600" /></td>
-    <td>Visualize your tags and use the built-in rest-api to assist with data cleanup/moving<br />
+    <td>Use the built-in rest-api to assist with tagged data cleanup/moving<br />
       <img src="https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-tags-screenshot.png?raw=true" alt="diskover-web tags" width="600" /></td>
   </tr>
   <tr>
