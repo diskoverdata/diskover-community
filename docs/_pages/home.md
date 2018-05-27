@@ -15,7 +15,7 @@ feature_row:
     image_path: https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-filetree-screenshot.png?raw=true
     alt: "file system crawler"
     title: "File System Crawler"
-    excerpt: "diskover crawls your storage servers over nfs/smb and scrapes file/directory meta data into Elasticsearch."
+    excerpt: "diskover crawls your storage servers locally or over NFS/SMB and scrapes file/directory meta data into Elasticsearch."
     url: "https://github.com/shirosaidev/diskover"
     btn_class: "btn--primary"
     btn_label: "Learn More"
