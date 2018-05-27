@@ -56,7 +56,7 @@ intro:
     <td>See data change on your file system and identify hot spots<br />
       <img src="https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-hotdirs-screenshot.png?raw=true" alt="diskover-web hotdirs" width="600" /></td>
     <td>Visualize your file system using one of the many analytics<br />
-      <img src="https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-filetree-screenshot.png?raw=true" alt="diskover-web filetree" width="600" /></td>
+      <img src="https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-hardlinks-screenshot.png?raw=true" alt="diskover-web filetree" width="600" /></td>
   </tr>
   <tr>
     <td>Tag files and directories using default and custom tags, export file lists<br />
