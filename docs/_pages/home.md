@@ -36,7 +36,8 @@ feature_row:
     btn_class: "btn--primary"
     btn_label: "Learn More"
 github:
-  - excerpt: '{::nomarkdown}<iframe style="display: inline-block;" src="https://ghbtns.com/github-btn.html?user=shirosaidev&repo=diskover&type=star&count=true&size=large" frameborder="0" scrolling="0" width="160px" height="30px"></iframe> <iframe style="display: inline-block;" src="https://ghbtns.com/github-btn.html?user=shirosaidev&repo=diskover&type=fork&count=true&size=large" frameborder="0" scrolling="0" width="158px" height="30px"></iframe>{:/nomarkdown}'
+  - excerpt: '{::nomarkdown}<a class="github-button" href="https://github.com/shirosaidev/diskover" data-size="large" data-show-count="true" aria-label="Star shirosaidev/diskover on GitHub">Star</a><a class="github-button" href="https://github.com/shirosaidev/diskover/fork" data-size="large" data-show-count="true" aria-label="Fork shirosaidev/diskover on GitHub">Fork</a>
+<script async defer src="https://buttons.github.io/buttons.js"></script>{:/nomarkdown}'
 intro:
   - excerpt: 'Support the development&nbsp;[<i class="fa fa-heart" aria-hidden="true"></i> Sponsor Patreon](https://www.patreon.com/diskover){: .btn .btn--primary}&nbsp;[<i class="fa fa-credit-card" aria-hidden="true"></i> Donate PayPal](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=CLF223XAS4W72){: .btn .btn--primary}'
 ---
