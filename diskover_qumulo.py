@@ -283,7 +283,11 @@ def qumulo_get_dir_meta(path, cliargs, reindex_dict, redis_conn):
         "tag": "",
         "tag_custom": "",
         "indexing_date": indextime_utc,
-        "worker_name": diskover_worker_bot.get_worker_name()
+        "worker_name": diskover_worker_bot.get_worker_name(),
+        "change_percent_filesize": "",
+        "change_percent_items": "",
+        "change_percent_items_files": "",
+        "change_percent_items_subdirs": ""
     }
 
     # search for and copy over any existing tags from reindex_dict
@@ -580,6 +584,18 @@ def get_qumulo_mappings(config):
                     },
                     "worker_name": {
                         "type": "keyword"
+                    },
+                    "change_percent_filesize": {
+                        "type": "float"
+                    },
+                    "change_percent_items": {
+                        "type": "float"
+                    },
+                    "change_percent_items_files": {
+                        "type": "float"
+                    },
+                    "change_percent_items_subdirs": {
+                        "type": "float"
                     }
                 }
             },
