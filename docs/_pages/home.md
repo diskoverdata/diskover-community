@@ -9,7 +9,8 @@ header:
   cta_url: "https://github.com/shirosaidev/diskover/releases/latest"
   caption:
 excerpt: '<img src="https://github.com/shirosaidev/diskover/raw/master/docs/diskover.png?raw=true" style="width: 183px; float: left; margin: 0px 30px 10px 0px;">File system crawler, storage search engine and storage analytics software powered by Elasticsearch to help visualize and manage your disk space usage.<br /> <small><a href="https://github.com/shirosaidev/diskover/releases/tag/v1.5.0-rc8">Latest release v1.5.0-rc8</a></small><br /><br />
-{::nomarkdown}<iframe style="display: inline-block;" src="https://ghbtns.com/github-btn.html?user=shirosaidev&repo=diskover&type=star&count=true&size=large" frameborder="0" scrolling="0" width="160px" height="30px"></iframe> <iframe style="display: inline-block;" src="https://ghbtns.com/github-btn.html?user=shirosaidev&repo=diskover&type=fork&count=true&size=large" frameborder="0" scrolling="0" width="158px" height="30px"></iframe>{:/nomarkdown}'
+{::nomarkdown}<a class="github-button" href="https://github.com/shirosaidev/diskover" data-size="large" data-show-count="true" aria-label="Star shirosaidev/diskover on GitHub">Star</a><a class="github-button" href="https://github.com/shirosaidev/diskover/fork" data-size="large" data-show-count="true" aria-label="Fork shirosaidev/diskover on GitHub">Fork</a>
+<script async defer src="https://buttons.github.io/buttons.js"></script>{:/nomarkdown}'
 feature_row:
   - url: https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-filetree-screenshot.png?raw=true
     image_path: https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-filetree-screenshot.png?raw=true
