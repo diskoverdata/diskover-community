@@ -4,7 +4,6 @@
 [![Release](https://img.shields.io/github/release/shirosaidev/diskover.svg?label=Release&maxAge=60)](https://github.com/shirosaidev/diskover/releases/latest)
 [![Sponsor Patreon](https://img.shields.io/badge/Sponsor%20%24-Patreon-brightgreen.svg)](https://www.patreon.com/diskover)
 [![Donate PayPal](https://img.shields.io/badge/Donate%20%24-PayPal-brightgreen.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=CLF223XAS4W72)
-[![Buy PRO](https://img.shields.io/badge/Buy%20%24-PRO-red.svg)](https://www.patreon.com/diskover)
 
 <img align="left" width="249" height="189" src="docs/diskover.png?raw=true" hspace="5" vspace="5" alt="diskover">
 
@@ -73,13 +72,10 @@ $ cd diskover
 
 [Download latest version](https://github.com/shirosaidev/diskover/releases/latest)
 
-### Community edition VS diskover PRO
-
-The community edition of diskover allows up to a max 8 worker bots. To crawl using unlimited workers you will need to purchase a license for diskover pro. diskover pro also allows searching for dupes (finddupes) and comparing index data (hotdirs). To purchase diskover PRO, see diskover's Patreon page for pricing https://www.patreon.com/diskover. You can also buy pro license using PayPal.
 
 ### OVA image file (for vmware, etc)
 
-If you don't want to set up everything yourself, I have an OVA file running the latest version of diskover/diskover-web. Fastest and best way to get up and running with diskover. diskover PRO license includes download link for ova's.
+If you don't want to set up everything yourself, I have OVA files running the latest version of diskover/diskover-web. Fastest and best way to get up and running with diskover. Sponsoring the project on Patreon gives you access to the OVA's.
 
 ### Requirements
 
@@ -99,7 +95,6 @@ Start diskover worker bots (a good number might be cores x 2) with:
 $ cd /path/with/diskover
 $ python diskover_worker_bot.py
 ```
-**Up to max 8 worker bots with community edition and unlimited with PRO**
 
 Worker bots can be added during a crawl to help with the queue. To run a worker bot in burst mode (quit after all jobs done), use the -b flag. If the queue is empty these bots will die, so use `rq info` or `rq-dashboard` to see if they are running. Run `diskover-bot-launcher.sh` to spawn and kill multiple bots. Bots can be run on any host in the network as long as they have the same nfs/cifs mountpoint as rootdir (-d path) and can connect to ES and Redis (see wiki for more info).
 
@@ -125,7 +120,7 @@ For bugs about diskover, please use the [issues page](https://github.com/shirosa
 
 ## Sponsor diskover
 
-To continue developing diskover and keep making it better, please consider sponsoring the project on [Patreon](https://www.patreon.com/diskover) or [PayPal](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=CLF223XAS4W72). Thank you so much to all the users and supporters!
+If you are using diskover and it's helping you save storage space and want me to continue developing it, please consider sponsoring the project on [Patreon](https://www.patreon.com/diskover) or [PayPal](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=CLF223XAS4W72). Thank you so much to all the users and supporters!
 
 ## License
 
