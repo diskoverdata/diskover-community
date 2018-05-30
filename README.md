@@ -75,7 +75,7 @@ $ cd diskover
 
 ### OVA image file (for vmware, etc)
 
-If you don't want to set up everything yourself, I have OVA files running the latest version of diskover/diskover-web. Fastest and best way to get up and running with diskover. Sponsoring the project on Patreon gives you access to the OVA's.
+If you don't want to set up everything yourself, I have OVA files running the latest version of diskover/diskover-web. Fastest and best way to get up and running with diskover. Sponsoring/donating to the project on Patreon or PayPal gives you access to the OVA downloads.
 
 ### Requirements
 
