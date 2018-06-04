@@ -1,4 +1,4 @@
-# diskover - File system crawler, storage search engine and analytics powered by Elasticsearch
+# diskover - File system crawler, disk space usage, storage search engine and analytics powered by Elasticsearch
 
 [![License](https://img.shields.io/github/license/shirosaidev/diskover.svg?label=License&maxAge=86400)](./LICENSE)
 [![Release](https://img.shields.io/github/release/shirosaidev/diskover.svg?label=Release&maxAge=60)](https://github.com/shirosaidev/diskover/releases/latest)
@@ -48,7 +48,7 @@ Kibana dashboards/saved searches/visualizations and support for Gource<br>
 * `Python progressbar2 module`
 * `Python redis module`
 * `Python rq module`
-* `Elasticsearch 5` (local or [AWS ES Service](https://aws.amazon.com/elasticsearch-service/), tested on Elasticsearch 5.4.2, 5.6.4) Elasticsearch 6 is not supported yet.
+* `Elasticsearch 5` (local or [AWS ES Service](https://aws.amazon.com/elasticsearch-service/), tested on Elasticsearch 5.4.2, 5.6.4, 5.6.9) Elasticsearch 6 is not supported yet.
 * `Redis` (tested on 4.0.8)
 
 Install the above Python modules using pip.
@@ -75,7 +75,7 @@ $ cd diskover
 
 ### OVA image file (for vmware, etc)
 
-If you don't want to set up everything yourself, I have OVA files running the latest version of diskover/diskover-web. Fastest and best way to get up and running with diskover. Sponsoring the project on Patreon gives you access to the OVA's.
+If you don't want to set up everything yourself, I have OVA files running the latest version of diskover/diskover-web. Fastest and best way to get up and running with diskover. Becoming a sponsor on Patreon gives you access to the OVA downloads.
 
 ### Requirements
 
@@ -120,7 +120,7 @@ For bugs about diskover, please use the [issues page](https://github.com/shirosa
 
 ## Sponsor diskover
 
-If you are using diskover and it's helping you save storage space and want me to continue developing it, please consider sponsoring the project on [Patreon](https://www.patreon.com/diskover) or [PayPal](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=CLF223XAS4W72). Thank you so much to all the users and supporters!
+If you are a fan of the project or you are using diskover and it's helping you save storage space and want to see it keep advancing, please consider sponsoring the project on [Patreon](https://www.patreon.com/diskover) or [PayPal](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=CLF223XAS4W72). Thank you so much to all the users and supporters!
 
 ## License
 
