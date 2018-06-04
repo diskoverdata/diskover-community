@@ -172,15 +172,21 @@ def run_command(threadnum, command_dict, clientsock, cliargs, logger, verbose):
 
     # try to get index name from command or use from diskover config file
     try:
-        index = command_dict['index']
+        index = str(command_dict['index'])
     except KeyError:
-        index = diskover.config['index']
+        index = str(diskover.config['index'])
         pass
     # try to get worker batch size from command or use default
     try:
         batchsize = str(command_dict['batchsize'])
     except KeyError:
         batchsize = str(cliargs['batchsize'])
+        pass
+    # try to get adaptive batch option from command or use default
+    try:
+        adaptivebatch = str(command_dict['adaptivebatch'])
+    except KeyError:
+        adaptivebatch = str(cliargs['adaptivebatch'])
         pass
 
     try:
@@ -191,14 +197,12 @@ def run_command(threadnum, command_dict, clientsock, cliargs, logger, verbose):
         # set up command for different action
         if action == 'crawl':
             path = command_dict['path']
-            cmd = [
-                pythonpath, '-u', diskoverpath, '-b', batchsize,
-                '-i', index, '-d', path, '-q']
+            cmd = [pythonpath, '-u', diskoverpath, '-b', batchsize,
+                   '-i', index, '-d', path, '-q']
 
         elif action == 'finddupes':
-            cmd = [
-                pythonpath, '-u', diskoverpath, '-b', batchsize,
-                '-i', index, '-D', '-q']
+            cmd = [pythonpath, '-u', diskoverpath, '-b', batchsize,
+                   '-i', index, '--finddupes', '-q']
 
         elif action == 'reindex':
             try:
@@ -208,12 +212,10 @@ def run_command(threadnum, command_dict, clientsock, cliargs, logger, verbose):
                 pass
             path = command_dict['path']
             if recursive == 'true':
-                cmd = [
-                    pythonpath, '-u', diskoverpath, '-b', batchsize,
+                cmd = [pythonpath, '-u', diskoverpath, '-b', batchsize,
                     '-i', index, '-d', path, '-R', '-q']
             else:
-                cmd = [
-                    pythonpath, '-u', diskoverpath, '-b', batchsize,
+                cmd = [pythonpath, '-u', diskoverpath, '-b', batchsize,
                     '-i', index, '-d', path, '-r', '-q']
 
         elif action == 'kill':
@@ -230,6 +232,10 @@ def run_command(threadnum, command_dict, clientsock, cliargs, logger, verbose):
             message = b'{"error": "unknown action"}\n'
             clientsock.send(message)
             return
+
+        # add adaptive batch
+        if (adaptivebatch == "True" or adaptivebatch == "true"):
+            cmd.append('-a')
 
         # run command using subprocess
         starttime = time.time()

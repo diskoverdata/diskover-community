@@ -1,5 +1,22 @@
 # Diskover Change Log
 
+## [1.5.0-rc9] = 2018-06-04
+### notice
+- diskover-bot-launcher.sh has been updated, when updating with git please check that any of your env settings at top of file have not changed, you may need to edit these again
+- if using the autotag flag, you may want to add a new custom tag in diskover-web admin page for "autotag" if you are using that as the tag_custom value in autotag patterns
+### changed
+- directory excludes (see diskover.cfg.sample) now includes better wildcard searching including for example *tmp* or tmp* or *tmp
+- socket server to accept use of adaptivebatch or batchsize (see wiki for how to)
+### added
+- --autotag cli arg to turn on bot auto-tagging
+- autotag section to diskover.cfg (see diskover.cfg.sample and copy from there) - can be used to get bots to auto tag files/directories during crawl based on patterns
+- \ (backslash) char to escape_chars function
+- v1.3 of diskover-bot-launcher.sh - added restart bot cli arg -r (changed redis worker remove to -R) and cleaned up script
+- improved dupe checking
+### fixed
+- bug with dupe md5 check
+- bug with regular expression matching for directory excludes
+
 ## [1.5.0-rc8] = 2018-05-26
 ### notice
 - requires diskover-web >= v1.5.0-rc6

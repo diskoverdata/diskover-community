@@ -39,9 +39,10 @@ import re
 import os
 import sys
 import threading
+import json
 
 
-version = '1.5.0-rc8'
+version = '1.5.0-rc9'
 __version__ = version
 
 IS_PY3 = sys.version_info >= (3, 0)
@@ -152,163 +153,179 @@ def load_config():
         d = config.get('excludes', 'dirs')
         dirs = d.split(',')
         configsettings['excluded_dirs'] = set(dirs)
-    except Exception:
+    except ConfigParser.NoOptionError:
         configsettings['excluded_dirs'] = set([])
     try:
         f = config.get('excludes', 'files')
         files = f.split(',')
         configsettings['excluded_files'] = set(files)
-    except Exception:
+    except ConfigParser.NoOptionError:
         configsettings['excluded_files'] = set([])
     try:
         d = config.get('includes', 'dirs')
         dirs = d.split(',')
         configsettings['included_dirs'] = set(dirs)
-    except Exception:
+    except ConfigParser.NoOptionError:
         configsettings['included_dirs'] = set([])
     try:
         f = config.get('includes', 'files')
         files = f.split(',')
         configsettings['included_files'] = set(files)
-    except Exception:
+    except ConfigParser.NoOptionError:
         configsettings['included_files'] = set([])
     try:
+        t = config.get('autotag', 'files')
+        atf = json.loads(t)
+        configsettings['autotag_files'] = atf
+    except json.decoder.JSONDecodeError:
+        raise ValueError("Error in config autotag files")
+    except ConfigParser.NoOptionError:
+        configsettings['autotag_files'] = []
+    try:
+        t = config.get('autotag', 'dirs')
+        atd = json.loads(t)
+        configsettings['autotag_dirs'] = atd
+    except json.decoder.JSONDecodeError:
+        raise ValueError("Error in config autotag dirs")
+    except ConfigParser.NoOptionError:
+        configsettings['autotag_dirs'] = []
+    try:
         configsettings['aws'] = config.get('elasticsearch', 'aws')
-    except Exception:
+    except ConfigParser.NoOptionError:
         configsettings['aws'] = "False"
     try:
         configsettings['es_host'] = config.get('elasticsearch', 'host')
-    except Exception:
+    except ConfigParser.NoOptionError:
         configsettings['es_host'] = "localhost"
     try:
         configsettings['es_port'] = int(config.get('elasticsearch', 'port'))
-    except Exception:
+    except ConfigParser.NoOptionError:
         configsettings['es_port'] = 9200
     try:
         configsettings['es_user'] = config.get('elasticsearch', 'user')
-    except Exception:
+    except ConfigParser.NoOptionError:
         configsettings['es_user'] = ""
     try:
         configsettings['es_password'] = config.get('elasticsearch', 'password')
-    except Exception:
+    except ConfigParser.NoOptionError:
         configsettings['es_password'] = ""
     try:
         configsettings['index'] = config.get('elasticsearch', 'indexname')
-    except Exception:
+    except ConfigParser.NoOptionError:
         configsettings['index'] = ""
     try:
         configsettings['es_timeout'] = \
             int(config.get('elasticsearch', 'timeout'))
-    except Exception:
+    except ConfigParser.NoOptionError:
         configsettings['es_timeout'] = 10
     try:
         configsettings['es_maxsize'] = \
             int(config.get('elasticsearch', 'maxsize'))
-    except Exception:
+    except ConfigParser.NoOptionError:
         configsettings['es_maxsize'] = 10
     try:
         configsettings['es_max_retries'] = \
             int(config.get('elasticsearch', 'maxretries'))
-    except Exception:
+    except ConfigParser.NoOptionError:
         configsettings['es_max_retries'] = 0
     try:
         configsettings['es_wait_status_yellow'] = \
-            int(config.get('elasticsearch', 'wait'))
-    except Exception:
+            config.get('elasticsearch', 'wait')
+    except ConfigParser.NoOptionError:
         configsettings['es_wait_status_yellow'] = "False"
     try:
         configsettings['es_chunksize'] = \
             int(config.get('elasticsearch', 'chunksize'))
-    except Exception:
+    except ConfigParser.NoOptionError:
         configsettings['es_chunksize'] = 500
     try:
         configsettings['index_shards'] = \
             int(config.get('elasticsearch', 'shards'))
-    except Exception:
+    except ConfigParser.NoOptionError:
         configsettings['index_shards'] = 5
     try:
         configsettings['index_replicas'] = \
             int(config.get('elasticsearch', 'replicas'))
-    except Exception:
+    except ConfigParser.NoOptionError:
         configsettings['index_replicas'] = 1
     try:
         configsettings['redis_host'] = config.get('redis', 'host')
-    except Exception:
+    except ConfigParser.NoOptionError:
         configsettings['redis_host'] = "localhost"
     try:
         configsettings['redis_port'] = int(config.get('redis', 'port'))
-    except Exception:
+    except ConfigParser.NoOptionError:
         configsettings['redis_port'] = 6379
     try:
         configsettings['redis_password'] = config.get('redis', 'password')
-    except Exception:
+    except ConfigParser.NoOptionError:
         configsettings['redis_password'] = ""
     try:
         configsettings['redis_dirtimesttl'] = int(config.get('redis', 'dirtimesttl'))
-    except Exception:
+    except ConfigParser.NoOptionError:
         configsettings['redis_dirtimesttl'] = 604800
     try:
         configsettings['botlogs'] = config.get('workerbot', 'botlogs')
-    except Exception:
+    except ConfigParser.NoOptionError:
         configsettings['botlogs'] = "False"
     try:
         configsettings['botlogfiledir'] = config.get('workerbot', 'logfiledir')
-    except Exception:
+    except ConfigParser.NoOptionError:
         configsettings['botlogfiledir'] = "/tmp"
     try:
         configsettings['listener_host'] = \
-            int(config.get('socketlistener', 'host'))
-    except Exception:
+            config.get('socketlistener', 'host')
+    except ConfigParser.NoOptionError:
         configsettings['listener_host'] = "localhost"
     try:
         configsettings['listener_port'] = \
             int(config.get('socketlistener', 'port'))
-    except Exception:
+    except ConfigParser.NoOptionError:
         configsettings['listener_port'] = 9999
     try:
         configsettings['diskover_path'] = \
             config.get('paths', 'diskoverpath')
-    except Exception:
+    except ConfigParser.NoOptionError:
         configsettings['diskover_path'] = "./diskover.py"
     try:
         configsettings['python_path'] = \
             config.get('paths', 'pythonpath')
-    except Exception:
+    except ConfigParser.NoOptionError:
         configsettings['python_path'] = "python"
     try:
         configsettings['md5_readsize'] = \
             int(config.get('dupescheck', 'readsize'))
-    except Exception:
+    except ConfigParser.NoOptionError:
         configsettings['md5_readsize'] = 65536
     try:
         configsettings['botsleep'] = \
             float(config.get('crawlbot', 'sleeptime'))
-    except Exception:
+    except ConfigParser.NoOptionError:
         configsettings['botsleep'] = 0.1
     try:
         configsettings['botthreads'] = \
             int(config.get('crawlbot', 'botthreads'))
-    except Exception:
+    except ConfigParser.NoOptionError:
         configsettings['botthreads'] = 8
     try:
         configsettings['gource_maxfilelag'] = \
             float(config.get('gource', 'maxfilelag'))
-    except Exception:
+    except ConfigParser.NoOptionError:
         configsettings['gource_maxfilelag'] = 5
     try:
         configsettings['qumulo_host'] = \
             config.get('qumulo', 'cluster')
-    except Exception:
+    except ConfigParser.NoOptionError:
         configsettings['qumulo_host'] = ""
     try:
         configsettings['qumulo_api_user'] = \
             config.get('qumulo', 'api_user')
-    except Exception:
+    except ConfigParser.NoOptionError:
         configsettings['qumulo_api_user'] = ""
     try:
         configsettings['qumulo_api_password'] = \
             config.get('qumulo', 'api_password')
-    except Exception:
+    except ConfigParser.NoOptionError:
         configsettings['qumulo_api_password'] = ""
 
     return configsettings
@@ -616,7 +633,7 @@ def index_bulk_add(es, doclist, doctype, config, cliargs):
     if len(doclist) == 0:
         return
 
-    if config['es_wait_status_yellow'] == "True" or ['es_wait_status_yellow'] == "true":
+    if config['es_wait_status_yellow'] == "True" or config['es_wait_status_yellow'] == "true":
         # wait for es health to be at least yellow
         es.cluster.health(wait_for_status='yellow',
                           request_timeout=config['es_timeout'])
@@ -930,18 +947,49 @@ def dir_excluded(path, config, verbose):
         if verbose:
             logger.info('Skipping (excluded dir) %s', path)
         return True
-    # skip any dirs that are found in reg exp check
+    # skip any dirs that are found in reg exp checks including wildcard searches
+    found_dir = False
+    found_path = False
     for d in config['excluded_dirs']:
         if d == '.*':
             continue
-        # only look for match if wildcard at end of excluded directory
-        if d.endswith('*'):
-            found_dir = re.match(d, os.path.basename(path))
-            found_path = re.match(d, path)
-            if found_dir or found_path:
-                if verbose:
-                    logger.info('Skipping (excluded dir) %s', path)
-                return True
+        if d.startswith('*') and d.endswith('*'):
+            d = d.replace('*', '')
+            if re.search(d, os.path.basename(path)):
+                found_dir = True
+                break
+            elif re.search(d, path):
+                found_path = True
+                break
+        elif d.startswith('*'):
+            d = d + '$'
+            if re.search(d, os.path.basename(path)):
+                found_dir = True
+                break
+            elif re.search(d, path):
+                found_path = True
+                break
+        elif d.endswith('*'):
+            d = '^' + d
+            if re.search(d, os.path.basename(path)):
+                found_dir = True
+                break
+            elif re.search(d, path):
+                found_path = True
+                break
+        else:
+            if d == os.path.basename(path):
+                found_dir = True
+                break
+            elif d == path:
+                found_path = True
+                break
+
+    if found_dir or found_path:
+        if verbose:
+            logger.info('Skipping (excluded dir) %s', path)
+        return True
+
     return False
 
 
@@ -949,7 +997,7 @@ def escape_chars(text):
     """This is the escape special characters function.
     It returns escaped path strings for es queries.
     """
-    chr_dict = {'/': '\\/', '(': '\\(', ')': '\\)', '[': '\\[', ']': '\\]', '$': '\\$',
+    chr_dict = {'\\': '\\\\', '/': '\\/', '(': '\\(', ')': '\\)', '[': '\\[', ']': '\\]', '$': '\\$',
                 ' ': '\\ ', '&': '\\&', '<': '\\<', '>': '\\>', '+': '\\+', '-': '\\-',
                 '|': '\\|', '!': '\\!', '{': '\\{', '}': '\\}', '^': '\\^', '~': '\\~',
                 '?': '\\?', ':': '\\:', '=': '\\=', '\'': '\\\'', '"': '\\"', '@': '\\@'}
@@ -1017,6 +1065,8 @@ def parse_cli_args(indexname):
                             25)")
     parser.add_argument("-a", "--adaptivebatch", action="store_true",
                         help="Adaptive batch size for sending to worker bots (intelligent crawl)")
+    parser.add_argument("-A", "--autotag", action="store_true",
+                        help="Get bots to auto-tag files/dirs based on patterns in config")
     parser.add_argument("-r", "--reindex", action="store_true",
                         help="Reindex directory (non-recursive)")
     parser.add_argument("-R", "--reindexrecurs", action="store_true",
@@ -1027,7 +1077,7 @@ def parse_cli_args(indexname):
     parser.add_argument("-C", "--copytags", metavar='INDEX2', nargs=1,
                         help="Copy tags from index2 to index")
     parser.add_argument("-H", "--hotdirs", metavar='INDEX2', nargs=1,
-                        help="Find hot dirs by calculating change percent from index2 and update \
+                        help="Find hot dirs by calculating change percents from index2 (prev index) and update \
                                 change_percent fields in index")
     parser.add_argument("-l", "--listen", action="store_true",
                         help="Start socket server and listen for remote commands")
@@ -1174,6 +1224,11 @@ def calc_dir_sizes(cliargs, logger, path=None, addstats=False):
 
 
 def treewalk(path, num_sep, level, batchsize, bar, cliargs, reindex_dict):
+    """This is the tree walk function.
+    It walks the tree using scandir walk and adds tuple of root, dirs, files
+    to redis queue for rq worker bots to scrape meta and upload
+    to ES index.
+    """
     import diskover_worker_bot
     global totaljobs
     batch = []
@@ -1230,9 +1285,8 @@ def treewalk(path, num_sep, level, batchsize, bar, cliargs, reindex_dict):
 
 def crawl_tree(path, cliargs, logger, reindex_dict):
     """This is the crawl tree function.
-    It walks the tree and adds tuple of root, dirs, files
-    to redis queue for rq workers to scrape meta and upload
-    to ES index.
+    It starts threads for every directory at path and and waits
+    for the threads and rq queue to finish.
     """
     import diskover_worker_bot
     global totaljobs
@@ -1240,6 +1294,9 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
     try:
         wait_for_worker_bots()
         logger.info('Enqueueing crawl to diskover worker bots for %s...', path)
+
+        if cliargs['autotag']:
+            logger.info("Worker bots set to auto-tag (-A)")
 
         if cliargs['adaptivebatch']:
             batchsize = adaptivebatch_startsize
@@ -1269,6 +1326,10 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
         # set current depth
         num_sep = path.count(os.path.sep)
 
+        thread_list = []
+
+        # set up threads to parallel crawl directories at rootdir
+        # qumulo api crawl
         if cliargs['qumulo']:
             qumulo_ip, qumulo_ses = diskover_qumulo.qumulo_connection()
             # use qumulo api to get dir list
@@ -1278,8 +1339,6 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
             q.enqueue(diskover_worker_bot.scrape_tree_meta,
                       args=([(root, files)], cliargs, reindex_dict,))
             totaljobs += 1
-
-            thread_list = []
             # set up threads to parallel crawl directories at rootdir using qumulo api
             for d_path in dirs:
                 thread = threading.Thread(target=diskover_qumulo.qumulo_treewalk,
@@ -1287,35 +1346,28 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
                                                 level, batchsize, bar, cliargs, reindex_dict,))
                 thread.start()
                 thread_list.append(thread)
-
-            # wait for the threads to finish
-            for thread in thread_list:
-                thread.join()
-        else:
+        else:  # regular crawl using scandir/walk
             root_files = []
             for entry in scandir(path):
                 if entry.is_file(follow_symlinks=False):
                     root_files.append(entry.name)
-            # enqueue rootdir files
-            q.enqueue(diskover_worker_bot.scrape_tree_meta,
-                      args=([(path, root_files)], cliargs, reindex_dict,))
-            totaljobs += 1
-
-            thread_list = []
-            # set up threads to parallel crawl directories at rootdir
-            for entry in scandir(path):
-                if entry.is_dir(follow_symlinks=False):
+                elif entry.is_dir(follow_symlinks=False):
                     thread = threading.Thread(target=treewalk,
                                               args=(entry.path, num_sep, level, batchsize,
                                                     bar, cliargs, reindex_dict,))
                     thread.start()
                     thread_list.append(thread)
 
-            # wait for the threads to finish
-            for thread in thread_list:
-                thread.join()
+            # enqueue rootdir files
+            q.enqueue(diskover_worker_bot.scrape_tree_meta,
+                      args=([(path, root_files)], cliargs, reindex_dict,))
+            totaljobs += 1
 
-        # wait for queue to be empty
+        # wait for the threads to finish
+        for thread in thread_list:
+            thread.join()
+
+        # wait for queue to be empty and update progress bar
         while True:
             if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
                 try:
@@ -1338,6 +1390,8 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
 
 
 def hotdirs():
+    """This is the calculate hot dirs function.
+    """
     logger.info('Getting diskover bots to calculate change percent '
                 'for directories from %s to %s',
                          cliargs['hotdirs'][0], cliargs['index'])
@@ -1368,16 +1422,13 @@ def hotdirs():
                 if cliargs['verbose'] or cliargs['debug']:
                     if batchsize_prev != batchsize:
                         logger.info('Batch size: %s' % batchsize)
-
     # add any remaining in batch to queue
     q.enqueue(diskover_worker_bot.calc_hot_dirs, args=(dirbatch, cliargs,))
 
-    logger.info('Directories have all been enqueued, calculating in background')
-    logger.info('Dispatcher is DONE! Sayonara!')
-    sys.exit(0)
-
 
 def wait_for_worker_bots():
+    """This is the wait for worker bots function.
+    """
     while len(Worker.all(queue=q)) == 0:
         logger.info('Waiting for diskover worker bots to start...')
         time.sleep(2)
@@ -1488,6 +1539,9 @@ if __name__ == "__main__":
         import diskover_worker_bot
         wait_for_worker_bots()
         hotdirs()
+        logger.info('Directories have all been enqueued, calculating in background')
+        logger.info('Dispatcher is DONE! Sayonara!')
+        sys.exit(0)
 
     # print plugins
     plugins_list = ""

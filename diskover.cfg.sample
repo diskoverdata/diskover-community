@@ -1,3 +1,6 @@
+; diskover config file
+; if you make any changes, restart worker bots so they get the new config
+
 [excludes]
 ; directory names and absolute paths you want to exclude from crawl, case-sensitive, can include wildcard (.* or tmp* or /dir/dirname* etc)
 dirs = .*,.snapshot,.Snapshot
@@ -9,6 +12,11 @@ files = .*,Thumbs.db,.DS_Store,._.DS_Store,.localized,desktop.ini
 ;dirs = .recycle
 ; files you want to include (whitelist), case-sensitive
 ;files =
+
+[autotag]
+; pattern dictionaries for diskover bots to use when auto-tagging, values are case-sensitive, can include wildcard for ext, name or path (tmp* or TMP* or *tmp or *TMP* etc)
+;files = [{"name": [], "name_exclude": [], "ext": ["tmp*", "TMP*", "temp*", "TEMP*", "cache*", "CACHE*"], "path": ["*/Application Support/*", "*/Containers/*"], "path_exclude": [], "mtime": 90, "atime": 0, "ctime": 90, "tag": "delete", "tag_custom": "autotag"}]
+;dirs = [{"name": ["*tmp*", "*TMP*", "*temp*", "*TEMP*", "*Temp*", "*cache*", "*CACHE*", "*Cache*"], "name_exclude": ["*templates*", "*Templates*"], "path": ["*/Application Support/*", "*/Containers/*"], "path_exclude": [], "mtime": 90, "atime": 0, "ctime": 90, "tag": "delete", "tag_custom": "autotag"}]
 
 [elasticsearch]
 ; uncomment the below three lines if you are using AWS ES

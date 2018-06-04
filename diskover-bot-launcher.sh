@@ -27,7 +27,7 @@ BOTPIDS=/tmp/diskover_bot_pids
 ###########################################################
 
 
-VERSION="1.2"
+VERSION="1.3"
 
 function printhelp {
     echo "Usage: $(basename $0) [OPTION] [ROOTDIR]"
@@ -38,7 +38,8 @@ function printhelp {
     echo "  -b      burst mode (bots quit when no more jobs)"
     echo "  -s      show all bots running"
     echo "  -k      kill all bots"
-    echo "  -r      remove any stuck/idle worker bot connections in Redis"
+    echo "  -r      restart all running bots"
+    echo "  -R      remove any stuck/idle worker bot connections in Redis"
     echo "  -V      displays version and exits"
     echo "  -h      displays this help message and exits"
     echo
@@ -49,16 +50,18 @@ function printhelp {
 }
 
 KILLBOTS=FALSE
+RESTARTBOTS=FALSE
 REMOVEBOTS=FALSE
 SHOWBOTS=FALSE
-while getopts :h?w:bskrV opt; do
+while getopts :h?w:bskrRV opt; do
     case "$opt" in
     h) printhelp; exit 0;;
     w) WORKERBOTS=$OPTARG;;
     b) BURST=TRUE;;
     s) SHOWBOTS=TRUE;;
     k) KILLBOTS=TRUE;;
-    r) REMOVEBOTS=TRUE;;
+    r) RESTARTBOTS=TRUE;;
+    R) REMOVEBOTS=TRUE;;
     V) echo "$0 v$VERSION"; exit 0;;
     ?) echo "Invalid option ${OPTARG}, use -h for help" >&2; exit 1;;
     esac
@@ -93,11 +96,12 @@ function startbots {
     done
 
     echo "DONE!"
+    echo "All worker bots have started"
+    echo "Worker pids have been stored in $BOTPIDS, use -k flag to shutdown workers or -r to restart"
+    echo "Exiting, sayonara!"
 }
 
-banner
-
-if [ $KILLBOTS == TRUE ]; then
+function killbots {
     if [ -f $BOTPIDS ]; then
         echo "Killing worker bot pids:"
         for PID in `cat $BOTPIDS`; do
@@ -113,11 +117,15 @@ if [ $KILLBOTS == TRUE ]; then
         pkill -f diskover_worker_bot.py
         echo "All worker bots have been sent shutdown command"
     fi
-elif [ $REMOVEBOTS == TRUE ]; then
+}
+
+function removebots {
     echo "Removing any stuck/idle worker bot connections in Redis..."
     $PYTHON $KILLREDISCONN
     echo "Done"
-elif [ $SHOWBOTS == TRUE ]; then
+}
+
+function showbots {
     if [ -f $BOTPIDS ]; then
         echo "Running worker bots:"
         for PID in `cat $BOTPIDS`; do
@@ -129,9 +137,30 @@ elif [ $SHOWBOTS == TRUE ]; then
         echo "Pid file can't be found, running worker bot pids:"
         pgrep -f diskover_worker_bot.py
     fi
+}
+
+function countbots {
+    if [ -f $BOTPIDS ]; then
+        WORKERBOTS=`cat $BOTPIDS | wc -l | tr -d '[:space:]'`
+    else
+        WORKERBOTS=`pgrep -f diskover_worker_bot.py | wc -l | tr -d '[:space:]'`
+    fi
+}
+
+banner
+
+if [ $KILLBOTS == TRUE ]; then
+    killbots
+elif [ $REMOVEBOTS == TRUE ]; then
+    removebots
+elif [ $SHOWBOTS == TRUE ]; then
+    showbots
+elif [ $RESTARTBOTS == TRUE ]; then
+    countbots
+    killbots
+    echo sleeping for 2 seconds...
+    sleep 2
+    startbots
 else
     startbots
-    echo "All worker bots have started"
-    echo "Worker pids have been stored in $BOTPIDS, use -k flag to shutdown workers"
-    echo "Exiting, sayonara!"
 fi

@@ -23,6 +23,7 @@ import pwd
 import grp
 import time
 import logging
+import re
 
 
 # cache uid/gid names
@@ -87,7 +88,308 @@ def bot_log_setup():
 
 
 def get_worker_name():
+    """This is the get worker name function.
+    It returns worker name hostname.pid .
+    """
     return '{0}.{1}'.format(socket.gethostname().partition('.')[0], os.getppid())
+
+
+def auto_tag(metadict, type, mtime, atime, ctime):
+    """This is the auto tag function.
+    It checks diskover config for any auto tag patterns
+    and updates the meta dict for file or directory
+    to include the new tags.
+    """
+    extpass = True
+    namepass = True
+    pathpass = True
+    timepass = True
+
+    if type == 'file':
+        for pattern in diskover.config['autotag_files']:
+            try:
+                for name in pattern['name_exclude']:
+                    if name.startswith('*') and name.endswith('*'):
+                        name = name.replace('*', '')
+                        if re.search(name, metadict['filename']):
+                            return metadict
+                    elif name.startswith('*'):
+                        name = name + '$'
+                        if re.search(name, metadict['filename']):
+                            return metadict
+                    elif name.endswith('*'):
+                        name = '^' + name
+                        if re.search(name, metadict['filename']):
+                            return metadict
+                    else:
+                        if name == metadict['filename']:
+                            return metadict
+            except KeyError:
+                pass
+
+            try:
+                for path in pattern['path_exclude']:
+                    if path.startswith('*') and path.endswith('*'):
+                        path = path.replace('*', '')
+                        if re.search(path, metadict['path_parent']):
+                            return metadict
+                    elif path.startswith('*'):
+                        path = path + '$'
+                        if re.search(path, metadict['path_parent']):
+                            return metadict
+                    elif path.endswith('*'):
+                        path = '^' + path
+                        if re.search(path, metadict['path_parent']):
+                            return metadict
+                    else:
+                        if path == metadict['path_parent']:
+                            return metadict
+            except KeyError:
+                pass
+
+            try:
+                for ext in pattern['ext']:
+                    if ext.startswith('*') and ext.endswith('*'):
+                        ext = ext.replace('*', '')
+                        if re.search(ext, metadict['extension']):
+                            extpass = True
+                            break
+                        else:
+                            extpass = False
+                    elif ext.startswith('*'):
+                        ext = ext + '$'
+                        if re.search(ext, metadict['extension']):
+                            extpass = True
+                            break
+                        else:
+                            extpass = False
+                    elif ext.endswith('*'):
+                        ext = '^' + ext
+                        if re.search(ext, metadict['extension']):
+                            extpass = True
+                            break
+                        else:
+                            extpass = False
+                    else:
+                        if ext == metadict['extension']:
+                            extpass = True
+                            break
+                        else:
+                            extpass = False
+            except KeyError:
+                pass
+
+            try:
+                for name in pattern['name']:
+                    if name.startswith('*') and name.endswith('*'):
+                        name = name.replace('*', '')
+                        if re.search(name, metadict['filename']):
+                            namepass = True
+                            break
+                        else:
+                            namepass = False
+                    elif name.startswith('*'):
+                        name = name + '$'
+                        if re.search(name, metadict['filename']):
+                            namepass = True
+                            break
+                        else:
+                            extpass = False
+                    elif name.endswith('*'):
+                        name = '^' + name
+                        if re.search(name, metadict['filename']):
+                            namepass = True
+                            break
+                        else:
+                            extpass = False
+                    else:
+                        if name == metadict['filename']:
+                            namepass = True
+                            break
+                        else:
+                            namepass = False
+            except KeyError:
+                pass
+
+            try:
+                for path in pattern['path']:
+                    if path.startswith('*') and path.endswith('*'):
+                        path = path.replace('*', '')
+                        if re.search(path, metadict['path_parent']):
+                            pathpass = True
+                            break
+                        else:
+                            pathpass = False
+                    elif path.startswith('*'):
+                        path = path + '$'
+                        if re.search(path, metadict['path_parent']):
+                            pathpass = True
+                            break
+                        else:
+                            pathpass = False
+                    elif path.endswith('*'):
+                        path = '^' + path
+                        if re.search(path, metadict['path_parent']):
+                            pathpass = True
+                            break
+                        else:
+                            extpass = False
+                    else:
+                        if path == metadict['path_parent']:
+                            pathpass = True
+                            break
+                        else:
+                            pathpass = False
+            except KeyError:
+                pass
+
+            timepass = auto_tag_time_check(pattern, mtime, atime, ctime)
+
+    elif type == 'directory':
+        for pattern in diskover.config['autotag_dirs']:
+            try:
+                for name in pattern['name_exclude']:
+                    if name.startswith('*') and name.endswith('*'):
+                        name = name.replace('*', '')
+                        if re.search(name, metadict['filename']):
+                            return metadict
+                    elif name.startswith('*'):
+                        name = name + '$'
+                        if re.search(name, metadict['filename']):
+                            return metadict
+                    elif name.endswith('*'):
+                        name = '^' + name
+                        if re.search(name, metadict['filename']):
+                            return metadict
+                    else:
+                        if name == metadict['filename']:
+                            return metadict
+            except KeyError:
+                pass
+
+            try:
+                for path in pattern['path_exclude']:
+                    if path.startswith('*') and path.endswith('*'):
+                        path = path.replace('*', '')
+                        if re.search(path, metadict['path_parent']):
+                            return metadict
+                    elif path.startswith('*'):
+                        path = path + '$'
+                        if re.search(path, metadict['path_parent']):
+                            return metadict
+                    elif path.endswith('*'):
+                        path = '^' + path
+                        if re.search(path, metadict['path_parent']):
+                            return metadict
+                    else:
+                        if path == metadict['path_parent']:
+                            return metadict
+            except KeyError:
+                pass
+
+            try:
+                for name in pattern['name']:
+                    if name.startswith('*') and name.endswith('*'):
+                        name = name.replace('*', '')
+                        if re.search(name, metadict['filename']):
+                            namepass = True
+                            break
+                        else:
+                            namepass = False
+                    elif name.startswith('*'):
+                        name = name + '$'
+                        if re.search(name, metadict['filename']):
+                            namepass = True
+                            break
+                        else:
+                            extpass = False
+                    elif name.endswith('*'):
+                        name = '^' + name
+                        if re.search(name, metadict['filename']):
+                            namepass = True
+                            break
+                        else:
+                            extpass = False
+                    else:
+                        if name == metadict['filename']:
+                            namepass = True
+                            break
+                        else:
+                            namepass = False
+            except KeyError:
+                pass
+
+            try:
+                for path in pattern['path']:
+                    if path.startswith('*') and path.endswith('*'):
+                        path = path.replace('*', '')
+                        if re.search(path, metadict['path_parent']):
+                            pathpass = True
+                            break
+                        else:
+                            pathpass = False
+                    elif path.startswith('*'):
+                        path = path + '$'
+                        if re.search(path, metadict['path_parent']):
+                            pathpass = True
+                            break
+                        else:
+                            pathpass = False
+                    elif path.endswith('*'):
+                        path = '^' + path
+                        if re.search(path, metadict['path_parent']):
+                            pathpass = True
+                            break
+                        else:
+                            extpass = False
+                    else:
+                        if path == metadict['path_parent']:
+                            pathpass = True
+                            break
+                        else:
+                            pathpass = False
+            except KeyError:
+                pass
+
+            timepass = auto_tag_time_check(pattern, mtime, atime, ctime)
+
+    if extpass and namepass and pathpass and timepass:
+        metadict['tag'] = pattern['tag']
+        metadict['tag_custom'] = pattern['tag_custom']
+
+    return metadict
+
+
+def auto_tag_time_check(pattern, mtime, atime, ctime):
+    timepass = True
+    try:
+        if pattern['mtime'] > 0:
+            # Convert time in days to seconds
+            time_sec = pattern['mtime'] * 86400
+            file_mtime_sec = time.time() - mtime
+            # Only tag files modified at least x days ago
+            if file_mtime_sec < time_sec:
+                timepass = False
+    except KeyError:
+        pass
+    try:
+        if pattern['atime'] > 0:
+            time_sec = pattern['atime'] * 86400
+            file_atime_sec = time.time() - atime
+            if file_atime_sec < time_sec:
+                timepass = False
+    except KeyError:
+        pass
+    try:
+        if pattern['ctime'] > 0:
+            time_sec = pattern['ctime'] * 86400
+            file_ctime_sec = time.time() - ctime
+            if file_ctime_sec < time_sec:
+                timepass = False
+    except KeyError:
+        pass
+
+    return timepass
 
 
 def get_dir_meta(path, cliargs, reindex_dict):
@@ -195,6 +497,10 @@ def get_dir_meta(path, cliargs, reindex_dict):
             "change_percent_items_files": "",
             "change_percent_items_subdirs": ""
         }
+
+        # add any autotags to dirmeta_dict
+        if cliargs['autotag'] and len(diskover.config['autotag_dirs']) > 0:
+                auto_tag(dirmeta_dict, 'directory', mtime_unix, atime_unix, ctime_unix)
 
         # search for and copy over any existing tags from reindex_dict
         for sublist in reindex_dict['directory']:
@@ -342,6 +648,10 @@ def get_file_meta(path, cliargs, reindex_dict):
             "indexing_date": indextime_utc,
             "worker_name": get_worker_name()
         }
+
+        # add any autotags to filemeta_dict
+        if cliargs['autotag'] and len(diskover.config['autotag_files']) > 0:
+                auto_tag(filemeta_dict, 'file', mtime_unix, atime_unix, ctime_unix)
 
         # search for and copy over any existing tags from reindex_dict
         for sublist in reindex_dict['file']:
