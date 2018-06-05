@@ -36,6 +36,10 @@ Kibana dashboards/saved searches/visualizations and support for Gource<br>
 <a href="https://youtu.be/InlfK8GQ-kM"><img align="left" width="400" src="https://img.youtube.com/vi/InlfK8GQ-kM/0.jpg" alt="gource video"></a>
 <a href="https://youtu.be/qKLJjZ0TMqA"><img width="400" src="https://img.youtube.com/vi/qKLJjZ0TMqA/0.jpg" alt="gource video"></a>
 
+## Sponsor diskover for as little as $1 / month.
+
+If you are a fan of the project or you are using diskover and it's helping you save storage space and want to see it keep advancing, please consider sponsoring the project on [Patreon](https://www.patreon.com/diskover) or [PayPal](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=CLF223XAS4W72). Thank you so much to all the users and supporters!
+
 ## Installation Guide
 
 ### Requirements
@@ -117,10 +121,6 @@ For discussions or questions about diskover, please ask on [Google Group](https:
 ## Bugs
 
 For bugs about diskover, please use the [issues page](https://github.com/shirosaidev/diskover/issues).
-
-## Sponsor diskover
-
-If you are a fan of the project or you are using diskover and it's helping you save storage space and want to see it keep advancing, please consider sponsoring the project on [Patreon](https://www.patreon.com/diskover) or [PayPal](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=CLF223XAS4W72). Thank you so much to all the users and supporters!
 
 ## License
 
