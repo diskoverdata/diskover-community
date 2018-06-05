@@ -40,6 +40,7 @@ function printhelp {
     echo "  -k      kill all bots"
     echo "  -r      restart all running bots"
     echo "  -R      remove any stuck/idle worker bot connections in Redis"
+    echo "  -f      force remove all worker bot connections in Redis"
     echo "  -V      displays version and exits"
     echo "  -h      displays this help message and exits"
     echo
@@ -52,8 +53,9 @@ function printhelp {
 KILLBOTS=FALSE
 RESTARTBOTS=FALSE
 REMOVEBOTS=FALSE
+FORCEREMOVEBOTS=FALSE
 SHOWBOTS=FALSE
-while getopts :h?w:bskrRV opt; do
+while getopts :h?w:bskrRfV opt; do
     case "$opt" in
     h) printhelp; exit 0;;
     w) WORKERBOTS=$OPTARG;;
@@ -62,6 +64,7 @@ while getopts :h?w:bskrRV opt; do
     k) KILLBOTS=TRUE;;
     r) RESTARTBOTS=TRUE;;
     R) REMOVEBOTS=TRUE;;
+    f) FORCEREMOVEBOTS=TRUE; REMOVEBOTS=TRUE;;
     V) echo "$0 v$VERSION"; exit 0;;
     ?) echo "Invalid option ${OPTARG}, use -h for help" >&2; exit 1;;
     esac
@@ -121,7 +124,11 @@ function killbots {
 
 function removebots {
     echo "Removing any stuck/idle worker bot connections in Redis..."
-    $PYTHON $KILLREDISCONN
+    if [ $FORCEREMOVEBOTS == TRUE ]; then
+        $PYTHON $KILLREDISCONN -f
+    else
+        $PYTHON $KILLREDISCONN
+    fi
     echo "Done"
 }
 

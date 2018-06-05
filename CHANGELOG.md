@@ -11,9 +11,9 @@
 - --autotag cli arg to turn on bot auto-tagging
 - autotag section to diskover.cfg (see diskover.cfg.sample and copy from there) - can be used to get bots to auto tag files/directories during crawl based on patterns
 - \ (backslash) char to escape_chars function
-- v1.3 of diskover-bot-launcher.sh - added restart bot cli arg -r (changed redis worker remove to -R) and cleaned up script
+- v1.3 of diskover-bot-launcher.sh - added restart bot cli arg -r (changed redis worker remove to -R), added -f to force remove redis client connections and cleaned up script
 - improved dupe checking
-- better killredisconn.py (output of status and -f arg to force remove)
+- better killredisconn.py (output of status and -f arg to force remove (ignore idle time)
 ### fixed
 - bug with dupe md5 check
 - bug with regular expression matching for directory excludes
