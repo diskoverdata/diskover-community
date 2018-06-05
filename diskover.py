@@ -177,16 +177,16 @@ def load_config():
         t = config.get('autotag', 'files')
         atf = json.loads(t)
         configsettings['autotag_files'] = atf
-    except json.decoder.JSONDecodeError:
-        raise ValueError("Error in config autotag files")
+    except ValueError as e:
+        raise ValueError("Error in config autotag files: %s" % e)
     except ConfigParser.NoOptionError:
         configsettings['autotag_files'] = []
     try:
         t = config.get('autotag', 'dirs')
         atd = json.loads(t)
         configsettings['autotag_dirs'] = atd
-    except json.decoder.JSONDecodeError:
-        raise ValueError("Error in config autotag dirs")
+    except ValueError as e:
+        raise ValueError("Error in config autotag dirs: %s" % e)
     except ConfigParser.NoOptionError:
         configsettings['autotag_dirs'] = []
     try:
@@ -997,7 +997,7 @@ def escape_chars(text):
     """This is the escape special characters function.
     It returns escaped path strings for es queries.
     """
-    chr_dict = {'\\': '\\\\', '/': '\\/', '(': '\\(', ')': '\\)', '[': '\\[', ']': '\\]', '$': '\\$',
+    chr_dict = {'/': '\\/', '(': '\\(', ')': '\\)', '[': '\\[', ']': '\\]', '$': '\\$',
                 ' ': '\\ ', '&': '\\&', '<': '\\<', '>': '\\>', '+': '\\+', '-': '\\-',
                 '|': '\\|', '!': '\\!', '{': '\\{', '}': '\\}', '^': '\\^', '~': '\\~',
                 '?': '\\?', ':': '\\:', '=': '\\=', '\'': '\\\'', '"': '\\"', '@': '\\@'}
