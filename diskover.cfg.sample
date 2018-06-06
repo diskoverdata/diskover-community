@@ -2,8 +2,8 @@
 ; if you make any changes, restart worker bots so they get the new config
 
 [excludes]
-; directory names and absolute paths you want to exclude from crawl, case-sensitive, can include wildcard (.* or tmp* or /dir/dirname* etc)
-dirs = .*,.snapshot,.Snapshot
+; directory names and absolute paths you want to exclude from crawl, case-sensitive, can include wildcards (.* or backup* or /dir/dirname* or *tmp or *tmp* etc)
+dirs = .*,.snapshot,.Snapshot,.zfs
 ; files you want to exclude from crawl, case-sensitive, can include wildcards (.*, *.doc or NULLEXT for files with no extension)
 files = .*,Thumbs.db,.DS_Store,._.DS_Store,.localized,desktop.ini
 
