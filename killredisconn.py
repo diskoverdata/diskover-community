@@ -5,22 +5,33 @@ Kills idle redis connections
 
 import redis
 import sys
+import os
 import re
 
 idle_max = 300
 
-r = redis.Redis(host="localhost", port=6379, password=None)
+try:
+    host = os.environ['REDIS_HOST']
+except KeyError:
+    host = "localhost"
+try:
+    port = os.environ['REDIS_PORT']
+except KeyError:
+    port = 6379
+try:
+    password = os.environ['REDIS_PASS']
+except KeyError:
+    password = None
+
+r = redis.Redis(host=host, port=port, password=password)
 cl = r.execute_command("client", "list")
 
-arg = None
 try:
     arg = sys.argv[1]
+    if arg == '-f':
+        force = True
+        print("forcing client removal from redis (-f)")
 except IndexError:
-    pass
-if arg == '-f':
-    force = True
-    print("forcing client removal from redis (-f)")
-else:
     force = False
     print("to force removing clients from redis, use -f")
 
