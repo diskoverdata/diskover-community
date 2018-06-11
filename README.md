@@ -15,7 +15,7 @@ Using diskover, users can identify old and unused files and give better insights
 
 diskover is written and maintained by Chris Park (shirosai) and runs on Linux and OS X/macOS using Python 2/3.
 
-<h2><quote>"This is the first tool I've found that can index 6,634,955 files/1,740,403 directories in under 20 min" -- linuxserver.io community member</quote></h2>
+<blockquote><h2><q>This is the first tool I've found that can index 7m files/2m directories in under 20 min</q> -- linuxserver.io community member</h2></blockquote>
 
 <div align="center"><img src="https://github.com/shirosaidev/diskover/blob/master/docs/diskover-diagram1.png?raw=true" alt="diskover diagram" width="800" height="525"/></div>
 
