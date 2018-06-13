@@ -57,8 +57,6 @@ port = 6379
 ; how long directory keys lives in Redis (seconds)
 ; used for -I index2 when comparing directory times to get metadata from index2 instead of off disk
 dirtimesttl = 604800
-; used for calculating directory sizes at end of crawl
-dirsizesttl = 172800
 
 [workerbot]
 ; enable bot logs (True or False)

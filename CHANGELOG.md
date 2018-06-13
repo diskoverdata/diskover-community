@@ -1,22 +1,19 @@
 # Diskover Change Log
 
-## [1.5.0-rc10] = 2018-06-13
+## [1.5.0-rc10] = 2018-06-14
 ### notice
 - Amazon S3 inventory support is beta, requires diskover-web >= v1.5.0-rc9
 - --s3 requires index named diskover-s3-indexname
 ### added
 - Amazon S3 inventory support - you can now import Amazon S3 inventory (CSV gzip format) to diskover ES index using --s3 cli arg and supplying 1 or multiple gzipped csv inventory files (see wiki or -h)
-- faster crawling by switching to multiprocessing instead of threads for parallel tree walking
 - treewalk section with procs option to diskover.cfg.sample for setting number of parallel processes to tree walk (copy to diskover.cfg)
-- faster directory size calculations at end of crawl by switching to use Redis instead of ES - directory sizes are cached in Redis during crawl
-- dirsizesttl in redis section in diskover.cfg.sample - used for storing dir sizes in Redis for calculating directory sizes (default 1 day)
+- faster directory size calculations at end of crawl by reducing es update calls and using bulk update
 - maxsize in checkdupes section in diskover.cfg.sample - used for setting max file size to check for dupes (copy to diskover.cfg)
 - checkbytes in checkdupes section in diskover.cfg.sample - used for setting bytes to check at start and end of file before doing md5 sum check (copy to diskover.cfg)
 - autotagging to diskover_qumulo
 ### changed
+- switched to multiprocessing instead of threads for parallel tree walking
 - directory paths are hashed using base64 encode when storing in redis for cacheing directory times (times are used when crawling with -I)
-- replaced threading with multiprocessing for parallel walking root dirs
-- directory docs are indexed with items_files set to number of files crawled and filesize to sum of file sizes crawled to help speed up dir size calculations
 - moved autotag code after plugin code when setting file/directory doc meta data fields
 
 ## [1.5.0-rc9] = 2018-06-06

@@ -267,10 +267,6 @@ def load_config():
     except ConfigParser.NoOptionError:
         configsettings['redis_dirtimesttl'] = 604800
     try:
-        configsettings['redis_dirsizesttl'] = int(config.get('redis', 'dirsizesttl'))
-    except ConfigParser.NoOptionError:
-        configsettings['redis_dirsizesttl'] = 172800
-    try:
         configsettings['botlogs'] = config.get('workerbot', 'botlogs')
     except ConfigParser.NoOptionError:
         configsettings['botlogs'] = "False"

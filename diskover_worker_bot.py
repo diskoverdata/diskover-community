@@ -679,9 +679,9 @@ def get_file_meta(path, cliargs, reindex_dict):
 
 
 def calc_dir_size(dirlist, cliargs):
-    """This is the calculate directory size worker function (du).
-    It gets a directory list from the Queue and searches Redis keys for all subdirs
-    in each directory (recursive) and sums their filesizes, items
+    """This is the calculate directory size worker function.
+    It gets a directory list from the Queue and searches ES for all files
+    in each directory (recursive) and sums their filesizes
     to create a total filesize and item count for each dir.
     Updates dir doc's filesize and items fields.
     """
@@ -693,18 +693,71 @@ def calc_dir_size(dirlist, cliargs):
         totalsize = 0
         totalitems = 1  # 1 for itself
         totalitems_files = 0
+        totalitems_subdirs = 0
+        # file doc search with aggregate for sum filesizes
+        # escape special characters
+        newpath = diskover.escape_chars(path[1])
+        # create wildcard string and check for / (root) path
+        if newpath == '\/':
+            newpathwildcard = '\/*'
+        else:
+            newpathwildcard = newpath + '\/*'
 
-        value_dict = json.loads(redis_conn.get(path[1].encode('utf-8', errors='ignore')))
-        totalsize += int(value_dict['filesize'])
-        totalitems_files += int(value_dict['items_files'])
+        # check if / (root) path
+        if newpath == '\/':
+            data = {
+                "size": 0,
+                "query": {
+                    "query_string": {
+                        "query": "path_parent: " + newpath + "*",
+                        "analyze_wildcard": "true"
+                    }
+                },
+                "aggs": {
+                    "total_size": {
+                        "sum": {
+                            "field": "filesize"
+                        }
+                    }
+                }
+            }
+        else:
+            data = {
+                "size": 0,
+                "query": {
+                    "query_string": {
+                        'query': 'path_parent: ' + newpath + ' '
+                                'OR path_parent: ' + newpathwildcard,
+                                 'analyze_wildcard': 'true'
+                    }
+                },
+                "aggs": {
+                    "total_size": {
+                        "sum": {
+                            "field": "filesize"
+                        }
+                    }
+                }
+            }
 
-        subdir_keys = redis_conn.keys(pattern=path[1] + '/*')
-        totalitems_subdirs = len(subdir_keys)
+        # search ES and start scroll
+        res = es.search(index=cliargs['index'], doc_type='file', body=data,
+                        request_timeout=diskover.config['es_timeout'])
 
-        for key in subdir_keys:
-            value_dict = json.loads(redis_conn.get(key))
-            totalsize += int(value_dict['filesize'])
-            totalitems_files += int(value_dict['items_files'])
+        # total items sum
+        totalitems_files += res['hits']['total']
+
+        # total file size sum
+        totalsize += res['aggregations']['total_size']['value']
+
+        # directory doc search (subdirs)
+
+        # search ES and start scroll
+        res = es.search(index=cliargs['index'], doc_type='directory', body=data,
+                        request_timeout=diskover.config['es_timeout'])
+
+        # total items sum
+        totalitems_subdirs += res['hits']['total']
 
         # total items
         totalitems += totalitems_files + totalitems_subdirs
@@ -716,9 +769,9 @@ def calc_dir_size(dirlist, cliargs):
             '_type': 'directory',
             '_id': path[0],
             'doc': {'filesize': totalsize, 'items': totalitems,
-                                'items_files': totalitems_files,
-                                'items_subdirs': totalitems_subdirs}
-            }
+                    'items_files': totalitems_files,
+                    'items_subdirs': totalitems_subdirs}
+        }
         dir_id_list.append(d)
 
     diskover.index_bulk_add(es, dir_id_list, 'directory', diskover.config, cliargs)
@@ -854,11 +907,6 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
                 dmeta['items_files'] += filecount
                 tree.append(('directory', dmeta))
                 tree.append(('crawltime', root_path, (time.time() - starttime)))
-                dirinfo = {'filesize': dmeta['filesize'], 'items_files': dmeta['items_files']}
-                json_dirinfo = json.dumps(dirinfo)
-                # cache directory info in Redis
-                redis_conn.set(root_path.encode('utf-8', errors='ignore'), json_dirinfo,
-                               ex=diskover.config['redis_dirsizesttl'])
 
     if len(tree) > 0:
         es_bulk_adder(tree, cliargs)
