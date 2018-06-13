@@ -18,6 +18,10 @@ files = .*,Thumbs.db,.DS_Store,._.DS_Store,.localized,desktop.ini
 ;files = [{"name": [], "name_exclude": [], "ext": ["tmp*", "TMP*", "temp*", "TEMP*", "cache*", "CACHE*"], "path": ["*/Application Support/*", "*/Containers/*"], "path_exclude": [], "mtime": 90, "atime": 0, "ctime": 90, "tag": "delete", "tag_custom": "autotag"}]
 ;dirs = [{"name": ["*tmp*", "*TMP*", "*temp*", "*TEMP*", "*Temp*", "*cache*", "*CACHE*", "*Cache*"], "name_exclude": ["*templates*", "*Templates*"], "path": ["*/Application Support/*", "*/Containers/*"], "path_exclude": [], "mtime": 90, "atime": 0, "ctime": 90, "tag": "delete", "tag_custom": "autotag"}]
 
+[treewalk]
+; number of processes to run when doing parallel tree walking of rootdir
+procs = 8
+
 [elasticsearch]
 ; uncomment the below three lines if you are using AWS ES
 ;aws = False
@@ -50,9 +54,11 @@ replicas = 1
 host = 127.0.0.1
 port = 6379
 ;password =
-; how long directory times lives in Redis (seconds) (default 1 week)
+; how long directory keys lives in Redis (seconds)
 ; used for -I index2 when comparing directory times to get metadata from index2 instead of off disk
 dirtimesttl = 604800
+; used for calculating directory sizes at end of crawl
+dirsizesttl = 172800
 
 [workerbot]
 ; enable bot logs (True or False)
@@ -76,6 +82,10 @@ port = 9999
 [dupescheck]
 ; read size (bytes) for md5 sum check
 readsize = 65536
+; max size (bytes) of files to check
+maxsize = 1073741824
+; bytes to check at start and end of file before doing md5 sum check
+checkbytes = 8
 
 [crawlbot]
 ; continuous scanner

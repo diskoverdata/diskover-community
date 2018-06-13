@@ -17,14 +17,16 @@ import base64
 import hashlib
 import os
 
+# create Elasticsearch connection
+es = diskover.elasticsearch_connect(diskover.config)
+
 def index_dupes(hashgroup, cliargs):
     """This is the ES dupe_md5 tag update function.
     It updates a file's dupe_md5 field to be md5sum of file
     if it's marked as a duplicate.
     """
     bot_logger = diskover_worker_bot.bot_logger
-    # create Elasticsearch connection
-    es = diskover.elasticsearch_connect(diskover.config)
+
     file_id_list = []
     # bulk update data in Elasticsearch index
     for f in hashgroup['files']:
@@ -37,7 +39,7 @@ def index_dupes(hashgroup, cliargs):
         }
         file_id_list.append(d)
     if len(file_id_list) > 0:
-        if cliargs['verbose']:
+        if cliargs['verbose'] or cliargs['debug']:
             bot_logger.info('Bulk updating %s files in ES index' % len(file_id_list))
         diskover.index_bulk_add(es, file_id_list, 'file', diskover.config, cliargs)
 
@@ -52,9 +54,14 @@ def verify_dupes(hashgroup, cliargs):
     Returns hashgroup.
     """
 
+    # number of bytes to check at start and end of file
+    read_bytes = diskover.config['dupes_checkbytes']
+    # min bytes to read of file size less than above
+    min_read_bytes = 1
+
     bot_logger = diskover_worker_bot.bot_logger
 
-    if cliargs['verbose']:
+    if cliargs['verbose'] or cliargs['debug']:
         bot_logger.info('Processing %s files in hashgroup: %s' %
           (len(hashgroup['files']), hashgroup['filehash']))
 
@@ -63,44 +70,46 @@ def verify_dupes(hashgroup, cliargs):
     # create a new dictionary with files that have same byte hash
     hashgroup_bytes = {}
     for file in hashgroup['files']:
-        if cliargs['verbose']:
+        if cliargs['verbose'] or cliargs['debug']:
             bot_logger.info('Checking bytes: %s' % file['filename'])
         try:
             f = open(file['filename'], 'rb')
         except (IOError, OSError):
-            if cliargs['verbose']:
+            if cliargs['verbose'] or cliargs['debug']:
                 bot_logger.warning('Error opening file %s' % file['filename'])
             continue
         except Exception:
-            if cliargs['verbose']:
+            if cliargs['verbose'] or cliargs['debug']:
                 bot_logger.warning('Error opening file %s' % file['filename'])
             continue
         # check if files is only 1 byte
         try:
-            bytes_f = base64.b64encode(f.read(2))
+            bytes_f = base64.b64encode(f.read(read_bytes))
         except (IOError, OSError):
-            if cliargs['verbose']:
-                bot_logger.info('Can\'t read first 2 bytes of %s, trying first byte' % file['filename'])
+            if cliargs['verbose'] or cliargs['debug']:
+                bot_logger.info('Can\'t read first %s bytes of %s, trying first byte'
+                                % (str(read_bytes), file['filename']))
             pass
             try:
-                bytes_f = base64.b64encode(f.read(1))
+                bytes_f = base64.b64encode(f.read(min_read_bytes))
             except Exception:
-                if cliargs['verbose']:
+                if cliargs['verbose'] or cliargs['debug']:
                     bot_logger.warning('Error reading bytes of %s, giving up' % file['filename'])
                 continue
         try:
-            f.seek(-2, os.SEEK_END)
-            bytes_l = base64.b64encode(f.read(2))
+            f.seek(-read_bytes, os.SEEK_END)
+            bytes_l = base64.b64encode(f.read(read_bytes))
         except (IOError, OSError):
-            if cliargs['verbose']:
-                bot_logger.info('Can\'t read last 2 bytes of %s, trying last byte' % file['filename'])
+            if cliargs['verbose'] or cliargs['debug']:
+                bot_logger.info('Can\'t read last %s bytes of %s, trying last byte'
+                                % (str(read_bytes), file['filename']))
             pass
             try:
-                f.seek(-1, os.SEEK_END)
-                bytes_l = base64.b64encode(f.read(1))
+                f.seek(-min_read_bytes, os.SEEK_END)
+                bytes_l = base64.b64encode(f.read(min_read_bytes))
             except Exception:
-                if cliargs['verbose']:
-                    bot_logger.warning('Error reading bytes, giving up' % file['filename'])
+                if cliargs['verbose'] or cliargs['debug']:
+                    bot_logger.warning('Error reading bytes of %s, giving up' % file['filename'])
                 continue
         f.close()
 
@@ -108,7 +117,7 @@ def verify_dupes(hashgroup, cliargs):
         bytestring = str(bytes_f) + str(bytes_l)
         bytehash = hashlib.md5(bytestring.encode('utf-8')).hexdigest()
 
-        if cliargs['verbose']:
+        if cliargs['verbose'] or cliargs['debug']:
             bot_logger.info('Byte hash: %s' % bytehash)
 
         # create new key for each bytehash and
@@ -119,7 +128,7 @@ def verify_dupes(hashgroup, cliargs):
     for key, value in list(hashgroup_bytes.items()):
         if len(value) < 2:
             filename = value[0]
-            if cliargs['verbose']:
+            if cliargs['verbose'] or cliargs['debug']:
                 bot_logger.info('Unique file (bytes diff), removing: %s' % filename)
             del hashgroup_bytes[key]
             # remove file from hashgroup
@@ -132,13 +141,13 @@ def verify_dupes(hashgroup, cliargs):
     hashgroup_md5 = {}
     # do md5 check on files with same byte hashes
     for key, value in list(hashgroup_bytes.items()):
-        if cliargs['verbose']:
+        if cliargs['verbose'] or cliargs['debug']:
             bot_logger.info('Comparing MD5 sums for filehash: %s' % key)
         for filename in value:
-            if cliargs['verbose']:
+            if cliargs['verbose'] or cliargs['debug']:
                 bot_logger.info('Checking MD5: %s' % filename)
             # get md5 sum, don't load whole file into memory,
-            # load in x KB at a time (blocksize)
+            # load in n bytes at a time (read_size blocksize)
             try:
                 read_size = diskover.config['md5_readsize']
                 hasher = hashlib.md5()
@@ -150,10 +159,10 @@ def verify_dupes(hashgroup, cliargs):
                 md5 = hasher.hexdigest()
                 # update hashgroup's md5sum key
                 hashgroup['md5sum'] = md5
-                if cliargs['verbose']:
+                if cliargs['verbose'] or cliargs['debug']:
                     bot_logger.info('MD5: %s' % md5)
             except (IOError, OSError):
-                if cliargs['verbose']:
+                if cliargs['verbose'] or cliargs['debug']:
                     bot_logger.warning('Error checking file %s' % filename)
                 continue
 
@@ -165,7 +174,7 @@ def verify_dupes(hashgroup, cliargs):
     for key, value in list(hashgroup_md5.items()):
         if len(value) < 2:
             filename = value[0]
-            if cliargs['verbose']:
+            if cliargs['verbose'] or cliargs['debug']:
                 bot_logger.info('Unique file (MD5 diff), removing: %s' % filename)
             del hashgroup_md5[key]
             # remove file from hashgroup
@@ -175,7 +184,7 @@ def verify_dupes(hashgroup, cliargs):
                     break
 
     if len(hashgroup['files']) >= 2:
-        if cliargs['verbose']:
+        if cliargs['verbose'] or cliargs['debug']:
             bot_logger.info('Found %s dupes in hashgroup' % len(hashgroup['files']))
         return hashgroup
     else:
@@ -189,10 +198,7 @@ def populate_hashgroup(key, cliargs):
 
     bot_logger = diskover_worker_bot.bot_logger
 
-    # create Elasticsearch connection
-    es = diskover.elasticsearch_connect(diskover.config)
-
-    if cliargs['verbose']:
+    if cliargs['verbose'] or cliargs['debug']:
         bot_logger.info('Searching ES for all files matching hash key %s' % key)
 
     hashgroup_files = []
@@ -219,7 +225,7 @@ def populate_hashgroup(key, cliargs):
              'filename': hit['_source']['path_parent'] + "/" +
                          hit['_source']['filename']})
 
-    if cliargs['verbose']:
+    if cliargs['verbose'] or cliargs['debug']:
         bot_logger.info('Found %s files matching hash key %s' % (len(hashgroup_files), key))
 
     # return filehash group and add to queue
@@ -247,7 +253,10 @@ def dupes_finder(es, q, cliargs, logger):
                 },
                 "filter": {
                     "range": {
-                        "filesize": {"gte": cliargs['minsize']}
+                        "filesize": {
+                            "lte": diskover.config['dupes_maxsize'],
+                            "gte": cliargs['minsize']
+                        }
                     }
                 }
             }

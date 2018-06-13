@@ -133,7 +133,7 @@ def qumulo_api_walk(top, ip, ses):
             yield entry
 
 
-def qumulo_treewalk(path, ip, ses, num_sep, level, batchsize, bar, cliargs, reindex_dict):
+def qumulo_treewalk(path, lock, ip, ses, num_sep, level, totaljobs, batchsize, cliargs, reindex_dict):
     batch = []
 
     for root, dirs, files in qumulo_api_walk(path, ip, ses):
@@ -149,7 +149,8 @@ def qumulo_treewalk(path, ip, ses, num_sep, level, batchsize, bar, cliargs, rein
             if len(batch) >= batchsize:
                 diskover.q.enqueue(diskover_worker_bot.scrape_tree_meta,
                           args=(batch, cliargs, reindex_dict,))
-                diskover.totaljobs += 1
+                with lock:
+                    totaljobs.value += 1
                 del batch[:]
                 batchsize_prev = batchsize
                 if cliargs['adaptivebatch']:
@@ -175,20 +176,11 @@ def qumulo_treewalk(path, ip, ses, num_sep, level, batchsize, bar, cliargs, rein
             del dirs[:]
             del files[:]
 
-        if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
-            try:
-                percent = int("{0:.0f}".format(100 * ((diskover.totaljobs - len(diskover.q))
-                                                      / float(diskover.totaljobs))))
-                bar.update(percent)
-            except ZeroDivisionError:
-                bar.update(0)
-            except ValueError:
-                bar.update(0)
-
     # add any remaining in batch to queue
     diskover.q.enqueue(diskover_worker_bot.scrape_tree_meta,
               args=(batch, cliargs, reindex_dict,))
-    diskover.totaljobs += 1
+    with lock:
+        totaljobs.value += 1
 
 
 def qumulo_get_dir_meta(path, cliargs, reindex_dict, redis_conn):
@@ -290,13 +282,6 @@ def qumulo_get_dir_meta(path, cliargs, reindex_dict, redis_conn):
         "change_percent_items_subdirs": ""
     }
 
-    # search for and copy over any existing tags from reindex_dict
-    for sublist in reindex_dict['directory']:
-        if sublist[0] == fullpath:
-            dirmeta_dict['tag'] = sublist[1]
-            dirmeta_dict['tag_custom'] = sublist[2]
-            break
-
     # check plugins for adding extra meta data to dirmeta_dict
     for plugin in diskover.plugins:
         try:
@@ -306,6 +291,17 @@ def qumulo_get_dir_meta(path, cliargs, reindex_dict, redis_conn):
             dirmeta_dict.update(plugin.add_meta(fullpath))
         except KeyError:
             pass
+
+    # add any autotags to dirmeta_dict
+    if cliargs['autotag'] and len(diskover.config['autotag_dirs']) > 0:
+        diskover_worker_bot.auto_tag(dirmeta_dict, 'directory', mtime_unix, None, ctime_unix)
+
+    # search for and copy over any existing tags from reindex_dict
+    for sublist in reindex_dict['directory']:
+        if sublist[0] == fullpath:
+            dirmeta_dict['tag'] = sublist[1]
+            dirmeta_dict['tag_custom'] = sublist[2]
+            break
 
     # cache directory times in Redis
     redis_conn.set(fullpath.encode('utf-8', errors='ignore'), mtime_unix + ctime_unix,
@@ -342,6 +338,7 @@ def qumulo_get_file_meta(path, cliargs, reindex_dict):
 
     # get change time
     ctime_utc = path['change_time']
+    ctime_unix = time.mktime(time.strptime(ctime_utc, '%Y-%m-%dT%H:%M:%S'))
     # get creation time
     creation_time_utc = path['creation_time']
 
@@ -418,13 +415,6 @@ def qumulo_get_file_meta(path, cliargs, reindex_dict):
         "worker_name": diskover_worker_bot.get_worker_name()
     }
 
-    # search for and copy over any existing tags from reindex_dict
-    for sublist in reindex_dict['file']:
-        if sublist[0] == path['path']:
-            filemeta_dict['tag'] = sublist[1]
-            filemeta_dict['tag_custom'] = sublist[2]
-            break
-
     # check plugins for adding extra meta data to filemeta_dict
     for plugin in diskover.plugins:
         try:
@@ -434,6 +424,17 @@ def qumulo_get_file_meta(path, cliargs, reindex_dict):
             filemeta_dict.update(plugin.add_meta(path['path']))
         except KeyError:
             pass
+
+    # add any autotags to filemeta_dict
+    if cliargs['autotag'] and len(diskover.config['autotag_files']) > 0:
+        diskover_worker_bot.auto_tag(filemeta_dict, 'file', mtime_unix, None, ctime_unix)
+
+    # search for and copy over any existing tags from reindex_dict
+    for sublist in reindex_dict['file']:
+        if sublist[0] == path['path']:
+            filemeta_dict['tag'] = sublist[1]
+            filemeta_dict['tag_custom'] = sublist[2]
+            break
 
     return filemeta_dict
 

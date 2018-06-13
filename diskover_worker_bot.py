@@ -24,6 +24,8 @@ import grp
 import time
 import logging
 import re
+import base64
+import json
 
 
 # cache uid/gid names
@@ -363,7 +365,7 @@ def auto_tag(metadict, type, mtime, atime, ctime):
 def auto_tag_time_check(pattern, mtime, atime, ctime):
     timepass = True
     try:
-        if pattern['mtime'] > 0:
+        if pattern['mtime'] > 0 and mtime:
             # Convert time in days to seconds
             time_sec = pattern['mtime'] * 86400
             file_mtime_sec = time.time() - mtime
@@ -373,7 +375,7 @@ def auto_tag_time_check(pattern, mtime, atime, ctime):
     except KeyError:
         pass
     try:
-        if pattern['atime'] > 0:
+        if pattern['atime'] > 0 and atime:
             time_sec = pattern['atime'] * 86400
             file_atime_sec = time.time() - atime
             if file_atime_sec < time_sec:
@@ -381,7 +383,7 @@ def auto_tag_time_check(pattern, mtime, atime, ctime):
     except KeyError:
         pass
     try:
-        if pattern['ctime'] > 0:
+        if pattern['ctime'] > 0 and ctime:
             time_sec = pattern['ctime'] * 86400
             file_ctime_sec = time.time() - ctime
             if file_ctime_sec < time_sec:
@@ -413,7 +415,7 @@ def get_dir_meta(path, cliargs, reindex_dict):
             .strftime('%Y-%m-%dT%H:%M:%S')
         if cliargs['index2']:
             # check if directory times cached in Redis
-            redis_dirtime = redis_conn.get(path.encode('utf-8', errors='ignore'))
+            redis_dirtime = redis_conn.get(base64.encodestring(path.encode('utf-8', errors='ignore')))
             if redis_dirtime:
                 cached_times = float(redis_dirtime.decode('utf-8'))
                 # check if cached times are the same as on disk
@@ -498,17 +500,6 @@ def get_dir_meta(path, cliargs, reindex_dict):
             "change_percent_items_subdirs": ""
         }
 
-        # add any autotags to dirmeta_dict
-        if cliargs['autotag'] and len(diskover.config['autotag_dirs']) > 0:
-                auto_tag(dirmeta_dict, 'directory', mtime_unix, atime_unix, ctime_unix)
-
-        # search for and copy over any existing tags from reindex_dict
-        for sublist in reindex_dict['directory']:
-            if sublist[0] == fullpath:
-                dirmeta_dict['tag'] = sublist[1]
-                dirmeta_dict['tag_custom'] = sublist[2]
-                break
-
         # check plugins for adding extra meta data to dirmeta_dict
         for plugin in diskover.plugins:
             try:
@@ -519,11 +510,22 @@ def get_dir_meta(path, cliargs, reindex_dict):
             except KeyError:
                 pass
 
+        # add any autotags to dirmeta_dict
+        if cliargs['autotag'] and len(diskover.config['autotag_dirs']) > 0:
+            auto_tag(dirmeta_dict, 'directory', mtime_unix, atime_unix, ctime_unix)
+
+        # search for and copy over any existing tags from reindex_dict
+        for sublist in reindex_dict['directory']:
+            if sublist[0] == fullpath:
+                dirmeta_dict['tag'] = sublist[1]
+                dirmeta_dict['tag_custom'] = sublist[2]
+                break
+
     except (IOError, OSError):
         return None
 
-    # cache directory times in Redis
-    redis_conn.set(path.encode('utf-8', errors='ignore'), mtime_unix + ctime_unix,
+    # cache directory times in Redis, encode path (key) using base64
+    redis_conn.set(base64.encodestring(path.encode('utf-8', errors='ignore')), mtime_unix + ctime_unix,
                    ex=diskover.config['redis_dirtimesttl'])
 
     return dirmeta_dict
@@ -649,17 +651,6 @@ def get_file_meta(path, cliargs, reindex_dict):
             "worker_name": get_worker_name()
         }
 
-        # add any autotags to filemeta_dict
-        if cliargs['autotag'] and len(diskover.config['autotag_files']) > 0:
-                auto_tag(filemeta_dict, 'file', mtime_unix, atime_unix, ctime_unix)
-
-        # search for and copy over any existing tags from reindex_dict
-        for sublist in reindex_dict['file']:
-            if sublist[0] == path:
-                filemeta_dict['tag'] = sublist[1]
-                filemeta_dict['tag_custom'] = sublist[2]
-                break
-
         # check plugins for adding extra meta data to filemeta_dict
         for plugin in diskover.plugins:
             try:
@@ -670,6 +661,17 @@ def get_file_meta(path, cliargs, reindex_dict):
             except KeyError:
                 pass
 
+        # add any autotags to filemeta_dict
+        if cliargs['autotag'] and len(diskover.config['autotag_files']) > 0:
+            auto_tag(filemeta_dict, 'file', mtime_unix, atime_unix, ctime_unix)
+
+        # search for and copy over any existing tags from reindex_dict
+        for sublist in reindex_dict['file']:
+            if sublist[0] == path:
+                filemeta_dict['tag'] = sublist[1]
+                filemeta_dict['tag_custom'] = sublist[2]
+                break
+
     except (IOError, OSError):
         return None
 
@@ -677,96 +679,49 @@ def get_file_meta(path, cliargs, reindex_dict):
 
 
 def calc_dir_size(dirlist, cliargs):
-    """This is the calculate directory size worker function.
-    It gets a directory list from the Queue and searches ES for all files
-    in each directory (recursive) and sums their filesizes
+    """This is the calculate directory size worker function (du).
+    It gets a directory list from the Queue and searches Redis keys for all subdirs
+    in each directory (recursive) and sums their filesizes, items
     to create a total filesize and item count for each dir.
     Updates dir doc's filesize and items fields.
     """
     jobstart = time.time()
     bot_logger.info('*** Calculating directory sizes...')
 
+    dir_id_list = []
     for path in dirlist:
         totalsize = 0
         totalitems = 1  # 1 for itself
         totalitems_files = 0
-        totalitems_subdirs = 0
-        # file doc search with aggregate for sum filesizes
-        # escape special characters
-        newpath = diskover.escape_chars(path[1])
-        # create wildcard string and check for / (root) path
-        if newpath == '\/':
-            newpathwildcard = '\/*'
-        else:
-            newpathwildcard = newpath + '\/*'
 
-        # check if / (root) path
-        if newpath == '\/':
-            data = {
-                "size": 0,
-                "query": {
-                    "query_string": {
-                        "query": "path_parent: " + newpath + "*",
-                        "analyze_wildcard": "true"
-                    }
-                },
-                "aggs": {
-                    "total_size": {
-                        "sum": {
-                            "field": "filesize"
-                        }
-                    }
-                }
-            }
-        else:
-            data = {
-                "size": 0,
-                "query": {
-                    "query_string": {
-                        'query': 'path_parent: ' + newpath + ' '
-                                'OR path_parent: ' + newpathwildcard,
-                                 'analyze_wildcard': 'true'
-                    }
-                },
-                "aggs": {
-                    "total_size": {
-                        "sum": {
-                            "field": "filesize"
-                        }
-                    }
-                }
-            }
+        value_dict = json.loads(redis_conn.get(path[1].encode('utf-8', errors='ignore')))
+        totalsize += int(value_dict['filesize'])
+        totalitems_files += int(value_dict['items_files'])
 
-        # search ES and start scroll
-        res = es.search(index=cliargs['index'], doc_type='file', body=data,
-                        request_timeout=diskover.config['es_timeout'])
+        subdir_keys = redis_conn.keys(pattern=path[1] + '/*')
+        totalitems_subdirs = len(subdir_keys)
 
-        # total items sum
-        totalitems_files += res['hits']['total']
-
-        # total file size sum
-        totalsize += res['aggregations']['total_size']['value']
-
-        # directory doc search (subdirs)
-
-        # search ES and start scroll
-        res = es.search(index=cliargs['index'], doc_type='directory', body=data,
-                        request_timeout=diskover.config['es_timeout'])
-
-        # total items sum
-        totalitems_subdirs += res['hits']['total']
-
-        # ES id of directory doc
-        directoryid = path[0]
+        for key in subdir_keys:
+            value_dict = json.loads(redis_conn.get(key))
+            totalsize += int(value_dict['filesize'])
+            totalitems_files += int(value_dict['items_files'])
 
         # total items
         totalitems += totalitems_files + totalitems_subdirs
 
         # update filesize and items fields for directory (path) doc
-        es.update(index=cliargs['index'], id=directoryid, doc_type='directory',
-                  body={"doc": {'filesize': totalsize, 'items': totalitems,
+        d = {
+            '_op_type': 'update',
+            '_index': cliargs['index'],
+            '_type': 'directory',
+            '_id': path[0],
+            'doc': {'filesize': totalsize, 'items': totalitems,
                                 'items_files': totalitems_files,
-                                'items_subdirs': totalitems_subdirs}})
+                                'items_subdirs': totalitems_subdirs}
+            }
+        dir_id_list.append(d)
+
+    diskover.index_bulk_add(es, dir_id_list, 'directory', diskover.config, cliargs)
 
     elapsed_time = round(time.time() - jobstart, 3)
     bot_logger.info('*** FINISHED CALC DIR, Elapsed Time: ' + str(elapsed_time))
@@ -883,6 +838,8 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
                 tree.append(('directory', dir_source))
                 tree.append(('crawltime', root_path, (time.time() - starttime)))
         else:  # get meta off disk since times different in Redis than on disk
+            filesize = 0
+            filecount = 0
             for file in files:
                 if cliargs['qumulo']:
                     fmeta = diskover_qumulo.qumulo_get_file_meta(file, cliargs, reindex_dict)
@@ -890,9 +847,18 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
                     fmeta = get_file_meta(os.path.join(root, file), cliargs, reindex_dict)
                 if fmeta:
                     tree.append(('file', fmeta))
+                    filesize += fmeta['filesize']
+                    filecount += 1
             if dmeta:
+                dmeta['filesize'] += filesize
+                dmeta['items_files'] += filecount
                 tree.append(('directory', dmeta))
                 tree.append(('crawltime', root_path, (time.time() - starttime)))
+                dirinfo = {'filesize': dmeta['filesize'], 'items_files': dmeta['items_files']}
+                json_dirinfo = json.dumps(dirinfo)
+                # cache directory info in Redis
+                redis_conn.set(root_path.encode('utf-8', errors='ignore'), json_dirinfo,
+                               ex=diskover.config['redis_dirsizesttl'])
 
     if len(tree) > 0:
         es_bulk_adder(tree, cliargs)

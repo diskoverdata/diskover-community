@@ -30,6 +30,7 @@ import progressbar
 from redis import Redis
 from rq import Worker, Queue
 from random import randint
+import multiprocessing
 import argparse
 import logging
 import imp
@@ -38,16 +39,13 @@ import math
 import re
 import os
 import sys
-import threading
 import json
 
 
-version = '1.5.0-rc9'
+version = '1.5.0-rc10'
 __version__ = version
 
 IS_PY3 = sys.version_info >= (3, 0)
-
-totaljobs = 0
 
 adaptivebatch_startsize = 10
 adaptivebatch_maxsize = 500
@@ -190,6 +188,10 @@ def load_config():
     except ConfigParser.NoOptionError:
         configsettings['autotag_dirs'] = []
     try:
+        configsettings['treeprocs'] = int(config.get('treewalk', 'procs'))
+    except ConfigParser.NoOptionError:
+        configsettings['treeprocs'] = 8
+    try:
         configsettings['aws'] = config.get('elasticsearch', 'aws')
     except ConfigParser.NoOptionError:
         configsettings['aws'] = "False"
@@ -265,6 +267,10 @@ def load_config():
     except ConfigParser.NoOptionError:
         configsettings['redis_dirtimesttl'] = 604800
     try:
+        configsettings['redis_dirsizesttl'] = int(config.get('redis', 'dirsizesttl'))
+    except ConfigParser.NoOptionError:
+        configsettings['redis_dirsizesttl'] = 172800
+    try:
         configsettings['botlogs'] = config.get('workerbot', 'botlogs')
     except ConfigParser.NoOptionError:
         configsettings['botlogs'] = "False"
@@ -297,6 +303,16 @@ def load_config():
             int(config.get('dupescheck', 'readsize'))
     except ConfigParser.NoOptionError:
         configsettings['md5_readsize'] = 65536
+    try:
+        configsettings['dupes_maxsize'] = \
+            int(config.get('dupescheck', 'maxsize'))
+    except ConfigParser.NoOptionError:
+        configsettings['dupes_maxsize'] = 1073741824
+    try:
+        configsettings['dupes_checkbytes'] = \
+            int(config.get('dupescheck', 'checkbytes'))
+    except ConfigParser.NoOptionError:
+        configsettings['dupes_checkbytes'] = 8
     try:
         configsettings['botsleep'] = \
             float(config.get('crawlbot', 'sleeptime'))
@@ -423,6 +439,8 @@ def index_create(indexname):
     # set up es index mappings and create new index
     if cliargs['qumulo']:
         mappings = diskover_qumulo.get_qumulo_mappings(config)
+    elif cliargs['s3']:
+        mappings = diskover_s3.get_s3_mappings(config)
     else:
         mappings = {
             "settings": {
@@ -623,6 +641,7 @@ def index_create(indexname):
 
     logger.info('Creating es index')
     es.indices.create(index=indexname, body=mappings)
+    time.sleep(.5)
 
 
 def index_bulk_add(es, doclist, doctype, config, cliargs):
@@ -789,12 +808,14 @@ def index_delete_path(path, cliargs, logger, reindex_dict, recursive=False):
     return reindex_dict
 
 
-def index_get_docs(cliargs, logger, doctype='directory', copytags=False, hotdirs=False, index=None, path=None):
+def index_get_docs(cliargs, logger, doctype='directory', copytags=False, hotdirs=False,
+                   index=None, path=None, sort=False):
     """This is the es get docs function.
     It finds all docs (by doctype) in es and returns doclist
     which contains doc id, fullpath and mtime for all docs.
     If copytags is True will return tags from previous index.
     If path is specified will return just documents in and under directory path.
+    If sort is True, will return paths in asc path order.
     """
     doclist = []
 
@@ -848,6 +869,9 @@ def index_get_docs(cliargs, logger, doctype='directory', copytags=False, hotdirs
                     }
                 }
             }
+
+    if sort:
+        data['sort'] = [{'path_parent': { 'order': 'desc'}}]
 
     # refresh index
     es.indices.refresh(index)
@@ -1086,6 +1110,8 @@ def parse_cli_args(indexname):
                             to scan for dir changes in index")
     parser.add_argument("--qumulo", action="store_true",
                         help="Qumulo storage type, use Qumulo api instead of scandir")
+    parser.add_argument("--s3", metavar='FILE', nargs='+',
+                        help="Import AWS S3 inventory csv file(s) (gzipped) to diskover index")
     parser.add_argument("--gourcert", action="store_true",
                         help="Get realtime crawl data from ES for gource")
     parser.add_argument("--gourcemt", action="store_true",
@@ -1189,7 +1215,7 @@ def calc_dir_sizes(cliargs, logger, path=None, addstats=False):
     if path:
         dirlist = index_get_docs(cliargs, logger, path=path)
     else:
-        dirlist = index_get_docs(cliargs, logger)
+        dirlist = index_get_docs(cliargs, logger, sort=True)
     dirbatch = []
     if cliargs['adaptivebatch']:
         batchsize = adaptivebatch_startsize
@@ -1200,8 +1226,7 @@ def calc_dir_sizes(cliargs, logger, path=None, addstats=False):
     for d in dirlist:
         dirbatch.append(d)
         if len(dirbatch) >= batchsize:
-            q.enqueue(diskover_worker_bot.calc_dir_size,
-                    args=(dirbatch, cliargs,))
+            q.enqueue(diskover_worker_bot.calc_dir_size, args=(dirbatch, cliargs,))
             del dirbatch[:]
             batchsize_prev = batchsize
             if cliargs['adaptivebatch']:
@@ -1217,20 +1242,18 @@ def calc_dir_sizes(cliargs, logger, path=None, addstats=False):
                         logger.info('Batch size: %s' % batchsize)
 
     # add any remaining in batch to queue
-    q.enqueue(diskover_worker_bot.calc_dir_size,
-              args=(dirbatch, cliargs,))
+    q.enqueue(diskover_worker_bot.calc_dir_size, args=(dirbatch, cliargs,))
 
     logger.info('Directories have all been enqueued, calculating in background')
 
 
-def treewalk(path, num_sep, level, batchsize, bar, cliargs, reindex_dict):
+def treewalk(path, lock, num_sep, level, totaljobs, batchsize, cliargs, reindex_dict):
     """This is the tree walk function.
-    It walks the tree using scandir walk and adds tuple of root, dirs, files
+    It walks the tree using scandir walk and adds tuple of root, files
     to redis queue for rq worker bots to scrape meta and upload
     to ES index.
     """
     import diskover_worker_bot
-    global totaljobs
     batch = []
 
     for root, dirs, files in walk(path):
@@ -1240,9 +1263,9 @@ def treewalk(path, num_sep, level, batchsize, bar, cliargs, reindex_dict):
 
             batch.append((root, files))
             if len(batch) >= batchsize:
-                q.enqueue(diskover_worker_bot.scrape_tree_meta,
-                          args=(batch, cliargs, reindex_dict,))
-                totaljobs += 1
+                q.enqueue(diskover_worker_bot.scrape_tree_meta, args=(batch, cliargs, reindex_dict,))
+                with lock:
+                    totaljobs.value += 1
                 del batch[:]
                 batchsize_prev = batchsize
                 if cliargs['adaptivebatch']:
@@ -1268,28 +1291,37 @@ def treewalk(path, num_sep, level, batchsize, bar, cliargs, reindex_dict):
             del dirs[:]
             del files[:]
 
-        if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
-            try:
-                percent = int("{0:.0f}".format(100 * ((totaljobs - len(q)) / float(totaljobs))))
-                bar.update(percent)
-            except ZeroDivisionError:
-                bar.update(0)
-            except ValueError:
-                bar.update(0)
-
     # add any remaining in batch to queue
-    q.enqueue(diskover_worker_bot.scrape_tree_meta,
-              args=(batch, cliargs, reindex_dict,))
-    totaljobs += 1
+    q.enqueue(diskover_worker_bot.scrape_tree_meta, args=(batch, cliargs, reindex_dict,))
+    with lock:
+        totaljobs.value += 1
+
+
+def worker(mpq, lock, num_sep, level, totaljobs, batchsize, cliargs, reindex_dict):
+    """Worker for parallel fs tree walking.
+    """
+    while True:
+        path = mpq.get(True)
+        treewalk(path, lock, num_sep, level, totaljobs, batchsize, cliargs, reindex_dict)
+        time.sleep(.1)
+
+
+def worker_qumulo(mpq, lock, qumulo_ip, qumulo_ses, num_sep, level, totaljobs, batchsize, cliargs, reindex_dict):
+    """Worker for parallel Qumulo api tree walking.
+    """
+    while True:
+        path = mpq.get(True)
+        diskover_qumulo.qumulo_treewalk(path, lock, qumulo_ip, qumulo_ses, num_sep, level, totaljobs,
+                                        batchsize, cliargs, reindex_dict)
+        time.sleep(.1)
 
 
 def crawl_tree(path, cliargs, logger, reindex_dict):
     """This is the crawl tree function.
-    It starts threads for every directory at path and and waits
-    for the threads and rq queue to finish.
+    It starts processes for every directory at path and and waits
+    for the processes and rq queue to finish.
     """
     import diskover_worker_bot
-    global totaljobs
 
     try:
         wait_for_worker_bots()
@@ -1310,12 +1342,6 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
                 logger.info('Batch size: %s' % batchsize)
             logger.info("Sending batches of %s to worker bots", batchsize)
 
-        if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
-            bar = progress_bar()
-            bar.start()
-        else:
-            bar = None
-
         # set maxdepth level to 1 if reindex or crawlbot (non-recursive)
         if cliargs['reindex'] or cliargs['crawlbot']:
             level = 1
@@ -1326,60 +1352,58 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
         # set current depth
         num_sep = path.count(os.path.sep)
 
-        thread_list = []
-
-        # set up threads to parallel crawl directories at rootdir
         # qumulo api crawl
         if cliargs['qumulo']:
             qumulo_ip, qumulo_ses = diskover_qumulo.qumulo_connection()
+            # create multiprocessing Pool for workers
+            pool = multiprocessing.Pool(config['treeprocs'], worker_qumulo, (mpq, mpq_lock, qumulo_ip, qumulo_ses,
+                                                                             num_sep, level, totaljobs, batchsize,
+                                                                             cliargs, reindex_dict))
             # use qumulo api to get dir list
-            dirs, files = diskover_qumulo.qumulo_api_listdir(path, qumulo_ip, qumulo_ses)
-            # enqueue rootdir files
+            root_dirs, root_files = diskover_qumulo.qumulo_api_listdir(path, qumulo_ip, qumulo_ses)
             root = diskover_qumulo.qumulo_get_file_attr(path, qumulo_ip, qumulo_ses)
-            q.enqueue(diskover_worker_bot.scrape_tree_meta,
-                      args=([(root, files)], cliargs, reindex_dict,))
-            totaljobs += 1
-            # set up threads to parallel crawl directories at rootdir using qumulo api
-            for d_path in dirs:
-                thread = threading.Thread(target=diskover_qumulo.qumulo_treewalk,
-                                          args=(d_path, qumulo_ip, qumulo_ses, num_sep,
-                                                level, batchsize, bar, cliargs, reindex_dict,))
-                thread.start()
-                thread_list.append(thread)
+            for dir in root_dirs:
+                # put root dirs in the multiprocessing queue
+                mpq.put(dir)
+            # enqueue rootdir files
+            q.enqueue(diskover_worker_bot.scrape_tree_meta, args=([(root, root_files)], cliargs, reindex_dict,))
+            with mpq_lock:
+                totaljobs.value += 1
         else:  # regular crawl using scandir/walk
+            # create multiprocessing Pool for workers
+            pool = multiprocessing.Pool(config['treeprocs'], worker, (mpq, mpq_lock, num_sep, level, totaljobs,
+                                                                      batchsize, cliargs, reindex_dict))
             root_files = []
             for entry in scandir(path):
                 if entry.is_file(follow_symlinks=False):
                     root_files.append(entry.name)
                 elif entry.is_dir(follow_symlinks=False):
-                    thread = threading.Thread(target=treewalk,
-                                              args=(entry.path, num_sep, level, batchsize,
-                                                    bar, cliargs, reindex_dict,))
-                    thread.start()
-                    thread_list.append(thread)
-
+                    # put root dirs in the multiprocessing queue
+                    mpq.put(entry.path)
             # enqueue rootdir files
-            q.enqueue(diskover_worker_bot.scrape_tree_meta,
-                      args=([(path, root_files)], cliargs, reindex_dict,))
-            totaljobs += 1
+            q.enqueue(diskover_worker_bot.scrape_tree_meta, args=([(path, root_files)], cliargs, reindex_dict,))
+            with mpq_lock:
+                totaljobs.value += 1
 
-        # wait for the threads to finish
-        for thread in thread_list:
-            thread.join()
-
-        # wait for queue to be empty and update progress bar
+        # update progress bar and break when queue is empty
+        time.sleep(2)
+        # set up progress bar
+        if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+            bar = progress_bar()
+            bar.start()
         while True:
+            q_size = len(q)
             if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
                 try:
-                    percent = int("{0:.0f}".format(100 * ((totaljobs - len(q)) / float(totaljobs))))
+                    percent = int("{0:.0f}".format(100 * ((totaljobs.value - q_size) / float(totaljobs.value))))
                     bar.update(percent)
                 except ZeroDivisionError:
                     bar.update(0)
                 except ValueError:
                     bar.update(0)
-            if len(q) == 0:
+            if q_size == 0:
                 break
-            time.sleep(.1)
+            time.sleep(.5)
     except KeyboardInterrupt:
         print("Ctrl-c keyboard interrupt, shutting down...")
         sys.exit(0)
@@ -1485,6 +1509,13 @@ if __name__ == "__main__":
                          cliargs['index'].split('-')[1] != "qumulo"):
             print('Please name your index: diskover-qumulo-<string>')
             sys.exit(0)
+    # check index name for s3 storage
+    if cliargs['s3']:
+        if cliargs['index'] == "diskover-s3" or \
+                (cliargs['index'].split('-')[0] != "diskover" or
+                         cliargs['index'].split('-')[1] != "s3"):
+            print('Please name your index: diskover-s3-<string>')
+            sys.exit(0)
 
     # check for listen socket cli flag to start socket server
     if cliargs['listen']:
@@ -1520,13 +1551,11 @@ if __name__ == "__main__":
         # look in index2 for all directory docs with tags and add to queue
         dirlist = index_get_docs(cliargs, logger, doctype='directory', copytags=True, index=cliargs['copytags'][0])
         for path in dirlist:
-            q.enqueue(diskover_worker_bot.tag_copier,
-                      args=(path, cliargs,))
+            q.enqueue(diskover_worker_bot.tag_copier, args=(path, cliargs,))
         # look in index2 for all file docs with tags and add to queue
         filelist = index_get_docs(cliargs, logger, doctype='file', copytags=True, index=cliargs['copytags'][0])
         for path in filelist:
-            q.enqueue(diskover_worker_bot.tag_copier,
-                      args=(path, cliargs,))
+            q.enqueue(diskover_worker_bot.tag_copier, args=(path, cliargs,))
         if len(dirlist) == 0 and len(filelist) == 0:
             logger.info('No tags to copy')
         else:
@@ -1565,6 +1594,59 @@ if __name__ == "__main__":
         except ValueError:
             logger.error("Rootdir path not found or not a directory, exiting")
             sys.exit(1)
+    elif cliargs['s3']:
+        import diskover_s3
+        rootdir_path = '/'
+        cliargs['rootdir'] = rootdir_path
+        logger.debug('Excluded dirs: %s', config['excluded_dirs'])
+        logger.debug('Inventory files: %s', cliargs['s3'])
+        # warn if indexing 0 Byte empty files
+        if cliargs['minsize'] == 0:
+            logger.warning('You are indexing 0 Byte empty files (-s 0)')
+        # create Elasticsearch index
+        index_create(cliargs['index'])
+        starttime = time.time()
+        # start importing S3 inventory file(s)
+        inventory_files = cliargs['s3']
+        logger.info('Starting import of %s S3 inventory file(s)' % len(inventory_files))
+        # add fake disk space to index with path set to /s3
+        data = {
+            "path": '/s3',
+            "total": 0,
+            "used": 0,
+            "free": 0,
+            "available": 0,
+            "indexing_date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
+        }
+        es.index(index=cliargs['index'], doc_type='diskspace', body=data)
+        # create fake root directory doc
+        time_utc_now = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
+        time_utc_epoch_start = "1970-01-01T00:00:00"
+        root_dict = {}
+        root_dict['filename'] = "s3"
+        root_dict['path_parent'] = "/"
+        root_dict["filesize"] = 0
+        root_dict["items"] = 1  # 1 for itself
+        root_dict["items_files"] = 0
+        root_dict["items_subdirs"] = 0
+        root_dict["last_modified"] = time_utc_epoch_start
+        root_dict["tag"] = ""
+        root_dict["tag_custom"] = ""
+        root_dict["indexing_date"] = time_utc_now
+        root_dict["worker_name"] = "main"
+        root_dict["change_percent_filesize"] = ""
+        root_dict["change_percent_items"] = ""
+        root_dict["change_percent_items_files"] = ""
+        root_dict["change_percent_items_subdirs"] = ""
+        es.index(index=cliargs['index'], doc_type='directory', body=root_dict)
+        add_crawl_stats(es, cliargs['index'], '/s3', 0)
+        logger.info('Sending file(s) to worker bots...')
+        for file in inventory_files:
+            q.enqueue(diskover_s3.process_s3_inventory, args=(file, cliargs,))
+        # calculate directory sizes and items
+        calc_dir_sizes(cliargs, logger, addstats=True)
+        logger.info('Done importing S3 inventory file! Sayonara!')
+        sys.exit(0)
     else:
         # warn if not running as root
         if os.geteuid():
@@ -1612,7 +1694,6 @@ if __name__ == "__main__":
 
     # create Elasticsearch index
     index_create(cliargs['index'])
-    time.sleep(.5)
 
     # check if using prev index for metadata
     if cliargs['index2']:
@@ -1625,6 +1706,10 @@ if __name__ == "__main__":
         add_diskspace(cliargs['index'], rootdir_path)
 
     starttime = time.time()
+    # set up processes to parallel crawl directories at rootdir using multiprocessing
+    mpq = multiprocessing.Queue()
+    mpq_lock = multiprocessing.Lock()
+    totaljobs = multiprocessing.Value('i', 0)
 
     # start crawling
     crawl_tree(rootdir_path, cliargs, logger, reindex_dict)
