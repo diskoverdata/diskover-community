@@ -79,7 +79,7 @@ intro:
   </tr>
 </table>
 <h2>Works with Amazon AWS and support for S3 Inventory files</h2>
-<p><img src="https://github.com/shirosaidev/diskover/blob/master/docs/_pages/amazon_web_services_logo_aws.jpg?raw=true" alt="diskover aws" align="left" width="178" height="117" hspace="20"/>diskover works on AWS using EC2 and Elasticsearch instances so you can get up and running quickly in the cloud. Crawl bots can run locally and push file system meta data into your AWS Elasticsearch. From there you can use EC2 to run diskover-web to view your data. To have all this set up for you, there is the option for fully managed diskover-cloud on AWS. S3 Inventory files can also be imported into Elasticsearch to view S3 bucket usage.</p>
+<p><img src="https://github.com/shirosaidev/diskover/blob/master/docs/_pages/amazon_web_services_logo_aws.jpg?raw=true" alt="diskover aws" align="left" width="178" height="117" hspace="20"/>diskover works on AWS using EC2 and Elasticsearch instances so you can get up and running quickly in the cloud. Crawl bots can run locally and push file system meta data into your AWS Elasticsearch. From there you can use EC2 to run diskover-web to view your data. S3 Inventory files can also be imported into Elasticsearch to view S3 bucket usage.</p>
 <h2>diskover OVA files for VMware, etc</h2>
 <p><img src="https://github.com/shirosaidev/diskover/blob/master/docs/_pages/vmware_logo_1.png?raw=true" alt="diskover ova vmware" align="left" width="156" height="153" hspace="20"/>Patreon sponsors get access to OVA's which get diskover up and running quickly and easily. The OVA files can be imported into VMware, etc to get you crawling all your storage servers in less than an hour.</p>
 <br/>
