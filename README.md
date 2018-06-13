@@ -112,6 +112,12 @@ $ python /path/to/diskover.py -d /rootpath/you/want/to/crawl -i diskover-indexna
 
 **Defaults for crawl with no flags is to index from . (current directory) and files >0 Bytes and 0 days modified time. Empty files and directores are skipped (unless you use -s 0 and -e flags). Use -h to see cli options.**
 
+Import Amazon S3 Inventory file(s) (gzipped csv) with:
+
+```sh
+$ python /path/to/diskover.py -i diskover-s3-indexname -a --s3 /path/to/inventoryfile1.csv.gz /path/to/inventoryfile2.csv.gz
+```
+
 ## User Guide
 
 [Read the wiki](https://github.com/shirosaidev/diskover/wiki) for more documentation on how to use diskover.
