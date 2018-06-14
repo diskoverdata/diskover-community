@@ -246,7 +246,11 @@ def auto_tag(metadict, type, mtime, atime, ctime):
                 pass
 
             timepass = auto_tag_time_check(pattern, mtime, atime, ctime)
-
+            if extpass and namepass and pathpass and timepass:
+              metadict['tag'] = pattern['tag']
+              metadict['tag_custom'] = pattern['tag_custom']
+              return metadict
+            
     elif type == 'directory':
         for pattern in diskover.config['autotag_dirs']:
             try:
@@ -354,12 +358,10 @@ def auto_tag(metadict, type, mtime, atime, ctime):
                 pass
 
             timepass = auto_tag_time_check(pattern, mtime, atime, ctime)
-
-    if extpass and namepass and pathpass and timepass:
-        metadict['tag'] = pattern['tag']
-        metadict['tag_custom'] = pattern['tag_custom']
-
-    return metadict
+            if extpass and namepass and pathpass and timepass:
+              metadict['tag'] = pattern['tag']
+              metadict['tag_custom'] = pattern['tag_custom']
+              return metadict
 
 
 def auto_tag_time_check(pattern, mtime, atime, ctime):
