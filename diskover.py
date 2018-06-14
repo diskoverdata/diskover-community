@@ -216,40 +216,45 @@ def load_config():
     except ConfigParser.NoOptionError:
         configsettings['index'] = ""
     try:
-        configsettings['es_timeout'] = \
-            int(config.get('elasticsearch', 'timeout'))
+        configsettings['es_timeout'] = int(config.get('elasticsearch', 'timeout'))
     except ConfigParser.NoOptionError:
         configsettings['es_timeout'] = 10
     try:
-        configsettings['es_maxsize'] = \
-            int(config.get('elasticsearch', 'maxsize'))
+        configsettings['es_maxsize'] = int(config.get('elasticsearch', 'maxsize'))
     except ConfigParser.NoOptionError:
         configsettings['es_maxsize'] = 10
     try:
-        configsettings['es_max_retries'] = \
-            int(config.get('elasticsearch', 'maxretries'))
+        configsettings['es_max_retries'] = int(config.get('elasticsearch', 'maxretries'))
     except ConfigParser.NoOptionError:
         configsettings['es_max_retries'] = 0
     try:
-        configsettings['es_wait_status_yellow'] = \
-            config.get('elasticsearch', 'wait')
+        configsettings['es_wait_status_yellow'] = config.get('elasticsearch', 'wait')
     except ConfigParser.NoOptionError:
         configsettings['es_wait_status_yellow'] = "False"
     try:
-        configsettings['es_chunksize'] = \
-            int(config.get('elasticsearch', 'chunksize'))
+        configsettings['es_chunksize'] = int(config.get('elasticsearch', 'chunksize'))
     except ConfigParser.NoOptionError:
         configsettings['es_chunksize'] = 500
     try:
-        configsettings['index_shards'] = \
-            int(config.get('elasticsearch', 'shards'))
+        configsettings['index_shards'] = int(config.get('elasticsearch', 'shards'))
     except ConfigParser.NoOptionError:
         configsettings['index_shards'] = 5
     try:
-        configsettings['index_replicas'] = \
-            int(config.get('elasticsearch', 'replicas'))
+        configsettings['index_replicas'] = int(config.get('elasticsearch', 'replicas'))
     except ConfigParser.NoOptionError:
         configsettings['index_replicas'] = 1
+    try:
+        configsettings['index_refresh'] = config.get('elasticsearch', 'indexrefresh')
+    except ConfigParser.NoOptionError:
+        configsettings['index_refresh'] = "1s"
+    try:
+        configsettings['disable_replicas'] = config.get('elasticsearch', 'disablereplicas')
+    except ConfigParser.NoOptionError:
+        configsettings['disable_replicas'] = "False"
+    try:
+        configsettings['index_translog_size'] = config.get('elasticsearch', 'translogsize')
+    except ConfigParser.NoOptionError:
+        configsettings['index_translog_size'] = "512mb"
     try:
         configsettings['redis_host'] = config.get('redis', 'host')
     except ConfigParser.NoOptionError:
@@ -1456,6 +1461,37 @@ def wait_for_worker_bots():
     logger.info('Found %s diskover RQ worker bots', len(workers))
 
 
+def tune_es_for_crawl(defaults=False):
+    """This is the tune es for crawl function.
+    It optimizes ES for crawling based on config settings and after crawl is over
+    sets back to defaults.
+    """
+    if config['disable_replicas'] == 'True' or config['disable_replicas'] == 'true':
+        replicas = 0
+    else:
+        replicas = config['index_replicas']
+    default_settings = {
+        "index": {
+            "refresh_interval": "1s",
+            "number_of_replicas": config['index_replicas'],
+            "translog.flush_threshold_size": "512mb"
+        }
+    }
+    tuned_settings = {
+        "index": {
+            "refresh_interval": config['index_refresh'],
+            "number_of_replicas": replicas,
+            "translog.flush_threshold_size": config['index_translog_size']
+        }
+    }
+    if not defaults:
+        es.indices.put_settings(index=cliargs['index'], body=tuned_settings)
+    else:
+        es.indices.put_settings(index=cliargs['index'], body=default_settings)
+        es.indices.forcemerge(index=cliargs['index'], max_num_segments=config['index_replicas'])
+
+
+
 # load config file into config dictionary
 config = load_config()
 
@@ -1691,6 +1727,9 @@ if __name__ == "__main__":
     # create Elasticsearch index
     index_create(cliargs['index'])
 
+    # optimize Elasticsearch index settings for crawling
+    tune_es_for_crawl()
+
     # check if using prev index for metadata
     if cliargs['index2']:
         logger.info('Using %s for metadata cache (-I)' % cliargs['index2'][0])
@@ -1715,5 +1754,8 @@ if __name__ == "__main__":
         calc_dir_sizes(cliargs, logger, path=rootdir_path)
     else:
         calc_dir_sizes(cliargs, logger, addstats=True)
+
+    # set Elasticsearch index settings back to default
+    tune_es_for_crawl(defaults=True)
 
     logger.info('Dispatcher is DONE! Sayonara!')

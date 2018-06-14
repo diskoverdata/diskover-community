@@ -49,6 +49,13 @@ chunksize = 1000
 shards = 5
 ; number of replicas for index (default is 1)
 replicas = 1
+; the below settings are to optimize ES for crawling
+; index refresh interval (default is 1s), set to -1 to disable refresh during crawl (fastest performance but no index searches), after crawl is set back to 1s
+indexrefresh = 30s
+; disable replicas during crawl - set to True to turn off replicas or False to keep on (default False), after crawl is set back to replicas value above
+disablereplicas = True
+; transaction log flush threshold size (default 512mb)
+translogsize = 1gb
 
 [redis]
 host = 127.0.0.1
@@ -59,7 +66,7 @@ port = 6379
 dirtimesttl = 604800
 
 [workerbot]
-; enable bot logs (True or False)
+; enable bot logs (True or False), bot logs will slow down crawl, use for debugging only
 botlogs = False
 ; log file directory to store worker logs
 ; log files are named diskover_bot_worker_<workername>_<time>_log
