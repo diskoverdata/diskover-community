@@ -115,7 +115,7 @@ $ python /path/to/diskover.py -d /rootpath/you/want/to/crawl -i diskover-indexna
 Import Amazon S3 Inventory file(s) (gzipped csv) with:
 
 ```sh
-$ python /path/to/diskover.py -i diskover-s3-indexname -a --s3 /path/to/inventoryfile1.csv.gz /path/to/inventoryfile2.csv.gz
+$ python /path/to/diskover.py -i diskover-s3-indexname -a --s3 /dir/file1.csv.gz /dir/file2.csv.gz
 ```
 
 ## User Guide
