@@ -196,14 +196,14 @@ def auto_tag(metadict, type, mtime, atime, ctime):
                             namepass = True
                             break
                         else:
-                            extpass = False
+                            namepass = False
                     elif name.endswith('*'):
                         name = '^' + name
                         if re.search(name, metadict['filename']):
                             namepass = True
                             break
                         else:
-                            extpass = False
+                            namepass = False
                     else:
                         if name == metadict['filename']:
                             namepass = True
@@ -235,7 +235,7 @@ def auto_tag(metadict, type, mtime, atime, ctime):
                             pathpass = True
                             break
                         else:
-                            extpass = False
+                            pathpass = False
                     else:
                         if path == metadict['path_parent']:
                             pathpass = True
@@ -304,14 +304,14 @@ def auto_tag(metadict, type, mtime, atime, ctime):
                             namepass = True
                             break
                         else:
-                            extpass = False
+                            namepass = False
                     elif name.endswith('*'):
                         name = '^' + name
                         if re.search(name, metadict['filename']):
                             namepass = True
                             break
                         else:
-                            extpass = False
+                            namepass = False
                     else:
                         if name == metadict['filename']:
                             namepass = True
@@ -343,7 +343,7 @@ def auto_tag(metadict, type, mtime, atime, ctime):
                             pathpass = True
                             break
                         else:
-                            extpass = False
+                            pathpass = False
                     else:
                         if path == metadict['path_parent']:
                             pathpass = True

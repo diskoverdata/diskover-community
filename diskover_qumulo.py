@@ -133,7 +133,7 @@ def qumulo_api_walk(top, ip, ses):
             yield entry
 
 
-def qumulo_treewalk(path, lock, ip, ses, num_sep, level, totaljobs, batchsize, cliargs, reindex_dict):
+def qumulo_treewalk(path, lock, ip, ses, num_sep, level, totaljobs, batchsize, cliargs, logger, reindex_dict):
     batch = []
 
     for root, dirs, files in qumulo_api_walk(path, ip, ses):
@@ -163,7 +163,7 @@ def qumulo_treewalk(path, lock, ip, ses, num_sep, level, totaljobs, batchsize, c
                     cliargs['batchsize'] = batchsize
                     if cliargs['verbose'] or cliargs['debug']:
                         if batchsize_prev != batchsize:
-                            diskover.logger.info('Batch size: %s' % batchsize)
+                            logger.info('Batch size: %s' % batchsize)
 
             # check if at maxdepth level and delete dirs/files lists to not
             # descend further down the tree

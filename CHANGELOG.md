@@ -17,6 +17,8 @@
 - switched to multiprocessing instead of threads for parallel tree walking
 - directory paths are hashed using base64 encode when storing in redis for cacheing directory times (times are used when crawling with -I)
 - moved autotag code after plugin code when setting file/directory doc meta data fields
+### fixed
+- bugs with autotagging
 
 ## [1.5.0-rc9] = 2018-06-06
 ### notice

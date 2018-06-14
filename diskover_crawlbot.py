@@ -18,17 +18,12 @@ import sys
 import os
 import threading
 
-
-global dirlist
-
-
-def bot_thread(threadnum, cliargs, logger, rootdir_path, reindex_dict):
+def bot_thread(threadnum, cliargs, logger, mpq, mpq_lock, totaljobs, rootdir_path, reindex_dict):
     """This is the bot thread function.
     It grabs a directory and it's mtime from the Queue.
     Directory mtime on disk is checked and if newer it is
     reindexed (non-recursive).
     """
-
     starttime = time.time()
     t = time.time()
     c = 0
@@ -73,32 +68,32 @@ def bot_thread(threadnum, cliargs, logger, rootdir_path, reindex_dict):
             # delete existing path docs (non-recursive)
             reindex_dict = diskover.index_delete_path(path, cliargs, logger, reindex_dict)
             # start crawling
-            diskover.crawl_tree(path, cliargs, logger, reindex_dict)
+            diskover.crawl_tree(path, cliargs, logger, mpq, mpq_lock, totaljobs, reindex_dict)
             # calculate directory size for path
             diskover.calc_dir_sizes(cliargs, logger, path=path)
         time.sleep(diskover.config['botsleep'])
         n += 1
 
 
-def start_crawlbot_scanner(cliargs, logger, rootdir_path, botdirlist, reindex_dict):
+def start_crawlbot_scanner(cliargs, logger, mpq, mpq_lock, totaljobs, rootdir_path, botdirlist, reindex_dict):
     """This is the start crawl bot continuous scanner function.
     It gets a list with all the directory docs from index_get_docs which
     contains paths and their mtimes. The list is randomly shuffled.
     """
     global dirlist
+    dirlist = botdirlist
 
     logger.info('diskover crawl bot continuous scanner starting up')
     logger.info('Randomly scanning for changes every %s sec using %s threads',
                 diskover.config['botsleep'], diskover.config['botthreads'])
     logger.info('*** Press Ctrl-c to shutdown ***')
 
-    dirlist = botdirlist
-
     threadlist = []
     try:
         for i in range(diskover.config['botthreads']):
             thread = threading.Thread(target=bot_thread,
-                                      args=(i, cliargs, logger, rootdir_path, reindex_dict,))
+                                      args=(i, cliargs, logger, mpq, mpq_lock, totaljobs,
+                                            rootdir_path, reindex_dict,))
             thread.daemon = True
             threadlist.append(thread)
             thread.start()
@@ -117,7 +112,7 @@ def start_crawlbot_scanner(cliargs, logger, rootdir_path, botdirlist, reindex_di
                 '*** crawlbot: getting new dirlist from ES, crawlbot has been running for %s', elapsed)
             dirlist = diskover.index_get_docs(cliargs, logger, doctype='directory')
             # add disk space info to es index
-            diskover.add_diskspace(cliargs['index'], rootdir_path)
+            diskover.add_diskspace(cliargs['index'], logger, rootdir_path)
             # calculate directory sizes and items
             diskover.calc_dir_sizes(cliargs, logger)
 

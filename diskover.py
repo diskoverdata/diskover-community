@@ -903,7 +903,7 @@ def index_get_docs(cliargs, logger, doctype='directory', copytags=False, hotdirs
     return doclist
 
 
-def add_diskspace(index, path):
+def add_diskspace(index, logger, path):
     """This is the add disk space function.
     It adds total, used, free and available
     disk space for a path to es.
@@ -1132,7 +1132,7 @@ def parse_cli_args(indexname):
     return args
 
 
-def log_setup():
+def log_setup(cliargs):
     """This is the log set up function.
     It configures log output for diskover.
     """
@@ -1307,17 +1307,17 @@ def worker(mpq, lock, num_sep, level, totaljobs, batchsize, cliargs, reindex_dic
         time.sleep(.1)
 
 
-def worker_qumulo(mpq, lock, qumulo_ip, qumulo_ses, num_sep, level, totaljobs, batchsize, cliargs, reindex_dict):
+def worker_qumulo(mpq, lock, qumulo_ip, qumulo_ses, num_sep, level, totaljobs, batchsize, cliargs, logger, reindex_dict):
     """Worker for parallel Qumulo api tree walking.
     """
     while True:
         path = mpq.get(True)
         diskover_qumulo.qumulo_treewalk(path, lock, qumulo_ip, qumulo_ses, num_sep, level, totaljobs,
-                                        batchsize, cliargs, reindex_dict)
+                                        batchsize, cliargs, logger, reindex_dict)
         time.sleep(.1)
 
 
-def crawl_tree(path, cliargs, logger, reindex_dict):
+def crawl_tree(path, cliargs, logger, mpq, mpq_lock, totaljobs, reindex_dict):
     """This is the crawl tree function.
     It starts processes for every directory at path and and waits
     for the processes and rq queue to finish.
@@ -1325,7 +1325,7 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
     import diskover_worker_bot
 
     try:
-        wait_for_worker_bots()
+        wait_for_worker_bots(logger)
         logger.info('Enqueueing crawl to diskover worker bots for %s...', path)
 
         if cliargs['autotag']:
@@ -1359,7 +1359,7 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
             # create multiprocessing Pool for workers
             pool = multiprocessing.Pool(config['treeprocs'], worker_qumulo, (mpq, mpq_lock, qumulo_ip, qumulo_ses,
                                                                              num_sep, level, totaljobs, batchsize,
-                                                                             cliargs, reindex_dict))
+                                                                             cliargs, logger, reindex_dict))
             # use qumulo api to get dir list
             root_dirs, root_files = diskover_qumulo.qumulo_api_listdir(path, qumulo_ip, qumulo_ses)
             root = diskover_qumulo.qumulo_get_file_attr(path, qumulo_ip, qumulo_ses)
@@ -1421,8 +1421,7 @@ def hotdirs():
                 'for directories from %s to %s',
                          cliargs['hotdirs'][0], cliargs['index'])
     # look in index for all directory docs and add to queue
-    dirlist = index_get_docs(cliargs, logger, doctype='directory',
-                                            hotdirs=True, index=cliargs['index'])
+    dirlist = index_get_docs(cliargs, logger, doctype='directory', hotdirs=True, index=cliargs['index'])
     dirbatch = []
     if cliargs['adaptivebatch']:
         batchsize = adaptivebatch_startsize
@@ -1451,7 +1450,7 @@ def hotdirs():
     q.enqueue(diskover_worker_bot.calc_hot_dirs, args=(dirbatch, cliargs,))
 
 
-def wait_for_worker_bots():
+def wait_for_worker_bots(logger):
     """This is the wait for worker bots function.
     """
     while len(Worker.all(queue=q)) == 0:
@@ -1517,7 +1516,7 @@ if __name__ == "__main__":
     cliargs = vars(parse_cli_args(config['index']))
 
     # set up logging
-    logger = log_setup()
+    logger = log_setup(cliargs)
 
     if not cliargs['quiet'] and not cliargs['gourcert'] and not cliargs['gourcemt']:
         # print random banner
@@ -1568,7 +1567,7 @@ if __name__ == "__main__":
     if cliargs['finddupes']:
         import diskover_worker_bot
         import diskover_dupes
-        wait_for_worker_bots()
+        wait_for_worker_bots(logger)
         # Set up worker threads for duplicate file checker queue
         diskover_dupes.dupes_finder(es, q, cliargs, logger)
         logger.info('Worker bots checking for dupes in background')
@@ -1578,7 +1577,7 @@ if __name__ == "__main__":
     # copy tags from index2 to index if cli argument
     if cliargs['copytags']:
         import diskover_worker_bot
-        wait_for_worker_bots()
+        wait_for_worker_bots(logger)
         logger.info('Copying tags from %s to %s', cliargs['copytags'][0], cliargs['index'])
         # look in index2 for all directory docs with tags and add to queue
         dirlist = index_get_docs(cliargs, logger, doctype='directory', copytags=True, index=cliargs['copytags'][0])
@@ -1598,7 +1597,7 @@ if __name__ == "__main__":
     # Calculate directory change percent from index2 to index if cli argument
     if cliargs['hotdirs']:
         import diskover_worker_bot
-        wait_for_worker_bots()
+        wait_for_worker_bots(logger)
         hotdirs()
         logger.info('Directories have all been enqueued, calculating in background')
         logger.info('Dispatcher is DONE! Sayonara!')
@@ -1714,14 +1713,20 @@ if __name__ == "__main__":
     elif cliargs['reindexrecurs']:
         reindex_dict = index_delete_path(rootdir_path, cliargs, logger, reindex_dict, recursive=True)
 
+    # set up processes to parallel crawl directories at rootdir using multiprocessing
+    mpq = multiprocessing.Queue()
+    mpq_lock = multiprocessing.Lock()
+    totaljobs = multiprocessing.Value('i', 0)
+
     # start crawlbot if cli argument
     if cliargs['crawlbot']:
         import diskover_crawlbot
         import diskover_worker_bot
-        wait_for_worker_bots()
+        wait_for_worker_bots(logger)
         botdirlist = index_get_docs(cliargs, logger, doctype='directory')
         # Set up worker threads for crawlbot
-        diskover_crawlbot.start_crawlbot_scanner(cliargs, logger, rootdir_path, botdirlist, reindex_dict)
+        diskover_crawlbot.start_crawlbot_scanner(cliargs, logger, mpq, mpq_lock, totaljobs, rootdir_path,
+                                                 botdirlist, reindex_dict)
         sys.exit(0)
 
     # create Elasticsearch index
@@ -1738,16 +1743,12 @@ if __name__ == "__main__":
     if cliargs['qumulo']:
         diskover_qumulo.qumulo_add_diskspace(es, cliargs['index'], rootdir_path, qumulo_ip, qumulo_ses, logger)
     else:
-        add_diskspace(cliargs['index'], rootdir_path)
+        add_diskspace(cliargs['index'], logger, rootdir_path)
 
     starttime = time.time()
-    # set up processes to parallel crawl directories at rootdir using multiprocessing
-    mpq = multiprocessing.Queue()
-    mpq_lock = multiprocessing.Lock()
-    totaljobs = multiprocessing.Value('i', 0)
 
     # start crawling
-    crawl_tree(rootdir_path, cliargs, logger, reindex_dict)
+    crawl_tree(rootdir_path, cliargs, logger, mpq, mpq_lock, totaljobs, reindex_dict)
 
     # calculate directory sizes and items
     if cliargs['reindex'] or cliargs['reindexrecurs']:
