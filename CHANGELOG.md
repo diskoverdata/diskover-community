@@ -19,6 +19,7 @@
 - moved autotag code after plugin code when setting file/directory doc meta data fields
 ### fixed
 - bugs with autotagging
+- crawlbot continuous scanner (-B) strack trace error (logger)
 
 ## [1.5.0-rc9] = 2018-06-06
 ### notice
