@@ -1181,8 +1181,8 @@ def log_setup(cliargs):
     return diskover_logger
 
 
-def progress_bar():
-    widgets = ['Crawling: ', progressbar.Bar('=', '[', '] '), progressbar.Percentage(),
+def progress_bar(prefix='Crawling'):
+    widgets = [prefix + ': ', progressbar.Bar('=', '[', '] '), progressbar.Percentage(),
                ' (', progressbar.Timer(), ', ', progressbar.ETA(), ')']
     bar = progressbar.ProgressBar(widgets=widgets, max_value=100)
     return bar
@@ -1190,6 +1190,7 @@ def progress_bar():
 
 def calc_dir_sizes(cliargs, logger, path=None, addstats=False):
     import diskover_worker_bot
+    jobcount = 0
     logger.info('Waiting for diskover bots to be done with any crawl jobs...')
     busyworkers = []
     while True:
@@ -1228,6 +1229,7 @@ def calc_dir_sizes(cliargs, logger, path=None, addstats=False):
         dirbatch.append(d)
         if len(dirbatch) >= batchsize:
             q.enqueue(diskover_worker_bot.calc_dir_size, args=(dirbatch, cliargs,))
+            jobcount += 1
             del dirbatch[:]
             batchsize_prev = batchsize
             if cliargs['adaptivebatch']:
@@ -1244,8 +1246,31 @@ def calc_dir_sizes(cliargs, logger, path=None, addstats=False):
 
     # add any remaining in batch to queue
     q.enqueue(diskover_worker_bot.calc_dir_size, args=(dirbatch, cliargs,))
+    jobcount += 1
 
-    logger.info('Directories have all been enqueued, calculating in background')
+    # update progress bar and break when queue is empty
+    time.sleep(2)
+    # set up progress bar
+    if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+        bar = progress_bar(prefix='Calculating')
+        bar.start()
+    while True:
+        q_size = len(q)
+        if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+            try:
+                percent = int("{0:.0f}".format(100 * (jobcount - q_size) / float(jobcount)))
+                bar.update(percent)
+            except ZeroDivisionError:
+                bar.update(0)
+            except ValueError:
+                bar.update(0)
+        if q_size == 0:
+            break
+        time.sleep(.5)
+
+    if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+        bar.finish()
+    logger.info('Finished calculating directory sizes')
 
 
 def treewalk(path, lock, num_sep, level, totaljobs, batchsize, cliargs, reindex_dict):
@@ -1484,8 +1509,10 @@ def tune_es_for_crawl(defaults=False):
         }
     }
     if not defaults:
+        logger.info("Tuning ES index settings for crawl...")
         es.indices.put_settings(index=cliargs['index'], body=tuned_settings)
     else:
+        logger.info("Setting ES index settings back to defaults...")
         es.indices.put_settings(index=cliargs['index'], body=default_settings)
         es.indices.forcemerge(index=cliargs['index'], max_num_segments=config['index_replicas'])
 
@@ -1759,4 +1786,4 @@ if __name__ == "__main__":
     # set Elasticsearch index settings back to default
     tune_es_for_crawl(defaults=True)
 
-    logger.info('Dispatcher is DONE! Sayonara!')
+    logger.info('All DONE! Sayonara!')

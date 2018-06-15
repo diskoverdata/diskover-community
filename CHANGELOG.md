@@ -13,10 +13,12 @@
 - checkbytes in checkdupes section in diskover.cfg.sample - used for setting bytes to check at start and end of file before doing md5 sum check (copy to diskover.cfg)
 - new es optimization settings to elasticsearch section in diskover.cfg.sample - new settings for indexrefresh, disablereplicas, translogsize (copy from diskover.cfg.sample to your diskover.cfg)
 - autotagging to diskover_qumulo
+- progress bar output for dir size calculation jobs
 ### changed
 - switched to multiprocessing instead of threads for parallel tree walking
 - directory paths are hashed using base64 encode when storing in redis for cacheing directory times (times are used when crawling with -I)
 - moved autotag code after plugin code when setting file/directory doc meta data fields
+- main diskover.py dispatcher does not exit when there are dir size jobs still in Redis diskover_crawl queue
 ### fixed
 - bugs with autotagging
 - crawlbot continuous scanner (-B) strack trace error (logger)
