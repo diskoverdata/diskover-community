@@ -6,7 +6,7 @@ your file metadata into Elasticsearch.
 See README.md or https://github.com/shirosaidev/diskover
 for more information.
 
-Copyright (C) Chris Park 2017
+Copyright (C) Chris Park 2017-2018
 diskover is released under the Apache 2.0 license. See
 LICENSE for the full license text.
 """
@@ -25,8 +25,6 @@ import time
 import logging
 import re
 import base64
-import json
-
 
 # cache uid/gid names
 uids = []
@@ -39,7 +37,7 @@ es = diskover.elasticsearch_connect(diskover.config)
 
 # create Reddis connection
 redis_conn = Redis(host=diskover.config['redis_host'], port=diskover.config['redis_port'],
-                       password=diskover.config['redis_password'])
+                   password=diskover.config['redis_password'])
 
 
 def parse_cli_args():
@@ -62,7 +60,7 @@ def bot_log_setup():
     es_logger.setLevel(logging.WARNING)
 
     if diskover.config['botlogs'] == "True" or \
-            diskover.config['botlogs'] == "true":
+                    diskover.config['botlogs'] == "true":
         botlogfile = 'diskover_bot_worker_' + get_worker_name() \
                      + '_' + str(int(time.time())) + '_log'
         fh = logging.FileHandler(os.path.join(diskover.config['botlogfiledir'], botlogfile))
@@ -247,10 +245,10 @@ def auto_tag(metadict, type, mtime, atime, ctime):
 
             timepass = auto_tag_time_check(pattern, mtime, atime, ctime)
             if extpass and namepass and pathpass and timepass:
-              metadict['tag'] = pattern['tag']
-              metadict['tag_custom'] = pattern['tag_custom']
-              return metadict
-            
+                metadict['tag'] = pattern['tag']
+                metadict['tag_custom'] = pattern['tag_custom']
+                return metadict
+
     elif type == 'directory':
         for pattern in diskover.config['autotag_dirs']:
             try:
@@ -359,9 +357,9 @@ def auto_tag(metadict, type, mtime, atime, ctime):
 
             timepass = auto_tag_time_check(pattern, mtime, atime, ctime)
             if extpass and namepass and pathpass and timepass:
-              metadict['tag'] = pattern['tag']
-              metadict['tag_custom'] = pattern['tag_custom']
-              return metadict
+                metadict['tag'] = pattern['tag']
+                metadict['tag_custom'] = pattern['tag_custom']
+                return metadict
 
 
 def auto_tag_time_check(pattern, mtime, atime, ctime):
@@ -729,8 +727,8 @@ def calc_dir_size(dirlist, cliargs):
                 "query": {
                     "query_string": {
                         'query': 'path_parent: ' + newpath + ' '
-                                'OR path_parent: ' + newpathwildcard,
-                                 'analyze_wildcard': 'true'
+                                                             'OR path_parent: ' + newpathwildcard,
+                        'analyze_wildcard': 'true'
                     }
                 },
                 "aggs": {
@@ -913,7 +911,7 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
     if len(tree) > 0:
         es_bulk_adder(tree, cliargs)
 
-    elapsed_time = round(time.time()-jobstart, 3)
+    elapsed_time = round(time.time() - jobstart, 3)
     bot_logger.info('*** FINISHED JOB, Elapsed Time: ' + str(elapsed_time))
 
 
@@ -925,7 +923,7 @@ def file_excluded(filename, extension, path, verbose):
         return False
     # check for extension in and . (dot) files in excluded_files
     if (not extension and 'NULLEXT' in diskover.config['excluded_files']) or \
-            '*.' + extension in diskover.config['excluded_files'] or \
+                            '*.' + extension in diskover.config['excluded_files'] or \
             (filename.startswith('.') and u'.*' in diskover.config['excluded_files']):
         if verbose:
             bot_logger.info('Skipping (excluded file) %s', path)
@@ -1064,22 +1062,22 @@ def calc_hot_dirs(dirlist, cliargs):
             # ((new - old) / old) * 100
             try:
                 changepercent_filesize = round(((path[2] - source['filesize'])
-                                               / source['filesize']) * 100.0, 2)
+                                                / source['filesize']) * 100.0, 2)
             except ZeroDivisionError:
                 changepercent_filesize = 0.0
             try:
                 changepercent_items = round(((path[3] - source['items'])
-                                            / source['items']) * 100.0, 2)
+                                             / source['items']) * 100.0, 2)
             except ZeroDivisionError:
                 changepercent_items = 0.0
             try:
                 changepercent_items_files = round(((path[4] - source['items_files'])
-                                                  / source['items_files']) * 100.0, 2)
+                                                   / source['items_files']) * 100.0, 2)
             except ZeroDivisionError:
                 changepercent_items_files = 0.0
             try:
                 changepercent_items_subdirs = round(((path[5] - source['items_subdirs'])
-                                                    / source['items_subdirs']) * 100.0, 2)
+                                                     / source['items_subdirs']) * 100.0, 2)
             except ZeroDivisionError:
                 changepercent_items_subdirs = 0.0
 
@@ -1105,7 +1103,6 @@ def calc_hot_dirs(dirlist, cliargs):
 # set up bot logging
 bot_logger = bot_log_setup()
 
-
 if __name__ == '__main__':
     # parse cli arguments into cliargs dictionary
     cliargs_bot = vars(parse_cli_args())
@@ -1114,12 +1111,12 @@ if __name__ == '__main__':
     listen = ['diskover_crawl']
 
     print("""\033[31m
-    
+
      ___  _ ____ _  _ ____ _  _ ____ ____     ;
      |__> | ==== |-:_ [__]  \/  |=== |--<    ["]
      ____ ____ ____ _  _ _    ___  ____ ___ /[_]\\
      |___ |--< |--| |/\| |___ |==] [__]  |   ] [ v%s
-     
+
      Redis RQ worker bot for diskover crawler
      Crawling all your stuff.
 
