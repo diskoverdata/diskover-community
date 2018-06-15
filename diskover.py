@@ -26,6 +26,8 @@ try:
     import configparser as ConfigParser
 except ImportError:
     import ConfigParser
+import urllib3
+import socket
 import progressbar
 from redis import Redis
 from rq import Worker, Queue
@@ -1515,13 +1517,18 @@ def tune_es_for_crawl(defaults=False):
     }
     if not defaults:
         logger.info("Tuning ES index settings for crawl")
-        es.indices.put_settings(index=cliargs['index'], body=tuned_settings)
+        es.indices.put_settings(index=cliargs['index'], body=tuned_settings,
+                                request_timeout=config['es_timeout'])
     else:
         logger.info("Setting ES index settings back to defaults")
-        es.indices.put_settings(index=cliargs['index'], body=default_settings)
-        logger.info("Force merging ES index to any replicas...")
-        es.indices.forcemerge(index=cliargs['index'], max_num_segments=config['index_replicas'])
-
+        es.indices.put_settings(index=cliargs['index'], body=default_settings,
+                                request_timeout=config['es_timeout'])
+        try:
+            logger.info("Force merging/Optimizing ES index...")
+            es.indices.forcemerge(index=cliargs['index'], request_timeout=config['es_timeout'])
+        except (socket.timeout, urllib3.exceptions.ReadTimeoutError):
+            logger.info("Force merging/Optimizing continuing in background...")
+            pass
 
 
 # load config file into config dictionary
