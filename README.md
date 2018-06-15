@@ -125,7 +125,7 @@ You can set up diskover and diskover-web in docker, there are a few choices for 
 
 [linuxserver.io](https://linuxserver.io) Docker hub images:
 
-coming soon... to help with testing head over to linuxserver.io Discord and direct message @hackerman.
+coming soon... to help with testing head over to [linuxserver.io Discord](https://discord.gg/YWrKVTn) and direct message @hackerman.
 
 ## User Guide
 
