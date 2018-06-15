@@ -78,22 +78,6 @@ $ cd diskover
 
 [Download latest version](https://github.com/shirosaidev/diskover/releases/latest)
 
-
-### OVA image file (for vmware, etc)
-
-If you don't want to set up everything yourself, I have OVA files running the latest version of diskover/diskover-web. Fastest way to get up and running diskover. Check out the [Patreon](https://www.patreon.com/diskover) page to learn more about how to get access to the OVA downloads.
-
-## Docker
-
-You can set up diskover and diskover-web in docker, there are a few choices for easily running diskover in docker using pre-built images/compose files.
-
-diskover-web repo has docker instructions for docker-compose:
-https://github.com/shirosaidev/diskover-web
-
-[linuxserver.io](https://linuxserver.io) docker hub images:
-coming soon...
-
-
 ### Requirements
 
 You need to have at least **Python 2.7. or Python 3.5.** and have installed required Python dependencies using `pip`.
@@ -128,6 +112,20 @@ Import Amazon S3 Inventory file(s) (gzipped csv) with:
 ```sh
 $ python /path/to/diskover.py -i diskover-s3-indexname -a --s3 /dir/file1.csv.gz /dir/file2.csv.gz
 ```
+
+## OVA image file (for vmware, etc)
+
+If you don't want to set up everything yourself, I have OVA files running the latest version of diskover/diskover-web. Fastest way to get up and running diskover. Check out the [Patreon](https://www.patreon.com/diskover) page to learn more about how to get access to the OVA downloads.
+
+## Docker
+
+You can set up diskover and diskover-web in docker, there are a few choices for easily running diskover in docker using pre-built images/compose files.
+
+diskover-web repo has docker instructions for docker-compose:
+https://github.com/shirosaidev/diskover-web
+
+[linuxserver.io](https://linuxserver.io) docker hub images:
+coming soon...
 
 ## User Guide
 
