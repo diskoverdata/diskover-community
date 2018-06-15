@@ -8,7 +8,7 @@ dirs = .*,.snapshot,.Snapshot,.zfs
 files = .*,Thumbs.db,.DS_Store,._.DS_Store,.localized,desktop.ini
 
 [includes]
-; directory names and absolute paths you want to include (whitelist), case-sensitive
+; directory names and absolute paths you want to include (whitelist), case-sensitive, you don't need to whitelist rootdir (-d rootdir)
 ;dirs = .recycle
 ; files you want to include (whitelist), case-sensitive
 ;files =
