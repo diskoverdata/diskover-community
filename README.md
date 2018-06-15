@@ -15,7 +15,7 @@ Using diskover, users can identify old and unused files and give better insights
 
 diskover is written and maintained by Chris Park (shirosai) and runs on Linux and OS X/macOS using Python 2/3.
 
-<blockquote><h2><q>This is the first tool I've found that can index 7m files/2m directories in under 20 min</q> -- linuxserver.io community member</h2></blockquote>
+<blockquote><h3><q>This is the first tool I've found that can index 7m files/2m directories in under 20 min</q></h3> -- linuxserver.io community member</blockquote>
 
 <div align="center"><img src="https://github.com/shirosaidev/diskover/blob/master/docs/diskover-diagram1.png?raw=true" alt="diskover diagram" width="800" height="525"/></div>
 
@@ -78,11 +78,6 @@ $ cd diskover
 
 [Download latest version](https://github.com/shirosaidev/diskover/releases/latest)
 
-
-### OVA image file (for vmware, etc)
-
-If you don't want to set up everything yourself, I have OVA files running the latest version of diskover/diskover-web. Fastest way to get up and running diskover. Check out the [Patreon](https://www.patreon.com/diskover) page to learn more about how to get access to the OVA downloads.
-
 ### Requirements
 
 You need to have at least **Python 2.7. or Python 3.5.** and have installed required Python dependencies using `pip`.
@@ -117,6 +112,20 @@ Import Amazon S3 Inventory file(s) (gzipped csv) with:
 ```sh
 $ python /path/to/diskover.py -i diskover-s3-indexname -a --s3 /dir/file1.csv.gz /dir/file2.csv.gz
 ```
+
+## OVA image file (for vmware, etc)
+
+If you don't want to set up everything yourself, I have OVA files running the latest version of diskover/diskover-web. Fastest way to get up and running diskover. Check out the [Patreon](https://www.patreon.com/diskover) page to learn more about how to get access to the OVA downloads.
+
+## Docker
+
+You can set up diskover and diskover-web in docker, there are a few choices for easily running diskover in docker using pre-built images/compose files.
+
+[diskover-web](https://github.com/shirosaidev/diskover-web) has Dockerfile with instructions for docker-compose.
+
+[linuxserver.io](https://linuxserver.io) Docker hub images:
+
+coming soon... to help with testing head over to [linuxserver.io Discord](https://discord.gg/YWrKVTn) and direct message @hackerman.
 
 ## User Guide
 
