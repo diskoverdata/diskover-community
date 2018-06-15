@@ -57,7 +57,11 @@ If you are a fan of the project or you are using diskover and it's helping you s
 * `Elasticsearch 5` (local or [AWS ES Service](https://aws.amazon.com/elasticsearch-service/), tested on Elasticsearch 5.4.2, 5.6.4, 5.6.9) Elasticsearch 6 is not supported yet.
 * `Redis` (tested on 4.0.8)
 
-Install the above Python modules using pip.
+Install Python dependencies using `pip`.
+
+```sh
+$ pip install -r requirements.txt
+```
 
 ### Optional Installs
 
@@ -78,13 +82,6 @@ $ cd diskover
 
 [Download latest version](https://github.com/shirosaidev/diskover/releases/latest)
 
-### Requirements
-
-You need to have at least **Python 2.7. or Python 3.5.** and have installed required Python dependencies using `pip`.
-
-```sh
-$ pip install -r requirements.txt
-```
 
 ## Getting Started
 
