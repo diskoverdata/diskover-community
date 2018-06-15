@@ -19,6 +19,7 @@
 - directory paths are hashed using base64 encode when storing in redis for cacheing directory times (times are used when crawling with -I)
 - moved autotag code after plugin code when setting file/directory doc meta data fields
 - main diskover.py dispatcher does not exit when there are dir size jobs still in Redis diskover_crawl queue
+- progress bar appearance
 ### fixed
 - bugs with autotagging
 - crawlbot continuous scanner (-B) strack trace error (logger)

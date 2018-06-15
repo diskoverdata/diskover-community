@@ -678,6 +678,7 @@ def index_delete_path(path, cliargs, logger, reindex_dict, recursive=False):
 
     # refresh index
     es.indices.refresh(index=cliargs['index'])
+    time.sleep(2)
 
     # escape special characters
     newpath = escape_chars(path)
@@ -876,6 +877,7 @@ def index_get_docs(cliargs, logger, doctype='directory', copytags=False, hotdirs
 
     # refresh index
     es.indices.refresh(index)
+    time.sleep(2)
     # search es and start scroll
     res = es.search(index=index, doc_type=doctype, scroll='1m',
                     size=1000, body=data, request_timeout=config['es_timeout'])
@@ -1182,7 +1184,7 @@ def log_setup(cliargs):
 
 
 def progress_bar(prefix='Crawling'):
-    widgets = [prefix + ': ', progressbar.Bar('=', '[', '] '), progressbar.Percentage(),
+    widgets = [prefix + ' ', progressbar.Bar('█', '|', '| '), progressbar.Percentage(),
                ' (', progressbar.Timer(), ', ', progressbar.ETA(), ')']
     bar = progressbar.ProgressBar(widgets=widgets, max_value=100)
     return bar
@@ -1191,33 +1193,21 @@ def progress_bar(prefix='Crawling'):
 def calc_dir_sizes(cliargs, logger, path=None, addstats=False):
     import diskover_worker_bot
     jobcount = 0
-    logger.info('Waiting for diskover bots to be done with any crawl jobs...')
-    busyworkers = []
-    while True:
-        workers = Worker.all(connection=redis_conn)
-        for worker in workers:
-            if worker._state == "busy":
-                busyworkers.append(worker._name)
-        if len(busyworkers) == 0 and len(q) == 0:
-            break
-        del busyworkers[:]
-        time.sleep(1)
+
+    check_workers_running(logger)
 
     if addstats:
         # add elapsed time crawl stat to es
         add_crawl_stats(es, cliargs['index'], rootdir_path, (time.time() - starttime), "main")
 
-    # sleep a little bit before refreshing index
+    # sleep before grabbing all the directory docs from index
     time.sleep(2)
 
-    # refresh index
-    es.indices.refresh(index=cliargs['index'])
-
-    logger.info('Getting diskover bots to calculate directory sizes...')
     if path:
         dirlist = index_get_docs(cliargs, logger, path=path)
     else:
         dirlist = index_get_docs(cliargs, logger, sort=True)
+    logger.info('Getting diskover bots to calculate directory sizes...')
     dirbatch = []
     if cliargs['adaptivebatch']:
         batchsize = adaptivebatch_startsize
@@ -1485,6 +1475,21 @@ def wait_for_worker_bots(logger):
     logger.info('Found %s diskover RQ worker bots', len(workers))
 
 
+def check_workers_running(logger):
+    logger.info('Waiting for diskover worker bots to be done with any jobs in rq...')
+    busyworkers = []
+    while True:
+        workers = Worker.all(connection=redis_conn)
+        for worker in workers:
+            if worker._state == "busy":
+                busyworkers.append(worker._name)
+        if len(busyworkers) == 0 and len(q) == 0:
+            break
+        del busyworkers[:]
+        time.sleep(1)
+    time.sleep(2)
+
+
 def tune_es_for_crawl(defaults=False):
     """This is the tune es for crawl function.
     It optimizes ES for crawling based on config settings and after crawl is over
@@ -1509,11 +1514,12 @@ def tune_es_for_crawl(defaults=False):
         }
     }
     if not defaults:
-        logger.info("Tuning ES index settings for crawl...")
+        logger.info("Tuning ES index settings for crawl")
         es.indices.put_settings(index=cliargs['index'], body=tuned_settings)
     else:
-        logger.info("Setting ES index settings back to defaults...")
+        logger.info("Setting ES index settings back to defaults")
         es.indices.put_settings(index=cliargs['index'], body=default_settings)
+        logger.info("Force merging ES index to any replicas...")
         es.indices.forcemerge(index=cliargs['index'], max_num_segments=config['index_replicas'])
 
 
@@ -1782,6 +1788,8 @@ if __name__ == "__main__":
         calc_dir_sizes(cliargs, logger, path=rootdir_path)
     else:
         calc_dir_sizes(cliargs, logger, addstats=True)
+
+    check_workers_running(logger)
 
     # set Elasticsearch index settings back to default
     tune_es_for_crawl(defaults=True)
