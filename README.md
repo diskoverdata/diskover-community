@@ -121,11 +121,11 @@ If you don't want to set up everything yourself, I have OVA files running the la
 
 You can set up diskover and diskover-web in docker, there are a few choices for easily running diskover in docker using pre-built images/compose files.
 
-diskover-web repo has docker instructions for docker-compose:
-https://github.com/shirosaidev/diskover-web
+[diskover-web](https://github.com/shirosaidev/diskover-web) has Dockerfile with instructions for docker-compose.
 
-[linuxserver.io](https://linuxserver.io) docker hub images:
-coming soon...
+[linuxserver.io](https://linuxserver.io) Docker hub images:
+
+coming soon... to help with testing head over to linuxserver.io Discord and direct message @hackerman.
 
 ## User Guide
 
