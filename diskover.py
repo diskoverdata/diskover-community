@@ -1344,9 +1344,8 @@ def crawl_tree(path, cliargs, logger, mpq, totaljobs, reindex_dict):
         num_cpu = multiprocessing.cpu_count()
         logger.info("Using %s processes for parallel tree walking (host has %s cpu cores)"
                     % (config['treeprocs'], num_cpu))
-        if num_cpu != config['treeprocs']:
-            logger.warning("Using different number than cpu cores, crawl could be slower")
-
+        if config['treeprocs'] > (num_cpu * 2):
+            logger.warning("Using too many procs for tree crawling could slow down crawling")
         pool = multiprocessing.Pool(processes=config['treeprocs'])
 
         # qumulo api crawl
@@ -1457,8 +1456,8 @@ def wait_for_worker_bots(logger):
     workers = Worker.all(queue=q)
     logger.info('Found %s diskover RQ worker bots', len(workers))
     num_cpu = multiprocessing.cpu_count()
-    if num_cpu != len(workers):
-        logger.warning("Running a different number of bots than cpu cores on same host could slow down crawling")
+    if len(workers) > (num_cpu * 2):
+        logger.warning("Running too many bots than cpu cores on same host could slow down crawling")
 
 
 def check_workers_running(logger):
