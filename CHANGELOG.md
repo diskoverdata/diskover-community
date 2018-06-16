@@ -14,6 +14,7 @@
 - new es optimization settings to elasticsearch section in diskover.cfg.sample - new settings for indexrefresh, disablereplicas, translogsize (copy from diskover.cfg.sample to your diskover.cfg)
 - autotagging to diskover_qumulo
 - progress bar output for dir size calculation jobs
+- warnings if running more bots and parallel tree waking processes than number of cpu cores on host
 ### changed
 - switched to multiprocessing instead of threads for parallel tree walking
 - directory paths are hashed using base64 encode when storing in redis for cacheing directory times (times are used when crawling with -I)

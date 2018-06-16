@@ -32,7 +32,7 @@ import progressbar
 from redis import Redis
 from rq import Worker, Queue
 from random import randint
-import multiprocessing as mp
+import multiprocessing
 import argparse
 import logging
 import imp
@@ -1345,21 +1345,25 @@ def crawl_tree(path, cliargs, logger, mpq, totaljobs, reindex_dict):
         # set current depth
         num_sep = path.count(os.path.sep)
 
+        # create multiprocessing Pool for workers
+        num_cpu = multiprocessing.cpu_count()
+        logger.info("Using %s processes for parallel tree walking (host has %s cpu cores)"
+                    % (config['treeprocs'], num_cpu))
+        if num_cpu != config['treeprocs']:
+            logger.warning("Using different number than cpu cores, crawl could be slower")
+
+        pool = multiprocessing.Pool(processes=config['treeprocs'])
+
         # qumulo api crawl
         if cliargs['qumulo']:
             qumulo_ip, qumulo_ses = diskover_qumulo.qumulo_connection()
             # use qumulo api to get dir list
             root_dirs, root_files = diskover_qumulo.qumulo_api_listdir(path, qumulo_ip, qumulo_ses)
             root = diskover_qumulo.qumulo_get_file_attr(path, qumulo_ip, qumulo_ses)
-
-            # create multiprocessing Pool for workers
-            pool = mp.Pool(processes=config['treeprocs'])
             # apply root dirs to mp pool
-            for dir in root_dirs:
-                pool.apply_async(diskover_qumulo.qumulo_treewalk,
-                                  args=(dir, qumulo_ip, qumulo_ses, num_sep, level, batchsize,
-                                        cliargs, reindex_dict,))
-
+            [ pool.apply_async(diskover_qumulo.qumulo_treewalk,
+                               args=(dir, qumulo_ip, qumulo_ses, num_sep, level, batchsize,
+                                     cliargs, reindex_dict,)) for dir in root_dirs ]
             # enqueue rootdir files
             q.enqueue(diskover_worker_bot.scrape_tree_meta, args=([(root, root_files)], cliargs, reindex_dict,))
             totaljobs.value += 1
@@ -1372,13 +1376,9 @@ def crawl_tree(path, cliargs, logger, mpq, totaljobs, reindex_dict):
                     root_files.append(entry.name)
                 elif entry.is_dir(follow_symlinks=False):
                     root_dirs.append(entry.path)
-
-            # create multiprocessing Pool for workers
-            pool = mp.Pool(processes=config['treeprocs'])
             # apply root dirs to mp pool
-            for dir in root_dirs:
-                pool.apply_async(treewalk, args=(dir, num_sep, level, batchsize, cliargs, reindex_dict,))
-
+            [ pool.apply_async(treewalk,
+                               args=(dir, num_sep, level, batchsize, cliargs, reindex_dict,)) for dir in root_dirs ]
             # enqueue rootdir files
             q.enqueue(diskover_worker_bot.scrape_tree_meta, args=([(path, root_files)], cliargs, reindex_dict,))
             totaljobs.value += 1
@@ -1391,7 +1391,6 @@ def crawl_tree(path, cliargs, logger, mpq, totaljobs, reindex_dict):
             bar.start()
         while True:
             q_size = len(q)
-
             if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
                 try:
                     percent = int("{0:.0f}".format(100 * ((totaljobs.value - q_size) / float(totaljobs.value))))
@@ -1409,6 +1408,7 @@ def crawl_tree(path, cliargs, logger, mpq, totaljobs, reindex_dict):
 
     except KeyboardInterrupt:
         print("Ctrl-c keyboard interrupt, shutting down...")
+        pool.terminate()
         sys.exit(0)
 
     if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
@@ -1462,6 +1462,9 @@ def wait_for_worker_bots(logger):
         time.sleep(2)
     workers = Worker.all(queue=q)
     logger.info('Found %s diskover RQ worker bots', len(workers))
+    num_cpu = multiprocessing.cpu_count()
+    if num_cpu != len(workers):
+        logger.warning("Running a different number of bots than cpu cores on same host could slow down crawling")
 
 
 def check_workers_running(logger):
@@ -1743,8 +1746,8 @@ if __name__ == "__main__":
         reindex_dict = index_delete_path(rootdir_path, cliargs, logger, reindex_dict, recursive=True)
 
     # set up processes to parallel crawl directories at rootdir using multiprocessing
-    mpq = mp.Queue()
-    totaljobs = mp.Value('i', 0)
+    mpq = multiprocessing.Queue()
+    totaljobs = multiprocessing.Value('i', 0)
 
     # start crawlbot if cli argument
     if cliargs['crawlbot']:

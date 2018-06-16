@@ -20,6 +20,7 @@ files = .*,Thumbs.db,.DS_Store,._.DS_Store,.localized,desktop.ini
 
 [treewalk]
 ; number of processes to run when doing parallel tree walking of rootdir
+; setting this to the number of cpu cores on your host is a good starting point
 procs = 8
 
 [elasticsearch]
@@ -63,6 +64,7 @@ port = 6379
 ;password =
 ; how long directory keys lives in Redis (seconds)
 ; used for -I index2 when comparing directory times to get metadata from index2 instead of off disk
+; should be greater than the frequency at which you creating new indices for same rootdir paths
 dirtimesttl = 604800
 
 [workerbot]
@@ -96,7 +98,7 @@ checkbytes = 8
 ; continuous scanner
 ; time to sleep (seconds) between checking for directory changes
 sleeptime = 0.1
-; number of threads for checking directories
+; number of threads for checking directories, setting this to num of cores x2 is a good starting point
 threads = 8
 
 [gource]
