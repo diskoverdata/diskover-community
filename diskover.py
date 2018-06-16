@@ -1191,15 +1191,11 @@ def progress_bar(prefix='Crawling'):
     return bar
 
 
-def calc_dir_sizes(cliargs, logger, path=None, addstats=False):
+def calc_dir_sizes(cliargs, logger, path=None):
     import diskover_worker_bot
     jobcount = 0
 
     check_workers_running(logger)
-
-    if addstats:
-        # add elapsed time crawl stat to es
-        add_crawl_stats(es, cliargs['index'], rootdir_path, (time.time() - starttime), "main")
 
     if path:
         dirlist = index_get_docs(cliargs, logger, path=path)
@@ -1705,7 +1701,7 @@ if __name__ == "__main__":
         for file in inventory_files:
             q.enqueue(diskover_s3.process_s3_inventory, args=(file, cliargs,))
         # calculate directory sizes and items
-        calc_dir_sizes(cliargs, logger, addstats=True)
+        calc_dir_sizes(cliargs, logger)
         logger.info('Done importing S3 inventory file! Sayonara!')
         sys.exit(0)
     else:
@@ -1775,15 +1771,16 @@ if __name__ == "__main__":
         add_diskspace(cliargs['index'], logger, rootdir_path)
 
     starttime = time.time()
-
     # start crawling
     crawl_tree(rootdir_path, cliargs, logger, mpq, totaljobs, reindex_dict)
+    # add elapsed time crawl stat to es
+    add_crawl_stats(es, cliargs['index'], rootdir_path, (time.time() - starttime), "main")
 
     # calculate directory sizes and items
     if cliargs['reindex'] or cliargs['reindexrecurs']:
         calc_dir_sizes(cliargs, logger, path=rootdir_path)
     else:
-        calc_dir_sizes(cliargs, logger, addstats=True)
+        calc_dir_sizes(cliargs, logger)
 
     check_workers_running(logger)
 
