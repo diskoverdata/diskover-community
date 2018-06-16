@@ -18,7 +18,7 @@ import sys
 import os
 import threading
 
-def bot_thread(threadnum, cliargs, logger, mpq, mpq_lock, totaljobs, rootdir_path, reindex_dict):
+def bot_thread(threadnum, cliargs, logger, mpq, totaljobs, rootdir_path, reindex_dict):
     """This is the bot thread function.
     It grabs a directory and it's mtime from the Queue.
     Directory mtime on disk is checked and if newer it is
@@ -68,14 +68,14 @@ def bot_thread(threadnum, cliargs, logger, mpq, mpq_lock, totaljobs, rootdir_pat
             # delete existing path docs (non-recursive)
             reindex_dict = diskover.index_delete_path(path, cliargs, logger, reindex_dict)
             # start crawling
-            diskover.crawl_tree(path, cliargs, logger, mpq, mpq_lock, totaljobs, reindex_dict)
+            diskover.crawl_tree(path, cliargs, logger, mpq, totaljobs, reindex_dict)
             # calculate directory size for path
             diskover.calc_dir_sizes(cliargs, logger, path=path)
         time.sleep(diskover.config['botsleep'])
         n += 1
 
 
-def start_crawlbot_scanner(cliargs, logger, mpq, mpq_lock, totaljobs, rootdir_path, botdirlist, reindex_dict):
+def start_crawlbot_scanner(cliargs, logger, mpq, totaljobs, rootdir_path, botdirlist, reindex_dict):
     """This is the start crawl bot continuous scanner function.
     It gets a list with all the directory docs from index_get_docs which
     contains paths and their mtimes. The list is randomly shuffled.
@@ -92,8 +92,7 @@ def start_crawlbot_scanner(cliargs, logger, mpq, mpq_lock, totaljobs, rootdir_pa
     try:
         for i in range(diskover.config['botthreads']):
             thread = threading.Thread(target=bot_thread,
-                                      args=(i, cliargs, logger, mpq, mpq_lock, totaljobs,
-                                            rootdir_path, reindex_dict,))
+                                      args=(i, cliargs, logger, mpq, totaljobs, rootdir_path, reindex_dict,))
             thread.daemon = True
             threadlist.append(thread)
             thread.start()

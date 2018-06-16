@@ -133,7 +133,7 @@ def qumulo_api_walk(top, ip, ses):
             yield entry
 
 
-def qumulo_treewalk(path, lock, ip, ses, num_sep, level, totaljobs, batchsize, cliargs, logger, reindex_dict):
+def qumulo_treewalk(path, ip, ses, num_sep, level, totaljobs, batchsize, cliargs, logger, reindex_dict):
     batch = []
 
     for root, dirs, files in qumulo_api_walk(path, ip, ses):
@@ -149,8 +149,6 @@ def qumulo_treewalk(path, lock, ip, ses, num_sep, level, totaljobs, batchsize, c
             if len(batch) >= batchsize:
                 diskover.q.enqueue(diskover_worker_bot.scrape_tree_meta,
                           args=(batch, cliargs, reindex_dict,))
-                with lock:
-                    totaljobs.value += 1
                 del batch[:]
                 batchsize_prev = batchsize
                 if cliargs['adaptivebatch']:
@@ -179,8 +177,6 @@ def qumulo_treewalk(path, lock, ip, ses, num_sep, level, totaljobs, batchsize, c
     # add any remaining in batch to queue
     diskover.q.enqueue(diskover_worker_bot.scrape_tree_meta,
               args=(batch, cliargs, reindex_dict,))
-    with lock:
-        totaljobs.value += 1
 
 
 def qumulo_get_dir_meta(path, cliargs, reindex_dict, redis_conn):
