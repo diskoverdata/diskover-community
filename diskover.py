@@ -1435,7 +1435,7 @@ def hotdirs():
         dirbatch.append(d)
         if len(dirbatch) >= batchsize:
             q.enqueue(diskover_worker_bot.calc_hot_dirs, args=(dirbatch, cliargs,))
-            totaljobs += 1
+            totaljobs.value += 1
             del dirbatch[:]
             batchsize_prev = batchsize
             if cliargs['adaptivebatch']:

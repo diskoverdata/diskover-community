@@ -20,9 +20,8 @@
 - moved autotag code after plugin code when setting file/directory doc meta data fields
 - main diskover.py dispatcher does not exit when there are dir size jobs still in Redis diskover_crawl queue
 - progress bar appearance
-- set default for shards/replicas to 1/0 in diskover.cfg.sample (most users are just using single es node)
+- set default for shards/replicas to 1/0 in diskover.cfg.sample (most users are just using single es node, if you are, you might want to set these)
 ### fixed
-- forcemerge/optimize at end of crawl causing traceback exception
 - bugs with autotagging
 - crawlbot continuous scanner (-B) strack trace error (logger)
 
