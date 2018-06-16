@@ -1,6 +1,6 @@
 # Diskover Change Log
 
-## [1.5.0-rc10] = 2018-06-16
+## [1.5.0-rc10] = 2018-06-17
 ### notice
 - Amazon S3 inventory support is beta, requires diskover-web >= v1.5.0-rc9
 - --s3 requires index named diskover-s3-indexname

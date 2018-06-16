@@ -1306,8 +1306,8 @@ def treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict):
 
 def crawl_tree(path, cliargs, logger, mpq, totaljobs, reindex_dict):
     """This is the crawl tree function.
-    It starts processes for every directory at path and and waits
-    for the processes and rq queue to finish.
+    It starts processes and tree walks all subdirs (depth 1 only) in path (rootdir).
+    Waits for the processes and rq queue to finish all jobs.
     """
     import diskover_worker_bot
 
@@ -1348,34 +1348,41 @@ def crawl_tree(path, cliargs, logger, mpq, totaljobs, reindex_dict):
             logger.warning("Using too many procs for tree crawling could slow down crawling")
         pool = multiprocessing.Pool(processes=config['treeprocs'])
 
+        root_subdir_count = 0
         # qumulo api crawl
         if cliargs['qumulo']:
             qumulo_ip, qumulo_ses = diskover_qumulo.qumulo_connection()
             # use qumulo api to get dir list
             root_dirs, root_files = diskover_qumulo.qumulo_api_listdir(path, qumulo_ip, qumulo_ses)
-            root = diskover_qumulo.qumulo_get_file_attr(path, qumulo_ip, qumulo_ses)
-            # apply root dirs to mp pool
-            results = [ pool.apply_async(diskover_qumulo.qumulo_treewalk,
-                                         args=(dir, qumulo_ip, qumulo_ses, num_sep, level, batchsize,
-                                               cliargs, reindex_dict,)) for dir in root_dirs ]
-            # enqueue rootdir files
-            q.enqueue(diskover_worker_bot.scrape_tree_meta, args=([(root, root_files)], cliargs, reindex_dict,))
-            totaljobs.value += 1
-
+            rootpath = diskover_qumulo.qumulo_get_file_attr(path, qumulo_ip, qumulo_ses)
+            for dir in root_dirs:
+                # add path to mp queue
+                mpq.put(dir)
+                root_subdir_count += 1
+            mpq.put(None)
         else:  # regular crawl using scandir/walk
+            rootpath = path
             root_files = []
-            root_dirs = []
             for entry in scandir(path):
                 if entry.is_file(follow_symlinks=False):
                     root_files.append(entry.name)
                 elif entry.is_dir(follow_symlinks=False):
-                    root_dirs.append(entry.path)
-            # apply root dirs to mp pool
-            results = [ pool.apply_async(treewalk, args=(dir, num_sep, level, batchsize,
-                                                         cliargs, reindex_dict,)) for dir in root_dirs ]
-            # enqueue rootdir files
-            q.enqueue(diskover_worker_bot.scrape_tree_meta, args=([(path, root_files)], cliargs, reindex_dict,))
-            totaljobs.value += 1
+                    # add path to mp queue
+                    mpq.put(entry.path)
+                    root_subdir_count += 1
+            mpq.put(None)
+
+        # enqueue rootdir files
+        q.enqueue(diskover_worker_bot.scrape_tree_meta, args=([(rootpath, root_files)], cliargs, reindex_dict,))
+        totaljobs.value += 1
+
+        logger.info("Parallel tree walking %s subdirs in %s" % (root_subdir_count, path))
+        while True:
+            dir = mpq.get()
+            if dir is None:
+                break
+            result = pool.apply_async(treewalk, args=(dir, num_sep, level, batchsize,
+                                                  cliargs, reindex_dict,))
 
         # set up progress bar
         if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
