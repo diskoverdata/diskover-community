@@ -1356,9 +1356,9 @@ def crawl_tree(path, cliargs, logger, mpq, totaljobs, reindex_dict):
             root_dirs, root_files = diskover_qumulo.qumulo_api_listdir(path, qumulo_ip, qumulo_ses)
             root = diskover_qumulo.qumulo_get_file_attr(path, qumulo_ip, qumulo_ses)
             # apply root dirs to mp pool
-            [ pool.apply_async(diskover_qumulo.qumulo_treewalk,
-                               args=(dir, qumulo_ip, qumulo_ses, num_sep, level, batchsize,
-                                     cliargs, reindex_dict,)) for dir in root_dirs ]
+            results = [ pool.apply_async(diskover_qumulo.qumulo_treewalk,
+                                         args=(dir, qumulo_ip, qumulo_ses, num_sep, level, batchsize,
+                                               cliargs, reindex_dict,)) for dir in root_dirs ]
             # enqueue rootdir files
             q.enqueue(diskover_worker_bot.scrape_tree_meta, args=([(root, root_files)], cliargs, reindex_dict,))
             totaljobs.value += 1
@@ -1372,8 +1372,8 @@ def crawl_tree(path, cliargs, logger, mpq, totaljobs, reindex_dict):
                 elif entry.is_dir(follow_symlinks=False):
                     root_dirs.append(entry.path)
             # apply root dirs to mp pool
-            [ pool.apply_async(treewalk,
-                               args=(dir, num_sep, level, batchsize, cliargs, reindex_dict,)) for dir in root_dirs ]
+            results = [ pool.apply_async(treewalk, args=(dir, num_sep, level, batchsize,
+                                                         cliargs, reindex_dict,)) for dir in root_dirs ]
             # enqueue rootdir files
             q.enqueue(diskover_worker_bot.scrape_tree_meta, args=([(path, root_files)], cliargs, reindex_dict,))
             totaljobs.value += 1
