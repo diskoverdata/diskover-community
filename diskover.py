@@ -1236,12 +1236,11 @@ def calc_dir_sizes(cliargs, logger, path=None, addstats=False):
     q.enqueue(diskover_worker_bot.calc_dir_size, args=(dirbatch, cliargs,))
     jobcount += 1
 
-    # update progress bar and break when queue is empty
-    time.sleep(2)
     # set up progress bar
     if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
         bar = progress_bar(prefix='Calculating')
         bar.start()
+    # update progress bar and break when queue is empty
     while True:
         q_size = len(q)
         if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
@@ -1383,12 +1382,11 @@ def crawl_tree(path, cliargs, logger, mpq, totaljobs, reindex_dict):
             q.enqueue(diskover_worker_bot.scrape_tree_meta, args=([(path, root_files)], cliargs, reindex_dict,))
             totaljobs.value += 1
 
-        # update progress bar and break when redis rq queue is empty
-        time.sleep(2)
         # set up progress bar
         if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
             bar = progress_bar()
             bar.start()
+        # update progress bar and break when redis rq queue is empty
         while True:
             q_size = len(q)
             if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
