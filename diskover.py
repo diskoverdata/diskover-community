@@ -1715,6 +1715,8 @@ if __name__ == "__main__":
             q.enqueue(diskover_s3.process_s3_inventory, args=(file, cliargs,))
         # calculate directory sizes and items
         calc_dir_sizes(cliargs, logger)
+        # add elapsed time crawl stat to es
+        add_crawl_stats(es, cliargs['index'], rootdir_path, (time.time() - starttime), "main")
         logger.info('Done importing S3 inventory file! Sayonara!')
         sys.exit(0)
     else:
