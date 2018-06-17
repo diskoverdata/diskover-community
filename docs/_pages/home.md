@@ -80,14 +80,14 @@ intro:
 </table>
 <table border="0">
   <tr>
-    <td><strong>OVA files for VMware</strong></td>
-    <td><strong>Amazon S3 Inventory file support</strong></td>
-    <td><strong>Runs on Docker</strong></td>
+    <td align="center"><strong>OVA files for VMware</strong></td>
+    <td align="center"><strong>Amazon S3 Inventory file support</strong></td>
+    <td align="center"><strong>Runs on Docker</strong></td>
   </tr>
   <tr>
-    <td><img src="https://github.com/shirosaidev/diskover/blob/master/docs/_pages/vmware_logo_1.png?raw=true" alt="diskover ova vmware" width="156" height="153" /></td>
-    <td><img src="https://github.com/shirosaidev/diskover/blob/master/docs/_pages/amazon_web_services_logo_aws.jpg?raw=true" alt="diskover aws" width="178" height="117" /></td>
-    <td><img src="https://github.com/shirosaidev/diskover/blob/master/docs/_pages/docker_logo.png?raw=true" alt="diskover docker" width="200" height="133" /></td>
+    <td align="center"><img src="https://github.com/shirosaidev/diskover/blob/master/docs/_pages/vmware_logo_1.png?raw=true" alt="diskover ova vmware" width="156" height="153" /></td>
+    <td align="center"><img src="https://github.com/shirosaidev/diskover/blob/master/docs/_pages/amazon_web_services_logo_aws.jpg?raw=true" alt="diskover aws" width="178" height="117" /></td>
+    <td align="center"><img src="https://github.com/shirosaidev/diskover/blob/master/docs/_pages/docker_logo.png?raw=true" alt="diskover docker" width="200" height="133" /></td>
   </tr>
   <tr>
     <td>Patreon sponsors get access to OVA's which get diskover up and running quickly and easily. The OVA files can be imported into VMware, etc to get you crawling all your storage servers in less than an hour.</td>
