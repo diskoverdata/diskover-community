@@ -82,7 +82,7 @@ intro:
   <tr>
     <td><strong>OVA files for VMware</strong></td>
     <td><strong>Amazon S3 Inventory file support</strong></td>
-    <td><strong>Run on Docker</strong></td>
+    <td><strong>Runs on Docker</strong></td>
   </tr>
   <tr>
     <td><img src="https://github.com/shirosaidev/diskover/blob/master/docs/_pages/vmware_logo_1.png?raw=true" alt="diskover ova vmware" width="156" height="153" /><td>
@@ -97,5 +97,5 @@ intro:
 </table>
 <br/>
 <h2>diskover multi-threaded crawling (gource videos)</h2>{:/nomarkdown}
-{::nomarkdown}<iframe width="560" height="315" src="https://www.youtube.com/embed/qKLJjZ0TMqA?rel=0" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>{:/nomarkdown}<br />
+{::nomarkdown}<iframe width="560" height="315" src="https://www.youtube.com/embed/qKLJjZ0TMqA?rel=0" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe><br />{:/nomarkdown}
 {::nomarkdown}<iframe width="560" height="315" src="https://www.youtube.com/embed/InlfK8GQ-kM?rel=0" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>{:/nomarkdown}
