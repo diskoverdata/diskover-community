@@ -78,6 +78,7 @@ intro:
       <img src="https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-simplesearch-screenshot.png?raw=true" alt="diskover-web file search es query" width="600" /></td>
   </tr>
 </table>
+<br />
 <table border="0">
   <tr>
     <td align="center" width="33%"><strong>OVA files for VMware</strong></td>
