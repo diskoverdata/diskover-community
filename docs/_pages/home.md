@@ -82,7 +82,7 @@ intro:
   <tr>
     <td><strong>OVA files for VMware</strong></td>
     <td><strong>Amazon S3 Inventory file support</strong></td>
-    <td><strong>Run on Docker</strong></strong></td>
+    <td><strong>Run on Docker</strong></td>
   </tr>
   <tr>
     <td><img src="https://github.com/shirosaidev/diskover/blob/master/docs/_pages/vmware_logo_1.png?raw=true" alt="diskover ova vmware" width="156" height="153" /><td>
