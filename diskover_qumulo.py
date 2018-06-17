@@ -133,7 +133,7 @@ def qumulo_api_walk(top, ip, ses):
             yield entry
 
 
-def qumulo_treewalk(path, ip, ses, num_sep, level, totaljobs, batchsize, cliargs, logger, reindex_dict):
+def qumulo_treewalk(path, ip, ses, num_sep, level, batchsize, cliargs, reindex_dict):
     batch = []
 
     for root, dirs, files in qumulo_api_walk(path, ip, ses):
@@ -149,7 +149,7 @@ def qumulo_treewalk(path, ip, ses, num_sep, level, totaljobs, batchsize, cliargs
             if len(batch) >= batchsize:
                 diskover.q.enqueue(diskover_worker_bot.scrape_tree_meta,
                           args=(batch, cliargs, reindex_dict,))
-                totaljobs.value += 1
+                diskover.totaljobs.value += 1
                 del batch[:]
                 batchsize_prev = batchsize
                 if cliargs['adaptivebatch']:
@@ -162,7 +162,7 @@ def qumulo_treewalk(path, ip, ses, num_sep, level, totaljobs, batchsize, cliargs
                     cliargs['batchsize'] = batchsize
                     if cliargs['verbose'] or cliargs['debug']:
                         if batchsize_prev != batchsize:
-                            logger.info('Batch size: %s' % batchsize)
+                            diskover.logger.info('Batch size: %s' % batchsize)
 
             # check if at maxdepth level and delete dirs/files lists to not
             # descend further down the tree
@@ -176,9 +176,8 @@ def qumulo_treewalk(path, ip, ses, num_sep, level, totaljobs, batchsize, cliargs
             del files[:]
 
     # add any remaining in batch to queue
-    diskover.q.enqueue(diskover_worker_bot.scrape_tree_meta,
-              args=(batch, cliargs, reindex_dict,))
-    totaljobs.value += 1
+    diskover.q.enqueue(diskover_worker_bot.scrape_tree_meta, args=(batch, cliargs, reindex_dict,))
+    diskover.totaljobs.value += 1
 
 
 def qumulo_get_dir_meta(path, cliargs, reindex_dict, redis_conn):

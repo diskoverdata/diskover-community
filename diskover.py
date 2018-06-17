@@ -1354,17 +1354,28 @@ def crawl_tree(path, cliargs, logger, mpq, totaljobs, reindex_dict):
         root_subdir_count = 0
         # qumulo api crawl
         if cliargs['qumulo']:
-            qumulo_ip, qumulo_ses = diskover_qumulo.qumulo_connection()
             # use qumulo api to get dir list
             root_dirs, root_files = diskover_qumulo.qumulo_api_listdir(path, qumulo_ip, qumulo_ses)
-            rootpath = diskover_qumulo.qumulo_get_file_attr(path, qumulo_ip, qumulo_ses)
+            root = diskover_qumulo.qumulo_get_file_attr(path, qumulo_ip, qumulo_ses)
             for dir in root_dirs:
                 # add path to mp queue
                 mpq.put(dir)
                 root_subdir_count += 1
             mpq.put(None)
+
+            # enqueue rootdir files
+            q.enqueue(diskover_worker_bot.scrape_tree_meta, args=([(root, root_files)], cliargs, reindex_dict,))
+            totaljobs.value += 1
+
+            logger.info("Parallel tree walking %s subdirs in %s" % (root_subdir_count, path))
+            while True:
+                dir = mpq.get()
+                if dir is None:
+                    break
+                result = pool.apply_async(diskover_qumulo.qumulo_treewalk,
+                                          args=(dir, qumulo_ip, qumulo_ses, num_sep, level, batchsize,
+                                                cliargs, reindex_dict,))
         else:  # regular crawl using scandir/walk
-            rootpath = path
             root_files = []
             for entry in scandir(path):
                 if entry.is_file(follow_symlinks=False):
@@ -1375,17 +1386,17 @@ def crawl_tree(path, cliargs, logger, mpq, totaljobs, reindex_dict):
                     root_subdir_count += 1
             mpq.put(None)
 
-        # enqueue rootdir files
-        q.enqueue(diskover_worker_bot.scrape_tree_meta, args=([(rootpath, root_files)], cliargs, reindex_dict,))
-        totaljobs.value += 1
+            # enqueue rootdir files
+            q.enqueue(diskover_worker_bot.scrape_tree_meta, args=([(path, root_files)], cliargs, reindex_dict,))
+            totaljobs.value += 1
 
-        logger.info("Parallel tree walking %s subdirs in %s" % (root_subdir_count, path))
-        while True:
-            dir = mpq.get()
-            if dir is None:
-                break
-            result = pool.apply_async(treewalk, args=(dir, num_sep, level, batchsize,
-                                                  cliargs, reindex_dict,))
+            logger.info("Parallel tree walking %s subdirs in %s" % (root_subdir_count, path))
+            while True:
+                dir = mpq.get()
+                if dir is None:
+                    break
+                result = pool.apply_async(treewalk, args=(dir, num_sep, level, batchsize,
+                                                      cliargs, reindex_dict,))
 
         # update progress bar and break when redis rq queue is empty
         time.sleep(1)
@@ -1620,12 +1631,10 @@ if __name__ == "__main__":
         dirlist = index_get_docs(cliargs, logger, doctype='directory', copytags=True, index=cliargs['copytags'][0])
         for path in dirlist:
             q.enqueue(diskover_worker_bot.tag_copier, args=(path, cliargs,))
-            totaljobs.value += 1
         # look in index2 for all file docs with tags and add to queue
         filelist = index_get_docs(cliargs, logger, doctype='file', copytags=True, index=cliargs['copytags'][0])
         for path in filelist:
             q.enqueue(diskover_worker_bot.tag_copier, args=(path, cliargs,))
-            totaljobs.value += 1
         if len(dirlist) == 0 and len(filelist) == 0:
             logger.info('No tags to copy')
         else:
