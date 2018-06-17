@@ -92,7 +92,7 @@ intro:
   <tr>
     <td>Patreon sponsors get access to OVA's which get diskover up and running quickly and easily. The OVA files can be imported into VMware, etc to get you crawling all your storage servers in less than an hour.</td>
     <td>diskover works on AWS using EC2 and Elasticsearch instances. Crawl bots can run locally and push file system meta data into your AWS ES cluster. S3 Inventory files can also be imported into Elasticsearch to view S3 bucket usage.</td>
-    <td>Run diskover and diskover-web containers anywhere. Docker hub image links and Dockerfiles are on github.</td>
+    <td>Run diskover and diskover-web containers anywhere. Docker Hub images and Dockerfiles can be found on diskover github.</td>
   </tr>
 </table>
 <h2>diskover multi-threaded crawling (gource videos)</h2>
