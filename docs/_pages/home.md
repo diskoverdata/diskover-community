@@ -81,9 +81,9 @@ intro:
 <br />
 <table border="0">
   <tr>
-    <td align="center" width="33%"><strong>OVA files for VMware</strong></td>
-    <td align="center" width="33%"><strong>Amazon S3 Inventory file support</strong></td>
-    <td align="center" width="33%"><strong>Runs on Docker</strong></td>
+    <td align="center" width="33%"><h4>OVA files for VMware</h4></td>
+    <td align="center" width="33%"><h4>Amazon S3 Inventory file support</h4></td>
+    <td align="center" width="33%"><h4>Runs on Docker</h4></td>
   </tr>
   <tr>
     <td align="center"><img src="https://github.com/shirosaidev/diskover/blob/master/docs/_pages/vmware_logo_1.png?raw=true" alt="diskover ova vmware" width="156" height="153" /></td>
@@ -91,9 +91,9 @@ intro:
     <td align="center"><img src="https://github.com/shirosaidev/diskover/blob/master/docs/_pages/docker_logo.png?raw=true" alt="diskover docker" width="200" height="133" /></td>
   </tr>
   <tr>
-    <td>Patreon sponsors get access to OVA's which get diskover up and running quickly and easily. The OVA files can be imported into VMware, etc to get you crawling all your storage servers in less than an hour.</td>
-    <td>diskover works on AWS using EC2 and Elasticsearch instances. Crawl bots can run locally and push file system meta data into your AWS ES cluster. S3 Inventory files can also be imported into Elasticsearch to view S3 bucket usage.</td>
-    <td>Run diskover and diskover-web containers anywhere. Docker hub image links and Dockerfiles are on github.</td>
+    <td valign="top">Patreon sponsors get access to OVA's which get diskover up and running quickly and easily. The OVA files can be imported into VMware, etc to get you crawling all your storage servers in less than an hour.</td>
+    <td valign="top">diskover works on AWS using EC2 and Elasticsearch instances. Crawl bots can run locally and push file system meta data into your AWS ES cluster. S3 Inventory files can also be imported into Elasticsearch to view S3 bucket usage.</td>
+    <td valign="top">Run diskover and diskover-web containers anywhere. Docker hub image links and Dockerfiles are on github.</td>
   </tr>
 </table>
 <br />
