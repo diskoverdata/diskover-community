@@ -80,9 +80,9 @@ intro:
 </table>
 <table border="0">
   <tr>
-    <td align="center" width="33%"><span style="font-size:18px;font-weight:bold;">OVA files for VMware</span></td>
-    <td align="center" width="33%"><span style="font-size:18px;font-weight:bold;">Amazon S3 Inventory file support</span></td>
-    <td align="center" width="33%"><span style="font-size:18px;font-weight:bold;">Runs on Docker</span></td>
+    <td align="center" width="33%"><span style="font-size:18px;font-weight:bold;">OVA Files for VMware</span></td>
+    <td align="center" width="33%"><span style="font-size:18px;font-weight:bold;">Runs on Amazon AWS/S3 Support</span></td>
+    <td align="center" width="33%"><span style="font-size:18px;font-weight:bold;">Works with Docker</span></td>
   </tr>
   <tr>
     <td align="center"><img src="https://github.com/shirosaidev/diskover/blob/master/docs/_pages/vmware_logo_1.png?raw=true" alt="diskover ova vmware" width="156" height="153" /></td>
