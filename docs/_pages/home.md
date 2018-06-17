@@ -85,7 +85,7 @@ intro:
     <td><strong>Runs on Docker</strong></td>
   </tr>
   <tr>
-    <td><img src="https://github.com/shirosaidev/diskover/blob/master/docs/_pages/vmware_logo_1.png?raw=true" alt="diskover ova vmware" width="156" height="153" /><td>
+    <td><img src="https://github.com/shirosaidev/diskover/blob/master/docs/_pages/vmware_logo_1.png?raw=true" alt="diskover ova vmware" width="156" height="153" /></td>
     <td><img src="https://github.com/shirosaidev/diskover/blob/master/docs/_pages/amazon_web_services_logo_aws.jpg?raw=true" alt="diskover aws" width="178" height="117" /></td>
     <td><img src="https://github.com/shirosaidev/diskover/blob/master/docs/_pages/docker_logo.png?raw=true" alt="diskover docker" width="200" height="133" /></td>
   </tr>
