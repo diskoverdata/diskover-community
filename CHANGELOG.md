@@ -15,14 +15,15 @@
 - autotagging to diskover_qumulo
 - progress bar output for dir size calculation jobs
 - warnings if running more bots and parallel tree waking processes than number of cpu cores x 2 on host
+- improved progress bar code and appearance
 ### changed
 - switched to multiprocessing instead of threads for parallel tree walking
 - directory paths are hashed using base64 encode when storing in redis for cacheing directory times (times are used when crawling with -I)
 - moved autotag code after plugin code when setting file/directory doc meta data fields
 - main diskover.py dispatcher does not exit when there are dir size jobs still in Redis diskover_crawl queue
-- progress bar appearance
 - set default for shards/replicas to 1/0 in diskover.cfg.sample (most users are just using single es node, if you are, you might want to set these)
 ### fixed
+- bug with progress bar
 - bugs with autotagging
 - crawlbot continuous scanner (-B) strack trace error (logger)
 

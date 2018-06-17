@@ -1232,27 +1232,30 @@ def calc_dir_sizes(cliargs, logger, path=None):
     q.enqueue(diskover_worker_bot.calc_dir_size, args=(dirbatch, cliargs,))
     jobcount += 1
 
-    # set up progress bar
+    # update progress bar and break when redis rq queue is empty
+    time.sleep(1)
     if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
-        bar = progress_bar(prefix='Calculating')
-        bar.start()
-    # update progress bar and break when queue is empty
-    while True:
-        q_size = len(q)
-        if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
-            try:
-                percent = int("{0:.0f}".format(100 * (jobcount - q_size) / float(jobcount)))
-                bar.update(percent)
-            except ZeroDivisionError:
-                bar.update(0)
-            except ValueError:
-                bar.update(0)
-        if q_size == 0:
-            break
-        time.sleep(.5)
+        percent = 0
+        with progress_bar() as bar:
+            while True:
+                q_size = len(q)
+                try:
+                    bar.update(percent)
+                except ZeroDivisionError:
+                    bar.update(0)
+                except ValueError:
+                    bar.update(0)
+                percent = int("{0:.0f}".format(100 * ((jobcount - q_size) / float(jobcount))))
+                if q_size == 0:
+                    break
+                time.sleep(.1)
+    else:  # no progress bar
+        while True:
+            q_size = len(q)
+            if q_size == 0:
+                break
+            time.sleep(1)
 
-    if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
-        bar.finish()
     logger.info('Finished calculating directory sizes')
 
 
@@ -1384,24 +1387,30 @@ def crawl_tree(path, cliargs, logger, mpq, totaljobs, reindex_dict):
             result = pool.apply_async(treewalk, args=(dir, num_sep, level, batchsize,
                                                   cliargs, reindex_dict,))
 
-        # set up progress bar
-        if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
-            bar = progress_bar()
-            bar.start()
         # update progress bar and break when redis rq queue is empty
-        while True:
-            q_size = len(q)
-            if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
-                try:
-                    percent = int("{0:.0f}".format(100 * ((totaljobs.value - q_size) / float(totaljobs.value))))
-                    bar.update(percent)
-                except ZeroDivisionError:
-                    bar.update(0)
-                except ValueError:
-                    bar.update(0)
-            if q_size == 0:
-                break
-            time.sleep(.5)
+        time.sleep(1)
+        if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+            percent = 0
+            with progress_bar() as bar:
+                while True:
+                    q_size = len(q)
+                    total_jobs = totaljobs.value
+                    try:
+                        bar.update(percent)
+                    except ZeroDivisionError:
+                        bar.update(0)
+                    except ValueError:
+                        bar.update(0)
+                    percent = int("{0:.0f}".format(100 * ((total_jobs - q_size) / float(total_jobs))))
+                    if q_size == 0:
+                        break
+                    time.sleep(.1)
+        else:  # no progress bar
+            while True:
+                q_size = len(q)
+                if q_size == 0:
+                    break
+                time.sleep(1)
 
         pool.close()
         pool.join()
@@ -1411,8 +1420,6 @@ def crawl_tree(path, cliargs, logger, mpq, totaljobs, reindex_dict):
         pool.terminate()
         sys.exit(0)
 
-    if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
-        bar.finish()
     logger.info('Finished crawling!')
 
 
