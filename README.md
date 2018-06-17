@@ -61,7 +61,7 @@ If you are a fan of the project or you are using diskover and it's helping you s
 
 * [diskover-web](https://github.com/shirosaidev/diskover-web) (diskover's web file manager and analytics app)
 * [Redis RQ Dashboard](https://python-rq.org/docs/monitoring/) (for monitoring redis queue)
-* [netdata](https://my-netdata.io/) (for realtime monitoring cpu/disk/mem/network/elasticsearch/redis/etc metrics)
+* [netdata](https://my-netdata.io/) (for realtime monitoring cpu/disk/mem/network/elasticsearch/redis/etc metrics, plugin for rq-dashboard in netdata directory)
 * [Kibana](https://www.elastic.co/products/kibana) (for visualizing Elasticsearch data, tested on Kibana 5.4.2, 5.6.4)
 * [X-Pack](https://www.elastic.co/downloads/x-pack) (Kibana plugin for graphs, reports, monitoring and http auth)
 * [Gource](http://gource.io) (for Gource visualizations of diskover Elasticsearch data, see videos above)
