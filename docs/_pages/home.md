@@ -95,7 +95,7 @@ intro:
     <td>Run diskover and diskover-web containers anywhere.</td>
   </tr>
 </table>
-<br/>{:/nomarkdown}
-<h2>diskover multi-threaded crawling (gource videos)</h2>
+<br/>
+<h2>diskover multi-threaded crawling (gource videos)</h2>{:/nomarkdown}
 {::nomarkdown}<iframe width="560" height="315" src="https://www.youtube.com/embed/qKLJjZ0TMqA?rel=0" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>{:/nomarkdown}<br />
 {::nomarkdown}<iframe width="560" height="315" src="https://www.youtube.com/embed/InlfK8GQ-kM?rel=0" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>{:/nomarkdown}
