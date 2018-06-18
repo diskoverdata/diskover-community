@@ -32,7 +32,11 @@ import progressbar
 from redis import Redis
 from rq import Worker, Queue
 from random import randint
-import multiprocessing
+from threading import Thread
+try:
+    from queue import Queue as pyQueue
+except ImportError:
+    from Queue import Queue as pyQueue
 import argparse
 import logging
 import imp
@@ -48,6 +52,8 @@ version = '1.5.0-rc10'
 __version__ = version
 
 IS_PY3 = sys.version_info >= (3, 0)
+
+totaljobs = 0
 
 adaptivebatch_startsize = 10
 adaptivebatch_maxsize = 500
@@ -190,9 +196,9 @@ def load_config():
     except ConfigParser.NoOptionError:
         configsettings['autotag_dirs'] = []
     try:
-        configsettings['treeprocs'] = int(config.get('treewalk', 'procs'))
+        configsettings['tree_walk_threads'] = int(config.get('treewalk', 'threads'))
     except ConfigParser.NoOptionError:
-        configsettings['treeprocs'] = 8
+        configsettings['tree_walk_threads'] = 8
     try:
         configsettings['aws'] = config.get('elasticsearch', 'aws')
     except ConfigParser.NoOptionError:
@@ -1133,7 +1139,7 @@ def parse_cli_args(indexname):
                         help="Starts up crawl bot continuous scanner \
                             to scan for dir changes in index")
     parser.add_argument("--qumulo", action="store_true",
-                        help="Qumulo storage type, use Qumulo api instead of scandir")
+                        help="euemulo storage type, use Qumulo api instead of scandir")
     parser.add_argument("--s3", metavar='FILE', nargs='+',
                         help="Import AWS S3 inventory csv file(s) (gzipped) to diskover index")
     parser.add_argument("--gourcert", action="store_true",
@@ -1223,7 +1229,7 @@ def calc_dir_sizes(cliargs, logger, path=None):
         dirlist = index_get_docs(cliargs, logger, path=path)
     else:
         dirlist = index_get_docs(cliargs, logger, sort=True, maxdepth=maxdepth)
-    logger.info('Getting diskover bots to calculate directory sizes (maximum depth %s)...' % maxdepth)
+    logger.info('Getting diskover bots to calculate directory sizes (max depth %s)...' % maxdepth)
     dirbatch = []
     if cliargs['adaptivebatch']:
         batchsize = adaptivebatch_startsize
@@ -1254,50 +1260,44 @@ def calc_dir_sizes(cliargs, logger, path=None):
     q.enqueue(diskover_worker_bot.calc_dir_size, args=(dirbatch, cliargs,))
     jobcount += 1
 
-    # update progress bar and break when redis rq queue is empty
-    time.sleep(1)
+    time.sleep(2)
+    # update progress bar
     if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
-        percent = 0
-        with progress_bar() as bar:
+        with progress_bar(prefix='Calculating') as bar:
             while True:
-                q_size = len(q)
                 try:
+                    percent = int("{0:.0f}".format(100 * ((jobcount - len(q)) / float(jobcount))))
                     bar.update(percent)
+                    if percent >= 100:
+                        break
                 except ZeroDivisionError:
                     bar.update(0)
                 except ValueError:
                     bar.update(0)
-                percent = int("{0:.0f}".format(100 * ((jobcount - q_size) / float(jobcount))))
-                if q_size == 0:
-                    break
-                time.sleep(.1)
-    else:  # no progress bar
-        while True:
-            q_size = len(q)
-            if q_size == 0:
-                break
-            time.sleep(1)
 
     logger.info('Finished calculating directory sizes')
 
 
 def treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict):
     """This is the tree walk function.
-    It walks the tree using scandir walk and adds tuple of root, files
+    It walks the tree using scandir walk and adds tuple of root, dirs, files
     to redis queue for rq worker bots to scrape meta and upload
     to ES index.
     """
     import diskover_worker_bot
+    global totaljobs
     batch = []
 
     for root, dirs, files in walk(path):
-        if len(dirs) == 0 and len(files) == 0 and not cliargs['indexemptydirs']:
-            continue
         if not dir_excluded(root, config, cliargs['verbose']):
+            if len(dirs) == 0 and len(files) == 0 and not cliargs['indexemptydirs']:
+                continue
+
             batch.append((root, files))
             if len(batch) >= batchsize:
-                q.enqueue(diskover_worker_bot.scrape_tree_meta, args=(batch, cliargs, reindex_dict,))
-                totaljobs.value += 1
+                q.enqueue(diskover_worker_bot.scrape_tree_meta,
+                          args=(batch, cliargs, reindex_dict,))
+                totaljobs += 1
                 del batch[:]
                 batchsize_prev = batchsize
                 if cliargs['adaptivebatch']:
@@ -1318,21 +1318,34 @@ def treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict):
             if num_sep + level <= num_sep_this:
                 del dirs[:]
                 del files[:]
+
         else:  # directory excluded
             del dirs[:]
             del files[:]
 
     # add any remaining in batch to queue
-    q.enqueue(diskover_worker_bot.scrape_tree_meta, args=(batch, cliargs, reindex_dict,))
-    totaljobs.value += 1
+    q.enqueue(diskover_worker_bot.scrape_tree_meta,
+              args=(batch, cliargs, reindex_dict,))
+    totaljobs += 1
 
 
-def crawl_tree(path, cliargs, logger, mpq, totaljobs, reindex_dict):
+def tree_walk_worker(num_sep, level, batchsize, cliargs, reindex_dict):
+    """This is the tree walk worker function.
+    It runs in infinite loop getting items (directories) from the tree_q queue.
+    """
+    while True:
+        dir = tree_q.get()
+        treewalk(dir, num_sep, level, batchsize, cliargs, reindex_dict)
+        tree_q.task_done()
+
+
+def crawl_tree(path, cliargs, logger, reindex_dict):
     """This is the crawl tree function.
-    It starts processes and tree walks all subdirs (depth 1 only) in path (rootdir).
-    Waits for the processes and rq queue to finish all jobs.
+    It starts threads for every directory at path and and waits
+    for the threads and rq queue to finish.
     """
     import diskover_worker_bot
+    global totaljobs
 
     try:
         wait_for_worker_bots(logger)
@@ -1353,6 +1366,8 @@ def crawl_tree(path, cliargs, logger, mpq, totaljobs, reindex_dict):
                 logger.info('Batch size: %s' % batchsize)
             logger.info("Sending batches of %s to worker bots", batchsize)
 
+        logger.info("Using %s threads for tree walking" % config['tree_walk_threads'])
+
         # set maxdepth level to 1 if reindex or crawlbot (non-recursive)
         if cliargs['reindex'] or cliargs['crawlbot']:
             level = 1
@@ -1363,96 +1378,74 @@ def crawl_tree(path, cliargs, logger, mpq, totaljobs, reindex_dict):
         # set current depth
         num_sep = path.count(os.path.sep)
 
-        # create multiprocessing Pool for workers
-        num_cpu = multiprocessing.cpu_count()
-        logger.info("Using %s processes for parallel tree walking (host has %s cpu cores)"
-                    % (config['treeprocs'], num_cpu))
-        if config['treeprocs'] > (num_cpu * 2):
-            logger.warning("Using too many procs for tree crawling could slow down crawling")
-        pool = multiprocessing.Pool(processes=config['treeprocs'])
+        thread_list = []
 
-        root_subdir_count = 0
+        # set up threads to parallel crawl directories at rootdir
         # qumulo api crawl
         if cliargs['qumulo']:
+            qumulo_ip, qumulo_ses = diskover_qumulo.qumulo_connection()
             # use qumulo api to get dir list
-            logger.info("Getting all the subdirs and files in %s..." % path)
-            root_dirs, root_files = diskover_qumulo.qumulo_api_listdir(path, qumulo_ip, qumulo_ses)
-            root = diskover_qumulo.qumulo_get_file_attr(path, qumulo_ip, qumulo_ses)
-            for dir in root_dirs:
-                # add path to mp queue
-                mpq.put(dir)
-                root_subdir_count += 1
-            mpq.put(None)
-
+            dirs, files = diskover_qumulo.qumulo_api_listdir(path, qumulo_ip, qumulo_ses)
             # enqueue rootdir files
-            q.enqueue(diskover_worker_bot.scrape_tree_meta, args=([(root, root_files)], cliargs, reindex_dict,))
-            totaljobs.value += 1
+            root = diskover_qumulo.qumulo_get_file_attr(path, qumulo_ip, qumulo_ses)
+            q.enqueue(diskover_worker_bot.scrape_tree_meta,
+                      args=([(root, files)], cliargs, reindex_dict,))
+            totaljobs += 1
+            # set up threads to parallel crawl directories at rootdir using qumulo api
+            for i in range(config['tree_walk_threads']):
+                t = Thread(target=diskover_qumulo.tree_walk_worker, args=(qumulo_ip, qumulo_ses, num_sep,
+                                                level, batchsize, cliargs, reindex_dict,))
+                t.daemon = True
+                t.start()
+                thread_list.append(t)
 
-            logger.info("Parallel tree walking %s subdirs in %s" % (root_subdir_count, path))
-            while True:
-                dir = mpq.get()
-                if dir is None:
-                    break
-                result = pool.apply_async(diskover_qumulo.qumulo_treewalk,
-                                          args=(dir, qumulo_ip, qumulo_ses, num_sep, level, batchsize,
-                                                cliargs, reindex_dict,))
+            for d_path in dirs:
+                # add path to tree_q
+                tree_q.put(d_path)
         else:  # regular crawl using scandir/walk
+            # set up threads
+            for i in range(config['tree_walk_threads']):
+                t = Thread(target=tree_walk_worker, args=(num_sep, level, batchsize, cliargs, reindex_dict,))
+                t.daemon = True
+                t.start()
+                thread_list.append(t)
+
             root_files = []
             for entry in scandir(path):
                 if entry.is_file(follow_symlinks=False):
                     root_files.append(entry.name)
                 elif entry.is_dir(follow_symlinks=False):
-                    # add path to mp queue
-                    mpq.put(entry.path)
-                    root_subdir_count += 1
-            mpq.put(None)
+                    # add path to tree_q
+                    tree_q.put(entry.path)
 
             # enqueue rootdir files
-            q.enqueue(diskover_worker_bot.scrape_tree_meta, args=([(path, root_files)], cliargs, reindex_dict,))
-            totaljobs.value += 1
+            q.enqueue(diskover_worker_bot.scrape_tree_meta,
+                      args=([(path, root_files)], cliargs, reindex_dict,))
+            totaljobs += 1
 
-            logger.info("Parallel tree walking %s subdirs in %s" % (root_subdir_count, path))
-            while True:
-                dir = mpq.get()
-                if dir is None:
-                    break
-                result = pool.apply_async(treewalk, args=(dir, num_sep, level, batchsize,
-                                                      cliargs, reindex_dict,))
-
-        # wait for process pool to finish
-        pool.close()
-        pool.join()
-
-        # update progress bar and break when redis rq queue is empty
+        time.sleep(2)
+        # update progress bar
         if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
-            percent = 0
             with progress_bar() as bar:
                 while True:
-                    q_size = len(q)
-                    total_jobs = totaljobs.value
                     try:
+                        percent = int("{0:.0f}".format(100 * ((totaljobs - len(q)) / float(totaljobs))))
                         bar.update(percent)
+                        if percent >= 100:
+                            break
                     except ZeroDivisionError:
                         bar.update(0)
                     except ValueError:
                         bar.update(0)
-                    percent = int("{0:.0f}".format(100 * ((total_jobs - q_size) / float(total_jobs))))
-                    if q_size == 0:
-                        break
-                    time.sleep(.1)
-        else:  # no progress bar
-            while True:
-                q_size = len(q)
-                if q_size == 0:
-                    break
-                time.sleep(.1)
+
+        # wait for the threads to finish
+        tree_q.join()
+
+        logger.info('Finished crawling!')
 
     except KeyboardInterrupt:
         print("Ctrl-c keyboard interrupt, shutting down...")
-        pool.terminate()
         sys.exit(0)
-
-    logger.info('Finished crawling!')
 
 
 def hotdirs():
@@ -1499,9 +1492,6 @@ def wait_for_worker_bots(logger):
         time.sleep(2)
     workers = Worker.all(queue=q)
     logger.info('Found %s diskover RQ worker bots', len(workers))
-    num_cpu = multiprocessing.cpu_count()
-    if len(workers) > (num_cpu * 2):
-        logger.warning("Running too many bots than cpu cores on same host could slow down crawling")
 
 
 def check_workers_running(logger):
@@ -1573,6 +1563,9 @@ listen = ['diskover_crawl']
 
 # set up Redis q
 q = Queue(listen[0], connection=redis_conn, default_timeout=86400)
+
+# set up tree q for threads
+tree_q = pyQueue()
 
 # load any available plugins
 plugins = load_plugins()
@@ -1782,10 +1775,6 @@ if __name__ == "__main__":
     elif cliargs['reindexrecurs']:
         reindex_dict = index_delete_path(rootdir_path, cliargs, logger, reindex_dict, recursive=True)
 
-    # set up processes to parallel crawl directories at rootdir using multiprocessing
-    mpq = multiprocessing.Queue()
-    totaljobs = multiprocessing.Value('i', 0)
-
     # start crawlbot if cli argument
     if cliargs['crawlbot']:
         import diskover_crawlbot
@@ -1793,7 +1782,7 @@ if __name__ == "__main__":
         wait_for_worker_bots(logger)
         botdirlist = index_get_docs(cliargs, logger, doctype='directory')
         # Set up worker threads for crawlbot
-        diskover_crawlbot.start_crawlbot_scanner(cliargs, logger, mpq, totaljobs, rootdir_path,
+        diskover_crawlbot.start_crawlbot_scanner(cliargs, logger, totaljobs, rootdir_path,
                                                  botdirlist, reindex_dict)
         sys.exit(0)
 
@@ -1815,7 +1804,7 @@ if __name__ == "__main__":
 
     starttime = time.time()
     # start crawling
-    crawl_tree(rootdir_path, cliargs, logger, mpq, totaljobs, reindex_dict)
+    crawl_tree(rootdir_path, cliargs, logger, reindex_dict)
     # add elapsed time crawl stat to es
     add_crawl_stats(es, cliargs['index'], rootdir_path, (time.time() - starttime), "main")
 

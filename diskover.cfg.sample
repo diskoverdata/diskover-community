@@ -19,9 +19,8 @@ files = .*,Thumbs.db,.DS_Store,._.DS_Store,.localized,desktop.ini
 ;dirs = [{"name": ["*tmp*", "*TMP*", "*temp*", "*TEMP*", "*Temp*", "*cache*", "*CACHE*", "*Cache*"], "name_exclude": ["*templates*", "*Templates*"], "path": ["*/Application Support/*", "*/Containers/*"], "path_exclude": [], "mtime": 90, "atime": 0, "ctime": 90, "tag": "delete", "tag_custom": "autotag"}]
 
 [treewalk]
-; number of processes to run when doing parallel tree walking of rootdir
-; setting this to the number of cpu cores on your host is a good starting point
-procs = 8
+; number of threads for tree walking
+threads = 40
 
 [elasticsearch]
 ; uncomment the below three lines if you are using AWS ES

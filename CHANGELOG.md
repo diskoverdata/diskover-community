@@ -7,26 +7,22 @@
 - changes to diskover.cfg.sample, please copy over to your diskover.cfg and adjust for your env
 ### added
 - Amazon S3 inventory support - you can now import Amazon S3 inventory (CSV gzip format) to diskover ES index using --s3 cli arg and supplying 1 or multiple gzipped csv inventory files (see wiki or -h)
-- treewalk section with procs option to diskover.cfg.sample for setting number of parallel processes to tree walk (copy to diskover.cfg)
 - faster directory size calculations at end of crawl by reducing es update calls and using bulk update
 - maxsize in checkdupes section in diskover.cfg.sample - used for setting max file size to check for dupes (copy to diskover.cfg)
 - checkbytes in checkdupes section in diskover.cfg.sample - used for setting bytes to check at start and end of file before doing md5 sum check (copy to diskover.cfg)
 - new es optimization settings to elasticsearch section in diskover.cfg.sample - new settings for indexrefresh, disablereplicas, translogsize (copy from diskover.cfg.sample to your diskover.cfg)
 - autotagging to diskover_qumulo
 - progress bar output for dir size calculation jobs
-- warnings if running more bots and parallel tree waking processes than number of cpu cores x 2 on host
-- improved progress bar code and appearance
 - additional characters to escape_chars function
 - --maxdcdepth to cli args - maximum depth to calculate directory sizes/items (default 10)
+- treewalk section in diskover.cfg.sample for setting number of threads for tree walking (copy to your diskover.cfg)
 ### changed
-- switched to multiprocessing instead of threads for parallel tree walking
 - directory paths are hashed using base64 encode when storing in redis for cacheing directory times (times are used when crawling with -I)
 - moved autotag code after plugin code when setting file/directory doc meta data fields
-- main diskover.py dispatcher does not exit when there are dir size jobs still in Redis diskover_crawl queue
 - set default for shards/replicas to 1/0 in diskover.cfg.sample (most users are just using single es node, if you are, you might want to set these)
 - directory size/items calculations at end of crawl are now limited by --maxdcdepth cli arg (default 10), previously was unlimited depth
+- limit is set on number of threads for tree walking in diskover.cfg treewalk section
 ### fixed
-- bug with progress bar
 - bugs with autotagging
 - crawlbot continuous scanner (-B) strack trace error (logger)
 
