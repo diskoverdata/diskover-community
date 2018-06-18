@@ -107,7 +107,7 @@ $ python /path/to/diskover.py -d /rootpath/you/want/to/crawl -i diskover-indexna
 
 **Defaults for crawl with no flags is to index from . (current directory) and files >0 Bytes and 0 days modified time. Empty files and directores are skipped (unless you use -s 0 and -e flags). Max crawl depth is 100 and max depth for dir size calculations is 10 by default. Use -h to see cli options.**
 
-Get overview of your file system by crawling up to max crawl/dir calc depth of 3:
+Crawl up to maximum tree/dir calc depth of 3:
 
 ```sh
 $ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl -M 3 -c 3
