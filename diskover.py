@@ -1445,7 +1445,7 @@ def crawl_tree(path, cliargs, logger, mpq, totaljobs, reindex_dict):
                 q_size = len(q)
                 if q_size == 0:
                     break
-                time.sleep(1)
+                time.sleep(.1)
 
     except KeyboardInterrupt:
         print("Ctrl-c keyboard interrupt, shutting down...")
