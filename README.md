@@ -103,7 +103,13 @@ Start diskover main job dispatcher and file tree crawler with:
 $ python /path/to/diskover.py -d /rootpath/you/want/to/crawl -i diskover-indexname -a
 ```
 
-**Defaults for crawl with no flags is to index from . (current directory) and files >0 Bytes and 0 days modified time. Empty files and directores are skipped (unless you use -s 0 and -e flags). Use -h to see cli options.**
+**Defaults for crawl with no flags is to index from . (current directory) and files >0 Bytes and 0 days modified time. Empty files and directores are skipped (unless you use -s 0 and -e flags). Max crawl depth is 100 and max depth for dir size calculations is 10 by default. Use -h to see cli options.**
+
+Get overview of your file system by crawling up to max crawl/dir calc depth of 3:
+
+```sh
+$ python3 diskover.py -i diskover-index3 -a -d /Users/cp/Library/ -M 3 -c 3
+```
 
 Import Amazon S3 Inventory file(s) (gzipped csv) with:
 
