@@ -856,7 +856,7 @@ def index_get_docs(cliargs, logger, doctype='directory', copytags=False, hotdirs
             else:
                 # depth at rootdir
                 num_sep = cliargs['rootdir'].count(os.path.sep)
-                n = num_sep + maxdepth
+                n = num_sep + maxdepth - 1
                 regexp = '(\/.[^\/]+){1,'+str(n)+'}'
                 logger.info('Searching for all %s docs in %s (maxdepth %s)...', doctype, index, maxdepth)
                 data = {
@@ -1419,8 +1419,11 @@ def crawl_tree(path, cliargs, logger, mpq, totaljobs, reindex_dict):
                 result = pool.apply_async(treewalk, args=(dir, num_sep, level, batchsize,
                                                       cliargs, reindex_dict,))
 
+        # wait for process pool to finish
+        pool.close()
+        pool.join()
+
         # update progress bar and break when redis rq queue is empty
-        time.sleep(1)
         if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
             percent = 0
             with progress_bar() as bar:
@@ -1443,9 +1446,6 @@ def crawl_tree(path, cliargs, logger, mpq, totaljobs, reindex_dict):
                 if q_size == 0:
                     break
                 time.sleep(1)
-
-        pool.close()
-        pool.join()
 
     except KeyboardInterrupt:
         print("Ctrl-c keyboard interrupt, shutting down...")
