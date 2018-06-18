@@ -1237,6 +1237,11 @@ def calc_dir_sizes(cliargs, logger, path=None):
         batchsize = cliargs['batchsize']
     if cliargs['verbose'] or cliargs['debug']:
         logger.info('Batch size: %s' % batchsize)
+    if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+        bar = progress_bar()
+        bar.start()
+    else:
+        bar = None
     for d in dirlist:
         dirbatch.append(d)
         if len(dirbatch) >= batchsize:
@@ -1260,21 +1265,22 @@ def calc_dir_sizes(cliargs, logger, path=None):
     q.enqueue(diskover_worker_bot.calc_dir_size, args=(dirbatch, cliargs,))
     jobcount += 1
 
-    time.sleep(2)
-    # update progress bar
-    if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
-        with progress_bar(prefix='Calculating') as bar:
-            while True:
-                try:
-                    percent = int("{0:.0f}".format(100 * ((jobcount - len(q)) / float(jobcount))))
-                    bar.update(percent)
-                    if percent >= 100:
-                        break
-                except ZeroDivisionError:
-                    bar.update(0)
-                except ValueError:
-                    bar.update(0)
+    # wait for queue to be empty and update progress bar
+    while True:
+        if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+            try:
+                percent = int("{0:.0f}".format(100 * ((jobcount - len(q)) / float(jobcount))))
+                bar.update(percent)
+            except ZeroDivisionError:
+                bar.update(0)
+            except ValueError:
+                bar.update(0)
+        if len(q) == 0:
+            break
+        time.sleep(.1)
 
+    if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+        bar.finish()
     logger.info('Finished calculating directory sizes')
 
 
