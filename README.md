@@ -97,6 +97,8 @@ $ python diskover_worker_bot.py
 
 Worker bots can be added during a crawl to help with the queue. To run a worker bot in burst mode (quit after all jobs done), use the -b flag. If the queue is empty these bots will die, so use `rq info` or `rq-dashboard` to see if they are running. Run `diskover-bot-launcher.sh` to spawn and kill multiple bots. Bots can be run on any host in the network as long as they have the same nfs/cifs mountpoint as rootdir (-d path) and can connect to ES and Redis (see wiki for more info).
 
+### Usage examples
+
 Start diskover main job dispatcher and file tree crawler with:
 
 ```sh
@@ -108,7 +110,13 @@ $ python /path/to/diskover.py -d /rootpath/you/want/to/crawl -i diskover-indexna
 Get overview of your file system by crawling up to max crawl/dir calc depth of 3:
 
 ```sh
-$ python3 diskover.py -i diskover-index3 -a -d /Users/cp/Library/ -M 3 -c 3
+$ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl -M 3 -c 3
+```
+
+Only index files which are >90 days modified time and >1 KB filesize:
+
+```sh
+$ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl -m 90 -s 1024
 ```
 
 Import Amazon S3 Inventory file(s) (gzipped csv) with:
