@@ -726,8 +726,7 @@ def calc_dir_size(dirlist, cliargs):
                 "size": 0,
                 "query": {
                     "query_string": {
-                        'query': 'path_parent: ' + newpath + ' '
-                                                             'OR path_parent: ' + newpathwildcard,
+                        'query': 'path_parent: ' + newpath + ' OR path_parent: ' + newpathwildcard,
                         'analyze_wildcard': 'true'
                     }
                 },

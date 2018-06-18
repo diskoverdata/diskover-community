@@ -1,6 +1,6 @@
 # Diskover Change Log
 
-## [1.5.0-rc10] = 2018-06-17
+## [1.5.0-rc10] = 2018-06-18
 ### notice
 - Amazon S3 inventory support is beta, requires diskover-web >= v1.5.0-rc9
 - --s3 requires index named diskover-s3-indexname
@@ -16,12 +16,15 @@
 - progress bar output for dir size calculation jobs
 - warnings if running more bots and parallel tree waking processes than number of cpu cores x 2 on host
 - improved progress bar code and appearance
+- additional characters to escape_chars function
+- --maxdcdepth to cli args - maximum depth to calculate directory sizes/items (default 10)
 ### changed
 - switched to multiprocessing instead of threads for parallel tree walking
 - directory paths are hashed using base64 encode when storing in redis for cacheing directory times (times are used when crawling with -I)
 - moved autotag code after plugin code when setting file/directory doc meta data fields
 - main diskover.py dispatcher does not exit when there are dir size jobs still in Redis diskover_crawl queue
 - set default for shards/replicas to 1/0 in diskover.cfg.sample (most users are just using single es node, if you are, you might want to set these)
+- directory size/items calculations at end of crawl are now limited by --maxdcdepth cli arg (default 10), previously was unlimited depth
 ### fixed
 - bug with progress bar
 - bugs with autotagging

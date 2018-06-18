@@ -141,10 +141,9 @@ def qumulo_treewalk(path, ip, ses, num_sep, level, batchsize, cliargs, reindex_d
             root_path = root['path'].rstrip(os.path.sep)
         else:
             root_path = root['path']
+        if len(dirs) == 0 and len(files) == 0 and not cliargs['indexemptydirs']:
+            continue
         if not diskover.dir_excluded(root_path, diskover.config, cliargs['verbose']):
-            if len(dirs) == 0 and len(files) == 0 and not cliargs['indexemptydirs']:
-                continue
-
             batch.append((root, files))
             if len(batch) >= batchsize:
                 diskover.q.enqueue(diskover_worker_bot.scrape_tree_meta,
@@ -163,14 +162,12 @@ def qumulo_treewalk(path, ip, ses, num_sep, level, batchsize, cliargs, reindex_d
                     if cliargs['verbose'] or cliargs['debug']:
                         if batchsize_prev != batchsize:
                             diskover.logger.info('Batch size: %s' % batchsize)
-
             # check if at maxdepth level and delete dirs/files lists to not
             # descend further down the tree
             num_sep_this = root_path.count(os.path.sep)
             if num_sep + level <= num_sep_this:
                 del dirs[:]
                 del files[:]
-
         else:  # directory excluded
             del dirs[:]
             del files[:]

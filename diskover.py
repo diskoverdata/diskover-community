@@ -812,7 +812,7 @@ def index_delete_path(path, cliargs, logger, reindex_dict, recursive=False):
 
 
 def index_get_docs(cliargs, logger, doctype='directory', copytags=False, hotdirs=False,
-                   index=None, path=None, sort=False):
+                   index=None, path=None, sort=False, maxdepth=None):
     """This is the es get docs function.
     It finds all docs (by doctype) in es and returns doclist
     which contains doc id, fullpath and mtime for all docs.
@@ -845,13 +845,26 @@ def index_get_docs(cliargs, logger, doctype='directory', copytags=False, hotdirs
         }
     else:
         if not path:
-            logger.info('Searching for all %s docs in %s...', doctype, index)
-            data = {
-                '_source': ['path_parent', 'filename', 'last_modified'],
-                'query': {
-                    'match_all': {}
+            if maxdepth is None:
+                logger.info('Searching for all %s docs in %s...', doctype, index)
+                data = {
+                    '_source': ['path_parent', 'filename', 'last_modified'],
+                    'query': {
+                        'match_all': {}
+                    }
                 }
-            }
+            else:
+                # depth at rootdir
+                num_sep = cliargs['rootdir'].count(os.path.sep)
+                n = num_sep + maxdepth
+                regexp = '(\/.[^\/]+){1,'+str(n)+'}'
+                logger.info('Searching for all %s docs in %s (maxdepth %s)...', doctype, index, maxdepth)
+                data = {
+                    '_source': ['path_parent', 'filename', 'last_modified'],
+                    'query': {
+                        'regexp': { 'path_parent': regexp }
+                    }
+                }
         else:
             # escape special characters
             newpath = escape_chars(path)
@@ -1025,10 +1038,14 @@ def escape_chars(text):
     """This is the escape special characters function.
     It returns escaped path strings for es queries.
     """
+    # escape any backslace characters
+    text = text.replace('\\', '\\\\')
+    # escape any characters in chr_dict
     chr_dict = {'/': '\\/', '(': '\\(', ')': '\\)', '[': '\\[', ']': '\\]', '$': '\\$',
                 ' ': '\\ ', '&': '\\&', '<': '\\<', '>': '\\>', '+': '\\+', '-': '\\-',
                 '|': '\\|', '!': '\\!', '{': '\\{', '}': '\\}', '^': '\\^', '~': '\\~',
-                '?': '\\?', ':': '\\:', '=': '\\=', '\'': '\\\'', '"': '\\"', '@': '\\@'}
+                '?': '\\?', ':': '\\:', '=': '\\=', '\'': '\\\'', '"': '\\"', '@': '\\@',
+                '.': '\\.', '#': '\\#', '*': '\\*'}
     def char_trans(text, chr_dict):
         for key, value in chr_dict.items():
             text = text.replace(key, value)
@@ -1088,6 +1105,9 @@ def parse_cli_args(indexname):
     parser.add_argument("-M", "--maxdepth", type=int, default=100,
                         help="Maximum directory depth to crawl (default: \
                         100)")
+    parser.add_argument("-c", "--maxdcdepth", type=int, default=10,
+                        help="Maximum directory depth to calculate directory sizes/items (default: \
+                            10)")
     parser.add_argument("-b", "--batchsize", type=int, default=25,
                         help="Batch size (dir count) for sending to worker bots (default: \
                             25)")
@@ -1193,6 +1213,8 @@ def progress_bar(prefix='Crawling'):
 
 def calc_dir_sizes(cliargs, logger, path=None):
     import diskover_worker_bot
+    # maximum tree depth to calculate
+    maxdepth = config['maxdcdepth']
     jobcount = 0
 
     check_workers_running(logger)
@@ -1200,8 +1222,8 @@ def calc_dir_sizes(cliargs, logger, path=None):
     if path:
         dirlist = index_get_docs(cliargs, logger, path=path)
     else:
-        dirlist = index_get_docs(cliargs, logger, sort=True)
-    logger.info('Getting diskover bots to calculate directory sizes...')
+        dirlist = index_get_docs(cliargs, logger, sort=True, maxdepth=maxdepth)
+    logger.info('Getting diskover bots to calculate directory sizes (maximum depth %s)...' % maxdepth)
     dirbatch = []
     if cliargs['adaptivebatch']:
         batchsize = adaptivebatch_startsize
@@ -1269,10 +1291,9 @@ def treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict):
     batch = []
 
     for root, dirs, files in walk(path):
+        if len(dirs) == 0 and len(files) == 0 and not cliargs['indexemptydirs']:
+            continue
         if not dir_excluded(root, config, cliargs['verbose']):
-            if len(dirs) == 0 and len(files) == 0 and not cliargs['indexemptydirs']:
-                continue
-
             batch.append((root, files))
             if len(batch) >= batchsize:
                 q.enqueue(diskover_worker_bot.scrape_tree_meta, args=(batch, cliargs, reindex_dict,))
@@ -1297,7 +1318,6 @@ def treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict):
             if num_sep + level <= num_sep_this:
                 del dirs[:]
                 del files[:]
-
         else:  # directory excluded
             del dirs[:]
             del files[:]
@@ -1355,6 +1375,7 @@ def crawl_tree(path, cliargs, logger, mpq, totaljobs, reindex_dict):
         # qumulo api crawl
         if cliargs['qumulo']:
             # use qumulo api to get dir list
+            logger.info("Getting all the subdirs and files in %s..." % path)
             root_dirs, root_files = diskover_qumulo.qumulo_api_listdir(path, qumulo_ip, qumulo_ses)
             root = diskover_qumulo.qumulo_get_file_attr(path, qumulo_ip, qumulo_ses)
             for dir in root_dirs:
@@ -1453,7 +1474,6 @@ def hotdirs():
         dirbatch.append(d)
         if len(dirbatch) >= batchsize:
             q.enqueue(diskover_worker_bot.calc_hot_dirs, args=(dirbatch, cliargs,))
-            totaljobs.value += 1
             del dirbatch[:]
             batchsize_prev = batchsize
             if cliargs['adaptivebatch']:
@@ -1469,7 +1489,6 @@ def hotdirs():
                         logger.info('Batch size: %s' % batchsize)
     # add any remaining in batch to queue
     q.enqueue(diskover_worker_bot.calc_hot_dirs, args=(dirbatch, cliargs,))
-    totaljobs.value += 1
 
 
 def wait_for_worker_bots(logger):
