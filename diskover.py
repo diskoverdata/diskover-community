@@ -1214,7 +1214,7 @@ def progress_bar(prefix='Crawling'):
 def calc_dir_sizes(cliargs, logger, path=None):
     import diskover_worker_bot
     # maximum tree depth to calculate
-    maxdepth = config['maxdcdepth']
+    maxdepth = cliargs['maxdcdepth']
     jobcount = 0
 
     check_workers_running(logger)
