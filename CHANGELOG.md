@@ -1,6 +1,6 @@
 # Diskover Change Log
 
-## [1.5.0-rc10] = 2018-06-18
+## [1.5.0-rc10] = 2018-06-19
 ### notice
 - Amazon S3 inventory support is beta, requires diskover-web >= v1.5.0-rc9
 - --s3 requires index named diskover-s3-indexname
@@ -22,6 +22,7 @@
 - set default for shards/replicas to 1/0 in diskover.cfg.sample (most users are just using single es node, if you are, you might want to set these)
 - directory size/items calculations at end of crawl are now limited by --maxdcdepth cli arg (default 10), previously was unlimited depth
 - limit is set on number of threads for tree walking in diskover.cfg treewalk section
+- improved treewalk and qumulo_treewalk functions
 ### fixed
 - bugs with autotagging
 - crawlbot continuous scanner (-B) strack trace error (logger)

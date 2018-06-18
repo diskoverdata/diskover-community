@@ -1278,7 +1278,7 @@ def calc_dir_sizes(cliargs, logger, path=None):
     logger.info('Finished calculating directory sizes')
 
 
-def treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict):
+def treewalk(path, num_sep, level, batchsize, bar, cliargs, reindex_dict):
     """This is the tree walk function.
     It walks the tree using scandir walk and adds tuple of root, dirs, files
     to redis queue for rq worker bots to scrape meta and upload
@@ -1289,10 +1289,9 @@ def treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict):
     batch = []
 
     for root, dirs, files in walk(path):
+        if len(dirs) == 0 and len(files) == 0 and not cliargs['indexemptydirs']:
+            continue
         if not dir_excluded(root, config, cliargs['verbose']):
-            if len(dirs) == 0 and len(files) == 0 and not cliargs['indexemptydirs']:
-                continue
-
             batch.append((root, files))
             if len(batch) >= batchsize:
                 q.enqueue(diskover_worker_bot.scrape_tree_meta,
@@ -1323,19 +1322,28 @@ def treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict):
             del dirs[:]
             del files[:]
 
+        if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+            try:
+                percent = int("{0:.0f}".format(100 * ((totaljobs - len(q)) / float(totaljobs))))
+                bar.update(percent)
+            except ZeroDivisionError:
+                bar.update(0)
+            except ValueError:
+                bar.update(0)
+
     # add any remaining in batch to queue
     q.enqueue(diskover_worker_bot.scrape_tree_meta,
               args=(batch, cliargs, reindex_dict,))
     totaljobs += 1
 
 
-def tree_walk_worker(num_sep, level, batchsize, cliargs, reindex_dict):
+def tree_walk_worker(num_sep, level, batchsize, bar, cliargs, reindex_dict):
     """This is the tree walk worker function.
     It runs in infinite loop getting items (directories) from the tree_q queue.
     """
     while True:
         dir = tree_q.get()
-        treewalk(dir, num_sep, level, batchsize, cliargs, reindex_dict)
+        treewalk(dir, num_sep, level, batchsize, bar, cliargs, reindex_dict)
         tree_q.task_done()
 
 
@@ -1368,6 +1376,12 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
 
         logger.info("Using %s threads for tree walking" % config['tree_walk_threads'])
 
+        if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+            bar = progress_bar()
+            bar.start()
+        else:
+            bar = None
+
         # set maxdepth level to 1 if reindex or crawlbot (non-recursive)
         if cliargs['reindex'] or cliargs['crawlbot']:
             level = 1
@@ -1393,8 +1407,8 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
             totaljobs += 1
             # set up threads to parallel crawl directories at rootdir using qumulo api
             for i in range(config['tree_walk_threads']):
-                t = Thread(target=diskover_qumulo.tree_walk_worker, args=(qumulo_ip, qumulo_ses, num_sep,
-                                                level, batchsize, cliargs, reindex_dict,))
+                t = Thread(target=diskover_qumulo.qumulo_tree_walk_worker,
+                           args=(qumulo_ip, qumulo_ses, num_sep, level, batchsize, bar, cliargs, reindex_dict,))
                 t.daemon = True
                 t.start()
                 thread_list.append(t)
@@ -1405,7 +1419,7 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
         else:  # regular crawl using scandir/walk
             # set up threads
             for i in range(config['tree_walk_threads']):
-                t = Thread(target=tree_walk_worker, args=(num_sep, level, batchsize, cliargs, reindex_dict,))
+                t = Thread(target=tree_walk_worker, args=(num_sep, level, batchsize, bar, cliargs, reindex_dict,))
                 t.daemon = True
                 t.start()
                 thread_list.append(t)
@@ -1423,29 +1437,29 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
                       args=([(path, root_files)], cliargs, reindex_dict,))
             totaljobs += 1
 
-        time.sleep(2)
-        # update progress bar
-        if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
-            with progress_bar() as bar:
-                while True:
-                    try:
-                        percent = int("{0:.0f}".format(100 * ((totaljobs - len(q)) / float(totaljobs))))
-                        bar.update(percent)
-                        if percent >= 100:
-                            break
-                    except ZeroDivisionError:
-                        bar.update(0)
-                    except ValueError:
-                        bar.update(0)
-
         # wait for the threads to finish
         tree_q.join()
 
-        logger.info('Finished crawling!')
-
+        # wait for queue to be empty and update progress bar
+        while True:
+            if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+                try:
+                    percent = int("{0:.0f}".format(100 * ((totaljobs - len(q)) / float(totaljobs))))
+                    bar.update(percent)
+                except ZeroDivisionError:
+                    bar.update(0)
+                except ValueError:
+                    bar.update(0)
+            if len(q) == 0:
+                break
+            time.sleep(.1)
     except KeyboardInterrupt:
         print("Ctrl-c keyboard interrupt, shutting down...")
         sys.exit(0)
+
+    if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+        bar.finish()
+    logger.info('Finished crawling!')
 
 
 def hotdirs():

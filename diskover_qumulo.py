@@ -144,14 +144,13 @@ def qumulo_treewalk(path, ip, ses, num_sep, level, batchsize, bar, cliargs, rein
     batch = []
 
     for root, dirs, files in qumulo_api_walk(path, ip, ses):
+        if len(dirs) == 0 and len(files) == 0 and not cliargs['indexemptydirs']:
+            continue
         if root['path'] != '/':
             root_path = root['path'].rstrip(os.path.sep)
         else:
             root_path = root['path']
         if not diskover.dir_excluded(root_path, diskover.config, cliargs['verbose']):
-            if len(dirs) == 0 and len(files) == 0 and not cliargs['indexemptydirs']:
-                continue
-
             batch.append((root, files))
             if len(batch) >= batchsize:
                 diskover.q.enqueue(diskover_worker_bot.scrape_tree_meta,
