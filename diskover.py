@@ -21,7 +21,7 @@ except ImportError:
     except ImportError:
         raise ImportError('elasticsearch module not installed')
 from datetime import datetime
-from scandir import scandir, walk
+from scandir import scandir
 try:
     import configparser as ConfigParser
 except ImportError:
@@ -32,11 +32,6 @@ import progressbar
 from redis import Redis
 from rq import Worker, Queue
 from random import randint
-from threading import Thread
-try:
-    from queue import Queue as pyQueue
-except ImportError:
-    from Queue import Queue as pyQueue
 import argparse
 import logging
 import imp
@@ -53,10 +48,8 @@ __version__ = version
 
 IS_PY3 = sys.version_info >= (3, 0)
 
-totaljobs = 0
-
-adaptivebatch_startsize = 10
-adaptivebatch_maxsize = 500
+adaptivebatch_startsize = 5
+adaptivebatch_maxsize = 250
 
 
 def print_banner(version):
@@ -195,10 +188,6 @@ def load_config():
         raise ValueError("Error in config autotag dirs: %s" % e)
     except ConfigParser.NoOptionError:
         configsettings['autotag_dirs'] = []
-    try:
-        configsettings['tree_walk_threads'] = int(config.get('treewalk', 'threads'))
-    except ConfigParser.NoOptionError:
-        configsettings['tree_walk_threads'] = 8
     try:
         configsettings['aws'] = config.get('elasticsearch', 'aws')
     except ConfigParser.NoOptionError:
@@ -863,7 +852,7 @@ def index_get_docs(cliargs, logger, doctype='directory', copytags=False, hotdirs
                 # depth at rootdir
                 num_sep = cliargs['rootdir'].count(os.path.sep)
                 n = num_sep + maxdepth - 1
-                regexp = '(\/.[^\/]+){1,'+str(n)+'}'
+                regexp = '(\/.[^\/]+){1,'+str(n)+'}|\/'
                 logger.info('Searching for all %s docs in %s (maxdepth %s)...', doctype, index, maxdepth)
                 data = {
                     '_source': ['path_parent', 'filename', 'last_modified'],
@@ -1210,10 +1199,14 @@ def log_setup(cliargs):
     return diskover_logger
 
 
-def progress_bar(prefix='Crawling'):
-    widgets = [prefix + ' ', progressbar.Bar('█', '|', '| '), progressbar.Percentage(),
-               ' (', progressbar.Timer(), ', ', progressbar.ETA(), ')']
-    bar = progressbar.ProgressBar(widgets=widgets, max_value=100)
+def progress_bar(event):
+    if event == 'Crawling':
+        widgets = [progressbar.AnimatedMarker(), ' ', event + ' (Queue: ', progressbar.Counter(), ') ', progressbar.Timer()]
+        bar = progressbar.ProgressBar(widgets=widgets, max_value=progressbar.UnknownLength)
+    else:
+        widgets = [event + ' ', progressbar.Bar(), progressbar.Percentage(),
+            ' (', progressbar.Timer(), ', ', progressbar.ETA(), ')']
+        bar = progressbar.ProgressBar(widgets=widgets, max_value=100)
     return bar
 
 
@@ -1238,7 +1231,7 @@ def calc_dir_sizes(cliargs, logger, path=None):
     if cliargs['verbose'] or cliargs['debug']:
         logger.info('Batch size: %s' % batchsize)
     if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
-        bar = progress_bar()
+        bar = progress_bar('Calculating')
         bar.start()
     else:
         bar = None
@@ -1267,90 +1260,28 @@ def calc_dir_sizes(cliargs, logger, path=None):
 
     # wait for queue to be empty and update progress bar
     while True:
+        workers_busy = False
+        workers = Worker.all(connection=redis_conn)
+        for worker in workers:
+            if worker._state == "busy":
+                workers_busy = True
+                break
+        q_len = len(q)
         if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
             try:
-                percent = int("{0:.0f}".format(100 * ((jobcount - len(q)) / float(jobcount))))
+                percent = int("{0:.0f}".format(100 * ((jobcount - q_len) / float(jobcount))))
                 bar.update(percent)
             except ZeroDivisionError:
                 bar.update(0)
             except ValueError:
                 bar.update(0)
-        if len(q) == 0:
+        if q_len == 0 and workers_busy == False:
             break
-        time.sleep(.1)
+        time.sleep(.5)
 
     if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
         bar.finish()
     logger.info('Finished calculating directory sizes')
-
-
-def treewalk(path, num_sep, level, batchsize, bar, cliargs, reindex_dict):
-    """This is the tree walk function.
-    It walks the tree using scandir walk and adds tuple of root, dirs, files
-    to redis queue for rq worker bots to scrape meta and upload
-    to ES index.
-    """
-    import diskover_worker_bot
-    global totaljobs
-    batch = []
-
-    for root, dirs, files in walk(path):
-        if len(dirs) == 0 and len(files) == 0 and not cliargs['indexemptydirs']:
-            continue
-        if not dir_excluded(root, config, cliargs['verbose']):
-            batch.append((root, files))
-            if len(batch) >= batchsize:
-                q.enqueue(diskover_worker_bot.scrape_tree_meta,
-                          args=(batch, cliargs, reindex_dict,))
-                totaljobs += 1
-                del batch[:]
-                batchsize_prev = batchsize
-                if cliargs['adaptivebatch']:
-                    if len(q) == 0:
-                        if (batchsize - 10) >= adaptivebatch_startsize:
-                            batchsize = batchsize - 10
-                    elif len(q) > 0:
-                        if (batchsize + 10) <= adaptivebatch_maxsize:
-                            batchsize = batchsize + 10
-                    cliargs['batchsize'] = batchsize
-                    if cliargs['verbose'] or cliargs['debug']:
-                        if batchsize_prev != batchsize:
-                            logger.info('Batch size: %s' % batchsize)
-
-            # check if at maxdepth level and delete dirs/files lists to not
-            # descend further down the tree
-            num_sep_this = root.count(os.path.sep)
-            if num_sep + level <= num_sep_this:
-                del dirs[:]
-                del files[:]
-
-        else:  # directory excluded
-            del dirs[:]
-            del files[:]
-
-        if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
-            try:
-                percent = int("{0:.0f}".format(100 * ((totaljobs - len(q)) / float(totaljobs))))
-                bar.update(percent)
-            except ZeroDivisionError:
-                bar.update(0)
-            except ValueError:
-                bar.update(0)
-
-    # add any remaining in batch to queue
-    q.enqueue(diskover_worker_bot.scrape_tree_meta,
-              args=(batch, cliargs, reindex_dict,))
-    totaljobs += 1
-
-
-def tree_walk_worker(num_sep, level, batchsize, bar, cliargs, reindex_dict):
-    """This is the tree walk worker function.
-    It runs in infinite loop getting items (directories) from the tree_q queue.
-    """
-    while True:
-        dir = tree_q.get()
-        treewalk(dir, num_sep, level, batchsize, bar, cliargs, reindex_dict)
-        tree_q.task_done()
 
 
 def crawl_tree(path, cliargs, logger, reindex_dict):
@@ -1359,7 +1290,6 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
     for the threads and rq queue to finish.
     """
     import diskover_worker_bot
-    global totaljobs
 
     try:
         wait_for_worker_bots(logger)
@@ -1380,14 +1310,6 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
                 logger.info('Batch size: %s' % batchsize)
             logger.info("Sending batches of %s to worker bots", batchsize)
 
-        logger.info("Using %s threads for tree walking" % config['tree_walk_threads'])
-
-        if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
-            bar = progress_bar()
-            bar.start()
-        else:
-            bar = None
-
         # set maxdepth level to 1 if reindex or crawlbot (non-recursive)
         if cliargs['reindex'] or cliargs['crawlbot']:
             level = 1
@@ -1398,7 +1320,11 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
         # set current depth
         num_sep = path.count(os.path.sep)
 
-        thread_list = []
+        if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+            bar = progress_bar('Crawling')
+            bar.start()
+        else:
+            bar = None
 
         # set up threads to parallel crawl directories at rootdir
         # qumulo api crawl
@@ -1408,57 +1334,42 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
             dirs, files = diskover_qumulo.qumulo_api_listdir(path, qumulo_ip, qumulo_ses)
             # enqueue rootdir files
             root = diskover_qumulo.qumulo_get_file_attr(path, qumulo_ip, qumulo_ses)
+            for d_path in dirs:
+                q.enqueue(diskover_qumulo.qumulo_treewalk,
+                          args=(d_path, qumulo_ip, qumulo_ses, num_sep, level, batchsize, cliargs, reindex_dict,))
             q.enqueue(diskover_worker_bot.scrape_tree_meta,
                       args=([(root, files)], cliargs, reindex_dict,))
-            totaljobs += 1
-            # set up threads to parallel crawl directories at rootdir using qumulo api
-            for i in range(config['tree_walk_threads']):
-                t = Thread(target=diskover_qumulo.qumulo_tree_walk_worker,
-                           args=(qumulo_ip, qumulo_ses, num_sep, level, batchsize, bar, cliargs, reindex_dict,))
-                t.daemon = True
-                t.start()
-                thread_list.append(t)
-
-            for d_path in dirs:
-                # add path to tree_q
-                tree_q.put(d_path)
         else:  # regular crawl using scandir/walk
-            # set up threads
-            for i in range(config['tree_walk_threads']):
-                t = Thread(target=tree_walk_worker, args=(num_sep, level, batchsize, bar, cliargs, reindex_dict,))
-                t.daemon = True
-                t.start()
-                thread_list.append(t)
-
             root_files = []
             for entry in scandir(path):
                 if entry.is_file(follow_symlinks=False):
                     root_files.append(entry.name)
                 elif entry.is_dir(follow_symlinks=False):
-                    # add path to tree_q
-                    tree_q.put(entry.path)
-
+                    q.enqueue(diskover_worker_bot.treewalk,
+                              args=(entry.path, num_sep, level, batchsize, cliargs, reindex_dict,))
             # enqueue rootdir files
             q.enqueue(diskover_worker_bot.scrape_tree_meta,
                       args=([(path, root_files)], cliargs, reindex_dict,))
-            totaljobs += 1
-
-        # wait for the threads to finish
-        tree_q.join()
 
         # wait for queue to be empty and update progress bar
         while True:
+            workers_busy = False
+            workers = Worker.all(connection=redis_conn)
+            for worker in workers:
+                if worker._state == "busy":
+                    workers_busy = True
+                    break
+            q_len = len(q)
             if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
                 try:
-                    percent = int("{0:.0f}".format(100 * ((totaljobs - len(q)) / float(totaljobs))))
-                    bar.update(percent)
+                    bar.update(q_len)
                 except ZeroDivisionError:
                     bar.update(0)
                 except ValueError:
                     bar.update(0)
-            if len(q) == 0:
+            if q_len == 0 and workers_busy == False:
                 break
-            time.sleep(.1)
+            time.sleep(.5)
     except KeyboardInterrupt:
         print("Ctrl-c keyboard interrupt, shutting down...")
         sys.exit(0)
@@ -1583,9 +1494,6 @@ listen = ['diskover_crawl']
 
 # set up Redis q
 q = Queue(listen[0], connection=redis_conn, default_timeout=86400)
-
-# set up tree q for threads
-tree_q = pyQueue()
 
 # load any available plugins
 plugins = load_plugins()
@@ -1802,8 +1710,7 @@ if __name__ == "__main__":
         wait_for_worker_bots(logger)
         botdirlist = index_get_docs(cliargs, logger, doctype='directory')
         # Set up worker threads for crawlbot
-        diskover_crawlbot.start_crawlbot_scanner(cliargs, logger, totaljobs, rootdir_path,
-                                                 botdirlist, reindex_dict)
+        diskover_crawlbot.start_crawlbot_scanner(cliargs, logger, rootdir_path, botdirlist, reindex_dict)
         sys.exit(0)
 
     # create Elasticsearch index
