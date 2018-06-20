@@ -1494,7 +1494,7 @@ config = load_config()
 # set adaptive batch sizes from config
 ab_start = config['adaptivebatch_startsize']
 ab_max = config['adaptivebatch_maxsize']
-ab_step = config['adaptivebatch_step']
+ab_step = config['adaptivebatch_stepsize']
 
 # create Elasticsearch connection
 es = elasticsearch_connect(config)
