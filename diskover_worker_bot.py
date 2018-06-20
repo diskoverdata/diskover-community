@@ -117,11 +117,11 @@ def treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict):
                 if cliargs['adaptivebatch']:
                     q_len = len(diskover.q)
                     if q_len == 0:
-                        if (batchsize - 10) >= diskover.adaptivebatch_startsize:
-                            batchsize = batchsize - 10
+                        if (batchsize - diskover.ab_step) >= diskover.ab_start:
+                            batchsize = batchsize - diskover.ab_step
                     elif q_len > 0:
-                        if (batchsize + 10) <= diskover.adaptivebatch_maxsize:
-                            batchsize = batchsize + 10
+                        if (batchsize + diskover.ab_step) <= diskover.ab_max:
+                            batchsize = batchsize + diskover.ab_step
                     cliargs['batchsize'] = batchsize
                     if cliargs['verbose'] or cliargs['debug']:
                         if batchsize_prev != batchsize:

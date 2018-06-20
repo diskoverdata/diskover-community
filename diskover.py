@@ -48,9 +48,6 @@ __version__ = version
 
 IS_PY3 = sys.version_info >= (3, 0)
 
-adaptivebatch_startsize = 5
-adaptivebatch_maxsize = 250
-
 
 def print_banner(version):
     """This is the print banner function.
@@ -268,6 +265,18 @@ def load_config():
         configsettings['redis_dirtimesttl'] = int(config.get('redis', 'dirtimesttl'))
     except ConfigParser.NoOptionError:
         configsettings['redis_dirtimesttl'] = 604800
+    try:
+        configsettings['adaptivebatch_startsize'] = int(config.get('adaptivebatch', 'startsize'))
+    except ConfigParser.NoOptionError:
+        configsettings['adaptivebatch_startsize'] = 50
+    try:
+        configsettings['adaptivebatch_maxsize'] = int(config.get('adaptivebatch', 'maxsize'))
+    except ConfigParser.NoOptionError:
+        configsettings['autobatch_maxsize'] = 500
+    try:
+        configsettings['adaptivebatch_stepsize'] = int(config.get('adaptivebatch', 'stepsize'))
+    except ConfigParser.NoOptionError:
+        configsettings['adaptivebatch_stepsize'] = 10
     try:
         configsettings['botlogs'] = config.get('workerbot', 'botlogs')
     except ConfigParser.NoOptionError:
@@ -1103,9 +1112,9 @@ def parse_cli_args(indexname):
     parser.add_argument("-c", "--maxdcdepth", type=int, default=10,
                         help="Maximum directory depth to calculate directory sizes/items (default: \
                             10)")
-    parser.add_argument("-b", "--batchsize", type=int, default=25,
+    parser.add_argument("-b", "--batchsize", type=int, default=50,
                         help="Batch size (dir count) for sending to worker bots (default: \
-                            25)")
+                            50)")
     parser.add_argument("-a", "--adaptivebatch", action="store_true",
                         help="Adaptive batch size for sending to worker bots (intelligent crawl)")
     parser.add_argument("-A", "--autotag", action="store_true",
@@ -1225,7 +1234,7 @@ def calc_dir_sizes(cliargs, logger, path=None):
     logger.info('Getting diskover bots to calculate directory sizes (max depth %s)...' % maxdepth)
     dirbatch = []
     if cliargs['adaptivebatch']:
-        batchsize = adaptivebatch_startsize
+        batchsize = ab_start
     else:
         batchsize = cliargs['batchsize']
     if cliargs['verbose'] or cliargs['debug']:
@@ -1244,11 +1253,11 @@ def calc_dir_sizes(cliargs, logger, path=None):
             batchsize_prev = batchsize
             if cliargs['adaptivebatch']:
                 if len(q) == 0:
-                    if (batchsize - 10) >= adaptivebatch_startsize:
-                        batchsize = batchsize - 10
+                    if (batchsize - ab_step) >= ab_start:
+                        batchsize = batchsize - ab_step
                 elif len(q) > 0:
-                    if (batchsize + 10) <= adaptivebatch_maxsize:
-                        batchsize = batchsize + 10
+                    if (batchsize + ab_step) <= ab_max:
+                        batchsize = batchsize + ab_step
                 cliargs['batchsize'] = batchsize
                 if cliargs['verbose'] or cliargs['debug']:
                     if batchsize_prev != batchsize:
@@ -1299,7 +1308,7 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
             logger.info("Worker bots set to auto-tag (-A)")
 
         if cliargs['adaptivebatch']:
-            batchsize = adaptivebatch_startsize
+            batchsize = ab_start
             cliargs['batchsize'] = batchsize
             logger.info("Sending adaptive batches to worker bots (-a)")
             if cliargs['verbose'] or cliargs['debug']:
@@ -1389,7 +1398,7 @@ def hotdirs():
     dirlist = index_get_docs(cliargs, logger, doctype='directory', hotdirs=True, index=cliargs['index'])
     dirbatch = []
     if cliargs['adaptivebatch']:
-        batchsize = adaptivebatch_startsize
+        batchsize = ab_start
     else:
         batchsize = cliargs['batchsize']
     if cliargs['verbose'] or cliargs['debug']:
@@ -1402,11 +1411,11 @@ def hotdirs():
             batchsize_prev = batchsize
             if cliargs['adaptivebatch']:
                 if len(q) == 0:
-                    if (batchsize - 10) >= adaptivebatch_startsize:
-                        batchsize = batchsize - 10
+                    if (batchsize - ab_step) >= ab_start:
+                        batchsize = batchsize - ab_step
                 elif len(q) > 0:
-                    if (batchsize + 10) <= adaptivebatch_maxsize:
-                        batchsize = batchsize + 10
+                    if (batchsize + ab_step) <= ab_max:
+                        batchsize = batchsize + ab_step
                 cliargs['batchsize'] = batchsize
                 if cliargs['verbose'] or cliargs['debug']:
                     if batchsize_prev != batchsize:
@@ -1481,6 +1490,11 @@ def tune_es_for_crawl(defaults=False):
 
 # load config file into config dictionary
 config = load_config()
+
+# set adaptive batch sizes from config
+ab_start = config['adaptivebatch_startsize']
+ab_max = config['adaptivebatch_maxsize']
+ab_step = config['adaptivebatch_step']
 
 # create Elasticsearch connection
 es = elasticsearch_connect(config)

@@ -18,10 +18,6 @@ files = .*,Thumbs.db,.DS_Store,._.DS_Store,.localized,desktop.ini
 ;files = [{"name": [], "name_exclude": [], "ext": ["tmp*", "TMP*", "temp*", "TEMP*", "cache*", "CACHE*"], "path": ["*/Application Support/*", "*/Containers/*"], "path_exclude": [], "mtime": 90, "atime": 0, "ctime": 90, "tag": "delete", "tag_custom": "autotag"}]
 ;dirs = [{"name": ["*tmp*", "*TMP*", "*temp*", "*TEMP*", "*Temp*", "*cache*", "*CACHE*", "*Cache*"], "name_exclude": ["*templates*", "*Templates*"], "path": ["*/Application Support/*", "*/Containers/*"], "path_exclude": [], "mtime": 90, "atime": 0, "ctime": 90, "tag": "delete", "tag_custom": "autotag"}]
 
-[treewalk]
-; number of threads for tree walking
-threads = 40
-
 [elasticsearch]
 ; uncomment the below three lines if you are using AWS ES
 ;aws = False
@@ -65,6 +61,15 @@ port = 6379
 ; used for -I index2 when comparing directory times to get metadata from index2 instead of off disk
 ; should be greater than the frequency at which you creating new indices for same rootdir paths
 dirtimesttl = 604800
+
+[adaptivebatch]
+; adaptive batch settings when using -a (intelligent crawling)
+; batchsize (numbers of dirs) to start at
+startsize = 50
+; maximum size of batch
+maxsize = 500
+; when adjusting batch size use this for +/- (increase when queues is > 0, decrease when 0)
+stepsize = 10
 
 [workerbot]
 ; enable bot logs (True or False), bot logs will slow down crawl, use for debugging only
