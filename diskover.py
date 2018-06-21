@@ -290,10 +290,6 @@ def load_config():
     except ConfigParser.NoOptionError:
         configsettings['botlogfiledir'] = "/tmp"
     try:
-        configsettings['botmultithreadbulkadd'] = config.get('workerbot', 'multithreadbulkadd')
-    except ConfigParser.NoOptionError:
-        configsettings['botmultithreadbulkadd'] = "True"
-    try:
         configsettings['listener_host'] = \
             config.get('socketlistener', 'host')
     except ConfigParser.NoOptionError:
@@ -659,7 +655,7 @@ def index_create(indexname):
     time.sleep(.5)
 
 
-def index_bulk_add(es, doclist, doctype, config, cliargs):
+def index_bulk_add(es, doclist, config, cliargs):
     """This is the es index bulk add function.
     It bulk adds/updates/removes using file/directory
     meta data lists from worker's crawl results.
@@ -672,8 +668,7 @@ def index_bulk_add(es, doclist, doctype, config, cliargs):
         es.cluster.health(wait_for_status='yellow',
                           request_timeout=config['es_timeout'])
     # bulk load data to Elasticsearch index
-    helpers.bulk(es, doclist, index=cliargs['index'], doc_type=doctype,
-                 chunk_size=config['es_chunksize'],
+    helpers.bulk(es, doclist, index=cliargs['index'], chunk_size=config['es_chunksize'],
                  request_timeout=config['es_timeout'])
 
 
@@ -757,7 +752,7 @@ def index_delete_path(path, cliargs, logger, reindex_dict, recursive=False):
     if len(file_delete_list) > 0:
         # bulk delete files in es
         logger.info('Bulk deleting files in es index')
-        index_bulk_add(es, file_delete_list, 'file', config, cliargs)
+        index_bulk_add(es, file_delete_list, config, cliargs)
 
     # directory doc search
     if recursive:
@@ -818,7 +813,7 @@ def index_delete_path(path, cliargs, logger, reindex_dict, recursive=False):
     if len(dir_delete_list) > 0:
         # bulk delete directories in es
         logger.info('Bulk deleting directories in es index')
-        index_bulk_add(es, dir_delete_list, 'directory', config, cliargs)
+        index_bulk_add(es, dir_delete_list, config, cliargs)
 
     return reindex_dict
 
@@ -1364,16 +1359,15 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
                 if worker._state == "busy":
                     workers_busy = True
                     break
-            q_crawl_len = len(q_crawl)
-            q_scrape_len = len(q_scrape)
+            q_len = len(q_crawl) + len(q_scrape) + len(q_bulkadd) + len(q_calc)
             if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
                 try:
-                    bar.update(q_crawl_len + q_scrape_len)
+                    bar.update(q_len)
                 except ZeroDivisionError:
                     bar.update(0)
                 except ValueError:
                     bar.update(0)
-            if (q_crawl_len + q_scrape_len) == 0 and workers_busy == False:
+            if q_len == 0 and workers_busy == False:
                 break
             time.sleep(.5)
     except KeyboardInterrupt:

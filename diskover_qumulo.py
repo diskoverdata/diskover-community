@@ -274,7 +274,8 @@ def qumulo_get_dir_meta(worker_name, path, cliargs, reindex_dict, redis_conn):
         "change_percent_filesize": "",
         "change_percent_items": "",
         "change_percent_items_files": "",
-        "change_percent_items_subdirs": ""
+        "change_percent_items_subdirs": "",
+        "_type": "directory"
     }
 
     # check plugins for adding extra meta data to dirmeta_dict
@@ -408,7 +409,8 @@ def qumulo_get_file_meta(worker_name, path, cliargs, reindex_dict):
         "tag_custom": "",
         "dupe_md5": "",
         "indexing_date": indextime_utc,
-        "worker_name": worker_name
+        "worker_name": worker_name,
+        "_type": "file"
     }
 
     # check plugins for adding extra meta data to filemeta_dict
