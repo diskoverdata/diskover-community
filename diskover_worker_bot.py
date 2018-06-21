@@ -866,20 +866,24 @@ def es_bulk_adder(worker_name, dirlist, filelist, crawltimelist, cliargs):
             })
             totalcrawltime += item[1]
         if multithreaded:
-            t = threading.Thread(target=diskover.index_bulk_add, args=(es, crawlstats, 'crawlstat', diskover.config, cliargs,))
+            t = threading.Thread(target=diskover.index_bulk_add,
+                                 args=(es, crawlstats, 'crawlstat', diskover.config, cliargs,))
             threads.append(t)
             t.start()
         else:
             diskover.index_bulk_add(es, crawlstats, 'crawlstat', diskover.config, cliargs)
-        data = {"worker_name": worker_name, "dir_count": len(dirlist),
-                "file_count": len(filelist), "bulk_time": round(time.time() - starttime, 10),
-                "crawl_time": round(totalcrawltime, 10),
-                "indexing_date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")}
-        es.index(index=cliargs['index'], doc_type='worker', body=data)
 
     if multithreaded:
         for t in threads:
             t.join()
+
+    if not cliargs['reindex'] and not cliargs['reindexrecurs'] and not cliargs['crawlbot']:
+        data = {"worker_name": worker_name, "dir_count": len(dirlist),
+                "file_count": len(filelist), "bulk_time": round(time.time() - starttime, 10),
+                "crawl_time": round(totalcrawltime, 10),
+                "indexing_date": datenow}
+        es.index(index=cliargs['index'], doc_type='worker', body=data)
+
     elapsed_time = round(time.time() - starttime, 3)
     bot_logger.info('*** FINISHED BULK ADDING, Elapsed Time: ' + str(elapsed_time))
 
