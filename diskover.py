@@ -290,6 +290,10 @@ def load_config():
     except ConfigParser.NoOptionError:
         configsettings['botlogfiledir'] = "/tmp"
     try:
+        configsettings['botmultithreadbulkadd'] = config.get('workerbot', 'multithreadbulkadd')
+    except ConfigParser.NoOptionError:
+        configsettings['botmultithreadbulkadd'] = "True"
+    try:
         configsettings['listener_host'] = \
             config.get('socketlistener', 'host')
     except ConfigParser.NoOptionError:
@@ -966,18 +970,6 @@ def add_crawl_stats(es, index, path, crawltime, worker_name=None):
         "indexing_date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
     }
     es.index(index=index, doc_type='crawlstat', body=data)
-
-
-def add_crawl_stats_bulk(es, crawltimelist, worker_name, config, cliargs):
-    crawlstats = []
-    for item in crawltimelist:
-        crawlstats.append({
-            "path": item[1],
-            "worker_name": worker_name,
-            "crawl_time": round(item[2], 10),
-            "indexing_date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
-        })
-    index_bulk_add(es, crawlstats, 'crawlstat', config, cliargs)
 
 
 def dir_excluded(path, config, verbose):

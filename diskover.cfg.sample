@@ -79,6 +79,8 @@ botlogs = False
 ; log file directory to store worker logs
 ; log files are named diskover_bot_worker_<workername>_<time>_log
 logfiledir = /tmp
+; multithreaded es bulk add (to enable set to True, to disable set to False)
+multithreadbulkadd = True
 
 [paths]
 ; used by diskover socket server
