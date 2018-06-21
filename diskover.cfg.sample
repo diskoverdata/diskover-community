@@ -57,9 +57,11 @@ translogsize = 1gb
 host = 127.0.0.1
 port = 6379
 ;password =
-; how long directory keys lives in Redis (seconds)
+; cache directory times in Redis
 ; used for -I index2 when comparing directory times to get metadata from index2 instead of off disk
-; should be greater than the frequency at which you creating new indices for same rootdir paths
+; set to True to cache dir times or False to turn off (default False)
+cachedirtimes = False
+; how long in seconds directory keys lives in Redis (default 1 day)
 dirtimesttl = 604800
 
 [adaptivebatch]

@@ -27,6 +27,7 @@ import logging
 import re
 import base64
 
+
 # cache uid/gid names
 uids = []
 gids = []
@@ -110,12 +111,12 @@ def treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict):
             batch.append((root, files))
             batch_len = len(batch)
             if batch_len >= batchsize:
-                diskover.q.enqueue(scrape_tree_meta,
+                diskover.q_scrape.enqueue(scrape_tree_meta,
                           args=(batch, cliargs, reindex_dict,))
                 del batch[:]
                 batchsize_prev = batchsize
                 if cliargs['adaptivebatch']:
-                    q_len = len(diskover.q)
+                    q_len = len(diskover.q_scrape)
                     if q_len == 0:
                         if (batchsize - diskover.ab_step) >= diskover.ab_start:
                             batchsize = batchsize - diskover.ab_step
@@ -139,7 +140,7 @@ def treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict):
             del files[:]
 
     # add any remaining in batch to queue
-    diskover.q.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,))
+    diskover.q_scrape.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,))
 
 
 def auto_tag(metadict, type, mtime, atime, ctime):
@@ -573,8 +574,9 @@ def get_dir_meta(path, cliargs, reindex_dict):
         return None
 
     # cache directory times in Redis, encode path (key) using base64
-    redis_conn.set(base64.encodestring(path.encode('utf-8', errors='ignore')), mtime_unix + ctime_unix,
-                   ex=diskover.config['redis_dirtimesttl'])
+    if diskover.config['redis_cachedirtimes'] == 'True' or diskover.config['redis_cachedirtimes'] == 'true':
+        redis_conn.set(base64.encodestring(path.encode('utf-8', errors='ignore')), mtime_unix + ctime_unix,
+                       ex=diskover.config['redis_dirtimesttl'])
 
     return dirmeta_dict
 
@@ -938,13 +940,13 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
                 tree.append(('directory', dir_source))
                 tree.append(('crawltime', root_path, (time.time() - starttime)))
         else:  # get meta off disk since times different in Redis than on disk
-            for file in files:
-                if cliargs['qumulo']:
-                    fmeta = diskover_qumulo.qumulo_get_file_meta(file, cliargs, reindex_dict)
-                else:
-                    fmeta = get_file_meta(os.path.join(root, file), cliargs, reindex_dict)
-                if fmeta:
-                    tree.append(('file', fmeta))
+            #for file in files:
+                #if cliargs['qumulo']:
+                #    fmeta = diskover_qumulo.qumulo_get_file_meta(file, cliargs, reindex_dict)
+                #else:
+                    #fmeta = get_file_meta(os.path.join(root, file), cliargs, reindex_dict)
+                #if fmeta:
+                #    tree.append(('file', fmeta))
             if dmeta:
                 tree.append(('directory', dmeta))
                 tree.append(('crawltime', root_path, (time.time() - starttime)))
@@ -1149,7 +1151,7 @@ if __name__ == '__main__':
     cliargs_bot = vars(parse_cli_args())
 
     # Redis queue names
-    listen = ['diskover_crawl']
+    listen = ['diskover', 'diskover_crawl', 'diskover_scrapemeta', 'diskover_calcdir']
 
     print("""\033[31m
 

@@ -262,6 +262,10 @@ def load_config():
     except ConfigParser.NoOptionError:
         configsettings['redis_password'] = ""
     try:
+        configsettings['redis_cachedirtimes'] = config.get('redis', 'cachedirtimes')
+    except ConfigParser.NoOptionError:
+        configsettings['redis_cachedirtimes'] = "False"
+    try:
         configsettings['redis_dirtimesttl'] = int(config.get('redis', 'dirtimesttl'))
     except ConfigParser.NoOptionError:
         configsettings['redis_dirtimesttl'] = 604800
@@ -1247,7 +1251,7 @@ def calc_dir_sizes(cliargs, logger, path=None):
     for d in dirlist:
         dirbatch.append(d)
         if len(dirbatch) >= batchsize:
-            q.enqueue(diskover_worker_bot.calc_dir_size, args=(dirbatch, cliargs,))
+            q_calc.enqueue(diskover_worker_bot.calc_dir_size, args=(dirbatch, cliargs,))
             jobcount += 1
             del dirbatch[:]
             batchsize_prev = batchsize
@@ -1264,7 +1268,7 @@ def calc_dir_sizes(cliargs, logger, path=None):
                         logger.info('Batch size: %s' % batchsize)
 
     # add any remaining in batch to queue
-    q.enqueue(diskover_worker_bot.calc_dir_size, args=(dirbatch, cliargs,))
+    q_calc.enqueue(diskover_worker_bot.calc_dir_size, args=(dirbatch, cliargs,))
     jobcount += 1
 
     # wait for queue to be empty and update progress bar
@@ -1275,7 +1279,7 @@ def calc_dir_sizes(cliargs, logger, path=None):
             if worker._state == "busy":
                 workers_busy = True
                 break
-        q_len = len(q)
+        q_len = len(q_calc)
         if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
             try:
                 percent = int("{0:.0f}".format(100 * ((jobcount - q_len) / float(jobcount))))
@@ -1344,9 +1348,9 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
             # enqueue rootdir files
             root = diskover_qumulo.qumulo_get_file_attr(path, qumulo_ip, qumulo_ses)
             for d_path in dirs:
-                q.enqueue(diskover_qumulo.qumulo_treewalk,
+                q_crawl.enqueue(diskover_qumulo.qumulo_treewalk,
                           args=(d_path, qumulo_ip, qumulo_ses, num_sep, level, batchsize, cliargs, reindex_dict,))
-            q.enqueue(diskover_worker_bot.scrape_tree_meta,
+            q_scrape.enqueue(diskover_worker_bot.scrape_tree_meta,
                       args=([(root, files)], cliargs, reindex_dict,))
         else:  # regular crawl using scandir/walk
             root_files = []
@@ -1354,10 +1358,10 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
                 if entry.is_file(follow_symlinks=False):
                     root_files.append(entry.name)
                 elif entry.is_dir(follow_symlinks=False):
-                    q.enqueue(diskover_worker_bot.treewalk,
+                    q_crawl.enqueue(diskover_worker_bot.treewalk,
                               args=(entry.path, num_sep, level, batchsize, cliargs, reindex_dict,))
             # enqueue rootdir files
-            q.enqueue(diskover_worker_bot.scrape_tree_meta,
+            q_scrape.enqueue(diskover_worker_bot.scrape_tree_meta,
                       args=([(path, root_files)], cliargs, reindex_dict,))
 
         # wait for queue to be empty and update progress bar
@@ -1368,15 +1372,16 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
                 if worker._state == "busy":
                     workers_busy = True
                     break
-            q_len = len(q)
+            q_crawl_len = len(q_crawl)
+            q_scrape_len = len(q_scrape)
             if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
                 try:
-                    bar.update(q_len)
+                    bar.update(q_crawl_len + q_scrape_len)
                 except ZeroDivisionError:
                     bar.update(0)
                 except ValueError:
                     bar.update(0)
-            if q_len == 0 and workers_busy == False:
+            if (q_crawl_len + q_scrape_len) == 0 and workers_busy == False:
                 break
             time.sleep(.5)
     except KeyboardInterrupt:
@@ -1504,10 +1509,13 @@ redis_conn = Redis(host=config['redis_host'], port=config['redis_port'],
                    password=config['redis_password'])
 
 # Redis queue names
-listen = ['diskover_crawl']
+listen = ['diskover', 'diskover_crawl', 'diskover_scrapemeta', 'diskover_calcdir']
 
 # set up Redis q
 q = Queue(listen[0], connection=redis_conn, default_timeout=86400)
+q_crawl = Queue(listen[1], connection=redis_conn, default_timeout=86400)
+q_scrape = Queue(listen[2], connection=redis_conn, default_timeout=86400)
+q_calc = Queue(listen[3], connection=redis_conn, default_timeout=86400)
 
 # load any available plugins
 plugins = load_plugins()

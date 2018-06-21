@@ -16,6 +16,8 @@
 - additional characters to escape_chars function
 - --maxdcdepth to cli args - maximum depth to calculate directory sizes/items (default 10)
 - autobatch section in diskover.cfg.sample for setting auto batch options (when using -a) (copy to your diskover.cfg)
+- separate queues diskover, diskover_crawl, diskover_scrapemeta, diskover_calcdir
+- cachedirtimes setting in diskover.cfg redis section - for enabling/disabling cacheing directory times in Redis (used for -I index2 cli arg), default is False (don't cache)
 ### changed
 - directory paths are hashed using base64 encode when storing in redis for cacheing directory times (times are used when crawling with -I)
 - moved autotag code after plugin code when setting file/directory doc meta data fields
@@ -24,6 +26,8 @@
 - threads are no longer used for tree walking, each directory at rootdir is enqueued to diskover worker bots to crawl down tree
 - improved treewalk and qumulo_treewalk functions
 - set default for -b (batchsize) to 50 (prev was 25) (using -a usually results in faster crawl times, overrides -b)
+- different job types go into different queues (diskover, diskover_crawl, diskover_scrapemeta, diskover_calcdir)
+- dir times are no longer cached in Redis by default (settings in diskover.cfg.sample, copy to your diskover.cfg)
 ### fixed
 - bugs with autotagging
 - crawlbot continuous scanner (-B) strack trace error (logger)
