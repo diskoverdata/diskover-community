@@ -122,7 +122,7 @@ $ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl -m 90 -s 102
 Import Amazon S3 Inventory file(s) (gzipped csv) with:
 
 ```sh
-$ python /path/to/diskover.py -i diskover-s3-indexname -a --s3 /dir/file1.csv.gz /dir/file2.csv.gz
+$ python /path/to/diskover.py -i diskover-s3-indexname --s3 /dir/file1.csv.gz /dir/file2.csv.gz
 ```
 
 ## OVA image file (for vmware, etc)
