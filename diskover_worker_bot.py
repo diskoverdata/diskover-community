@@ -940,13 +940,13 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
                 tree.append(('directory', dir_source))
                 tree.append(('crawltime', root_path, (time.time() - starttime)))
         else:  # get meta off disk since times different in Redis than on disk
-            #for file in files:
-                #if cliargs['qumulo']:
-                #    fmeta = diskover_qumulo.qumulo_get_file_meta(file, cliargs, reindex_dict)
-                #else:
-                    #fmeta = get_file_meta(os.path.join(root, file), cliargs, reindex_dict)
-                #if fmeta:
-                #    tree.append(('file', fmeta))
+            for file in files:
+                if cliargs['qumulo']:
+                    fmeta = diskover_qumulo.qumulo_get_file_meta(file, cliargs, reindex_dict)
+                else:
+                    fmeta = get_file_meta(os.path.join(root, file), cliargs, reindex_dict)
+                if fmeta:
+                    tree.append(('file', fmeta))
             if dmeta:
                 tree.append(('directory', dmeta))
                 tree.append(('crawltime', root_path, (time.time() - starttime)))
