@@ -49,6 +49,10 @@ def parse_cli_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-b", "--burst", action="store_true",
                         help="Burst mode (worker will quit after all work is done)")
+    parser.add_argument("-q", "--queue", metavar="QUEUE", nargs="+", default=None,
+                        help="Queue worker bot should listen on \
+                        (queues: diskover, diskover_crawl, diskover_scrapemeta, "
+                             "diskover_calcdir, diskover_bulkadd) (default all)")
     args = parser.parse_args()
     return args
 
@@ -443,7 +447,7 @@ def auto_tag_time_check(pattern, mtime, atime, ctime):
     return timepass
 
 
-def get_dir_meta(path, cliargs, reindex_dict):
+def get_dir_meta(worker_name, path, cliargs, reindex_dict):
     """This is the get directory meta data function.
     It gets directory metadata and returns dir meta dict.
     It checks if meta data is in Redis and compares times
@@ -542,7 +546,7 @@ def get_dir_meta(path, cliargs, reindex_dict):
             "tag": "",
             "tag_custom": "",
             "indexing_date": indextime_utc,
-            "worker_name": get_worker_name(),
+            "worker_name": worker_name,
             "change_percent_filesize": "",
             "change_percent_items": "",
             "change_percent_items_files": "",
@@ -581,7 +585,7 @@ def get_dir_meta(path, cliargs, reindex_dict):
     return dirmeta_dict
 
 
-def get_file_meta(path, cliargs, reindex_dict):
+def get_file_meta(worker_name, path, cliargs, reindex_dict):
     """This is the get file meta data function.
     It scrapes file meta and ignores files smaller
     than minsize Bytes, newer than mtime
@@ -698,7 +702,7 @@ def get_file_meta(path, cliargs, reindex_dict):
             "tag_custom": "",
             "dupe_md5": "",
             "indexing_date": indextime_utc,
-            "worker_name": get_worker_name()
+            "worker_name": worker_name
         }
 
         # check plugins for adding extra meta data to filemeta_dict
@@ -829,8 +833,7 @@ def calc_dir_size(dirlist, cliargs):
     bot_logger.info('*** FINISHED CALC DIR, Elapsed Time: ' + str(elapsed_time))
 
 
-def es_bulk_adder(result, cliargs):
-    worker_name = get_worker_name()
+def es_bulk_adder(worker_name, result, cliargs):
     starttime = time.time()
     dirlist = []
     filelist = []
@@ -906,6 +909,7 @@ def get_metadata(path, cliargs):
 
 def scrape_tree_meta(paths, cliargs, reindex_dict):
     jobstart = time.time()
+    worker = get_worker_name()
     tree = []
     for path in paths:
         starttime = time.time()
@@ -916,15 +920,14 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
                 root_path = root['path'].rstrip(os.path.sep)
             else:
                 root_path = root['path']
-            dmeta = diskover_qumulo.qumulo_get_dir_meta(root, cliargs, reindex_dict, redis_conn)
+            dmeta = diskover_qumulo.qumulo_get_dir_meta(worker, root, cliargs, reindex_dict, redis_conn)
         else:
             root_path = root
-            dmeta = get_dir_meta(root, cliargs, reindex_dict)
+            dmeta = get_dir_meta(worker, root, cliargs, reindex_dict)
         if dmeta == "sametimes":
             # fetch meta data for directory and all it's files (doc sources) from index2 since
             # directory times haven't changed
             dir_source, files_source = get_metadata(root_path, cliargs)
-            worker = get_worker_name()
             datenow = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
             for file_source in files_source:
                 # update indexed at time
@@ -942,9 +945,9 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
         else:  # get meta off disk since times different in Redis than on disk
             for file in files:
                 if cliargs['qumulo']:
-                    fmeta = diskover_qumulo.qumulo_get_file_meta(file, cliargs, reindex_dict)
+                    fmeta = diskover_qumulo.qumulo_get_file_meta(worker, file, cliargs, reindex_dict)
                 else:
-                    fmeta = get_file_meta(os.path.join(root, file), cliargs, reindex_dict)
+                    fmeta = get_file_meta(worker, os.path.join(root, file), cliargs, reindex_dict)
                 if fmeta:
                     tree.append(('file', fmeta))
             if dmeta:
@@ -952,7 +955,7 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
                 tree.append(('crawltime', root_path, (time.time() - starttime)))
 
     if len(tree) > 0:
-        es_bulk_adder(tree, cliargs)
+        diskover.q_bulkadd.enqueue(es_bulk_adder, args=(worker, tree, cliargs,))
 
     elapsed_time = round(time.time() - jobstart, 3)
     bot_logger.info('*** FINISHED JOB, Elapsed Time: ' + str(elapsed_time))
@@ -1151,7 +1154,10 @@ if __name__ == '__main__':
     cliargs_bot = vars(parse_cli_args())
 
     # Redis queue names
-    listen = ['diskover', 'diskover_crawl', 'diskover_scrapemeta', 'diskover_calcdir']
+    if cliargs_bot['queue'] is None:
+        listen = ['diskover', 'diskover_crawl', 'diskover_scrapemeta', 'diskover_bulkadd', 'diskover_calcdir']
+    else:
+        listen = cliargs_bot['queue']
 
     print("""\033[31m
 

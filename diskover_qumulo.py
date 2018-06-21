@@ -178,7 +178,7 @@ def qumulo_treewalk(path, ip, ses, num_sep, level, batchsize, cliargs, reindex_d
               args=(batch, cliargs, reindex_dict,))
 
 
-def qumulo_get_dir_meta(path, cliargs, reindex_dict, redis_conn):
+def qumulo_get_dir_meta(worker_name, path, cliargs, reindex_dict, redis_conn):
     if path['path'] != '/':
         fullpath = path['path'].rstrip(os.path.sep)
     else:
@@ -270,7 +270,7 @@ def qumulo_get_dir_meta(path, cliargs, reindex_dict, redis_conn):
         "tag": "",
         "tag_custom": "",
         "indexing_date": indextime_utc,
-        "worker_name": diskover_worker_bot.get_worker_name(),
+        "worker_name": worker_name,
         "change_percent_filesize": "",
         "change_percent_items": "",
         "change_percent_items_files": "",
@@ -299,13 +299,14 @@ def qumulo_get_dir_meta(path, cliargs, reindex_dict, redis_conn):
             break
 
     # cache directory times in Redis
-    redis_conn.set(fullpath.encode('utf-8', errors='ignore'), mtime_unix + ctime_unix,
-                   ex=diskover.config['redis_dirtimesttl'])
+    if diskover.config['redis_cachedirtimes'] == 'True' or diskover.config['redis_cachedirtimes'] == 'true':
+        redis_conn.set(base64.encodestring(path.encode('utf-8', errors='ignore')), mtime_unix + ctime_unix,
+                       ex=diskover.config['redis_dirtimesttl'])
 
     return dirmeta_dict
 
 
-def qumulo_get_file_meta(path, cliargs, reindex_dict):
+def qumulo_get_file_meta(worker_name, path, cliargs, reindex_dict):
     filename = path['name']
 
     # check if file is in exluded_files list
@@ -407,7 +408,7 @@ def qumulo_get_file_meta(path, cliargs, reindex_dict):
         "tag_custom": "",
         "dupe_md5": "",
         "indexing_date": indextime_utc,
-        "worker_name": diskover_worker_bot.get_worker_name()
+        "worker_name": worker_name
     }
 
     # check plugins for adding extra meta data to filemeta_dict

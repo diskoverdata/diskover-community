@@ -23,26 +23,31 @@ WORKERBOTS=8
 BURST=FALSE
 # file to store bot pids
 BOTPIDS=/tmp/diskover_bot_pids
+# queue that worker bots should listen on
+# queues: diskover, diskover_crawl, diskover_scrapemeta, diskover_bulkadd, diskover_calcdir
+# default ALL (listen on all queues)
+QUEUE=ALL
 
 ###########################################################
 
 
-VERSION="1.3"
+VERSION="1.4"
 
 function printhelp {
     echo "Usage: $(basename $0) [OPTION] [ROOTDIR]"
     echo
     echo "Options:"
     echo
-    echo "  -w n    number of worker bots to start (default $WORKERBOTS)"
-    echo "  -b      burst mode (bots quit when no more jobs)"
-    echo "  -s      show all bots running"
-    echo "  -k      kill all bots"
-    echo "  -r      restart all running bots"
-    echo "  -R      remove any stuck/idle worker bot connections in Redis"
-    echo "  -f      force remove all worker bot connections in Redis"
-    echo "  -V      displays version and exits"
-    echo "  -h      displays this help message and exits"
+    echo "  -w n          number of worker bots to start (default $WORKERBOTS)"
+    echo "  -q queue      which queue bots should listen on (default ALL)"
+    echo "  -b            burst mode (bots quit when no more jobs)"
+    echo "  -s            show all bots running"
+    echo "  -k            kill all bots"
+    echo "  -r            restart all running bots"
+    echo "  -R            remove any stuck/idle worker bot connections in Redis"
+    echo "  -f            force remove all worker bot connections in Redis"
+    echo "  -V            displays version and exits"
+    echo "  -h            displays this help message and exits"
     echo
     echo "diskover worker bot process launcher v$VERSION"
     echo
@@ -55,10 +60,11 @@ RESTARTBOTS=FALSE
 REMOVEBOTS=FALSE
 FORCEREMOVEBOTS=FALSE
 SHOWBOTS=FALSE
-while getopts :h?w:bskrRfV opt; do
+while getopts :h?w:q:bskrRfV opt; do
     case "$opt" in
     h) printhelp; exit 0;;
     w) WORKERBOTS=$OPTARG;;
+    q) QUEUE=$OPTARG;;
     b) BURST=TRUE;;
     s) SHOWBOTS=TRUE;;
     k) KILLBOTS=TRUE;;
@@ -91,6 +97,9 @@ function startbots {
     ARGS=""
     if [ $BURST == TRUE ]; then
         ARGS+="-b"
+    fi
+    if [ $QUEUE != "ALL" ]; then
+        ARGS+="-q $QUEUE"
     fi
     for (( i = 1; i <= $WORKERBOTS; i++ )); do
         $PYTHON $DISKOVERBOT $ARGS > /dev/null 2>&1 &

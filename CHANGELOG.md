@@ -18,6 +18,8 @@
 - autobatch section in diskover.cfg.sample for setting auto batch options (when using -a) (copy to your diskover.cfg)
 - separate queues diskover, diskover_crawl, diskover_scrapemeta, diskover_calcdir
 - cachedirtimes setting in diskover.cfg redis section - for enabling/disabling cacheing directory times in Redis (used for -I index2 cli arg), default is False (don't cache)
+- diskover_worker_bot.py cli arg -q --queue for setting queue that the worker listens on and processes jobs for (default all queues)
+- v1.4 of diskover-bot-launcher.sh - added -q option for setting which queue worker bots should listen on (default all queues)
 ### changed
 - directory paths are hashed using base64 encode when storing in redis for cacheing directory times (times are used when crawling with -I)
 - moved autotag code after plugin code when setting file/directory doc meta data fields

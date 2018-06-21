@@ -1509,13 +1509,14 @@ redis_conn = Redis(host=config['redis_host'], port=config['redis_port'],
                    password=config['redis_password'])
 
 # Redis queue names
-listen = ['diskover', 'diskover_crawl', 'diskover_scrapemeta', 'diskover_calcdir']
+listen = ['diskover', 'diskover_crawl', 'diskover_scrapemeta', 'diskover_bulkadd', 'diskover_calcdir']
 
 # set up Redis q
 q = Queue(listen[0], connection=redis_conn, default_timeout=86400)
 q_crawl = Queue(listen[1], connection=redis_conn, default_timeout=86400)
 q_scrape = Queue(listen[2], connection=redis_conn, default_timeout=86400)
-q_calc = Queue(listen[3], connection=redis_conn, default_timeout=86400)
+q_bulkadd = Queue(listen[3], connection=redis_conn, default_timeout=86400)
+q_calc = Queue(listen[4], connection=redis_conn, default_timeout=86400)
 
 # load any available plugins
 plugins = load_plugins()
