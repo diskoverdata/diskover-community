@@ -29,7 +29,9 @@ def process_s3_inventory(inventory_file, cliargs):
     into diskover index.
     """
     jobstart = time.time()
-    tree = []
+    tree_dirs = []
+    tree_files = []
+    tree_crawltimes = []
     workername = diskover_worker_bot.get_worker_name()
 
     with gzip.open(inventory_file, mode='rt') as f:
@@ -56,8 +58,15 @@ def process_s3_inventory(inventory_file, cliargs):
                 root_dict["change_percent_items"] = ""
                 root_dict["change_percent_items_files"] = ""
                 root_dict["change_percent_items_subdirs"] = ""
-                tree.append(('directory', root_dict))
-                tree.append(('crawltime', '/s3/' + row[0], 0))
+                root_dict["_type"] = "directory"
+                tree_dirs.append(root_dict)
+                # create fake crawltime entry
+                tree_crawltimes.append({
+                    "path": '/s3/' + row[0],
+                    "worker_name": workername,
+                    "crawl_time": 0,
+                    "indexing_date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f"),
+                    "_type": "crawlstat"})
             starttime = time.time()
             n = 2
             # S3 Inventory csv column headers
@@ -149,6 +158,7 @@ def process_s3_inventory(inventory_file, cliargs):
                 inventory_dict["change_percent_items"] = ""
                 inventory_dict["change_percent_items_files"] = ""
                 inventory_dict["change_percent_items_subdirs"] = ""
+                inventory_dict["_type"] = "directory"
 
                 # add any autotags to inventory_dict
                 if cliargs['autotag'] and len(diskover.config['autotag_dirs']) > 0:
@@ -164,8 +174,13 @@ def process_s3_inventory(inventory_file, cliargs):
                     except KeyError:
                         pass
 
-                tree.append(('directory', inventory_dict))
-                tree.append(('crawltime', path, (time.time() - starttime)))
+                tree_dirs.append(inventory_dict)
+                tree_crawltimes.append({
+                    "path": path,
+                    "worker_name": workername,
+                    "crawl_time": time.time() - starttime,
+                    "indexing_date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f"),
+                    "_type": "crawlstat"})
 
             else:  # file
                 # Convert time in days (mtime cli arg) to seconds
@@ -189,6 +204,7 @@ def process_s3_inventory(inventory_file, cliargs):
                 inventory_dict["dupe_md5"] = ""
                 inventory_dict["indexing_date"] = indextime_utc
                 inventory_dict["worker_name"] = workername
+                inventory_dict["_type"] = "file"
 
                 # check plugins for adding extra meta data to inventory_dict
                 for plugin in diskover.plugins:
@@ -204,15 +220,17 @@ def process_s3_inventory(inventory_file, cliargs):
                 if cliargs['autotag'] and len(diskover.config['autotag_files']) > 0:
                     diskover_worker_bot.auto_tag(inventory_dict, 'file', mtime_unix, None, None)
 
-                tree.append(('file', inventory_dict))
+                tree_files.append(inventory_dict)
 
-            if len(tree) >= diskover.config['es_chunksize']:
-                diskover_worker_bot.es_bulk_adder(tree, cliargs)
-                del tree[:]
+            if (len(tree_dirs) + len(tree_files) + len(tree_crawltimes)) >= diskover.config['es_chunksize']:
+                diskover_worker_bot.es_bulk_adder(workername, (tree_dirs, tree_files, tree_crawltimes), cliargs, 0)
+                del tree_dirs[:]
+                del tree_files[:]
+                del tree_crawltimes[:]
             x = x + 1
 
-    if len(tree) > 0:
-        diskover_worker_bot.es_bulk_adder(tree, cliargs)
+    if (len(tree_dirs) + len(tree_files) + len(tree_crawltimes)) > 0:
+        diskover_worker_bot.es_bulk_adder(workername, (tree_dirs, tree_files, tree_crawltimes), cliargs, 0)
     elapsed_time = round(time.time() - jobstart, 3)
     diskover_worker_bot.bot_logger.info('*** FINISHED JOB, Elapsed Time: ' + str(elapsed_time))
 

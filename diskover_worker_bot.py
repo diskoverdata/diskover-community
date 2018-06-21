@@ -745,7 +745,7 @@ def calc_dir_size(dirlist, cliargs):
     jobstart = time.time()
     bot_logger.info('*** Calculating directory sizes...')
 
-    dir_id_list = []
+    doclist = []
     for path in dirlist:
         totalsize = 0
         totalitems = 1  # 1 for itself
@@ -828,23 +828,28 @@ def calc_dir_size(dirlist, cliargs):
                     'items_files': totalitems_files,
                     'items_subdirs': totalitems_subdirs}
         }
-        dir_id_list.append(d)
+        doclist.append(d)
 
-    diskover.index_bulk_add(es, dir_id_list, diskover.config, cliargs)
+    diskover.index_bulk_add(es, doclist, diskover.config, cliargs)
 
     elapsed_time = round(time.time() - jobstart, 3)
     bot_logger.info('*** FINISHED CALC DIR, Elapsed Time: ' + str(elapsed_time))
 
 
-def es_bulk_adder(worker_name, dirlist, filelist, crawltimelist, totalcrawltime, cliargs):
+def es_bulk_adder(worker_name, docs, cliargs, totalcrawltime=None):
     starttime = time.time()
+    doclist = []
 
     bot_logger.info('*** Bulk adding to ES index...')
 
-    doclist = dirlist + filelist
-
-    if not cliargs['reindex'] and not cliargs['reindexrecurs'] and not cliargs['crawlbot']:
-        doclist += crawltimelist
+    try:
+        dirlist, filelist, crawltimelist = docs
+        doclist += dirlist
+        doclist += filelist
+        if not cliargs['reindex'] and not cliargs['reindexrecurs'] and not cliargs['crawlbot']:
+            doclist += crawltimelist
+    except KeyError:
+        doclist = docs
 
     diskover.index_bulk_add(es, doclist, diskover.config, cliargs)
 
@@ -940,8 +945,15 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
                 dir_source['indexing_date'] = datenow
                 # update worker name
                 dir_source['worker_name'] = worker
-                tree_dirs.append(('directory', dir_source))
-                tree_crawltimes.append(('crawltime', root_path, (time.time() - starttime)))
+                tree_dirs.append(dir_source)
+                elapsed = time.time() - starttime
+                tree_crawltimes.append({
+                        "path": root_path,
+                        "worker_name": worker,
+                        "crawl_time": round(elapsed, 10),
+                        "indexing_date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f"),
+                        "_type": "crawlstat"})
+                totalcrawltime += elapsed
         else:  # get meta off disk since times different in Redis than on disk
             for file in files:
                 if cliargs['qumulo']:
@@ -962,8 +974,8 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
                 totalcrawltime += elapsed
 
     if len(tree_dirs) > 0 or len(tree_files) > 0:
-        diskover.q_bulkadd.enqueue(es_bulk_adder, args=(worker, tree_dirs, tree_files, tree_crawltimes,
-                                                        totalcrawltime, cliargs,))
+        diskover.q_bulkadd.enqueue(es_bulk_adder, args=(worker, (tree_dirs, tree_files, tree_crawltimes),
+                                                        cliargs, totalcrawltime,))
 
     elapsed_time = round(time.time() - jobstart, 3)
     bot_logger.info('*** FINISHED JOB, Elapsed Time: ' + str(elapsed_time))
@@ -1015,8 +1027,7 @@ def tag_copier(path, cliargs):
     """
     jobstart = time.time()
 
-    dir_id_list = []
-    file_id_list = []
+    doclist = []
 
     # doc search (matching path) in index for existing tags from index2
     # filename
@@ -1060,12 +1071,11 @@ def tag_copier(path, cliargs):
         'doc': {'tag': path[1], 'tag_custom': path[2]}
     }
     if path[3] is 'directory':
-        dir_id_list.append(d)
+        doclist.append(d)
     else:
-        file_id_list.append(d)
+        doclist.append(d)
 
-    diskover.index_bulk_add(es, dir_id_list, 'directory', diskover.config, cliargs)
-    diskover.index_bulk_add(es, file_id_list, 'file', diskover.config, cliargs)
+    diskover.index_bulk_add(es, doclist, diskover.config, cliargs)
 
     elapsed_time = round(time.time() - jobstart, 3)
     bot_logger.info('*** FINISHED JOB, Elapsed Time: ' + str(elapsed_time))
@@ -1079,6 +1089,7 @@ def calc_hot_dirs(dirlist, cliargs):
     Updates index's directory doc's change_percent fields.
     """
     jobstart = time.time()
+    doclist = []
     bot_logger.info('*** Calculating directory change percents...')
 
     dir_id_list = []
@@ -1146,9 +1157,9 @@ def calc_hot_dirs(dirlist, cliargs):
                     'change_percent_items_files': changepercent_items_files,
                     'change_percent_items_subdirs': changepercent_items_subdirs}
         }
-        dir_id_list.append(d)
+        doclist.append(d)
 
-    diskover.index_bulk_add(es, dir_id_list, 'directory', diskover.config, cliargs)
+    diskover.index_bulk_add(es, doclist, diskover.config, cliargs)
 
     elapsed_time = round(time.time() - jobstart, 3)
     bot_logger.info('*** FINISHED JOB, Elapsed Time: ' + str(elapsed_time))
