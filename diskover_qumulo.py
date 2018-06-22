@@ -159,10 +159,10 @@ def qumulo_treewalk(path, ip, ses, num_sep, level, batchsize, cliargs, reindex_d
                 batchsize_prev = batchsize
                 if cliargs['adaptivebatch']:
                     if len(diskover.q) == 0:
-                        if (batchsize - 10) >= diskover.adaptivebatch_startsize:
+                        if (batchsize - 10) >= diskover.ab_start:
                             batchsize = batchsize - 10
                     elif len(diskover.q) > 0:
-                        if (batchsize + 10) <= diskover.adaptivebatch_maxsize:
+                        if (batchsize + 10) <= diskover.ab_max:
                             batchsize = batchsize + 10
                     cliargs['batchsize'] = batchsize
                     if cliargs['verbose'] or cliargs['debug']:
