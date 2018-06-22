@@ -41,7 +41,7 @@ def index_dupes(hashgroup, cliargs):
     if len(file_id_list) > 0:
         if cliargs['verbose'] or cliargs['debug']:
             bot_logger.info('Bulk updating %s files in ES index' % len(file_id_list))
-        diskover.index_bulk_add(es, file_id_list, 'file', diskover.config, cliargs)
+        diskover.index_bulk_add(es, file_id_list, diskover.config, cliargs)
 
 
 def verify_dupes(hashgroup, cliargs):
