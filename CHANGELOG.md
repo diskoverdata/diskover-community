@@ -1,6 +1,6 @@
 # Diskover Change Log
 
-## [1.5.0-rc10] = 2018-06-21
+## [1.5.0-rc10] = 2018-06-22
 ### notice
 - Amazon S3 inventory support is beta, requires diskover-web >= v1.5.0-rc9
 - --s3 requires index named diskover-s3-indexname
@@ -21,16 +21,17 @@
 - diskover_worker_bot.py cli arg -q --queue for setting queue that the worker listens on and processes jobs for (default all queues)
 - v1.4 of diskover-bot-launcher.sh - added -q option for setting which queue worker bots should listen on (default all queues)
 - optimized es bulk adding in es_bulk_adder function
+
 ### changed
 - directory paths are hashed using base64 encode when storing in redis for cacheing directory times (times are used when crawling with -I)
 - moved autotag code after plugin code when setting file/directory doc meta data fields
 - set default for shards/replicas to 1/0 in diskover.cfg.sample (most users are just using single es node, if you are, you might want to set these)
 - directory size/items calculations at end of crawl are now limited by --maxdcdepth cli arg (default 10), previously was unlimited depth
-- threads are no longer used for tree walking, each directory at rootdir is enqueued to diskover worker bots to crawl down tree
 - improved treewalk and qumulo_treewalk functions
 - set default for -b (batchsize) to 50 (prev was 25) (using -a usually results in faster crawl times, overrides -b)
 - different job types go into different queues (diskover, diskover_crawl, diskover_scrapemeta, diskover_calcdir)
 - dir times are no longer cached in Redis by default (settings in diskover.cfg.sample, copy to your diskover.cfg)
+- threads for treewalking are now limited by threads setting in diskover.cfg treewalk section (copy from diskover.cfg.sample)
 ### fixed
 - bugs with autotagging
 - crawlbot continuous scanner (-B) strack trace error (logger)

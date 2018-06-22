@@ -64,6 +64,10 @@ cachedirtimes = False
 ; how long in seconds directory keys lives in Redis (default 1 day)
 dirtimesttl = 604800
 
+[treethreads]
+; number of threads to use for tree walking down directories in rootdir (cores x 2 might be a good start)
+threads = 8
+
 [adaptivebatch]
 ; adaptive batch settings when using -a (intelligent crawling)
 ; batchsize (numbers of dirs) to start at

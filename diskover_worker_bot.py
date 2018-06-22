@@ -838,20 +838,17 @@ def calc_dir_size(dirlist, cliargs):
 
 def es_bulk_adder(worker_name, docs, cliargs, totalcrawltime=None):
     starttime = time.time()
-    doclist = []
 
     bot_logger.info('*** Bulk adding to ES index...')
 
     try:
         dirlist, filelist, crawltimelist = docs
-        doclist += dirlist
-        doclist += filelist
+        diskover.index_bulk_add(es, dirlist, diskover.config, cliargs)
+        diskover.index_bulk_add(es, filelist, diskover.config, cliargs)
         if not cliargs['reindex'] and not cliargs['reindexrecurs'] and not cliargs['crawlbot']:
-            doclist += crawltimelist
-    except KeyError:
-        doclist = docs
-
-    diskover.index_bulk_add(es, doclist, diskover.config, cliargs)
+            diskover.index_bulk_add(es, crawltimelist, diskover.config, cliargs)
+    except ValueError:
+        diskover.index_bulk_add(es, docs, diskover.config, cliargs)
 
     if not cliargs['reindex'] and not cliargs['reindexrecurs'] and not cliargs['crawlbot']:
         data = {"worker_name": worker_name, "dir_count": len(dirlist),

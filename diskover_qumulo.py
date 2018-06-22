@@ -133,6 +133,13 @@ def qumulo_api_walk(top, ip, ses):
             yield entry
 
 
+def qumulo_tree_walker(ip, ses, num_sep, level, batchsize, cliargs, reindex_dict):
+    while True:
+        item = diskover.thread_q.get()
+        qumulo_treewalk(item, ip, ses, num_sep, level, batchsize, cliargs, reindex_dict)
+        diskover.thread_q.task_done()
+
+
 def qumulo_treewalk(path, ip, ses, num_sep, level, batchsize, cliargs, reindex_dict):
     batch = []
 
