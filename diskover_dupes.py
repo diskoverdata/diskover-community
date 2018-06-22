@@ -306,7 +306,7 @@ def dupes_finder(es, q, cliargs, logger):
             if worker._state == "busy":
                 workers_busy = True
                 break
-        q_len = len(diskover.q_crawl) + len(diskover.q_scrape) + len(diskover.q_bulkadd) + len(diskover.q_calc)
+        q_len = len(diskover.q)
         if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
             try:
                 bar.update(q_len)

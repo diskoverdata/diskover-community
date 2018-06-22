@@ -1232,7 +1232,7 @@ def calc_dir_sizes(cliargs, logger, path=None):
         dirlist = index_get_docs(cliargs, logger, path=path)
     else:
         dirlist = index_get_docs(cliargs, logger, sort=True, maxdepth=maxdepth)
-    logger.info('Getting diskover bots to calculate directory sizes (max depth %s)...' % maxdepth)
+    logger.info('Getting diskover bots to calculate directory sizes (maxdepth %s)...' % maxdepth)
     dirbatch = []
     if cliargs['adaptivebatch']:
         batchsize = ab_start
@@ -1253,10 +1253,10 @@ def calc_dir_sizes(cliargs, logger, path=None):
             del dirbatch[:]
             batchsize_prev = batchsize
             if cliargs['adaptivebatch']:
-                if len(q) == 0:
+                if len(q_calc) == 0:
                     if (batchsize - ab_step) >= ab_start:
                         batchsize = batchsize - ab_step
-                elif len(q) > 0:
+                elif len(q_calc) > 0:
                     if (batchsize + ab_step) <= ab_max:
                         batchsize = batchsize + ab_step
                 cliargs['batchsize'] = batchsize
@@ -1339,13 +1339,13 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
         # set current depth
         num_sep = path.count(os.path.sep)
 
+        logger.info("Using %s threads for tree walking" % config['treethreads'])
+
         if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
             bar = progress_bar('Crawling')
             bar.start()
         else:
             bar = None
-
-        logger.info("Using %s threads for tree walking" % config['treethreads'])
 
         threads = []
         # set up threads to parallel crawl directories at rootdir
@@ -1454,6 +1454,36 @@ def hotdirs():
     # add any remaining in batch to queue
     q.enqueue(diskover_worker_bot.calc_hot_dirs, args=(dirbatch, cliargs,))
 
+    if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+        bar = progress_bar('Checking')
+        bar.start()
+    else:
+        bar = None
+
+    # wait for queue to be empty and update progress bar
+    time.sleep(1)
+    while True:
+        workers_busy = False
+        workers = Worker.all(connection=redis_conn)
+        for worker in workers:
+            if worker._state == "busy":
+                workers_busy = True
+                break
+        q_len = len(q)
+        if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+            try:
+                bar.update(q_len)
+            except ZeroDivisionError:
+                bar.update(0)
+            except ValueError:
+                bar.update(0)
+        if q_len == 0 and workers_busy == False:
+            break
+        time.sleep(.5)
+
+    if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+        bar.finish()
+
 
 def wait_for_worker_bots(logger):
     """This is the wait for worker bots function.
@@ -1473,7 +1503,8 @@ def check_workers_running(logger):
         for worker in workers:
             if worker._state == "busy":
                 busyworkers.append(worker._name)
-        if len(busyworkers) == 0 and len(q) == 0:
+        q_len = len(q) + len(q_crawl) + len(q_scrape) + len(q_bulkadd) + len(q_calc)
+        if len(busyworkers) == 0 and q_len == 0:
             break
         del busyworkers[:]
         time.sleep(1)
@@ -1638,8 +1669,7 @@ if __name__ == "__main__":
         import diskover_worker_bot
         wait_for_worker_bots(logger)
         hotdirs()
-        logger.info('Directories have all been enqueued, calculating in background')
-        logger.info('Dispatcher is DONE! Sayonara!')
+        logger.info('DONE finding hotdirs! Sayonara!')
         sys.exit(0)
 
     # print plugins
