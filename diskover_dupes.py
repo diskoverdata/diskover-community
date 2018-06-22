@@ -16,6 +16,7 @@ import diskover_worker_bot
 import base64
 import hashlib
 import os
+import time
 
 # create Elasticsearch connection
 es = diskover.elasticsearch_connect(diskover.config)
@@ -157,8 +158,6 @@ def verify_dupes(hashgroup, cliargs):
                         hasher.update(buf)
                         buf = f.read(read_size)
                 md5 = hasher.hexdigest()
-                # update hashgroup's md5sum key
-                hashgroup['md5sum'] = md5
                 if cliargs['verbose'] or cliargs['debug']:
                     bot_logger.info('MD5: %s' % md5)
             except (IOError, OSError):
@@ -182,10 +181,14 @@ def verify_dupes(hashgroup, cliargs):
                 if hashgroup['files'][i]['filename'] == filename:
                     del hashgroup['files'][i]
                     break
+        else:
+            md5 = key
 
     if len(hashgroup['files']) >= 2:
         if cliargs['verbose'] or cliargs['debug']:
             bot_logger.info('Found %s dupes in hashgroup' % len(hashgroup['files']))
+        # update hashgroup's md5sum key
+        hashgroup['md5sum'] = md5
         return hashgroup
     else:
         return None
@@ -287,3 +290,33 @@ def dupes_finder(es, q, cliargs, logger):
                   args=(bucket['key'], cliargs,))
 
     logger.info('All file hashes have been enqueued')
+
+    if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+        bar = diskover.progress_bar('Checking')
+        bar.start()
+    else:
+        bar = None
+
+    # wait for queue to be empty and update progress bar
+    time.sleep(1)
+    while True:
+        workers_busy = False
+        workers = diskover.Worker.all(connection=diskover.redis_conn)
+        for worker in workers:
+            if worker._state == "busy":
+                workers_busy = True
+                break
+        q_len = len(diskover.q_crawl) + len(diskover.q_scrape) + len(diskover.q_bulkadd) + len(diskover.q_calc)
+        if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+            try:
+                bar.update(q_len)
+            except ZeroDivisionError:
+                bar.update(0)
+            except ValueError:
+                bar.update(0)
+        if q_len == 0 and workers_busy == False:
+            break
+        time.sleep(.5)
+
+    if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+        bar.finish()

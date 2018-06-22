@@ -1210,7 +1210,7 @@ def log_setup(cliargs):
 
 
 def progress_bar(event):
-    if event == 'Crawling':
+    if event == 'Crawling' or event == 'Checking':
         widgets = [progressbar.AnimatedMarker(), ' ', event + ' (Queue: ', progressbar.Counter(), ') ', progressbar.Timer()]
         bar = progressbar.ProgressBar(widgets=widgets, max_value=progressbar.UnknownLength)
     else:
@@ -1344,6 +1344,8 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
             bar.start()
         else:
             bar = None
+
+        logger.info("Using %s threads for tree walking" % config['treethreads'])
 
         threads = []
         # set up threads to parallel crawl directories at rootdir
@@ -1608,8 +1610,7 @@ if __name__ == "__main__":
         wait_for_worker_bots(logger)
         # Set up worker threads for duplicate file checker queue
         diskover_dupes.dupes_finder(es, q, cliargs, logger)
-        logger.info('Worker bots checking for dupes in background')
-        logger.info('Dispatcher is DONE! Sayonara!')
+        logger.info('DONE checking for dupes! Sayonara!')
         sys.exit(0)
 
     # copy tags from index2 to index if cli argument

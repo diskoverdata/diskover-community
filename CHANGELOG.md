@@ -35,6 +35,7 @@
 ### fixed
 - bugs with autotagging
 - crawlbot continuous scanner (-B) strack trace error (logger)
+- bugs with dupe finding (--finddupes)
 
 ## [1.5.0-rc9] = 2018-06-06
 ### notice
