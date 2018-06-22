@@ -100,6 +100,7 @@ def process_s3_inventory(inventory_file, cliargs):
             if path.endswith('/'):
                 isdir = True
                 path = path.rstrip('/')
+                fake_dirs.append(path)
             else:
                 isdir = False
                 # add any directories in path to fake dirs
@@ -117,7 +118,6 @@ def process_s3_inventory(inventory_file, cliargs):
                         prev_path = current_path
                         continue
                     tree_dirs.append(dir_dict)
-                    print(current_path)
                     # create fake crawltime entry
                     tree_crawltimes.append({
                         "path": current_path,
