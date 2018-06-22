@@ -1269,6 +1269,7 @@ def calc_dir_sizes(cliargs, logger, path=None):
     jobcount += 1
 
     # wait for queue to be empty and update progress bar
+    time.sleep(1)
     while True:
         workers_busy = False
         workers = Worker.all(connection=redis_conn)
@@ -1384,7 +1385,7 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
                       args=([(path, root_files)], cliargs, reindex_dict,))
 
         # wait for queue to be empty and update progress bar
-        time.sleep(2)
+        time.sleep(1)
         while True:
             workers_busy = False
             workers = Worker.all(connection=redis_conn)
