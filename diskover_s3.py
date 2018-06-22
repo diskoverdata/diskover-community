@@ -23,6 +23,10 @@ import diskover
 import diskover_worker_bot
 
 
+fake_dirs = []
+workername = diskover_worker_bot.get_worker_name()
+
+
 def process_s3_inventory(inventory_file, cliargs):
     """Process s3 inventory function.
     Takes an S3 inventory file (gzipped csv), processes and bulk adds it
@@ -32,33 +36,14 @@ def process_s3_inventory(inventory_file, cliargs):
     tree_dirs = []
     tree_files = []
     tree_crawltimes = []
-    workername = diskover_worker_bot.get_worker_name()
 
     with gzip.open(inventory_file, mode='rt') as f:
         reader = csv.reader(f, delimiter=',', quotechar='"')
         x = 0
         for row in reader:
             if x == 0:
-                # create fake root /bucketname directory entry for s3 bucket
-                time_utc_now = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
-                time_utc_epoch_start = "1970-01-01T00:00:00"
-                root_dict = {}
-                root_dict['filename'] = row[0]
-                root_dict['path_parent'] = "/s3"
-                root_dict["filesize"] = 0
-                root_dict["items"] = 1  # 1 for itself
-                root_dict["items_files"] = 0
-                root_dict["items_subdirs"] = 0
-                root_dict["last_modified"] = time_utc_epoch_start
-                root_dict["tag"] = ""
-                root_dict["tag_custom"] = ""
-                root_dict["indexing_date"] = time_utc_now
-                root_dict["worker_name"] = workername
-                root_dict["change_percent_filesize"] = ""
-                root_dict["change_percent_items"] = ""
-                root_dict["change_percent_items_files"] = ""
-                root_dict["change_percent_items_subdirs"] = ""
-                root_dict["_type"] = "directory"
+                # create fake root /s3/bucketname directory entry for s3 bucket
+                root_dict = make_fake_s3_dir('/s3', row[0], cliargs)
                 tree_dirs.append(root_dict)
                 # create fake crawltime entry
                 tree_crawltimes.append({
@@ -117,6 +102,31 @@ def process_s3_inventory(inventory_file, cliargs):
                 path = path.rstrip('/')
             else:
                 isdir = False
+                # add any directories in path to fake dirs
+                """ftp - footage.arri.de / ALEXA + 65 / ALEXA65_ARRIRAW_OpenGate_6560x3100 / A005R51F / ari / A005C031_160120_R51F
+                .0002788.ari"""
+                splitpath = inventory_dict['s3_key'].split('/')
+                # remove file name
+                splitpath = splitpath[:-1]
+                prev_path = bucket.rstrip('/')
+                for p in splitpath:
+                    # create fake directory entry
+                    dir_dict = make_fake_s3_dir(prev_path, p, cliargs)
+                    current_path = os.path.join(prev_path, p)
+                    if dir_dict is None:
+                        prev_path = current_path
+                        continue
+                    tree_dirs.append(dir_dict)
+                    print(current_path)
+                    # create fake crawltime entry
+                    tree_crawltimes.append({
+                        "path": current_path,
+                        "worker_name": workername,
+                        "crawl_time": 0,
+                        "indexing_date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f"),
+                        "_type": "crawlstat"})
+                    prev_path = current_path
+
             size = inventory_dict['s3_size']
             # filename
             filename = os.path.basename(path)
@@ -233,6 +243,58 @@ def process_s3_inventory(inventory_file, cliargs):
         diskover_worker_bot.es_bulk_adder(workername, (tree_dirs, tree_files, tree_crawltimes), cliargs, 0)
     elapsed_time = round(time.time() - jobstart, 3)
     diskover_worker_bot.bot_logger.info('*** FINISHED JOB, Elapsed Time: ' + str(elapsed_time))
+
+
+def make_fake_s3_dir(parent, file, cliargs):
+    """Make fake s3 directory function.
+    Creates a fake directory doc for es.
+    Returns dictionary for directory doc.
+    """
+
+    fullpath = os.path.abspath(os.path.join(parent, file))
+
+    if fullpath in fake_dirs:
+        return None
+
+    mtime_utc = "1970-01-01T00:00:00"
+    mtime_unix = time.mktime(time.strptime(mtime_utc, '%Y-%m-%dT%H:%M:%S'))
+
+    dir_dict = {}
+    dir_dict['filename'] = file
+    dir_dict['path_parent'] = parent
+    dir_dict["filesize"] = 0
+    dir_dict["items"] = 1  # 1 for itself
+    dir_dict["items_files"] = 0
+    dir_dict["items_subdirs"] = 0
+    dir_dict["last_modified"] = mtime_utc
+    dir_dict["tag"] = ""
+    dir_dict["tag_custom"] = ""
+    dir_dict["indexing_date"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
+    dir_dict["worker_name"] = workername
+    dir_dict["change_percent_filesize"] = ""
+    dir_dict["change_percent_items"] = ""
+    dir_dict["change_percent_items_files"] = ""
+    dir_dict["change_percent_items_subdirs"] = ""
+    dir_dict["_type"] = "directory"
+
+    # add any autotags to inventory_dict
+    if cliargs['autotag'] and len(diskover.config['autotag_dirs']) > 0:
+        diskover_worker_bot.auto_tag(dir_dict, 'directory', mtime_unix, None, None)
+
+    # check plugins for adding extra meta data to dirmeta_dict
+    for plugin in diskover.plugins:
+        try:
+            # check if plugin is for directory doc
+            mappings = {'mappings': {'directory': {'properties': {}}}}
+            plugin.add_mappings(mappings)
+            dir_dict.update(plugin.add_meta(fullpath))
+        except KeyError:
+            pass
+
+    # store in fake_dirs
+    fake_dirs.append(fullpath)
+
+    return dir_dict
 
 
 def get_s3_mappings(config):

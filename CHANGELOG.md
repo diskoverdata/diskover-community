@@ -2,7 +2,7 @@
 
 ## [1.5.0-rc10] = 2018-06-22
 ### notice
-- Amazon S3 inventory support is beta, requires diskover-web >= v1.5.0-rc9
+- Amazon S3 inventory support is beta, requires diskover-web >= v1.5.0-rc10
 - --s3 requires index named diskover-s3-indexname
 - changes to diskover.cfg.sample, please copy over to your diskover.cfg and adjust for your env
 ### added
@@ -21,7 +21,7 @@
 - diskover_worker_bot.py cli arg -q --queue for setting queue that the worker listens on and processes jobs for (default all queues)
 - v1.4 of diskover-bot-launcher.sh - added -q option for setting which queue worker bots should listen on (default all queues)
 - optimized es bulk adding in es_bulk_adder function
-
+- creating indices with --s3 (from Amazon S3 inventory files) now creates fake dir entries for all keys
 ### changed
 - directory paths are hashed using base64 encode when storing in redis for cacheing directory times (times are used when crawling with -I)
 - moved autotag code after plugin code when setting file/directory doc meta data fields
