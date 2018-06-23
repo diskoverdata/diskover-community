@@ -24,7 +24,7 @@ BURST=FALSE
 # file to store bot pids
 BOTPIDS=/tmp/diskover_bot_pids
 # queue that worker bots should listen on
-# queues: diskover, diskover_crawl, diskover_scrapemeta, diskover_bulkadd, diskover_calcdir
+# queues: diskover, diskover_crawl, diskover_calcdir
 # default ALL (listen on all queues)
 QUEUE=ALL
 

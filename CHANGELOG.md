@@ -1,6 +1,6 @@
 # Diskover Change Log
 
-## [1.5.0-rc10] = 2018-06-22
+## [1.5.0-rc10] = 2018-06-23
 ### notice
 - Amazon S3 inventory support is beta, requires diskover-web >= v1.5.0-rc10
 - --s3 requires index named diskover-s3-indexname
@@ -16,12 +16,13 @@
 - additional characters to escape_chars function
 - --maxdcdepth to cli args - maximum depth to calculate directory sizes/items (default 10)
 - autobatch section in diskover.cfg.sample for setting auto batch options (when using -a) (copy to your diskover.cfg)
-- separate queues diskover, diskover_crawl, diskover_scrapemeta, diskover_calcdir
-- cachedirtimes setting in diskover.cfg redis section - for enabling/disabling cacheing directory times in Redis (used for -I index2 cli arg), default is False (don't cache)
+- separate queues diskover, diskover_crawl, diskover_calcdir
+- cachedirtimes setting in diskover.cfg redis section - for enabling/disabling caching directory times in Redis (used for -I index2 cli arg), default is False (don't cache)
 - diskover_worker_bot.py cli arg -q --queue for setting queue that the worker listens on and processes jobs for (default all queues)
 - v1.4 of diskover-bot-launcher.sh - added -q option for setting which queue worker bots should listen on (default all queues)
 - optimized es bulk adding in es_bulk_adder function
 - creating indices with --s3 (from Amazon S3 inventory files) now creates fake dir entries for all keys
+- progress indicators for hotdirs and finddupes
 ### changed
 - directory paths are hashed using base64 encode when storing in redis for cacheing directory times (times are used when crawling with -I)
 - moved autotag code after plugin code when setting file/directory doc meta data fields
@@ -29,8 +30,8 @@
 - directory size/items calculations at end of crawl are now limited by --maxdcdepth cli arg (default 10), previously was unlimited depth
 - improved treewalk and qumulo_treewalk functions
 - set default for -b (batchsize) to 50 (prev was 25) (using -a usually results in faster crawl times, overrides -b)
-- different job types go into different queues (diskover, diskover_crawl, diskover_scrapemeta, diskover_calcdir)
-- dir times are no longer cached in Redis by default (settings in diskover.cfg.sample, copy to your diskover.cfg)
+- different job types go into different queues (diskover, diskover_crawl, diskover_calcdir)
+- dir times are no longer cached in Redis by default (used by -I index2 cli arg) (settings in diskover.cfg.sample, copy to your diskover.cfg)
 - threads for treewalking are now limited by threads setting in diskover.cfg treewalk section (copy from diskover.cfg.sample)
 ### fixed
 - bugs with autotagging

@@ -52,8 +52,7 @@ def parse_cli_args():
                         help="Burst mode (worker will quit after all work is done)")
     parser.add_argument("-q", "--queue", metavar="QUEUE", nargs="+", default=None,
                         help="Queue worker bot should listen on \
-                        (queues: diskover, diskover_crawl, diskover_scrapemeta, "
-                             "diskover_calcdir, diskover_bulkadd) (default all)")
+                        (queues: diskover, diskover_crawl, diskover_calcdir) (default all)")
     args = parser.parse_args()
     return args
 
@@ -116,12 +115,12 @@ def treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict):
             batch.append((root, files))
             batch_len = len(batch)
             if batch_len >= batchsize:
-                diskover.q_scrape.enqueue(scrape_tree_meta,
+                diskover.q_crawl.enqueue(scrape_tree_meta,
                           args=(batch, cliargs, reindex_dict,))
                 del batch[:]
                 batchsize_prev = batchsize
                 if cliargs['adaptivebatch']:
-                    q_len = len(diskover.q_scrape)
+                    q_len = len(diskover.q_crawl)
                     if q_len == 0:
                         if (batchsize - diskover.ab_step) >= diskover.ab_start:
                             batchsize = batchsize - diskover.ab_step
@@ -145,7 +144,7 @@ def treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict):
             del files[:]
 
     # add any remaining in batch to queue
-    diskover.q_scrape.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,))
+    diskover.q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,))
 
 
 def auto_tag(metadict, type, mtime, atime, ctime):
@@ -971,8 +970,7 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
                 totalcrawltime += elapsed
 
     if len(tree_dirs) > 0 or len(tree_files) > 0:
-        diskover.q_bulkadd.enqueue(es_bulk_adder, args=(worker, (tree_dirs, tree_files, tree_crawltimes),
-                                                        cliargs, totalcrawltime,))
+        es_bulk_adder(worker, (tree_dirs, tree_files, tree_crawltimes), cliargs, totalcrawltime)
 
     elapsed_time = round(time.time() - jobstart, 3)
     bot_logger.info('*** FINISHED JOB, Elapsed Time: ' + str(elapsed_time))
@@ -1171,7 +1169,7 @@ if __name__ == '__main__':
 
     # Redis queue names
     if cliargs_bot['queue'] is None:
-        listen = ['diskover', 'diskover_crawl', 'diskover_scrapemeta', 'diskover_bulkadd', 'diskover_calcdir']
+        listen = ['diskover', 'diskover_crawl', 'diskover_calcdir']
     else:
         listen = cliargs_bot['queue']
 

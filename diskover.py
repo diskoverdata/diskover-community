@@ -1366,7 +1366,7 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
                 t.start()
             for d_path in dirs:
                 thread_q.put(d_path)
-            q_scrape.enqueue(diskover_worker_bot.scrape_tree_meta,
+            q_crawl.enqueue(diskover_worker_bot.scrape_tree_meta,
                              args=([(root, files)], cliargs, reindex_dict,))
         else:  # regular crawl using scandir/walk
             # set up threads
@@ -1383,7 +1383,7 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
                 elif entry.is_dir(follow_symlinks=False):
                     thread_q.put(entry.path)
             # enqueue rootdir files
-            q_scrape.enqueue(diskover_worker_bot.scrape_tree_meta,
+            q_crawl.enqueue(diskover_worker_bot.scrape_tree_meta,
                       args=([(path, root_files)], cliargs, reindex_dict,))
 
         # wait for queue to be empty and update progress bar
@@ -1395,7 +1395,7 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
                 if worker._state == "busy":
                     workers_busy = True
                     break
-            q_len = len(q_crawl) + len(q_scrape) + len(q_bulkadd) + len(q_calc)
+            q_len = len(q_crawl) + len(q_calc)
             if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
                 try:
                     bar.update(q_len)
@@ -1503,7 +1503,7 @@ def check_workers_running(logger):
         for worker in workers:
             if worker._state == "busy":
                 busyworkers.append(worker._name)
-        q_len = len(q) + len(q_crawl) + len(q_scrape) + len(q_bulkadd) + len(q_calc)
+        q_len = len(q) + len(q_crawl) + len(q_calc)
         if len(busyworkers) == 0 and q_len == 0:
             break
         del busyworkers[:]
@@ -1566,14 +1566,12 @@ redis_conn = Redis(host=config['redis_host'], port=config['redis_port'],
                    password=config['redis_password'])
 
 # Redis queue names
-listen = ['diskover', 'diskover_crawl', 'diskover_scrapemeta', 'diskover_bulkadd', 'diskover_calcdir']
+listen = ['diskover', 'diskover_crawl', 'diskover_calcdir']
 
 # set up Redis q
 q = Queue(listen[0], connection=redis_conn, default_timeout=86400)
 q_crawl = Queue(listen[1], connection=redis_conn, default_timeout=86400)
-q_scrape = Queue(listen[2], connection=redis_conn, default_timeout=86400)
-q_bulkadd = Queue(listen[3], connection=redis_conn, default_timeout=86400)
-q_calc = Queue(listen[4], connection=redis_conn, default_timeout=86400)
+q_calc = Queue(listen[2], connection=redis_conn, default_timeout=86400)
 
 # set up thread python Queue
 thread_q = pyQueue()
