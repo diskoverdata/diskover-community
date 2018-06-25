@@ -71,11 +71,11 @@ threads = 8
 [adaptivebatch]
 ; adaptive batch settings when using -a (intelligent crawling)
 ; batchsize (numbers of dirs) to start at
-startsize = 50
+startsize = 100
 ; maximum size of batch
 maxsize = 500
 ; when adjusting batch size use this for +/- (increase when queues is > 0, decrease when 0)
-stepsize = 10
+stepsize = 25
 
 [workerbot]
 ; enable bot logs (True or False), bot logs will slow down crawl, use for debugging only
@@ -83,6 +83,8 @@ botlogs = False
 ; log file directory to store worker logs
 ; log files are named diskover_bot_worker_<workername>_<time>_log
 logfiledir = /tmp
+; time to wait (sec) before starting threads to help scrape file meta for long running rq jobs
+filethreadtime = 60
 
 [paths]
 ; used by diskover socket server

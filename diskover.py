@@ -299,6 +299,10 @@ def load_config():
     except ConfigParser.NoOptionError:
         configsettings['botlogfiledir'] = "/tmp"
     try:
+        configsettings['filethreadtime'] = int(config.get('workerbot', 'filethreadtime'))
+    except ConfigParser.NoOptionError:
+        configsettings['filethreadtime'] = 60
+    try:
         configsettings['listener_host'] = \
             config.get('socketlistener', 'host')
     except ConfigParser.NoOptionError:
@@ -1103,7 +1107,7 @@ def parse_cli_args(indexname):
                         help="Elasticsearch index name (default: from config)")
     parser.add_argument("-I", "--index2", metavar='INDEX2', nargs=1,
                         help="Compare directory times with previous index to get metadata \
-                            from index2 instead of off disk")
+                            from index2 instead of off disk (requires cached dir times in Redis)")
     parser.add_argument("-n", "--nodelete", action="store_true",
                         help="Add data to existing index (default: overwrite \
                         index)")
@@ -1226,73 +1230,78 @@ def calc_dir_sizes(cliargs, logger, path=None):
     maxdepth = cliargs['maxdcdepth']
     jobcount = 0
 
-    check_workers_running(logger)
+    try:
+        check_workers_running(logger)
 
-    if path:
-        dirlist = index_get_docs(cliargs, logger, path=path)
-    else:
-        dirlist = index_get_docs(cliargs, logger, sort=True, maxdepth=maxdepth)
-    logger.info('Getting diskover bots to calculate directory sizes (maxdepth %s)...' % maxdepth)
-    dirbatch = []
-    if cliargs['adaptivebatch']:
-        batchsize = ab_start
-    else:
-        batchsize = cliargs['batchsize']
-    if cliargs['verbose'] or cliargs['debug']:
-        logger.info('Batch size: %s' % batchsize)
-    if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
-        bar = progress_bar('Calculating')
-        bar.start()
-    else:
-        bar = None
-    for d in dirlist:
-        dirbatch.append(d)
-        if len(dirbatch) >= batchsize:
-            q_calc.enqueue(diskover_worker_bot.calc_dir_size, args=(dirbatch, cliargs,))
-            jobcount += 1
-            del dirbatch[:]
-            batchsize_prev = batchsize
-            if cliargs['adaptivebatch']:
-                if len(q_calc) == 0:
-                    if (batchsize - ab_step) >= ab_start:
-                        batchsize = batchsize - ab_step
-                elif len(q_calc) > 0:
-                    if (batchsize + ab_step) <= ab_max:
-                        batchsize = batchsize + ab_step
-                cliargs['batchsize'] = batchsize
-                if cliargs['verbose'] or cliargs['debug']:
-                    if batchsize_prev != batchsize:
-                        logger.info('Batch size: %s' % batchsize)
-
-    # add any remaining in batch to queue
-    q_calc.enqueue(diskover_worker_bot.calc_dir_size, args=(dirbatch, cliargs,))
-    jobcount += 1
-
-    # wait for queue to be empty and update progress bar
-    time.sleep(1)
-    while True:
-        workers_busy = False
-        workers = Worker.all(connection=redis_conn)
-        for worker in workers:
-            if worker._state == "busy":
-                workers_busy = True
-                break
-        q_len = len(q_calc)
+        if path:
+            dirlist = index_get_docs(cliargs, logger, path=path)
+        else:
+            dirlist = index_get_docs(cliargs, logger, sort=True, maxdepth=maxdepth)
+        logger.info('Getting diskover bots to calculate directory sizes (maxdepth %s)...' % maxdepth)
+        dirbatch = []
+        if cliargs['adaptivebatch']:
+            batchsize = ab_start
+        else:
+            batchsize = cliargs['batchsize']
+        if cliargs['verbose'] or cliargs['debug']:
+            logger.info('Batch size: %s' % batchsize)
         if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
-            try:
-                percent = int("{0:.0f}".format(100 * ((jobcount - q_len) / float(jobcount))))
-                bar.update(percent)
-            except ZeroDivisionError:
-                bar.update(0)
-            except ValueError:
-                bar.update(0)
-        if q_len == 0 and workers_busy == False:
-            break
-        time.sleep(.5)
+            bar = progress_bar('Calculating')
+            bar.start()
+        else:
+            bar = None
+        for d in dirlist:
+            dirbatch.append(d)
+            if len(dirbatch) >= batchsize:
+                q_calc.enqueue(diskover_worker_bot.calc_dir_size, args=(dirbatch, cliargs,))
+                jobcount += 1
+                del dirbatch[:]
+                batchsize_prev = batchsize
+                if cliargs['adaptivebatch']:
+                    if len(q_calc) == 0:
+                        if (batchsize - ab_step) >= ab_start:
+                            batchsize = batchsize - ab_step
+                    elif len(q_calc) > 0:
+                        if (batchsize + ab_step) <= ab_max:
+                            batchsize = batchsize + ab_step
+                    cliargs['batchsize'] = batchsize
+                    if cliargs['verbose'] or cliargs['debug']:
+                        if batchsize_prev != batchsize:
+                            logger.info('Batch size: %s' % batchsize)
 
-    if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
-        bar.finish()
-    logger.info('Finished calculating directory sizes')
+        # add any remaining in batch to queue
+        q_calc.enqueue(diskover_worker_bot.calc_dir_size, args=(dirbatch, cliargs,))
+        jobcount += 1
+
+        # wait for queue to be empty and update progress bar
+        time.sleep(1)
+        while True:
+            workers_busy = False
+            workers = Worker.all(connection=redis_conn)
+            for worker in workers:
+                if worker._state == "busy":
+                    workers_busy = True
+                    break
+            q_len = len(q_calc)
+            if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+                try:
+                    percent = int("{0:.0f}".format(100 * ((jobcount - q_len) / float(jobcount))))
+                    bar.update(percent)
+                except ZeroDivisionError:
+                    bar.update(0)
+                except ValueError:
+                    bar.update(0)
+            if q_len == 0 and workers_busy == False:
+                break
+            time.sleep(.5)
+
+        if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+            bar.finish()
+        logger.info('Finished calculating directory sizes')
+
+    except KeyboardInterrupt:
+        print("Ctrl-c keyboard interrupt, shutting down...")
+        sys.exit(0)
 
 
 def tree_walker(num_sep, level, batchsize, cliargs, reindex_dict):

@@ -1,6 +1,6 @@
 # Diskover Change Log
 
-## [1.5.0-rc10] = 2018-06-23
+## [1.5.0-rc10] = 2018-06-25
 ### notice
 - Amazon S3 inventory support is beta, requires diskover-web >= v1.5.0-rc10
 - --s3 requires index named diskover-s3-indexname
@@ -23,6 +23,7 @@
 - optimized es bulk adding in es_bulk_adder function
 - creating indices with --s3 (from Amazon S3 inventory files) now creates fake dir entries for all keys
 - progress indicators for hotdirs and finddupes
+- filethreadtime to workerbot section in diskover.cfg.sample - threads are started to help scrape file meta if rq job time (path crawl) > seconds (copy to your diskover.cfg)
 ### changed
 - directory paths are hashed using base64 encode when storing in redis for cacheing directory times (times are used when crawling with -I)
 - moved autotag code after plugin code when setting file/directory doc meta data fields
