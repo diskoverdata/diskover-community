@@ -197,6 +197,7 @@ def verify_dupes(hashgroup, cliargs):
 def populate_hashgroup(key, cliargs):
     """Searches ES for all files matching hashgroup key (filehash)
     and returns dict containing matching files.
+    Return None if only 1 file matching.
     """
 
     bot_logger = diskover_worker_bot.bot_logger
@@ -217,7 +218,7 @@ def populate_hashgroup(key, cliargs):
         }
     }
     # refresh index
-    # ES.indices.refresh(index=cliargs['index'])
+    #es.indices.refresh(index=cliargs['index'])
     res = es.search(index=cliargs['index'], doc_type='file', size="1000",
                     body=data, request_timeout=diskover.config['es_timeout'])
 
@@ -230,6 +231,12 @@ def populate_hashgroup(key, cliargs):
 
     if cliargs['verbose'] or cliargs['debug']:
         bot_logger.info('Found %s files matching hash key %s' % (len(hashgroup_files), key))
+
+    # return None if only 1 file
+    if len(hashgroup_files) == 1:
+        if cliargs['verbose'] or cliargs['debug']:
+            bot_logger.info('Found only 1 file matching hash key, no files to compare')
+        return None
 
     # return filehash group and add to queue
     fhg = {'filehash': key, 'files': hashgroup_files, 'md5sum': ''}
