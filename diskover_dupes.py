@@ -232,12 +232,7 @@ def populate_hashgroup(key, cliargs):
     if cliargs['verbose'] or cliargs['debug']:
         bot_logger.info('Found %s files matching hash key %s' % (len(hashgroup_files), key))
 
-    # return None if only 1 file
-    if len(hashgroup_files) == 1:
-        if cliargs['verbose'] or cliargs['debug']:
             bot_logger.info('Found only 1 file matching hash key, no files to compare')
-        return None
-
     # return filehash group and add to queue
     fhg = {'filehash': key, 'files': hashgroup_files, 'md5sum': ''}
 

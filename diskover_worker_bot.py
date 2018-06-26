@@ -1058,11 +1058,10 @@ def dupes_process_hashkey(hashkey, cliargs):
     jobstart = time.time()
     # find all files in ES matching hashkey
     hashgroup = diskover_dupes.populate_hashgroup(hashkey, cliargs)
+    # process the duplicate files in hashgroup
+    hashgroup = diskover_dupes.verify_dupes(hashgroup, cliargs)
     if hashgroup:
-        # process the duplicate files in hashgroup
-        hashgroup = diskover_dupes.verify_dupes(hashgroup, cliargs)
-        if hashgroup:
-            diskover_dupes.index_dupes(hashgroup, cliargs)
+        diskover_dupes.index_dupes(hashgroup, cliargs)
     elapsed_time = round(time.time() - jobstart, 3)
     bot_logger.info('*** FINISHED JOB, Elapsed Time: ' + str(elapsed_time))
 
