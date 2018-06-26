@@ -1613,17 +1613,17 @@ if __name__ == "__main__":
         sys.exit(0)
     # check index name for Qumulo storage
     if cliargs['qumulo']:
-        if cliargs['index'] == "diskover-qumulo" or \
-                (cliargs['index'].split('-')[0] != "diskover" or
-                         cliargs['index'].split('-')[1] != "qumulo"):
-            print('Please name your index: diskover-qumulo-<string>')
+        if cliargs['index'] == "diskover_qumulo" or \
+                (cliargs['index'].split('_')[0] != "diskover" or
+                         cliargs['index'].split('_')[1] != "qumulo"):
+            print('Please name your index: diskover_qumulo-<string>')
             sys.exit(0)
     # check index name for s3 storage
     if cliargs['s3']:
-        if cliargs['index'] == "diskover-s3" or \
-                (cliargs['index'].split('-')[0] != "diskover" or
-                         cliargs['index'].split('-')[1] != "s3"):
-            print('Please name your index: diskover-s3-<string>')
+        if cliargs['index'] == "diskover_s3" or \
+                (cliargs['index'].split('_')[0] != "diskover" or
+                         cliargs['index'].split('_')[1] != "s3"):
+            print('Please name your index: diskover_s3-<string>')
             sys.exit(0)
 
     # check for listen socket cli flag to start socket server

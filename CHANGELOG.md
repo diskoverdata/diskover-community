@@ -36,6 +36,8 @@
 - dir times are no longer cached in Redis by default (used by -I index2 cli arg) (settings in diskover.cfg.sample, copy to your diskover.cfg)
 - threads for treewalking are now limited by threads setting in diskover.cfg treewalk section (copy from diskover.cfg.sample)
 - set checkbytes size to 64 in diskover.cfg.sample to help improve dupes checking (to account for header info data in image/video files)
+- diskover s3 indices are required to be named diskover_s3-<indexname> (changed to better deal with index patterns in Kibana)
+- diskover qumulo indices are required to be named diskover_qumulo-<indexname> (changed to better deal with index patterns in Kibana)
 ### fixed
 - bugs with autotagging
 - crawlbot continuous scanner (-B) strack trace error (logger)
