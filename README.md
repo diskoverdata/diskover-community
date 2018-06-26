@@ -30,7 +30,7 @@ diskover crawler and workerbots running in terminal<br>
 <img align="left" width="400" src="https://github.com/shirosaidev/diskover-web/raw/master/docs/diskover-web-advancedsearch-screenshot.png?raw=true" alt="diskover-web advanced search">
 <img width="400" src="https://github.com/shirosaidev/diskover-web/raw/master/docs/diskover-web-tags-screenshot.png?raw=true" alt="diskover-web tags"><br>
 Kibana dashboards/saved searches/visualizations and support for Gource<br>
-<img align="left" width="400" src="docs/kibana-dashboarddark2-screenshot.png?raw=true" alt="kibana-screenshot">
+<img align="left" width="400" src="docs/kibana-dashboarddark-screenshot.png?raw=true" alt="kibana-screenshot">
 <img width="400" src="docs/diskover-gource1-screenshot.png?raw=true" alt="diskover-gource">
 
 ### diskover Gource videos
@@ -122,7 +122,7 @@ $ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl -m 90 -s 102
 Import Amazon S3 Inventory file(s) (gzipped csv) with:
 
 ```sh
-$ python /path/to/diskover.py -i diskover-s3-indexname --s3 /dir/file1.csv.gz /dir/file2.csv.gz
+$ python /path/to/diskover.py -i diskover_s3-indexname --s3 /dir/inventoryfile1.csv.gz
 ```
 
 ## OVA image file (for vmware, etc)
