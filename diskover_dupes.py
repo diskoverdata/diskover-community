@@ -78,6 +78,7 @@ def md5_hasher(file_in_thread_q, file_out_thread_q):
         except (IOError, OSError):
             if cliargs['verbose'] or cliargs['debug']:
                 bot_logger.warning('Error checking file %s' % filename)
+            file_in_thread_q.task_done()
             continue
         file_out_thread_q.put((filename, md5))
         file_in_thread_q.task_done()
