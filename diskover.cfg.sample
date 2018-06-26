@@ -99,12 +99,12 @@ host = localhost
 port = 9999
 
 [dupescheck]
-; read size (bytes) for md5 sum check
+; read size (bytes) for md5 sum check (how many bytes to read in at a time when md5 checking, default 64 KB)
 readsize = 65536
-; max size (bytes) of files to check
+; max size (bytes) of files to check (files larger than this will be skipped, default 1 GB)
 maxsize = 1073741824
-; bytes to check at start and end of file before doing md5 sum check
-checkbytes = 8
+; bytes to check at start and end of file before doing md5 sum check (set large enough to account for file header info, default is 64)
+checkbytes = 64
 
 [crawlbot]
 ; continuous scanner

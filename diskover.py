@@ -336,7 +336,7 @@ def load_config():
         configsettings['dupes_checkbytes'] = \
             int(config.get('dupescheck', 'checkbytes'))
     except ConfigParser.NoOptionError:
-        configsettings['dupes_checkbytes'] = 8
+        configsettings['dupes_checkbytes'] = 64
     try:
         configsettings['botsleep'] = \
             float(config.get('crawlbot', 'sleeptime'))
