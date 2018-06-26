@@ -47,14 +47,14 @@ If you are a fan of the project or you are using diskover and it's helping you s
 ### Requirements
 
 * `Linux or OS X/macOS` (tested on OS X 10.11.6, Ubuntu 16.04/18.04)
-* `Python 2.7. or Python 3.5./3.6.` (tested on Python 2.7.14, 3.5.3, 3.6.4) Python 3 recommended.
+* `Python 2.7. or Python 3.5./3.6.` (tested on Python 2.7.15, 3.6.5) Python 3 recommended.
 * `Python elasticsearch client module`
 * `Python requests module`
 * `Python scandir module`
 * `Python progressbar2 module`
 * `Python redis module`
 * `Python rq module`
-* `Elasticsearch 5` (local or [AWS ES Service](https://aws.amazon.com/elasticsearch-service/), tested on Elasticsearch 5.4.2, 5.6.4, 5.6.9) Elasticsearch 6 is not supported yet.
+* `Elasticsearch 5` (local or [AWS ES Service](https://aws.amazon.com/elasticsearch-service/), tested on Elasticsearch 5.6.9) Elasticsearch 6 is not supported yet.
 * `Redis` (tested on 4.0.8)
 
 ### Optional Installs
@@ -62,7 +62,7 @@ If you are a fan of the project or you are using diskover and it's helping you s
 * [diskover-web](https://github.com/shirosaidev/diskover-web) (diskover's web file manager and analytics app)
 * [Redis RQ Dashboard](https://python-rq.org/docs/monitoring/) (for monitoring redis queue)
 * [netdata](https://my-netdata.io/) (for realtime monitoring cpu/disk/mem/network/elasticsearch/redis/etc metrics, plugin for rq-dashboard in netdata directory)
-* [Kibana](https://www.elastic.co/products/kibana) (for visualizing Elasticsearch data, tested on Kibana 5.4.2, 5.6.4)
+* [Kibana](https://www.elastic.co/products/kibana) (for visualizing Elasticsearch data, tested on Kibana 5.6.9)
 * [X-Pack](https://www.elastic.co/downloads/x-pack) (Kibana plugin for graphs, reports, monitoring and http auth)
 * [Gource](http://gource.io) (for Gource visualizations of diskover Elasticsearch data, see videos above)
 * [sharesniffer](https://github.com/shirosaidev/sharesniffer) (for scanning your network for file shares and auto-mounting for crawls)
