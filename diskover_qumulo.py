@@ -27,6 +27,7 @@ import time
 import hashlib
 import pwd
 import grp
+import base64
 
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -197,7 +198,7 @@ def qumulo_get_dir_meta(worker_name, path, cliargs, reindex_dict, redis_conn):
     creation_time_utc = path['creation_time']
     if cliargs['index2']:
         # check if directory times cached in Redis
-        redis_dirtime = redis_conn.get(fullpath.encode('utf-8', errors='ignore'))
+        redis_dirtime = redis_conn.get(base64.encodestring(fullpath.encode('utf-8', errors='ignore')))
         if redis_dirtime:
             cached_times = float(redis_dirtime.decode('utf-8'))
             # check if cached times are the same as on disk
@@ -308,7 +309,7 @@ def qumulo_get_dir_meta(worker_name, path, cliargs, reindex_dict, redis_conn):
 
     # cache directory times in Redis
     if diskover.config['redis_cachedirtimes'] == 'True' or diskover.config['redis_cachedirtimes'] == 'true':
-        redis_conn.set(base64.encodestring(path.encode('utf-8', errors='ignore')), mtime_unix + ctime_unix,
+        redis_conn.set(base64.encodestring(fullpath.encode('utf-8', errors='ignore')), mtime_unix + ctime_unix,
                        ex=diskover.config['redis_dirtimesttl'])
 
     return dirmeta_dict
