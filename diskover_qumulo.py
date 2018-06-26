@@ -154,7 +154,7 @@ def qumulo_treewalk(path, ip, ses, num_sep, level, batchsize, cliargs, reindex_d
         if not diskover.dir_excluded(root_path, diskover.config, cliargs['verbose']):
             batch.append((root, files))
             if len(batch) >= batchsize:
-                diskover.q.enqueue(diskover_worker_bot.scrape_tree_meta,
+                diskover.q_crawl.enqueue(diskover_worker_bot.scrape_tree_meta,
                           args=(batch, cliargs, reindex_dict,))
                 del batch[:]
                 batchsize_prev = batchsize
