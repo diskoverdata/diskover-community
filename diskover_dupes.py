@@ -6,7 +6,7 @@ your file metadata into Elasticsearch.
 See README.md or https://github.com/shirosaidev/diskover
 for more information.
 
-Copyright (C) Chris Park 2017
+Copyright (C) Chris Park 2017-2018
 diskover is released under the Apache 2.0 license. See
 LICENSE for the full license text.
 """
