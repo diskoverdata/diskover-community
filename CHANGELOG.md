@@ -24,6 +24,7 @@
 - creating indices with --s3 (from Amazon S3 inventory files) now creates fake dir entries for all keys
 - progress indicators for hotdirs and finddupes
 - filethreadtime to workerbot section in diskover.cfg.sample - threads are started to help scrape file meta if rq job time (path crawl) > seconds (copy to your diskover.cfg)
+- multithreading for file md5 checking when running finddupes
 ### changed
 - directory paths are hashed using base64 encode when storing in redis for cacheing directory times (times are used when crawling with -I)
 - moved autotag code after plugin code when setting file/directory doc meta data fields

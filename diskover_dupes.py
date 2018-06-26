@@ -17,6 +17,12 @@ import base64
 import hashlib
 import os
 import time
+try:
+    from Queue import Queue as pyQueue
+except ImportError:
+    from queue import Queue as pyQueue
+from threading import Thread
+
 
 # create Elasticsearch connection
 es = diskover.elasticsearch_connect(diskover.config)
@@ -43,6 +49,38 @@ def index_dupes(hashgroup, cliargs):
         if cliargs['verbose'] or cliargs['debug']:
             bot_logger.info('Bulk updating %s files in ES index' % len(file_id_list))
         diskover.index_bulk_add(es, file_id_list, diskover.config, cliargs)
+
+
+def start_file_threads(file_in_thread_q, file_out_thread_q, threads=4):
+    for i in range(threads):
+        thread = Thread(target=md5_hasher, args=(file_in_thread_q, file_out_thread_q,))
+        thread.daemon = True
+        thread.start()
+
+
+def md5_hasher(file_in_thread_q, file_out_thread_q):
+    while True:
+        item = file_in_thread_q.get()
+        filename, cliargs, bot_logger = item
+        # get md5 sum, don't load whole file into memory,
+        # load in n bytes at a time (read_size blocksize)
+        try:
+            read_size = diskover.config['md5_readsize']
+            hasher = hashlib.md5()
+            with open(filename, 'rb') as f:
+                buf = f.read(read_size)
+                while len(buf) > 0:
+                    hasher.update(buf)
+                    buf = f.read(read_size)
+            md5 = hasher.hexdigest()
+            if cliargs['verbose'] or cliargs['debug']:
+                bot_logger.info('MD5: %s' % md5)
+        except (IOError, OSError):
+            if cliargs['verbose'] or cliargs['debug']:
+                bot_logger.warning('Error checking file %s' % filename)
+            continue
+        file_out_thread_q.put((filename, md5))
+        file_in_thread_q.task_done()
 
 
 def verify_dupes(hashgroup, cliargs):
@@ -140,34 +178,32 @@ def verify_dupes(hashgroup, cliargs):
 
     # run md5 sum check if bytes were same
     hashgroup_md5 = {}
+    # set up python Queue for threaded file md5 checking
+    file_in_thread_q = pyQueue()
+    file_out_thread_q = pyQueue()
+    start_file_threads(file_in_thread_q, file_out_thread_q)
+
     # do md5 check on files with same byte hashes
     for key, value in list(hashgroup_bytes.items()):
         if cliargs['verbose'] or cliargs['debug']:
-            bot_logger.info('Comparing MD5 sums for filehash: %s' % key)
+            bot_logger.info('Comparing MD5 sums for bytehash: %s' % key)
         for filename in value:
             if cliargs['verbose'] or cliargs['debug']:
                 bot_logger.info('Checking MD5: %s' % filename)
-            # get md5 sum, don't load whole file into memory,
-            # load in n bytes at a time (read_size blocksize)
-            try:
-                read_size = diskover.config['md5_readsize']
-                hasher = hashlib.md5()
-                with open(filename, 'rb') as f:
-                    buf = f.read(read_size)
-                    while len(buf) > 0:
-                        hasher.update(buf)
-                        buf = f.read(read_size)
-                md5 = hasher.hexdigest()
-                if cliargs['verbose'] or cliargs['debug']:
-                    bot_logger.info('MD5: %s' % md5)
-            except (IOError, OSError):
-                if cliargs['verbose'] or cliargs['debug']:
-                    bot_logger.warning('Error checking file %s' % filename)
-                continue
+            # add file into thread queue
+            file_in_thread_q.put((filename, cliargs, bot_logger))
 
+        bot_logger.info('*** Waiting for threads to finish...')
+        # wait for threads to finish
+        file_in_thread_q.join()
+        bot_logger.info('*** Adding file md5 thread results for bytehash: %s' % key)
+        # get all files and add to tree_files
+        while file_out_thread_q.qsize():
+            item = file_out_thread_q.get()
+            file, md5 = item
             # create new key for each md5 sum and set value as new list and
             # add file
-            hashgroup_md5.setdefault(md5, []).append(filename)
+            hashgroup_md5.setdefault(md5, []).append(file)
 
     # remove any md5sum key that only has 1 item (no duplicate)
     for key, value in list(hashgroup_md5.items()):
