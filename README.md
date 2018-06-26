@@ -30,7 +30,7 @@ diskover crawler and workerbots running in terminal<br>
 <img align="left" width="400" src="https://github.com/shirosaidev/diskover-web/raw/master/docs/diskover-web-advancedsearch-screenshot.png?raw=true" alt="diskover-web advanced search">
 <img width="400" src="https://github.com/shirosaidev/diskover-web/raw/master/docs/diskover-web-tags-screenshot.png?raw=true" alt="diskover-web tags"><br>
 Kibana dashboards/saved searches/visualizations and support for Gource<br>
-<img align="left" width="400" src="docs/kibana-dashboarddark2-screenshot.png?raw=true" alt="kibana-screenshot">
+<img align="left" width="400" src="docs/kibana-dashboarddark-screenshot.png?raw=true" alt="kibana-screenshot">
 <img width="400" src="docs/diskover-gource1-screenshot.png?raw=true" alt="diskover-gource">
 
 ### diskover Gource videos
