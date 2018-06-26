@@ -60,6 +60,7 @@ def start_file_threads(file_in_thread_q, file_out_thread_q, threads=4):
 
 def md5_hasher(file_in_thread_q, file_out_thread_q):
     while True:
+        starttime = time.time()
         item = file_in_thread_q.get()
         filename, cliargs, bot_logger = item
         # get md5 sum, don't load whole file into memory,
@@ -74,13 +75,16 @@ def md5_hasher(file_in_thread_q, file_out_thread_q):
                     buf = f.read(read_size)
             md5 = hasher.hexdigest()
             if cliargs['verbose'] or cliargs['debug']:
-                bot_logger.info('MD5: %s' % md5)
+                bot_logger.info('MD5: %s (%s)' % (md5, filename))
         except (IOError, OSError):
             if cliargs['verbose'] or cliargs['debug']:
                 bot_logger.warning('Error checking file %s' % filename)
             file_in_thread_q.task_done()
             continue
         file_out_thread_q.put((filename, md5))
+        if cliargs['verbose'] or cliargs['debug']:
+            elapsed_time = round(time.time() - starttime, 3)
+            bot_logger.info('*** MD5 hashing %s took %s seconds' % (filename, str(elapsed_time)))
         file_in_thread_q.task_done()
 
 
@@ -158,7 +162,7 @@ def verify_dupes(hashgroup, cliargs):
         bytehash = hashlib.md5(bytestring.encode('utf-8')).hexdigest()
 
         if cliargs['verbose'] or cliargs['debug']:
-            bot_logger.info('Byte hash: %s' % bytehash)
+            bot_logger.info('Byte hash: %s (%s)' % (bytehash, file['filename']))
 
         # create new key for each bytehash and
         # set value as new list and add file
