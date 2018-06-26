@@ -25,6 +25,7 @@
 - progress indicators for hotdirs and finddupes
 - filethreadtime to workerbot section in diskover.cfg.sample - threads are started to help scrape file meta if rq job time (path crawl) > seconds (copy to your diskover.cfg)
 - multithreading for file md5 checking when running finddupes
+- new Kibana dashboards/visualizations (export.json)
 ### changed
 - directory paths are hashed using base64 encode when storing in redis for cacheing directory times (times are used when crawling with -I)
 - moved autotag code after plugin code when setting file/directory doc meta data fields
@@ -42,6 +43,7 @@
 - bugs with autotagging
 - crawlbot continuous scanner (-B) strack trace error (logger)
 - bugs with dupe finding (--finddupes)
+- bugs with Kibana dashboards/visualizations (export.json)
 
 ## [1.5.0-rc9] = 2018-06-06
 ### notice
