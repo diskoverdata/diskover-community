@@ -1,6 +1,6 @@
 # Diskover Change Log
 
-## [1.5.0-rc10] = 2018-06-26
+## [1.5.0-rc10] = 2018-06-27
 ### notice
 - Amazon S3 inventory support is beta, requires diskover-web >= v1.5.0-rc10
 - --s3 requires index named diskover-s3-indexname
@@ -44,6 +44,7 @@
 - crawlbot continuous scanner (-B) strack trace error (logger)
 - bugs with dupe finding (--finddupes)
 - bugs with Kibana dashboards/visualizations (export.json)
+- bugs with reindexing using --reindex or --reindexrecurs
 
 ## [1.5.0-rc9] = 2018-06-06
 ### notice

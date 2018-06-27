@@ -1821,7 +1821,8 @@ if __name__ == "__main__":
     # start crawling
     crawl_tree(rootdir_path, cliargs, logger, reindex_dict)
     # add elapsed time crawl stat to es
-    add_crawl_stats(es, cliargs['index'], rootdir_path, (time.time() - starttime), "main")
+    if not cliargs['reindex'] and not cliargs['reindexrecurs']:
+        add_crawl_stats(es, cliargs['index'], rootdir_path, (time.time() - starttime), "main")
 
     # calculate directory sizes and items
     if cliargs['reindex'] or cliargs['reindexrecurs']:
