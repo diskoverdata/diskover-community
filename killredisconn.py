@@ -1,7 +1,11 @@
 #!/usr/bin/env python
-"""
-Kills idle redis connections
-"""
+# Kills idle redis connections
+# https://github.com/shirosaidev/diskover
+#
+# Copyright (C) Chris Park 2017-2018
+# diskover is released under the Apache 2.0 license. See
+# LICENSE for the full license text.
+#
 
 import redis
 import sys

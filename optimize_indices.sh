@@ -18,7 +18,7 @@ if [ -z "$CURL_BIN" ]; then
   echo "Curl binary is missing"
   exit 1
 fi
-for indice in $(${CURL_BIN} -XGET http://${HOST}:9200/_cat/indices | sort -rk 7 | awk '{print $3}' | grep 'diskover'); do
+for indice in $(${CURL_BIN} -XGET http://${HOST}:9200/_cat/indices | grep 'diskover' | sort -rk 7 | awk '{print $3}'); do
   if [ ! -z "$indice" ]; then
     echo $(date +"%Y%m%d %H:%M") Processing indice ${indice}
     if [ ! -z "$USER" ]; then
