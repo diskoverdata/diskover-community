@@ -1,9 +1,9 @@
 # Diskover Change Log
 
-## [1.5.0-rc10] = 2018-06-27
+## [1.5.0-rc10] = 2018-06-28
 ### notice
 - Amazon S3 inventory support is beta, requires diskover-web >= v1.5.0-rc10
-- --s3 requires index named diskover-s3-indexname
+- --s3 requires index named diskover_s3-indexname
 - changes to diskover.cfg.sample, please copy over to your diskover.cfg and adjust for your env
 ### added
 - Amazon S3 inventory support - you can now import Amazon S3 inventory (CSV gzip format) to diskover ES index using --s3 cli arg and supplying 1 or multiple gzipped csv inventory files (see wiki or -h)
