@@ -1114,9 +1114,9 @@ def parse_cli_args(indexname):
     parser.add_argument("-M", "--maxdepth", type=int, default=100,
                         help="Maximum directory depth to crawl (default: \
                         100)")
-    parser.add_argument("-c", "--maxdcdepth", type=int, default=10,
+    parser.add_argument("-c", "--maxdcdepth", type=int, default=100,
                         help="Maximum directory depth to calculate directory sizes/items (default: \
-                            10)")
+                            100)")
     parser.add_argument("-b", "--batchsize", type=int, default=50,
                         help="Batch size (dir count) for sending to worker bots (default: \
                             50)")
@@ -1404,7 +1404,7 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
                 if worker._state == "busy":
                     workers_busy = True
                     break
-            q_len = len(q_crawl) + len(q_calc)
+            q_len = len(q_crawl)
             if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
                 try:
                     bar.update(q_len)

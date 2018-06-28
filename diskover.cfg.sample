@@ -71,11 +71,11 @@ threads = 8
 [adaptivebatch]
 ; adaptive batch settings when using -a (intelligent crawling)
 ; batchsize (numbers of dirs) to start at
-startsize = 100
+startsize = 50
 ; maximum size of batch
 maxsize = 500
 ; when adjusting batch size use this for +/- (increase when queues is > 0, decrease when 0)
-stepsize = 25
+stepsize = 10
 
 [workerbot]
 ; enable bot logs (True or False), bot logs will slow down crawl, use for debugging only
