@@ -26,7 +26,7 @@
 - filethreadtime to workerbot section in diskover.cfg.sample - threads are started to help scrape file meta if rq job time (path crawl) > seconds (copy to your diskover.cfg)
 - multithreading for file md5 checking when running finddupes
 - new Kibana dashboards/visualizations (export.json)
-- optimize_indices.sh script for optimize elasticsearch diskover indices (reduces index size, accepts 1 arg es host)
+- optimize_indices.sh script for optimize elasticsearch diskover indices (reduces index size, accepts 1 required arg eshost and 2 optional args username password)
 ### changed
 - directory paths are hashed using base64 encode when storing in redis for cacheing directory times (times are used when crawling with -I)
 - moved autotag code after plugin code when setting file/directory doc meta data fields
