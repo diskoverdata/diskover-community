@@ -1142,7 +1142,7 @@ def parse_cli_args(indexname):
                         help="Starts up crawl bot continuous scanner \
                             to scan for dir changes in index")
     parser.add_argument("--qumulo", action="store_true",
-                        help="euemulo storage type, use Qumulo api instead of scandir")
+                        help="Qumulo storage type, use Qumulo api instead of scandir")
     parser.add_argument("--s3", metavar='FILE', nargs='+',
                         help="Import AWS S3 inventory csv file(s) (gzipped) to diskover index")
     parser.add_argument("--gourcert", action="store_true",
@@ -1368,7 +1368,7 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
             # set up threads
             for i in range(config['treethreads']):
                 t = Thread(target=diskover_qumulo.qumulo_tree_walker,
-                           args=(qumulo_ip, qumulo_ses, num_sep, level,
+                           args=(qumulo_ip, qumulo_ses, thread_q, q_crawl, num_sep, level,
                                  batchsize, cliargs, reindex_dict,))
                 t.daemon = True
                 threads.append(t)

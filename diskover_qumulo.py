@@ -134,14 +134,14 @@ def qumulo_api_walk(top, ip, ses):
             yield entry
 
 
-def qumulo_tree_walker(ip, ses, num_sep, level, batchsize, cliargs, reindex_dict):
+def qumulo_tree_walker(ip, ses, thread_q, q_crawl, num_sep, level, batchsize, cliargs, reindex_dict):
     while True:
-        item = diskover.thread_q.get()
-        qumulo_treewalk(item, ip, ses, num_sep, level, batchsize, cliargs, reindex_dict)
-        diskover.thread_q.task_done()
+        item = thread_q.get()
+        qumulo_treewalk(item, ip, ses, q_crawl, num_sep, level, batchsize, cliargs, reindex_dict)
+        thread_q.task_done()
 
 
-def qumulo_treewalk(path, ip, ses, num_sep, level, batchsize, cliargs, reindex_dict):
+def qumulo_treewalk(path, ip, ses, q_crawl, num_sep, level, batchsize, cliargs, reindex_dict):
     batch = []
 
     for root, dirs, files in qumulo_api_walk(path, ip, ses):
@@ -154,12 +154,12 @@ def qumulo_treewalk(path, ip, ses, num_sep, level, batchsize, cliargs, reindex_d
         if not diskover.dir_excluded(root_path, diskover.config, cliargs['verbose']):
             batch.append((root, files))
             if len(batch) >= batchsize:
-                diskover.q_crawl.enqueue(diskover_worker_bot.scrape_tree_meta,
+                q_crawl.enqueue(diskover_worker_bot.scrape_tree_meta,
                           args=(batch, cliargs, reindex_dict,))
                 del batch[:]
                 batchsize_prev = batchsize
                 if cliargs['adaptivebatch']:
-                    q_len = len(diskover.q_crawl)
+                    q_len = len(q_crawl)
                     if q_len == 0:
                         if (batchsize - diskover.ab_step) >= diskover.ab_start:
                             batchsize = batchsize - diskover.ab_step
@@ -183,7 +183,7 @@ def qumulo_treewalk(path, ip, ses, num_sep, level, batchsize, cliargs, reindex_d
             del files[:]
 
     # add any remaining in batch to queue
-    diskover.q_crawl.enqueue(diskover_worker_bot.scrape_tree_meta, args=(batch, cliargs, reindex_dict,))
+    q_crawl.enqueue(diskover_worker_bot.scrape_tree_meta, args=(batch, cliargs, reindex_dict,))
 
 
 def qumulo_get_dir_meta(worker_name, path, cliargs, reindex_dict, redis_conn):
