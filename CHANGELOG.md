@@ -45,6 +45,7 @@
 - bugs with dupe finding (--finddupes)
 - bugs with Kibana dashboards/visualizations (export.json)
 - bugs with reindexing using --reindex or --reindexrecurs
+- bugs with directory calculations
 
 ## [1.5.0-rc9] = 2018-06-06
 ### notice

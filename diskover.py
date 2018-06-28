@@ -878,7 +878,7 @@ def index_get_docs(cliargs, logger, doctype='directory', copytags=False, hotdirs
                 # depth at rootdir
                 num_sep = cliargs['rootdir'].count(os.path.sep)
                 n = num_sep + maxdepth - 1
-                regexp = '(\/.[^\/]+){1,'+str(n)+'}|\/'
+                regexp = '(/[^/]+){1,' + str(n) + '}|/?'
                 logger.info('Searching for all %s docs in %s (maxdepth %s)...', doctype, index, maxdepth)
                 data = {
                     '_source': ['path_parent', 'filename', 'last_modified'],
@@ -1348,7 +1348,7 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
         # set current depth
         num_sep = path.count(os.path.sep)
 
-        logger.info("Using %s threads for tree walking" % config['treethreads'])
+        logger.info("Using %s threads for tree walking (maxdepth %s)" % (config['treethreads'], cliargs['maxdepth']))
 
         if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
             bar = progress_bar('Crawling')
