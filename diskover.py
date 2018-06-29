@@ -21,7 +21,7 @@ except ImportError:
     except ImportError:
         raise ImportError('elasticsearch module not installed')
 from datetime import datetime
-from scandir import scandir
+from scandir import scandir, walk
 try:
     import configparser as ConfigParser
 except ImportError:
@@ -1305,11 +1305,58 @@ def calc_dir_sizes(cliargs, logger, path=None):
 
 
 def tree_walker(num_sep, level, batchsize, cliargs, reindex_dict):
-    import diskover_worker_bot
     while True:
         item = thread_q.get()
-        diskover_worker_bot.treewalk(item, num_sep, level, batchsize, cliargs, reindex_dict)
+        treewalk(item, num_sep, level, batchsize, cliargs, reindex_dict)
         thread_q.task_done()
+
+
+def treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict):
+    """This is the tree walk function.
+    It walks the tree using scandir walk and adds tuple of root, dirs, files
+    to redis queue for rq worker bots to scrape meta and upload
+    to ES index after batch size (dir count) has been reached.
+    """
+    import diskover_worker_bot
+    batch = []
+
+    for root, dirs, files in walk(path):
+        if len(dirs) == 0 and len(files) == 0 and not cliargs['indexemptydirs']:
+            continue
+        if not dir_excluded(root, config, cliargs['verbose']):
+            batch.append((root, files))
+            batch_len = len(batch)
+            if batch_len >= batchsize:
+                q_crawl.enqueue(diskover_worker_bot.scrape_tree_meta,
+                          args=(batch, cliargs, reindex_dict,))
+                del batch[:]
+                batchsize_prev = batchsize
+                if cliargs['adaptivebatch']:
+                    q_len = len(q_crawl)
+                    if q_len == 0:
+                        if (batchsize - ab_step) >= ab_start:
+                            batchsize = batchsize - ab_step
+                    elif q_len > 0:
+                        if (batchsize + ab_step) <= ab_max:
+                            batchsize = batchsize + ab_step
+                    cliargs['batchsize'] = batchsize
+                    if cliargs['verbose'] or cliargs['debug']:
+                        if batchsize_prev != batchsize:
+                            logger.info('Batch size: %s' % batchsize)
+
+            # check if at maxdepth level and delete dirs/files lists to not
+            # descend further down the tree
+            num_sep_this = root.count(os.path.sep)
+            if num_sep + level <= num_sep_this:
+                del dirs[:]
+                del files[:]
+
+        else:  # directory excluded
+            del dirs[:]
+            del files[:]
+
+    # add any remaining in batch to queue
+    q_crawl.enqueue(diskover_worker_bot.scrape_tree_meta, args=(batch, cliargs, reindex_dict,))
 
 
 def crawl_tree(path, cliargs, logger, reindex_dict):

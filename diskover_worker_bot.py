@@ -14,7 +14,6 @@ LICENSE for the full license text.
 import diskover
 from redis import Redis
 from rq import Worker, Connection
-from scandir import walk
 from datetime import datetime
 import argparse
 import os
@@ -102,53 +101,6 @@ def get_worker_name():
     It returns worker name hostname.pid .
     """
     return '{0}.{1}'.format(socket.gethostname().partition('.')[0], os.getppid())
-
-
-def treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict):
-    """This is the tree walk function.
-    It walks the tree using scandir walk and adds tuple of root, dirs, files
-    to redis queue for rq worker bots to scrape meta and upload
-    to ES index.
-    """
-    batch = []
-
-    for root, dirs, files in walk(path):
-        if len(dirs) == 0 and len(files) == 0 and not cliargs['indexemptydirs']:
-            continue
-        if not diskover.dir_excluded(root, diskover.config, cliargs['verbose']):
-            batch.append((root, files))
-            batch_len = len(batch)
-            if batch_len >= batchsize:
-                diskover.q_crawl.enqueue(scrape_tree_meta,
-                          args=(batch, cliargs, reindex_dict,))
-                del batch[:]
-                batchsize_prev = batchsize
-                if cliargs['adaptivebatch']:
-                    q_len = len(diskover.q_crawl)
-                    if q_len == 0:
-                        if (batchsize - diskover.ab_step) >= diskover.ab_start:
-                            batchsize = batchsize - diskover.ab_step
-                    elif q_len > 0:
-                        if (batchsize + diskover.ab_step) <= diskover.ab_max:
-                            batchsize = batchsize + diskover.ab_step
-                    cliargs['batchsize'] = batchsize
-                    if cliargs['verbose'] or cliargs['debug']:
-                        if batchsize_prev != batchsize:
-                            bot_logger.info('Batch size: %s' % batchsize)
-
-            # check if at maxdepth level and delete dirs/files lists to not
-            # descend further down the tree
-            num_sep_this = root.count(os.path.sep)
-            if num_sep + level <= num_sep_this:
-                del dirs[:]
-                del files[:]
-
-        else:  # directory excluded
-            del dirs[:]
-            del files[:]
-
-    # add any remaining in batch to queue
-    diskover.q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,))
 
 
 def auto_tag(metadict, type, mtime, atime, ctime):
