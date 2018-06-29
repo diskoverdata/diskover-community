@@ -129,7 +129,7 @@ $ python /path/to/diskover.py -i diskover_s3-indexname --s3 /dir/inventoryfile1.
 
 ## OVA image file (for vmware, etc)
 
-If you don't want to set up everything yourself, I have OVA files running the latest version of diskover/diskover-web. Fastest way to get up and running diskover. Check out the [Patreon](https://www.patreon.com/diskover) page to learn more about how to get access to the OVA downloads.
+Becoming a Patron gets you access to the OVA files running the latest version of diskover/diskover-web. Fastest way to get up and running diskover. Check out the [Patreon](https://www.patreon.com/diskover) page to learn more about how to get access to the OVA downloads.
 
 ## Docker
 
