@@ -55,27 +55,27 @@ intro:
 <table border="0">
   <tr>
     <td>See data change on your file system and identify hot spots<br />
-      <img src="https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-hotdirs-screenshot.png?raw=true" alt="diskover-web hotdirs" width="600" /></td>
+      <a href="https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-hotdirs-screenshot.png?raw=true"><img src="https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-hotdirs-screenshot.png?raw=true" alt="diskover-web hotdirs" width="600" /></a></td>
     <td>Visualize your file system using one of the many analytics<br />
-      <img src="https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-hardlinks-screenshot.png?raw=true" alt="diskover-web filetree" width="600" /></td>
+      <a href="https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-hardlinks-screenshot.png?raw=true"><img src="https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-hardlinks-screenshot.png?raw=true" alt="diskover-web filetree" width="600" /></a></td>
   </tr>
   <tr>
     <td>Tag files and directories using default and custom tags, export file lists<br />
-      <img src="https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-searchresults-screenshot.png?raw=true" alt="diskover-web tagging" width="600" /></td>
+      <a href="https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-searchresults-screenshot.png?raw=true"><img src="https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-searchresults-screenshot.png?raw=true" alt="diskover-web tagging" width="600" /></a></td>
     <td>Use the built-in rest-api to assist with tagged data cleanup/moving<br />
-      <img src="https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-tags-screenshot.png?raw=true" alt="diskover-web tags" width="600" /></td>
+      <a href="https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-tags-screenshot.png?raw=true"><img src="https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-tags-screenshot.png?raw=true" alt="diskover-web tags" width="600" /></a></td>
   </tr>
   <tr>
     <td>Use pre-made or create custom smart searches<br />
-      <img src="https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-smartsearches-screenshot.png?raw=true" alt="diskover-web tagging" width="600" /></td>
+      <a href="https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-smartsearches-screenshot.png?raw=true"><img src="https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-smartsearches-screenshot.png?raw=true" alt="diskover-web tagging" width="600" /></a></td>
     <td>Find duplicate files taking up disk space<br />
-      <img src="https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-dupes-screenshot.png?raw=true" alt="diskover-web dupes" width="600" /></td>
+      <a href="https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-dupes-screenshot.png?raw=true"><img src="https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-dupes-screenshot.png?raw=true" alt="diskover-web dupes" width="600" /></a></td>
   </tr>
   <tr>
     <td>Quickly search all your storage servers<br />
-      <img src="https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-advancedsearch-screenshot.png?raw=true" alt="diskover-web file search" width="600" /></td>
+      <a href="https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-advancedsearch-screenshot.png?raw=true"><img src="https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-advancedsearch-screenshot.png?raw=true" alt="diskover-web file search" width="600" /></a></td>
     <td>Use Elasticsearch query syntax to find files and directories<br />
-      <img src="https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-simplesearch-screenshot.png?raw=true" alt="diskover-web file search es query" width="600" /></td>
+      <a href="https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-simplesearch-screenshot.png?raw=true"><img src="https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-simplesearch-screenshot.png?raw=true" alt="diskover-web file search es query" width="600" /></a></td>
   </tr>
 </table>
 <table border="0">
