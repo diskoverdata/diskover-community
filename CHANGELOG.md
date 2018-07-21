@@ -31,6 +31,7 @@
 - multithreading for file md5 checking when running finddupes
 - new Kibana dashboards/visualizations (export.json)
 - optimize_indices.sh script for optimize elasticsearch diskover indices (reduces index size, accepts 1 required arg eshost and 2 optional args username password)
+- hotdirs to socket server commands
 ### changed
 - directory paths are hashed using base64 encode when storing in redis for cacheing directory times (times are used when crawling with -I)
 - moved autotag code after plugin code when setting file/directory doc meta data fields
@@ -52,6 +53,7 @@
 - bugs with reindexing using --reindex or --reindexrecurs
 - bugs with directory calculations
 - bug with waiting if any worker bots are running
+- bug with disk space info path getting set to sub directory when reindexing sub directory
 
 ## [1.5.0-rc9] = 2018-06-06
 ### notice

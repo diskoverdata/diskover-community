@@ -197,12 +197,17 @@ def run_command(threadnum, command_dict, clientsock, cliargs, logger, verbose):
         # set up command for different action
         if action == 'crawl':
             path = command_dict['path']
-            cmd = [pythonpath, '-u', diskoverpath, '-b', batchsize,
+            cmd = [pythonpath, diskoverpath, '-b', batchsize,
                    '-i', index, '-d', path, '-q']
 
         elif action == 'finddupes':
-            cmd = [pythonpath, '-u', diskoverpath, '-b', batchsize,
+            cmd = [pythonpath, diskoverpath, '-b', batchsize,
                    '-i', index, '--finddupes', '-q']
+
+        elif action == 'hotdirs':
+            index2 = str(command_dict['index2'])
+            cmd = [pythonpath, diskoverpath, '-b', batchsize,
+                   '-i', index, '--hotdirs', index2, '-q']
 
         elif action == 'reindex':
             try:
@@ -212,10 +217,10 @@ def run_command(threadnum, command_dict, clientsock, cliargs, logger, verbose):
                 pass
             path = command_dict['path']
             if recursive == 'true':
-                cmd = [pythonpath, '-u', diskoverpath, '-b', batchsize,
+                cmd = [pythonpath, diskoverpath, '-b', batchsize,
                     '-i', index, '-d', path, '-R', '-q']
             else:
-                cmd = [pythonpath, '-u', diskoverpath, '-b', batchsize,
+                cmd = [pythonpath, diskoverpath, '-b', batchsize,
                     '-i', index, '-d', path, '-r', '-q']
 
         elif action == 'kill':

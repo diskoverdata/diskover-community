@@ -1873,10 +1873,11 @@ if __name__ == "__main__":
         logger.info('Using %s for metadata cache (-I)' % cliargs['index2'][0])
 
     # add disk space info to es index
-    if cliargs['qumulo']:
-        diskover_qumulo.qumulo_add_diskspace(es, cliargs['index'], rootdir_path, qumulo_ip, qumulo_ses, logger)
-    else:
-        add_diskspace(cliargs['index'], logger, rootdir_path)
+    if not cliargs['reindex'] and not cliargs['reindexrecurs']:
+        if cliargs['qumulo']:
+            diskover_qumulo.qumulo_add_diskspace(es, cliargs['index'], rootdir_path, qumulo_ip, qumulo_ses, logger)
+        else:
+            add_diskspace(cliargs['index'], logger, rootdir_path)
 
     starttime = time.time()
     # start crawling
