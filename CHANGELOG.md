@@ -4,7 +4,7 @@
 ### notice
 - version change only, no additional updates
 
-## [1.5.0-rc10] = 2018-06-28
+## [1.5.0-rc10] = 2018-07-21
 ### notice
 - Amazon S3 inventory support is beta, requires diskover-web >= v1.5.0-rc10
 - --s3 requires index named diskover_s3-indexname
@@ -51,6 +51,7 @@
 - bugs with Kibana dashboards/visualizations (export.json)
 - bugs with reindexing using --reindex or --reindexrecurs
 - bugs with directory calculations
+- bug with waiting if any worker bots are running
 
 ## [1.5.0-rc9] = 2018-06-06
 ### notice

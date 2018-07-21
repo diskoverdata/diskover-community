@@ -1544,10 +1544,11 @@ def hotdirs():
 def wait_for_worker_bots(logger):
     """This is the wait for worker bots function.
     """
-    while len(Worker.all(queue=q)) == 0:
+    workers = Worker.all(connection=redis_conn)
+    while len(workers) == 0:
         logger.info('Waiting for diskover worker bots to start...')
         time.sleep(2)
-    workers = Worker.all(queue=q)
+        workers = Worker.all(connection=redis_conn)
     logger.info('Found %s diskover RQ worker bots', len(workers))
 
 
