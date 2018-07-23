@@ -1,5 +1,9 @@
 # Diskover Change Log
 
+## [1.5.0-rc12] = 2018-07-23
+### changed
+- set exit code to 1 when index named incorrectly
+
 ## [1.5.0-rc11] = 2018-07-21
 ### notice
 - version change only, no additional updates

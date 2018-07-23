@@ -48,7 +48,7 @@ import sys
 import json
 
 
-version = '1.5.0-rc11'
+version = '1.5.0-rc12'
 __version__ = version
 
 IS_PY3 = sys.version_info >= (3, 0)
@@ -1661,10 +1661,10 @@ if __name__ == "__main__":
                     (cliargs['index'].split('_')[0] != "diskover" and
                              cliargs['index'].split('_')[1] != "qumulo"):
                 print('Please name your index: diskover_qumulo-<string>')
-                sys.exit(0)
+                sys.exit(1)
         except IndexError:
             print('Please name your index: diskover_qumulo-<string>')
-            sys.exit(0)
+            sys.exit(1)
     # check index name for s3 storage
     elif cliargs['s3']:
         try:
@@ -1672,20 +1672,20 @@ if __name__ == "__main__":
                     (cliargs['index'].split('_')[0] != "diskover" and
                              cliargs['index'].split('_')[1] != "s3"):
                 print('Please name your index: diskover_s3-<string>')
-                sys.exit(0)
+                sys.exit(1)
         except IndexError:
             print('Please name your index: diskover_s3-<string>')
-            sys.exit(0)
+            sys.exit(1)
     else:
         try:
             # check index name
             if cliargs['index'] == "diskover" or \
                             cliargs['index'].split('-')[0] != "diskover":
                 print('Please name your index: diskover-<string>')
-                sys.exit(0)
+                sys.exit(1)
         except IndexError:
             print('Please name your index: diskover-<string>')
-            sys.exit(0)
+            sys.exit(1)
 
     # check for listen socket cli flag to start socket server
     if cliargs['listen']:
