@@ -794,7 +794,8 @@ def calc_dir_size(dirlist, cliargs):
 def es_bulk_adder(worker_name, docs, cliargs, totalcrawltime=None):
     starttime = time.time()
 
-    bot_logger.info('*** Bulk adding to ES index...')
+    if not cliargs['s3']:
+        bot_logger.info('*** Bulk adding to ES index...')
 
     try:
         dirlist, filelist, crawltimelist = docs
@@ -812,8 +813,9 @@ def es_bulk_adder(worker_name, docs, cliargs, totalcrawltime=None):
                 "indexing_date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")}
         es.index(index=cliargs['index'], doc_type='worker', body=data)
 
-    elapsed_time = round(time.time() - starttime, 3)
-    bot_logger.info('*** FINISHED BULK ADDING, Elapsed Time: ' + str(elapsed_time))
+    if not cliargs['s3']:
+        elapsed_time = round(time.time() - starttime, 3)
+        bot_logger.info('*** FINISHED BULK ADDING, Elapsed Time: ' + str(elapsed_time))
 
 
 def get_metadata(path, cliargs):

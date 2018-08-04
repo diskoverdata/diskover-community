@@ -32,26 +32,28 @@ def process_s3_inventory(inventory_file, cliargs):
     Takes an S3 inventory file (gzipped csv), processes and bulk adds it
     into diskover index.
     """
-    jobstart = time.time()
     tree_dirs = []
     tree_files = []
     tree_crawltimes = []
 
     with gzip.open(inventory_file, mode='rt') as f:
         reader = csv.reader(f, delimiter=',', quotechar='"')
-        x = 0
         for row in reader:
-            if x == 0:
-                # create fake root /s3/bucketname directory entry for s3 bucket
-                root_dict = make_fake_s3_dir('/s3', row[0], cliargs)
-                tree_dirs.append(root_dict)
-                # create fake crawltime entry
-                tree_crawltimes.append({
-                    "path": '/s3/' + row[0],
-                    "worker_name": workername,
-                    "crawl_time": 0,
-                    "indexing_date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f"),
-                    "_type": "crawlstat"})
+            # create fake root /s3/bucketname directory entry for s3 bucket
+            root_dict = make_fake_s3_dir('/s3', row[0], cliargs)
+            # check if bucket fake dir already created
+            if root_dict is None:
+                break
+            tree_dirs.append(root_dict)
+            # create fake crawltime entry
+            tree_crawltimes.append({
+                "path": '/s3/' + row[0],
+                "worker_name": workername,
+                "crawl_time": 0,
+                "indexing_date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f"),
+                "_type": "crawlstat"})
+            break
+        for row in reader:
             starttime = time.time()
             n = 2
             # S3 Inventory csv column headers
@@ -104,8 +106,6 @@ def process_s3_inventory(inventory_file, cliargs):
             else:
                 isdir = False
                 # add any directories in path to fake dirs
-                """ftp - footage.arri.de / ALEXA + 65 / ALEXA65_ARRIRAW_OpenGate_6560x3100 / A005R51F / ari / A005C031_160120_R51F
-                .0002788.ari"""
                 splitpath = inventory_dict['s3_key'].split('/')
                 # remove file name
                 splitpath = splitpath[:-1]
@@ -237,12 +237,9 @@ def process_s3_inventory(inventory_file, cliargs):
                 del tree_dirs[:]
                 del tree_files[:]
                 del tree_crawltimes[:]
-            x = x + 1
 
     if (len(tree_dirs) + len(tree_files) + len(tree_crawltimes)) > 0:
         diskover_worker_bot.es_bulk_adder(workername, (tree_dirs, tree_files, tree_crawltimes), cliargs, 0)
-    elapsed_time = round(time.time() - jobstart, 3)
-    diskover_worker_bot.bot_logger.info('*** FINISHED JOB, Elapsed Time: ' + str(elapsed_time))
 
 
 def make_fake_s3_dir(parent, file, cliargs):

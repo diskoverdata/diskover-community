@@ -1,5 +1,12 @@
 # Diskover Change Log
 
+## [1.5.0-rc13] = 2018-08-04
+### changed
+- s3 inventory file importing is handled by main thread instead of rq worker bots
+### fixed
+- s3 inventory import issue causing duplicate bucket/directory docs in es when importing multiple inventory files
+- s3 inventory import issue causing multiple buckets in inventory files to not be recognized correctly
+
 ## [1.5.0-rc12] = 2018-07-23
 ### changed
 - set exit code to 1 when index named incorrectly

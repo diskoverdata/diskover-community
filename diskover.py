@@ -48,7 +48,7 @@ import sys
 import json
 
 
-version = '1.5.0-rc12'
+version = '1.5.0-rc13'
 __version__ = version
 
 IS_PY3 = sys.version_info >= (3, 0)
@@ -1768,15 +1768,23 @@ if __name__ == "__main__":
         cliargs['rootdir'] = rootdir_path
         logger.debug('Excluded dirs: %s', config['excluded_dirs'])
         logger.debug('Inventory files: %s', cliargs['s3'])
+
         # warn if indexing 0 Byte empty files
         if cliargs['minsize'] == 0:
             logger.warning('You are indexing 0 Byte empty files (-s 0)')
+
         # create Elasticsearch index
         index_create(cliargs['index'])
+
+        # optimize Elasticsearch index settings for crawling
+        tune_es_for_crawl()
+
         starttime = time.time()
+
         # start importing S3 inventory file(s)
         inventory_files = cliargs['s3']
-        logger.info('Starting import of %s S3 inventory file(s)' % len(inventory_files))
+        logger.info('Importing %s S3 inventory file(s)...' % len(inventory_files))
+
         # add fake disk space to index with path set to /s3
         data = {
             "path": '/s3',
@@ -1787,6 +1795,7 @@ if __name__ == "__main__":
             "indexing_date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
         }
         es.index(index=cliargs['index'], doc_type='diskspace', body=data)
+
         # create fake root directory doc
         time_utc_now = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
         time_utc_epoch_start = "1970-01-01T00:00:00"
@@ -1808,14 +1817,35 @@ if __name__ == "__main__":
         root_dict["change_percent_items_subdirs"] = ""
         es.index(index=cliargs['index'], doc_type='directory', body=root_dict)
         add_crawl_stats(es, cliargs['index'], '/s3', 0)
-        logger.info('Sending file(s) to worker bots...')
-        for file in inventory_files:
-            q.enqueue(diskover_s3.process_s3_inventory, args=(file, cliargs,))
+
+        if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+            widgets = [progressbar.AnimatedMarker(), ' Importing (', progressbar.Counter(), ') ',
+                       progressbar.Timer()]
+            bar = progressbar.ProgressBar(widgets=widgets, max_value=progressbar.UnknownLength)
+            bar.start()
+            i = 1
+            for file in inventory_files:
+                bar.update(i)
+                diskover_s3.process_s3_inventory(file, cliargs)
+                i += 1
+            bar.finish()
+        else:
+            i = 1
+            for file in inventory_files:
+                diskover_s3.process_s3_inventory(file, cliargs)
+                i += 1
+
         # calculate directory sizes and items
         calc_dir_sizes(cliargs, logger)
+
+        check_workers_running(logger)
+
+        # set Elasticsearch index settings back to default
+        tune_es_for_crawl(defaults=True)
+
         # add elapsed time crawl stat to es
         add_crawl_stats(es, cliargs['index'], rootdir_path, (time.time() - starttime), "main")
-        logger.info('Done importing S3 inventory file! Sayonara!')
+        logger.info('Done importing S3 inventory files! Sayonara!')
         sys.exit(0)
     else:
         # warn if not running as root
