@@ -1127,23 +1127,39 @@ def calc_hot_dirs(dirlist, cliargs):
             source = res['hits']['hits'][0]['_source']
             # ((new - old) / old) * 100
             try:
-                changepercent_filesize = round(((path[2] - source['filesize'])
-                                                / source['filesize']) * 100.0, 2)
+                # check if path size in index2 was 0 bytes and set change percent to 100%
+                if path[2] > 0 and source['filesize'] == 0:
+                    changepercent_filesize = 100.0
+                else:
+                    changepercent_filesize = round(((path[2] - source['filesize'])
+                                                    / source['filesize']) * 100.0, 2)
             except ZeroDivisionError:
                 changepercent_filesize = 0.0
             try:
-                changepercent_items = round(((path[3] - source['items'])
-                                             / source['items']) * 100.0, 2)
+                # check if path items in index2 was 0 and set change percent to 100%
+                if path[3] > 0 and source['items'] == 0:
+                    changepercent_items = 100.0
+                else:
+                    changepercent_items = round(((path[3] - source['items'])
+                                                 / source['items']) * 100.0, 2)
             except ZeroDivisionError:
                 changepercent_items = 0.0
             try:
-                changepercent_items_files = round(((path[4] - source['items_files'])
-                                                   / source['items_files']) * 100.0, 2)
+                # check if path file items in index2 was 0 and set change percent to 100%
+                if path[4] > 0 and source['items_files'] == 0:
+                    changepercent_items_files = 100.0
+                else:
+                    changepercent_items_files = round(((path[4] - source['items_files'])
+                                                       / source['items_files']) * 100.0, 2)
             except ZeroDivisionError:
                 changepercent_items_files = 0.0
             try:
-                changepercent_items_subdirs = round(((path[5] - source['items_subdirs'])
-                                                     / source['items_subdirs']) * 100.0, 2)
+                # check if path subdir items in index2 was 0 and set change percent to 100%
+                if path[5] > 0 and source['items_subdirs'] == 0:
+                    changepercent_items_subdirs = 100.0
+                else:
+                    changepercent_items_subdirs = round(((path[5] - source['items_subdirs'])
+                                                         / source['items_subdirs']) * 100.0, 2)
             except ZeroDivisionError:
                 changepercent_items_subdirs = 0.0
 
