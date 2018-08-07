@@ -1,12 +1,14 @@
 # Diskover Change Log
 
-## [1.5.0-rc13] = 2018-08-06
+## [1.5.0-rc13] = 2018-08-08
 ### changed
 - s3 inventory file importing is handled by main thread instead of rq worker bots
+- s3 inventory files (csv.gz) are loaded into memory before processing each row/line
 ### fixed
 - s3 inventory import issue causing duplicate bucket/directory docs in es when importing multiple inventory files
 - s3 inventory import issue causing multiple buckets in inventory files to not be recognized correctly
 - bug with hot dir calculation when directory changed from 0 bytes to > 0 bytes not updating 100% change
+- slow importing when using many s3 inventory files
 
 ## [1.5.0-rc12] = 2018-07-23
 ### changed
