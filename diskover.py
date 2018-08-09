@@ -1763,6 +1763,7 @@ if __name__ == "__main__":
             logger.error("Rootdir path not found or not a directory, exiting")
             sys.exit(1)
     elif cliargs['s3']:
+        # ingest s3 inventory files
         import diskover_s3
         rootdir_path = '/'
         cliargs['rootdir'] = rootdir_path
@@ -1781,59 +1782,8 @@ if __name__ == "__main__":
 
         starttime = time.time()
 
-        # start importing S3 inventory file(s)
-        inventory_files = cliargs['s3']
-        logger.info('Importing %s S3 inventory file(s)...' % len(inventory_files))
-
-        # add fake disk space to index with path set to /s3
-        data = {
-            "path": '/s3',
-            "total": 0,
-            "used": 0,
-            "free": 0,
-            "available": 0,
-            "indexing_date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
-        }
-        es.index(index=cliargs['index'], doc_type='diskspace', body=data)
-
-        # create fake root directory doc
-        time_utc_now = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
-        time_utc_epoch_start = "1970-01-01T00:00:00"
-        root_dict = {}
-        root_dict['filename'] = "s3"
-        root_dict['path_parent'] = "/"
-        root_dict["filesize"] = 0
-        root_dict["items"] = 1  # 1 for itself
-        root_dict["items_files"] = 0
-        root_dict["items_subdirs"] = 0
-        root_dict["last_modified"] = time_utc_epoch_start
-        root_dict["tag"] = ""
-        root_dict["tag_custom"] = ""
-        root_dict["indexing_date"] = time_utc_now
-        root_dict["worker_name"] = "main"
-        root_dict["change_percent_filesize"] = ""
-        root_dict["change_percent_items"] = ""
-        root_dict["change_percent_items_files"] = ""
-        root_dict["change_percent_items_subdirs"] = ""
-        es.index(index=cliargs['index'], doc_type='directory', body=root_dict)
-        add_crawl_stats(es, cliargs['index'], '/s3', 0)
-
-        if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
-            widgets = [progressbar.AnimatedMarker(), ' Importing (', progressbar.Counter(), ') ',
-                       progressbar.Timer()]
-            bar = progressbar.ProgressBar(widgets=widgets, max_value=progressbar.UnknownLength)
-            bar.start()
-            i = 1
-            for file in inventory_files:
-                bar.update(i)
-                diskover_s3.process_s3_inventory(file, cliargs)
-                i += 1
-            bar.finish()
-        else:
-            i = 1
-            for file in inventory_files:
-                diskover_s3.process_s3_inventory(file, cliargs)
-                i += 1
+        # start importing
+        diskover_s3.start_importing(es, cliargs, logger)
 
         # calculate directory sizes and items
         calc_dir_sizes(cliargs, logger)
@@ -1845,6 +1795,7 @@ if __name__ == "__main__":
 
         # add elapsed time crawl stat to es
         add_crawl_stats(es, cliargs['index'], rootdir_path, (time.time() - starttime), "main")
+
         logger.info('Done importing S3 inventory files! Sayonara!')
         sys.exit(0)
     else:
