@@ -19,7 +19,6 @@ import csv
 from datetime import datetime
 import time
 import hashlib
-import progressbar
 try:
     from Queue import Queue as pyQueue
 except ImportError:

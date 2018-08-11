@@ -1,5 +1,9 @@
 # Diskover Change Log
 
+## [1.5.0-rc14] = 2018-08-11
+### note
+- no changes or bug fixes, versioning up
+
 ## [1.5.0-rc13] = 2018-08-09
 ### added
 - threaded bulk importing of s3 inventory files
