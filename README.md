@@ -102,7 +102,8 @@ Worker bots can be added during a crawl to help with the queue. To run a worker 
 To start up multiple bots, run:
 
 ```sh
-diskover-bot-launcher.sh
+$ cd /path/with/diskover
+$ sh diskover-bot-launcher.sh
 ``` 
 
 By default, this will start up 8 bots. See -h for cli options including changing the number of bots to start. Bots can be run on the same host as the diskover.py crawler or multiple hosts in the network as long as they have the same nfs/cifs mountpoint as rootdir (-d path) and can connect to ES and Redis (see wiki for more info).
