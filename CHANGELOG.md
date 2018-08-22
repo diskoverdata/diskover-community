@@ -1,8 +1,8 @@
 # Diskover Change Log
 
-## [1.5.0-rc14] = 2018-08-11
-### note
-- no changes or bug fixes, versioning up
+## [1.5.0-rc14] = 2018-08-22
+### added
+- better usage help info for optimize_indices.sh
 
 ## [1.5.0-rc13] = 2018-08-09
 ### added

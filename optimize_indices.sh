@@ -11,7 +11,7 @@ USER=$2
 PASSWORD=$3
 CURL_BIN=$(which curl)
 if [ -z "$HOST" ]; then
-  echo "Host is missing"
+  echo "Elasticsearch host is missing, use $0 hostname"
   exit 1
 fi
 if [ -z "$CURL_BIN" ]; then
