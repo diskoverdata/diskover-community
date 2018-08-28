@@ -110,10 +110,10 @@ By default, this will start up 8 bots. See -h for cli options including changing
 
 ### Usage examples
 
-Start diskover main job dispatcher and file tree crawler with:
+Start diskover main job dispatcher and file tree crawler with (using adaptive batch size and optimize index cli flags):
 
 ```sh
-$ python /path/to/diskover.py -d /rootpath/you/want/to/crawl -i diskover-indexname -a
+$ python /path/to/diskover.py -d /rootpath/you/want/to/crawl -i diskover-indexname -a -O
 ```
 
 **Defaults for crawl with no flags is to index from . (current directory) and files >0 Bytes and 0 days modified time. Empty files and directores are skipped (unless you use -s 0 and -e flags). Max crawl depth is 100 and max depth for dir size calculations is 100 by default. Use -h to see cli options.**
