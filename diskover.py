@@ -48,7 +48,7 @@ import sys
 import json
 
 
-version = '1.5.0-rc14'
+version = '1.5.0-rc15'
 __version__ = version
 
 IS_PY3 = sys.version_info >= (3, 0)
@@ -501,8 +501,8 @@ def index_create(indexname):
                         "path": {
                             "type": "keyword"
                         },
-                        "worker_name": {
-                            "type": "keyword"
+                        "state": {
+                            "type": "text"
                         },
                         "crawl_time": {
                             "type": "float"
@@ -586,6 +586,9 @@ def index_create(indexname):
                         },
                         "worker_name": {
                             "type": "keyword"
+                        },
+                        "crawl_time": {
+                            "type": "float"
                         },
                         "change_percent_filesize": {
                             "type": "float"
@@ -968,14 +971,14 @@ def add_diskspace(index, logger, path):
     es.index(index=index, doc_type='diskspace', body=data)
 
 
-def add_crawl_stats(es, index, path, crawltime, worker_name=None):
+def add_crawl_stats(es, index, path, crawltime, state):
     """This is the add crawl stats function.
-    It adds crawl elapsed time info to es.
+    It adds crawl stats info to es when crawl starts and finishes.
     """
     data = {
         "path": path,
-        "worker_name": worker_name,
-        "crawl_time": round(crawltime, 10),
+        "state": state,  # running, finished_crawl, finished_dircalc
+        "crawl_time": round(crawltime, 3),
         "indexing_date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
     }
     es.index(index=index, doc_type='crawlstat', body=data)
@@ -1124,6 +1127,8 @@ def parse_cli_args(indexname):
                         help="Adaptive batch size for sending to worker bots (intelligent crawl)")
     parser.add_argument("-A", "--autotag", action="store_true",
                         help="Get bots to auto-tag files/dirs based on patterns in config")
+    parser.add_argument("-O", "--optimizeindex", action="store_true",
+                        help="Optimize index at end of crawl (reduce size)")
     parser.add_argument("-r", "--reindex", action="store_true",
                         help="Reindex directory (non-recursive)")
     parser.add_argument("-R", "--reindexrecurs", action="store_true",
@@ -1600,8 +1605,12 @@ def tune_es_for_crawl(defaults=False):
         es.indices.put_settings(index=cliargs['index'], body=default_settings,
                                 request_timeout=config['es_timeout'])
         try:
-            logger.info("Force merging/Optimizing ES index...")
+            logger.info("Force merging ES index...")
             es.indices.forcemerge(index=cliargs['index'], request_timeout=config['es_timeout'])
+            # check if we should optimize index
+            if cliargs['optimizeindex']:
+                logger.info('Optimizing ES index... this could take a while... (-O)')
+                es.indices.forcemerge(index=cliargs['index'], max_num_segments=1, request_timeout=config['es_timeout'])
         except (socket.timeout, urllib3.exceptions.ReadTimeoutError):
             logger.info("Force merging/Optimizing continuing in background...")
             pass
@@ -1777,6 +1786,9 @@ if __name__ == "__main__":
         # create Elasticsearch index
         index_create(cliargs['index'])
 
+        # add crawl stat to index
+        add_crawl_stats(es, cliargs['index'], rootdir_path, 0, "running")
+
         # optimize Elasticsearch index settings for crawling
         tune_es_for_crawl()
 
@@ -1785,8 +1797,13 @@ if __name__ == "__main__":
         # start importing
         diskover_s3.start_importing(es, cliargs, logger)
 
+        # add elapsed time crawl stat to es
+        add_crawl_stats(es, cliargs['index'], rootdir_path, (time.time() - starttime), "finished_crawl")
+
         # calculate directory sizes and items
         calc_dir_sizes(cliargs, logger)
+
+        add_crawl_stats(es, cliargs['index'], rootdir_path, (time.time() - starttime), "finished_dircalc")
 
         check_workers_running(logger)
 
@@ -1794,7 +1811,7 @@ if __name__ == "__main__":
         tune_es_for_crawl(defaults=True)
 
         # add elapsed time crawl stat to es
-        add_crawl_stats(es, cliargs['index'], rootdir_path, (time.time() - starttime), "main")
+        add_crawl_stats(es, cliargs['index'], rootdir_path, (time.time() - starttime), "finished")
 
         logger.info('Done importing S3 inventory files! Sayonara!')
         sys.exit(0)
@@ -1846,6 +1863,10 @@ if __name__ == "__main__":
     # create Elasticsearch index
     index_create(cliargs['index'])
 
+    # add crawl stat to index
+    if not cliargs['reindex'] and not cliargs['reindexrecurs']:
+        add_crawl_stats(es, cliargs['index'], rootdir_path, 0, "running")
+
     # optimize Elasticsearch index settings for crawling
     tune_es_for_crawl()
 
@@ -1865,13 +1886,17 @@ if __name__ == "__main__":
     crawl_tree(rootdir_path, cliargs, logger, reindex_dict)
     # add elapsed time crawl stat to es
     if not cliargs['reindex'] and not cliargs['reindexrecurs']:
-        add_crawl_stats(es, cliargs['index'], rootdir_path, (time.time() - starttime), "main")
+        add_crawl_stats(es, cliargs['index'], rootdir_path, (time.time() - starttime), "finished_crawl")
 
     # calculate directory sizes and items
     if cliargs['reindex'] or cliargs['reindexrecurs']:
         calc_dir_sizes(cliargs, logger, path=rootdir_path)
     else:
         calc_dir_sizes(cliargs, logger)
+
+    # add elapsed time crawl stat to es
+    if not cliargs['reindex'] and not cliargs['reindexrecurs']:
+        add_crawl_stats(es, cliargs['index'], rootdir_path, (time.time() - starttime), "finished_dircalc")
 
     check_workers_running(logger)
 

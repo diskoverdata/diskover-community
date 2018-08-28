@@ -503,6 +503,7 @@ def get_dir_meta(worker_name, path, cliargs, reindex_dict):
             "tag_custom": "",
             "indexing_date": indextime_utc,
             "worker_name": worker_name,
+            "crawl_time": 0,
             "change_percent_filesize": "",
             "change_percent_items": "",
             "change_percent_items_files": "",
@@ -798,18 +799,16 @@ def es_bulk_adder(worker_name, docs, cliargs, totalcrawltime=None):
         bot_logger.info('*** Bulk adding to ES index...')
 
     try:
-        dirlist, filelist, crawltimelist = docs
+        dirlist, filelist = docs
         diskover.index_bulk_add(es, dirlist, diskover.config, cliargs)
         diskover.index_bulk_add(es, filelist, diskover.config, cliargs)
-        if not cliargs['reindex'] and not cliargs['reindexrecurs'] and not cliargs['crawlbot']:
-            diskover.index_bulk_add(es, crawltimelist, diskover.config, cliargs)
     except ValueError:
         diskover.index_bulk_add(es, docs, diskover.config, cliargs)
 
     if not cliargs['reindex'] and not cliargs['reindexrecurs'] and not cliargs['crawlbot']:
         data = {"worker_name": worker_name, "dir_count": len(dirlist),
-                "file_count": len(filelist), "bulk_time": round(time.time() - starttime, 10),
-                "crawl_time": round(totalcrawltime, 10),
+                "file_count": len(filelist), "bulk_time": round(time.time() - starttime, 3),
+                "crawl_time": round(totalcrawltime, 3),
                 "indexing_date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")}
         es.index(index=cliargs['index'], doc_type='worker', body=data)
 
@@ -924,14 +923,10 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
                 dir_source['indexing_date'] = datenow
                 # update worker name
                 dir_source['worker_name'] = worker
-                tree_dirs.append(dir_source)
+                # update crawl time
                 elapsed = time.time() - starttime
-                tree_crawltimes.append({
-                        "path": root_path,
-                        "worker_name": worker,
-                        "crawl_time": round(elapsed, 10),
-                        "indexing_date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f"),
-                        "_type": "crawlstat"})
+                dir_source['crawl_time'] = round(elapsed, 3)
+                tree_dirs.append(dir_source)
                 totalcrawltime += elapsed
         else:  # get meta off disk since times different in Redis than on disk
             for file in files:
@@ -965,18 +960,14 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
                 while file_out_thread_q.qsize():
                     tree_files.append(file_out_thread_q.get())
             if dmeta:
-                tree_dirs.append(dmeta)
+                # update crawl time
                 elapsed = time.time() - starttime
-                tree_crawltimes.append({
-                    "path": root_path,
-                    "worker_name": worker,
-                    "crawl_time": round(elapsed, 10),
-                    "indexing_date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f"),
-                    "_type": "crawlstat"})
+                dmeta['crawl_time'] = round(elapsed, 3)
+                tree_dirs.append(dmeta)
                 totalcrawltime += elapsed
 
     if len(tree_dirs) > 0 or len(tree_files) > 0:
-        es_bulk_adder(worker, (tree_dirs, tree_files, tree_crawltimes), cliargs, totalcrawltime)
+        es_bulk_adder(worker, (tree_dirs, tree_files), cliargs, totalcrawltime)
 
     elapsed_time = round(time.time() - jobstart, 3)
     bot_logger.info('*** FINISHED JOB, Elapsed Time: ' + str(elapsed_time))

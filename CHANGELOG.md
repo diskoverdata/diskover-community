@@ -1,5 +1,15 @@
 # Diskover Change Log
 
+## [1.5.0-rc15] = 2018-08-28
+### note
+- requires diskover-web >= 1.5.0-rc15
+### added
+- index sizes are now up to 15% smaller (optimize your indices after crawling for best size reduction)
+- -O --optimizeindex cli option to automatically optimize index (reduce size) after crawl and dir size calcs are complete
+### changed
+- removed docs for crawlstat for directories and added crawl_time field to directory docs
+- crawlstat doc now has "state" field to indicate running/finished_crawl/finished_dircalc
+
 ## [1.5.0-rc14] = 2018-08-22
 ### added
 - better usage help info for optimize_indices.sh
