@@ -502,7 +502,6 @@ def get_dir_meta(worker_name, path, cliargs, reindex_dict):
             "tag": "",
             "tag_custom": "",
             "indexing_date": indextime_utc,
-            "worker_name": worker_name,
             "crawl_time": 0,
             "change_percent_filesize": "",
             "change_percent_items": "",
@@ -660,7 +659,6 @@ def get_file_meta(worker_name, path, cliargs, reindex_dict):
             "tag_custom": "",
             "dupe_md5": "",
             "indexing_date": indextime_utc,
-            "worker_name": worker_name,
             "_type": "file"
         }
 
@@ -887,7 +885,6 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
     worker = get_worker_name()
     tree_dirs = []
     tree_files = []
-    tree_crawltimes = []
     qumulo = cliargs['qumulo']
     totalcrawltime = 0
     # amount of time (sec) before starting threads to help crawl files

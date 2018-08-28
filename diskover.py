@@ -584,9 +584,6 @@ def index_create(indexname):
                         "indexing_date": {
                             "type": "date"
                         },
-                        "worker_name": {
-                            "type": "keyword"
-                        },
                         "crawl_time": {
                             "type": "float"
                         },
@@ -653,9 +650,6 @@ def index_create(indexname):
                         },
                         "indexing_date": {
                             "type": "date"
-                        },
-                        "worker_name": {
-                            "type": "keyword"
                         }
                     }
                 }
