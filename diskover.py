@@ -581,9 +581,6 @@ def index_create(indexname):
                         "tag_custom": {
                             "type": "keyword"
                         },
-                        "indexing_date": {
-                            "type": "date"
-                        },
                         "crawl_time": {
                             "type": "float"
                         },
@@ -598,6 +595,12 @@ def index_create(indexname):
                         },
                         "change_percent_items_subdirs": {
                             "type": "float"
+                        },
+                        "worker_name": {
+                            "type": "keyword"
+                        },
+                        "indexing_date": {
+                            "type": "date"
                         }
                     }
                 },
@@ -646,6 +649,9 @@ def index_create(indexname):
                             "type": "keyword"
                         },
                         "dupe_md5": {
+                            "type": "keyword"
+                        },
+                        "worker_name": {
                             "type": "keyword"
                         },
                         "indexing_date": {
@@ -972,7 +978,7 @@ def add_crawl_stats(es, index, path, crawltime, state):
     data = {
         "path": path,
         "state": state,  # running, finished_crawl, finished_dircalc
-        "crawl_time": round(crawltime, 3),
+        "crawl_time": round(crawltime, 6),
         "indexing_date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
     }
     es.index(index=index, doc_type='crawlstat', body=data)

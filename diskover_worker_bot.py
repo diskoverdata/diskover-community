@@ -501,12 +501,13 @@ def get_dir_meta(worker_name, path, cliargs, reindex_dict):
             "group": group,
             "tag": "",
             "tag_custom": "",
-            "indexing_date": indextime_utc,
             "crawl_time": 0,
             "change_percent_filesize": "",
             "change_percent_items": "",
             "change_percent_items_files": "",
             "change_percent_items_subdirs": "",
+            "worker_name": worker_name,
+            "indexing_date": indextime_utc,
             "_type": "directory"
         }
 
@@ -658,6 +659,7 @@ def get_file_meta(worker_name, path, cliargs, reindex_dict):
             "tag": "",
             "tag_custom": "",
             "dupe_md5": "",
+            "worker_name": worker_name,
             "indexing_date": indextime_utc,
             "_type": "file"
         }
@@ -786,7 +788,7 @@ def calc_dir_size(dirlist, cliargs):
 
     diskover.index_bulk_add(es, doclist, diskover.config, cliargs)
 
-    elapsed_time = round(time.time() - jobstart, 3)
+    elapsed_time = round(time.time() - jobstart, 6)
     bot_logger.info('*** FINISHED CALC DIR, Elapsed Time: ' + str(elapsed_time))
 
 
@@ -805,13 +807,13 @@ def es_bulk_adder(worker_name, docs, cliargs, totalcrawltime=None):
 
     if not cliargs['reindex'] and not cliargs['reindexrecurs'] and not cliargs['crawlbot']:
         data = {"worker_name": worker_name, "dir_count": len(dirlist),
-                "file_count": len(filelist), "bulk_time": round(time.time() - starttime, 3),
-                "crawl_time": round(totalcrawltime, 3),
+                "file_count": len(filelist), "bulk_time": round(time.time() - starttime, 6),
+                "crawl_time": round(totalcrawltime, 6),
                 "indexing_date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")}
         es.index(index=cliargs['index'], doc_type='worker', body=data)
 
     if not cliargs['s3']:
-        elapsed_time = round(time.time() - starttime, 3)
+        elapsed_time = round(time.time() - starttime, 6)
         bot_logger.info('*** FINISHED BULK ADDING, Elapsed Time: ' + str(elapsed_time))
 
 
@@ -922,7 +924,7 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
                 dir_source['worker_name'] = worker
                 # update crawl time
                 elapsed = time.time() - starttime
-                dir_source['crawl_time'] = round(elapsed, 3)
+                dir_source['crawl_time'] = round(elapsed, 6)
                 tree_dirs.append(dir_source)
                 totalcrawltime += elapsed
         else:  # get meta off disk since times different in Redis than on disk
@@ -959,14 +961,14 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
             if dmeta:
                 # update crawl time
                 elapsed = time.time() - starttime
-                dmeta['crawl_time'] = round(elapsed, 3)
+                dmeta['crawl_time'] = round(elapsed, 6)
                 tree_dirs.append(dmeta)
                 totalcrawltime += elapsed
 
     if len(tree_dirs) > 0 or len(tree_files) > 0:
         es_bulk_adder(worker, (tree_dirs, tree_files), cliargs, totalcrawltime)
 
-    elapsed_time = round(time.time() - jobstart, 3)
+    elapsed_time = round(time.time() - jobstart, 6)
     bot_logger.info('*** FINISHED JOB, Elapsed Time: ' + str(elapsed_time))
 
 
@@ -1004,7 +1006,7 @@ def dupes_process_hashkey(hashkey, cliargs):
     hashgroup = diskover_dupes.verify_dupes(hashgroup, cliargs)
     if hashgroup:
         diskover_dupes.index_dupes(hashgroup, cliargs)
-    elapsed_time = round(time.time() - jobstart, 3)
+    elapsed_time = round(time.time() - jobstart, 6)
     bot_logger.info('*** FINISHED JOB, Elapsed Time: ' + str(elapsed_time))
 
 
@@ -1066,7 +1068,7 @@ def tag_copier(path, cliargs):
 
     diskover.index_bulk_add(es, doclist, diskover.config, cliargs)
 
-    elapsed_time = round(time.time() - jobstart, 3)
+    elapsed_time = round(time.time() - jobstart, 6)
     bot_logger.info('*** FINISHED JOB, Elapsed Time: ' + str(elapsed_time))
 
 
@@ -1166,7 +1168,7 @@ def calc_hot_dirs(dirlist, cliargs):
 
     diskover.index_bulk_add(es, doclist, diskover.config, cliargs)
 
-    elapsed_time = round(time.time() - jobstart, 3)
+    elapsed_time = round(time.time() - jobstart, 6)
     bot_logger.info('*** FINISHED JOB, Elapsed Time: ' + str(elapsed_time))
 
 

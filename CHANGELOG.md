@@ -9,7 +9,6 @@
 ### changed
 - removed docs for crawlstat for directories and added crawl_time field to directory docs
 - crawlstat doc now has "state" field to indicate running/finished_crawl/finished_dircalc
-- removed worker_name field from file/dir doc mappings
 
 ## [1.5.0-rc14] = 2018-08-22
 ### added
