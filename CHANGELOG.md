@@ -1,5 +1,9 @@
 # Diskover Change Log
 
+## [1.5.0-rc16] = 2018-09-13
+### fixed
+- traceback error output when optimizing index (-O) takes longer than es timeout setting in diskover.cfg
+
 ## [1.5.0-rc15] = 2018-08-28
 ### note
 - requires diskover-web >= 1.5.0-rc15

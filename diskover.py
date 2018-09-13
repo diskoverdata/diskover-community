@@ -27,7 +27,6 @@ try:
 except ImportError:
     import ConfigParser
 import urllib3
-import socket
 import progressbar
 from redis import Redis
 from rq import Worker, Queue
@@ -48,7 +47,7 @@ import sys
 import json
 
 
-version = '1.5.0-rc15'
+version = '1.5.0-rc16'
 __version__ = version
 
 IS_PY3 = sys.version_info >= (3, 0)
@@ -1604,16 +1603,15 @@ def tune_es_for_crawl(defaults=False):
         logger.info("Setting ES index settings back to defaults")
         es.indices.put_settings(index=cliargs['index'], body=default_settings,
                                 request_timeout=config['es_timeout'])
-        try:
-            logger.info("Force merging ES index...")
-            es.indices.forcemerge(index=cliargs['index'], request_timeout=config['es_timeout'])
-            # check if we should optimize index
-            if cliargs['optimizeindex']:
-                logger.info('Optimizing ES index... this could take a while... (-O)')
-                es.indices.forcemerge(index=cliargs['index'], max_num_segments=1, request_timeout=config['es_timeout'])
-        except (socket.timeout, urllib3.exceptions.ReadTimeoutError):
-            logger.info("Force merging/Optimizing continuing in background...")
-            pass
+
+        # set logging level for es to ERROR to not output any warnings about timeouts for index optimizing
+        logging.getLogger('elasticsearch').setLevel(logging.ERROR)
+        logger.info("Force merging ES index...")
+        es.indices.forcemerge(index=cliargs['index'], request_timeout=config['es_timeout'])
+        # check if we should optimize index
+        if cliargs['optimizeindex']:
+            logger.info('Optimizing ES index... this could take a while... (-O)')
+            es.indices.forcemerge(index=cliargs['index'], max_num_segments=1, request_timeout=config['es_timeout'])
 
 
 # load config file into config dictionary
