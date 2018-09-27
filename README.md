@@ -1,4 +1,4 @@
-# diskover - File system crawler, disk space usage, storage search engine and analytics powered by Elasticsearch
+# diskover - File system crawler, disk space usage, file search engine and storage analytics powered by Elasticsearch
 
 [![License](https://img.shields.io/github/license/shirosaidev/diskover.svg?label=License&maxAge=86400)](./LICENSE)
 [![Release](https://img.shields.io/github/release/shirosaidev/diskover.svg?label=Release&maxAge=60)](https://github.com/shirosaidev/diskover/releases/latest)
