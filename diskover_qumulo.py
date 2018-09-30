@@ -206,7 +206,7 @@ def qumulo_get_dir_meta(worker_name, path, cliargs, reindex_dict, redis_conn):
             if cached_times == current_times:
                 return "sametimes"
     # get time now in utc
-    indextime_utc = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
+    indextime_utc = datetime.utcnow()
     # get user id of owner
     try:
         uid = int(path['owner'])
@@ -351,7 +351,7 @@ def qumulo_get_file_meta(worker_name, path, cliargs, reindex_dict):
     filestring = str(size) + str(mtime_unix)
     filehash = hashlib.md5(filestring.encode('utf-8')).hexdigest()
     # get time
-    indextime_utc = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
+    indextime_utc = datetime.utcnow()
     # get absolute path of parent directory
     parentdir = os.path.abspath(os.path.join(path['path'], os.pardir))
     # get user id of owner
@@ -457,7 +457,7 @@ def qumulo_add_diskspace(es, index, path, ip, ses, logger):
     free = int(fs_stats['free_size_bytes'])
     available = int(fs_stats['free_size_bytes'])
     used = total - free
-    indextime_utc = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
+    indextime_utc = datetime.utcnow()
     data = {
         "path": path,
         "total": total,

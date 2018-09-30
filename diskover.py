@@ -26,7 +26,6 @@ try:
     import configparser as ConfigParser
 except ImportError:
     import ConfigParser
-import urllib3
 import progressbar
 from redis import Redis
 from rq import Worker, Queue
@@ -47,7 +46,7 @@ import sys
 import json
 
 
-version = '1.5.0-rc16'
+version = '1.5.0-rc17'
 __version__ = version
 
 IS_PY3 = sys.version_info >= (3, 0)
@@ -956,7 +955,7 @@ def add_diskspace(index, logger, path):
     # to use (excl. reserved space)
     available = statvfs.f_frsize * statvfs.f_bavail
     used = total - free
-    indextime_utc = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
+    indextime_utc = datetime.utcnow()
     data = {
         "path": path,
         "total": total,
@@ -978,7 +977,7 @@ def add_crawl_stats(es, index, path, crawltime, state):
         "path": path,
         "state": state,  # running, finished_crawl, finished_dircalc
         "crawl_time": round(crawltime, 6),
-        "indexing_date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
+        "indexing_date": datetime.utcnow()
     }
     es.index(index=index, doc_type='crawlstat', body=data)
 

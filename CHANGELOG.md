@@ -1,5 +1,12 @@
 # Diskover Change Log
 
+## [1.5.0-rc17] = 2018-09-30
+### added
+- reduced crawl times
+- reduced number of es bulk uploads
+### changed
+- removed python strftime which was slowing down crawls
+
 ## [1.5.0-rc16] = 2018-09-13
 ### fixed
 - traceback error output when optimizing index (-O) takes longer than es timeout setting in diskover.cfg
