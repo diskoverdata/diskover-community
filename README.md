@@ -1,4 +1,4 @@
-# diskover - File system crawler, disk space usage, storage search engine and analytics powered by Elasticsearch
+# diskover - File system crawler, disk space usage, file search engine and storage analytics powered by Elasticsearch
 
 [![License](https://img.shields.io/github/license/shirosaidev/diskover.svg?label=License&maxAge=86400)](./LICENSE)
 [![Release](https://img.shields.io/github/release/shirosaidev/diskover.svg?label=Release&maxAge=60)](https://github.com/shirosaidev/diskover/releases/latest)
@@ -103,7 +103,7 @@ To start up multiple bots, run:
 
 ```sh
 $ cd /path/with/diskover
-$ sh diskover-bot-launcher.sh
+$ ./diskover-bot-launcher.sh
 ``` 
 
 By default, this will start up 8 bots. See -h for cli options including changing the number of bots to start. Bots can be run on the same host as the diskover.py crawler or multiple hosts in the network as long as they have the same nfs/cifs mountpoint as rootdir (-d path) and can connect to ES and Redis (see wiki for more info).
