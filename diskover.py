@@ -273,10 +273,6 @@ def load_config():
     except ConfigParser.NoOptionError:
         configsettings['redis_dirtimesttl'] = 604800
     try:
-        configsettings['treethreads'] = int(config.get('treethreads', 'threads'))
-    except ConfigParser.NoOptionError:
-        configsettings['treethreads'] = 8
-    try:
         configsettings['adaptivebatch_startsize'] = int(config.get('adaptivebatch', 'startsize'))
     except ConfigParser.NoOptionError:
         configsettings['adaptivebatch_startsize'] = 50
@@ -296,10 +292,6 @@ def load_config():
         configsettings['botlogfiledir'] = config.get('workerbot', 'logfiledir')
     except ConfigParser.NoOptionError:
         configsettings['botlogfiledir'] = "/tmp"
-    try:
-        configsettings['filethreadtime'] = int(config.get('workerbot', 'filethreadtime'))
-    except ConfigParser.NoOptionError:
-        configsettings['filethreadtime'] = 60
     try:
         configsettings['listener_host'] = \
             config.get('socketlistener', 'host')
@@ -1307,16 +1299,9 @@ def calc_dir_sizes(cliargs, logger, path=None):
         sys.exit(0)
 
 
-def tree_walker(num_sep, level, batchsize, cliargs, reindex_dict):
-    while True:
-        item = thread_q.get()
-        treewalk(item, num_sep, level, batchsize, cliargs, reindex_dict)
-        thread_q.task_done()
-
-
-def treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict):
+def treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict, bar):
     """This is the tree walk function.
-    It walks the tree using scandir walk and adds tuple of root, dirs, files
+    It walks the tree using scandir walk and adds tuple of root, files
     to redis queue for rq worker bots to scrape meta and upload
     to ES index after batch size (dir count) has been reached.
     """
@@ -1331,7 +1316,7 @@ def treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict):
             batch_len = len(batch)
             if batch_len >= batchsize:
                 q_crawl.enqueue(diskover_worker_bot.scrape_tree_meta,
-                          args=(batch, cliargs, reindex_dict,))
+                                args=(batch, cliargs, reindex_dict,))
                 del batch[:]
                 batchsize_prev = batchsize
                 if cliargs['adaptivebatch']:
@@ -1358,6 +1343,15 @@ def treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict):
             del dirs[:]
             del files[:]
 
+        # update progress bar
+        if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+            try:
+                bar.update(len(q_crawl))
+            except ZeroDivisionError:
+                bar.update(0)
+            except ValueError:
+                bar.update(0)
+
     # add any remaining in batch to queue
     q_crawl.enqueue(diskover_worker_bot.scrape_tree_meta, args=(batch, cliargs, reindex_dict,))
 
@@ -1367,7 +1361,6 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
     It starts threads for every directory at path and and waits
     for the threads and rq queue to finish.
     """
-    import diskover_worker_bot
 
     try:
         wait_for_worker_bots(logger)
@@ -1398,7 +1391,7 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
         # set current depth
         num_sep = path.count(os.path.sep)
 
-        logger.info("Using %s threads for tree walking (maxdepth %s)" % (config['treethreads'], cliargs['maxdepth']))
+        logger.info("Starting tree walk (maxdepth %s)" % cliargs['maxdepth'])
 
         if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
             bar = progress_bar('Crawling')
@@ -1406,74 +1399,21 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
         else:
             bar = None
 
-        threads = []
-        # set up threads to parallel crawl directories at rootdir
         # qumulo api crawl
         if cliargs['qumulo']:
             qumulo_ip, qumulo_ses = diskover_qumulo.qumulo_connection()
-            # use qumulo api to get dir list
-            dirs, files = diskover_qumulo.qumulo_api_listdir(path, qumulo_ip, qumulo_ses)
-            # enqueue rootdir files
-            root = diskover_qumulo.qumulo_get_file_attr(path, qumulo_ip, qumulo_ses)
-            # set up threads
-            for i in range(config['treethreads']):
-                t = Thread(target=diskover_qumulo.qumulo_tree_walker,
-                           args=(qumulo_ip, qumulo_ses, thread_q, q_crawl, num_sep, level,
-                                 batchsize, cliargs, reindex_dict,))
-                t.daemon = True
-                threads.append(t)
-                t.start()
-            for d_path in dirs:
-                thread_q.put(d_path)
-            q_crawl.enqueue(diskover_worker_bot.scrape_tree_meta,
-                             args=([(root, files)], cliargs, reindex_dict,))
-        else:  # regular crawl using scandir/walk
-            # set up threads
-            for i in range(config['treethreads']):
-                t = Thread(target=tree_walker,
-                           args=(num_sep, level, batchsize, cliargs, reindex_dict,))
-                t.daemon = True
-                threads.append(t)
-                t.start()
-            root_files = []
-            for entry in scandir(path):
-                if entry.is_file(follow_symlinks=False):
-                    root_files.append(entry.name)
-                elif entry.is_dir(follow_symlinks=False):
-                    thread_q.put(entry.path)
-            # enqueue rootdir files
-            q_crawl.enqueue(diskover_worker_bot.scrape_tree_meta,
-                      args=([(path, root_files)], cliargs, reindex_dict,))
-
-        # wait for queue to be empty and update progress bar
-        time.sleep(1)
-        while True:
-            workers_busy = False
-            workers = Worker.all(connection=redis_conn)
-            for worker in workers:
-                if worker._state == "busy":
-                    workers_busy = True
-                    break
-            q_len = len(q_crawl)
-            if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
-                try:
-                    bar.update(q_len)
-                except ZeroDivisionError:
-                    bar.update(0)
-                except ValueError:
-                    bar.update(0)
-            if q_len == 0 and workers_busy == False:
-                break
-            time.sleep(.5)
-
-        # wait for threads to finish
-        thread_q.join()
+            diskover_qumulo.qumulo_treewalk(path, qumulo_ip, qumulo_ses, q_crawl, num_sep, level,
+                                 batchsize, cliargs, reindex_dict, bar)
+        # regular crawl using scandir/walk
+        else:
+            treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict, bar)
 
     except KeyboardInterrupt:
         print("Ctrl-c keyboard interrupt, shutting down...")
         sys.exit(0)
 
     if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+        bar.update(0)
         bar.finish()
     logger.info('Finished crawling!')
 

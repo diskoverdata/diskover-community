@@ -134,14 +134,7 @@ def qumulo_api_walk(top, ip, ses):
             yield entry
 
 
-def qumulo_tree_walker(ip, ses, thread_q, q_crawl, num_sep, level, batchsize, cliargs, reindex_dict):
-    while True:
-        item = thread_q.get()
-        qumulo_treewalk(item, ip, ses, q_crawl, num_sep, level, batchsize, cliargs, reindex_dict)
-        thread_q.task_done()
-
-
-def qumulo_treewalk(path, ip, ses, q_crawl, num_sep, level, batchsize, cliargs, reindex_dict):
+def qumulo_treewalk(path, ip, ses, q_crawl, num_sep, level, batchsize, cliargs, reindex_dict, bar):
     batch = []
 
     for root, dirs, files in qumulo_api_walk(path, ip, ses):
@@ -181,6 +174,15 @@ def qumulo_treewalk(path, ip, ses, q_crawl, num_sep, level, batchsize, cliargs, 
         else:  # directory excluded
             del dirs[:]
             del files[:]
+
+        # update progress bar
+        if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+            try:
+                bar.update(len(q_crawl))
+            except ZeroDivisionError:
+                bar.update(0)
+            except ValueError:
+                bar.update(0)
 
     # add any remaining in batch to queue
     q_crawl.enqueue(diskover_worker_bot.scrape_tree_meta, args=(batch, cliargs, reindex_dict,))

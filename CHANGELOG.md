@@ -1,11 +1,15 @@
 # Diskover Change Log
 
-## [1.5.0-rc17] = 2018-09-30
+## [1.5.0-rc17] = 2018-10-01
 ### added
 - reduced crawl times
-- reduced number of es bulk uploads
+- reduced number of es bulk updates and optimized frequency of bulk updates
+- improved crawl performance over nfs/cifs mounts
 ### changed
 - removed python strftime which was slowing down crawls
+- removed filethreadtime from diskover.cfg.sample, removed thread code for long running directories
+- removed treethreads from diskover.cfg.sample, removed thread code for crawling directories in rootdir since
+provided no real benefit and was causing slow crawls over nfs and cifs
 
 ## [1.5.0-rc16] = 2018-09-13
 ### fixed

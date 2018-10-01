@@ -859,27 +859,6 @@ def get_metadata(path, cliargs):
     return dir_source, files_source
 
 
-def file_scraper(file_in_thread_q, file_out_thread_q):
-    while True:
-        item = file_in_thread_q.get()
-        worker, path, cliargs, reindex_dict = item
-        if cliargs['qumulo']:
-            import diskover_qumulo
-            fmeta = diskover_qumulo.qumulo_get_file_meta(worker, path, cliargs, reindex_dict)
-        else:
-            fmeta = get_file_meta(worker, path, cliargs, reindex_dict)
-        if fmeta:
-            file_out_thread_q.put(fmeta)
-        file_in_thread_q.task_done()
-
-
-def start_file_threads(file_in_thread_q, file_out_thread_q, threads=4):
-    for i in range(threads):
-        thread = Thread(target=file_scraper, args=(file_in_thread_q, file_out_thread_q,))
-        thread.daemon = True
-        thread.start()
-
-
 def scrape_tree_meta(paths, cliargs, reindex_dict):
     jobstart = time.time()
     worker = get_worker_name()
@@ -887,11 +866,8 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
     tree_files = []
     qumulo = cliargs['qumulo']
     totalcrawltime = 0
-    # amount of time (sec) before starting threads to help crawl files
-    filethreadtime = diskover.config['filethreadtime']
 
     for path in paths:
-        threadsstarted = False
         starttime = time.time()
         root, files = path
         if qumulo:
@@ -927,35 +903,12 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
                 totalcrawltime += elapsed
         else:  # get meta off disk since times different in Redis than on disk
             for file in files:
-                # spawn threads to help with getting file meta if running long
-                if (time.time() - starttime) > filethreadtime:
-                    if not threadsstarted:
-                        bot_logger.info('*** %s taking more than %s to crawl, starting threads to help scrape file meta'
-                                        % (root, filethreadtime))
-                        # set up python Queue for threaded file meta scraping
-                        file_in_thread_q = pyQueue()
-                        file_out_thread_q = pyQueue()
-                        start_file_threads(file_in_thread_q, file_out_thread_q)
-                    threadsstarted = True
-                    if qumulo:
-                        file_in_thread_q.put((worker, file, cliargs, reindex_dict))
-                    else:
-                        file_in_thread_q.put((worker, os.path.join(root, file), cliargs, reindex_dict))
+                if qumulo:
+                    fmeta = diskover_qumulo.qumulo_get_file_meta(worker, file, cliargs, reindex_dict)
                 else:
-                    if qumulo:
-                        fmeta = diskover_qumulo.qumulo_get_file_meta(worker, file, cliargs, reindex_dict)
-                    else:
-                        fmeta = get_file_meta(worker, os.path.join(root, file), cliargs, reindex_dict)
-                    if fmeta:
-                        tree_files.append(fmeta)
-            if threadsstarted:
-                bot_logger.info('*** Waiting for threads to finish...')
-                # wait for threads to finish
-                file_in_thread_q.join()
-                bot_logger.info('*** Adding file meta thread results for %s' % root)
-                # get all files and add to tree_files
-                while file_out_thread_q.qsize():
-                    tree_files.append(file_out_thread_q.get())
+                    fmeta = get_file_meta(worker, os.path.join(root, file), cliargs, reindex_dict)
+                if fmeta:
+                    tree_files.append(fmeta)
             if dmeta:
                 # update crawl time
                 elapsed = time.time() - starttime
@@ -963,6 +916,13 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
                 tree_dirs.append(dmeta)
                 totalcrawltime += elapsed
 
+        # check if doc count is more than es chunksize and bulk add to es
+        if len(tree_dirs) + len(tree_files) >= diskover.config['es_chunksize']:
+            es_bulk_adder(worker, tree_dirs, tree_files, cliargs, totalcrawltime)
+            del tree_dirs[:]
+            del tree_files[:]
+
+    # bulk add to es
     if len(tree_dirs) > 0 or len(tree_files) > 0:
         es_bulk_adder(worker, tree_dirs, tree_files, cliargs, totalcrawltime)
 
