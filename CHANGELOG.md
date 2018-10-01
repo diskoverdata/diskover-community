@@ -5,6 +5,7 @@
 - reduced crawl times
 - reduced number of es bulk updates and optimized frequency of bulk updates
 - improved crawl performance over nfs/cifs mounts
+- bots will now enqueue paths into redis queue (rq) if other bots are idle to improve crawl efficiency
 ### changed
 - removed python strftime which was slowing down crawls
 - removed filethreadtime from diskover.cfg.sample, removed thread code for long running directories

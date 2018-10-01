@@ -21,7 +21,7 @@ except ImportError:
     except ImportError:
         raise ImportError('elasticsearch module not installed')
 from datetime import datetime
-from scandir import scandir, walk
+from scandir import walk
 try:
     import configparser as ConfigParser
 except ImportError:
@@ -34,7 +34,6 @@ try:
     from Queue import Queue as pyQueue
 except ImportError:
     from queue import Queue as pyQueue
-from threading import Thread
 import argparse
 import logging
 import imp

@@ -29,7 +29,7 @@ try:
     from Queue import Queue as pyQueue
 except ImportError:
     from queue import Queue as pyQueue
-from threading import Thread
+from random import shuffle
 
 
 # cache uid/gid names
@@ -867,6 +867,25 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
     qumulo = cliargs['qumulo']
     totalcrawltime = 0
 
+    # check if other bots are idle and throw them some jobs (dir paths)
+    workers_idle = 0
+    workers = Worker.all(connection=redis_conn)
+    num_workers = len(workers)
+    for w in workers:
+        if w._state == "idle":
+            workers_idle += 1
+        if workers_idle > num_workers//2:
+            workers_idle = True
+            break
+    q_len = len(diskover.q_crawl)
+    if q_len == 0 and workers_idle == True:
+        # take half the paths randomly
+        shuffle(paths)
+        n = len(paths)//2
+        tosspaths = paths[:n]
+        paths = paths[n:]
+        diskover.q_crawl.enqueue(scrape_tree_meta,
+                        args=(tosspaths, cliargs, reindex_dict,))
     for path in paths:
         starttime = time.time()
         root, files = path
