@@ -1251,13 +1251,15 @@ def calc_dir_sizes(cliargs, logger, path=None):
                 jobcount += 1
                 del dirbatch[:]
                 batchsize_prev = batchsize
+                # adaptive batch algorithm, could be made better :)
                 if cliargs['adaptivebatch']:
-                    if len(q_calc) == 0:
-                        if (batchsize - ab_step) >= ab_start:
-                            batchsize = batchsize - ab_step
-                    elif len(q_calc) > 0:
+                    q_len = len(q_calc)
+                    if q_len == 0:
                         if (batchsize + ab_step) <= ab_max:
                             batchsize = batchsize + ab_step
+                    elif q_len > 0:
+                        if (batchsize - ab_step) >= ab_start:
+                            batchsize = batchsize - ab_step
                     cliargs['batchsize'] = batchsize
                     if cliargs['verbose'] or cliargs['debug']:
                         if batchsize_prev != batchsize:
@@ -1318,14 +1320,15 @@ def treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict, bar):
                                 args=(batch, cliargs, reindex_dict,))
                 del batch[:]
                 batchsize_prev = batchsize
+                # adaptive batch algorithm, could be made better :)
                 if cliargs['adaptivebatch']:
                     q_len = len(q_crawl)
                     if q_len == 0:
-                        if (batchsize - ab_step) >= ab_start:
-                            batchsize = batchsize - ab_step
-                    elif q_len > 0:
                         if (batchsize + ab_step) <= ab_max:
                             batchsize = batchsize + ab_step
+                    elif q_len > 0:
+                        if (batchsize - ab_step) >= ab_start:
+                            batchsize = batchsize - ab_step
                     cliargs['batchsize'] = batchsize
                     if cliargs['verbose'] or cliargs['debug']:
                         if batchsize_prev != batchsize:
@@ -1357,8 +1360,7 @@ def treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict, bar):
 
 def crawl_tree(path, cliargs, logger, reindex_dict):
     """This is the crawl tree function.
-    It starts threads for every directory at path and and waits
-    for the threads and rq queue to finish.
+    It sets up the directory tree walking.
     """
 
     try:
@@ -1438,13 +1440,15 @@ def hotdirs():
             q.enqueue(diskover_worker_bot.calc_hot_dirs, args=(dirbatch, cliargs,))
             del dirbatch[:]
             batchsize_prev = batchsize
+            # adaptive batch algorithm, could be made better :)
             if cliargs['adaptivebatch']:
-                if len(q) == 0:
-                    if (batchsize - ab_step) >= ab_start:
-                        batchsize = batchsize - ab_step
-                elif len(q) > 0:
+                q_len = len(q)
+                if q_len == 0:
                     if (batchsize + ab_step) <= ab_max:
                         batchsize = batchsize + ab_step
+                elif q_len > 0:
+                    if (batchsize - ab_step) >= ab_start:
+                        batchsize = batchsize - ab_step
                 cliargs['batchsize'] = batchsize
                 if cliargs['verbose'] or cliargs['debug']:
                     if batchsize_prev != batchsize:

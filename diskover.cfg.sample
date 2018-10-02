@@ -70,7 +70,7 @@ dirtimesttl = 604800
 startsize = 50
 ; maximum size of batch
 maxsize = 500
-; when adjusting batch size use this for +/- (increase when queues is > 0, decrease when 0)
+; when adjusting batch size use this for +/- (increases when queue is 0, decreases when > 0)
 stepsize = 10
 
 [workerbot]
