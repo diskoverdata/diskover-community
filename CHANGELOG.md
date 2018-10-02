@@ -8,7 +8,6 @@
 - bots will now enqueue paths into redis queue (rq) if other bots are idle to improve crawl efficiency
 - improved adaptive batch algorithm to help speed up crawls, use with -a flag
 ### changed
-- removed python strftime which was slowing down crawls
 - removed filethreadtime from diskover.cfg.sample, removed thread code for long running directories
 - removed treethreads from diskover.cfg.sample, removed thread code for crawling directories in rootdir since
 provided no real benefit and was causing slow crawls over nfs and cifs

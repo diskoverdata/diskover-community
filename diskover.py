@@ -946,7 +946,7 @@ def add_diskspace(index, logger, path):
     # to use (excl. reserved space)
     available = statvfs.f_frsize * statvfs.f_bavail
     used = total - free
-    indextime_utc = datetime.utcnow()
+    indextime_utc = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
     data = {
         "path": path,
         "total": total,
@@ -968,7 +968,7 @@ def add_crawl_stats(es, index, path, crawltime, state):
         "path": path,
         "state": state,  # running, finished_crawl, finished_dircalc
         "crawl_time": round(crawltime, 6),
-        "indexing_date": datetime.utcnow()
+        "indexing_date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
     }
     es.index(index=index, doc_type='crawlstat', body=data)
 

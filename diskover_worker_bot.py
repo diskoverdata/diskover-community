@@ -414,11 +414,11 @@ def get_dir_meta(worker_name, path, cliargs, reindex_dict):
     try:
         lstat_path = os.lstat(path)
         mtime_unix = lstat_path.st_mtime
-        mtime_utc = datetime.utcfromtimestamp(mtime_unix)
+        mtime_utc = datetime.utcfromtimestamp(mtime_unix).strftime("%Y-%m-%dT%H:%M:%S")
         atime_unix = lstat_path.st_atime
-        atime_utc = datetime.utcfromtimestamp(atime_unix)
+        atime_utc = datetime.utcfromtimestamp(atime_unix).strftime("%Y-%m-%dT%H:%M:%S")
         ctime_unix = lstat_path.st_ctime
-        ctime_utc = datetime.utcfromtimestamp(ctime_unix)
+        ctime_utc = datetime.utcfromtimestamp(ctime_unix).strftime("%Y-%m-%dT%H:%M:%S")
         if cliargs['index2']:
             # check if directory times cached in Redis
             redis_dirtime = redis_conn.get(base64.encodestring(path.encode('utf-8', errors='ignore')))
@@ -429,7 +429,7 @@ def get_dir_meta(worker_name, path, cliargs, reindex_dict):
                 if cached_times == current_times:
                     return "sametimes"
         # get time now in utc
-        indextime_utc = datetime.utcnow()
+        indextime_utc = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
         # get user id of owner
         uid = lstat_path.st_uid
         # try to get owner user name
@@ -568,7 +568,7 @@ def get_file_meta(worker_name, path, cliargs, reindex_dict):
         # check file modified time
         mtime_unix = stat.st_mtime
         mtime_utc = \
-            datetime.utcfromtimestamp(mtime_unix)
+            datetime.utcfromtimestamp(mtime_unix).strftime("%Y-%m-%dT%H:%M:%S")
 
         # Convert time in days (mtime cli arg) to seconds
         time_sec = cliargs['mtime'] * 86400
@@ -580,11 +580,11 @@ def get_file_meta(worker_name, path, cliargs, reindex_dict):
         # get access time
         atime_unix = stat.st_atime
         atime_utc = \
-            datetime.utcfromtimestamp(atime_unix)
+            datetime.utcfromtimestamp(atime_unix).strftime("%Y-%m-%dT%H:%M:%S")
         # get change time
         ctime_unix = stat.st_ctime
         ctime_utc = \
-            datetime.utcfromtimestamp(ctime_unix)
+            datetime.utcfromtimestamp(ctime_unix).strftime("%Y-%m-%dT%H:%M:%S")
 
         # get user id of owner
         uid = stat.st_uid
@@ -640,7 +640,7 @@ def get_file_meta(worker_name, path, cliargs, reindex_dict):
         filestring = str(size) + str(mtime_unix)
         filehash = hashlib.md5(filestring.encode('utf-8')).hexdigest()
         # get time
-        indextime_utc = datetime.utcnow()
+        indextime_utc = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
         # get absolute path of parent directory
         parentdir = os.path.abspath(os.path.join(path, os.pardir))
 
@@ -807,7 +807,7 @@ def es_bulk_adder(worker_name, dirlist, filelist, cliargs, totalcrawltime=None):
         data = {"worker_name": worker_name, "dir_count": len(dirlist),
                 "file_count": len(filelist), "bulk_time": round(time.time() - starttime, 6),
                 "crawl_time": round(totalcrawltime, 6),
-                "indexing_date": datetime.utcnow()}
+                "indexing_date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")}
         es.index(index=cliargs['index'], doc_type='worker', body=data)
 
     if not cliargs['s3']:
@@ -904,7 +904,7 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
             # fetch meta data for directory and all it's files (doc sources) from index2 since
             # directory times haven't changed
             dir_source, files_source = get_metadata(root_path, cliargs)
-            datenow = datetime.utcnow()
+            datenow = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
             for file_source in files_source:
                 # update indexed at time
                 file_source['indexing_date'] = datenow
