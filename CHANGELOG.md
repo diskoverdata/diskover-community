@@ -6,9 +6,7 @@
 - reduced number of es bulk updates and optimized frequency of bulk updates
 - improved crawl performance over nfs/cifs mounts
 - bots will now enqueue paths into redis queue (rq) if other bots are idle to improve crawl efficiency
-- improved adaptive batch algorithm to help speed up crawls, use with -a flag
 - threads for es bulk adds and file meta collecting in bots
-- faster treewalk function to replace scandir's walk to help improve queue fill rate
 ### changed
 - removed filethreadtime from diskover.cfg.sample, removed thread code for long running directories
 - removed treethreads from diskover.cfg.sample, removed thread code for crawling directories in rootdir since

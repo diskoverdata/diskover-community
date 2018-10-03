@@ -21,7 +21,7 @@ except ImportError:
     except ImportError:
         raise ImportError('elasticsearch module not installed')
 from datetime import datetime
-from scandir import scandir
+from scandir import scandir, walk
 try:
     import configparser as ConfigParser
 except ImportError:
@@ -1226,11 +1226,11 @@ def adaptive_batch(q, batchsize):
     batchsize_prev = batchsize
     q_len = len(q)
     if q_len == 0:
-        if (batchsize + ab_step) <= ab_max:
-            batchsize = batchsize + ab_step
-    elif q_len > 0:
         if (batchsize - ab_step) >= ab_start:
             batchsize = batchsize - ab_step
+    elif q_len > 0:
+        if (batchsize + ab_step) <= ab_max:
+            batchsize = batchsize + ab_step
     cliargs['batchsize'] = batchsize
     if cliargs['verbose'] or cliargs['debug']:
         if batchsize_prev != batchsize:
@@ -1308,36 +1308,16 @@ def calc_dir_sizes(cliargs, logger, path=None):
         sys.exit(0)
 
 
-def fastwalker(top):
-    """This is the fast tree walker function.
-    It's a faster replacement for scandir walk and generator
-    for directory entries.
-    """
-    dirs = []
-    nondirs = []
-    for entry in scandir(top):
-        if entry.is_dir(follow_symlinks=False):
-            dirs.append(entry.name)
-        elif entry.is_file(follow_symlinks=False):
-            nondirs.append(entry.name)
-    # Yield before recursion
-    yield top, dirs, nondirs
-    # Recurse into sub-directories
-    for d_path in dirs:
-        for entry in fastwalker(os.path.join(top, d_path)):
-            yield entry
-
-
 def treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict, bar):
     """This is the tree walk function.
-    It walks the tree using fastwalker and adds directory paths
-    to redis queue for rq worker bots to scrape meta and upload
+    It walks the tree using scandir walk and adds tuple of directory and
+    it's files to redis queue for rq worker bots to scrape meta and upload
     to ES index after batch size (dir count) has been reached.
     """
     import diskover_worker_bot
     batch = []
 
-    for root, dirs, files in fastwalker(path):
+    for root, dirs, files in walk(path):
         if len(dirs) == 0 and len(files) == 0 and not cliargs['indexemptydirs']:
             continue
         if not dir_excluded(root, config, cliargs['verbose']):
