@@ -21,7 +21,7 @@ except ImportError:
     except ImportError:
         raise ImportError('elasticsearch module not installed')
 from datetime import datetime
-from scandir import walk
+from scandir import scandir
 try:
     import configparser as ConfigParser
 except ImportError:
@@ -946,7 +946,7 @@ def add_diskspace(index, logger, path):
     # to use (excl. reserved space)
     available = statvfs.f_frsize * statvfs.f_bavail
     used = total - free
-    indextime_utc = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
+    indextime_utc = datetime.utcnow().isoformat()
     data = {
         "path": path,
         "total": total,
@@ -968,7 +968,7 @@ def add_crawl_stats(es, index, path, crawltime, state):
         "path": path,
         "state": state,  # running, finished_crawl, finished_dircalc
         "crawl_time": round(crawltime, 6),
-        "indexing_date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
+        "indexing_date": datetime.utcnow().isoformat()
     }
     es.index(index=index, doc_type='crawlstat', body=data)
 
@@ -1088,7 +1088,7 @@ def parse_cli_args(indexname):
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", "--rootdir", metavar='ROOTDIR', default=".",
-                        help="Directory to start crawling from")
+                        help="Directory to start crawling from (default: .)")
     parser.add_argument("-m", "--mtime", metavar='DAYS', default=0, type=int,
                         help="Minimum days ago for modified time (default: 0)")
     parser.add_argument("-s", "--minsize", metavar='BYTES', default=1, type=int,
@@ -1218,6 +1218,26 @@ def progress_bar(event):
     return bar
 
 
+def adaptive_batch(q, batchsize):
+    """This is the adaptive batch function.
+    It auto adjusts the batch size sent to rq.
+    Could be made better :)
+    """
+    batchsize_prev = batchsize
+    q_len = len(q)
+    if q_len == 0:
+        if (batchsize + ab_step) <= ab_max:
+            batchsize = batchsize + ab_step
+    elif q_len > 0:
+        if (batchsize - ab_step) >= ab_start:
+            batchsize = batchsize - ab_step
+    cliargs['batchsize'] = batchsize
+    if cliargs['verbose'] or cliargs['debug']:
+        if batchsize_prev != batchsize:
+            logger.info('Batch size: %s' % batchsize)
+    return batchsize
+
+
 def calc_dir_sizes(cliargs, logger, path=None):
     import diskover_worker_bot
     # maximum tree depth to calculate
@@ -1250,20 +1270,8 @@ def calc_dir_sizes(cliargs, logger, path=None):
                 q_calc.enqueue(diskover_worker_bot.calc_dir_size, args=(dirbatch, cliargs,))
                 jobcount += 1
                 del dirbatch[:]
-                batchsize_prev = batchsize
-                # adaptive batch algorithm, could be made better :)
                 if cliargs['adaptivebatch']:
-                    q_len = len(q_calc)
-                    if q_len == 0:
-                        if (batchsize + ab_step) <= ab_max:
-                            batchsize = batchsize + ab_step
-                    elif q_len > 0:
-                        if (batchsize - ab_step) >= ab_start:
-                            batchsize = batchsize - ab_step
-                    cliargs['batchsize'] = batchsize
-                    if cliargs['verbose'] or cliargs['debug']:
-                        if batchsize_prev != batchsize:
-                            logger.info('Batch size: %s' % batchsize)
+                    batchsize = adaptive_batch(q_calc, batchsize)
 
         # add any remaining in batch to queue
         q_calc.enqueue(diskover_worker_bot.calc_dir_size, args=(dirbatch, cliargs,))
@@ -1300,16 +1308,36 @@ def calc_dir_sizes(cliargs, logger, path=None):
         sys.exit(0)
 
 
+def fastwalker(top):
+    """This is the fast tree walker function.
+    It's a faster replacement for scandir walk and generator
+    for directory entries.
+    """
+    dirs = []
+    nondirs = []
+    for entry in scandir(top):
+        if entry.is_dir(follow_symlinks=False):
+            dirs.append(entry.name)
+        else:
+            nondirs.append(entry.name)
+    # Yield before recursion
+    yield top, dirs, nondirs
+    # Recurse into sub-directories
+    for d_path in dirs:
+        for entry in fastwalker(os.path.join(top, d_path)):
+            yield entry
+
+
 def treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict, bar):
     """This is the tree walk function.
-    It walks the tree using scandir walk and adds tuple of root, files
+    It walks the tree using fastwalker and adds directory paths
     to redis queue for rq worker bots to scrape meta and upload
     to ES index after batch size (dir count) has been reached.
     """
     import diskover_worker_bot
     batch = []
 
-    for root, dirs, files in walk(path):
+    for root, dirs, files in fastwalker(path):
         if len(dirs) == 0 and len(files) == 0 and not cliargs['indexemptydirs']:
             continue
         if not dir_excluded(root, config, cliargs['verbose']):
@@ -1319,20 +1347,8 @@ def treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict, bar):
                 q_crawl.enqueue(diskover_worker_bot.scrape_tree_meta,
                                 args=(batch, cliargs, reindex_dict,))
                 del batch[:]
-                batchsize_prev = batchsize
-                # adaptive batch algorithm, could be made better :)
                 if cliargs['adaptivebatch']:
-                    q_len = len(q_crawl)
-                    if q_len == 0:
-                        if (batchsize + ab_step) <= ab_max:
-                            batchsize = batchsize + ab_step
-                    elif q_len > 0:
-                        if (batchsize - ab_step) >= ab_start:
-                            batchsize = batchsize - ab_step
-                    cliargs['batchsize'] = batchsize
-                    if cliargs['verbose'] or cliargs['debug']:
-                        if batchsize_prev != batchsize:
-                            logger.info('Batch size: %s' % batchsize)
+                    batchsize = adaptive_batch(q_crawl, batchsize)
 
             # check if at maxdepth level and delete dirs/files lists to not
             # descend further down the tree
@@ -1356,6 +1372,25 @@ def treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict, bar):
 
     # add any remaining in batch to queue
     q_crawl.enqueue(diskover_worker_bot.scrape_tree_meta, args=(batch, cliargs, reindex_dict,))
+
+    # wait for queue to be empty and update progress bar
+    while True:
+        workers_busy = False
+        workers = Worker.all(connection=redis_conn)
+        for worker in workers:
+            if worker._state == "busy":
+                workers_busy = True
+                break
+        q_len = len(q_crawl)
+        if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+            try:
+                bar.update(q_len)
+            except ZeroDivisionError:
+                bar.update(0)
+            except ValueError:
+                bar.update(0)
+        if q_len == 0 and workers_busy == False:
+            break
 
 
 def crawl_tree(path, cliargs, logger, reindex_dict):
@@ -1392,7 +1427,7 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
         # set current depth
         num_sep = path.count(os.path.sep)
 
-        logger.info("Starting tree walk (maxdepth %s)" % cliargs['maxdepth'])
+        logger.info("Starting crawl (maxdepth %s)" % cliargs['maxdepth'])
 
         if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
             bar = progress_bar('Crawling')
@@ -1409,14 +1444,15 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
         else:
             treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict, bar)
 
+        if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+            bar.update(0)
+            bar.finish()
+
+        logger.info("Finished crawling!")
+
     except KeyboardInterrupt:
         print("Ctrl-c keyboard interrupt, shutting down...")
         sys.exit(0)
-
-    if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
-        bar.update(0)
-        bar.finish()
-    logger.info('Finished crawling!')
 
 
 def hotdirs():
@@ -1439,20 +1475,9 @@ def hotdirs():
         if len(dirbatch) >= batchsize:
             q.enqueue(diskover_worker_bot.calc_hot_dirs, args=(dirbatch, cliargs,))
             del dirbatch[:]
-            batchsize_prev = batchsize
-            # adaptive batch algorithm, could be made better :)
             if cliargs['adaptivebatch']:
-                q_len = len(q)
-                if q_len == 0:
-                    if (batchsize + ab_step) <= ab_max:
-                        batchsize = batchsize + ab_step
-                elif q_len > 0:
-                    if (batchsize - ab_step) >= ab_start:
-                        batchsize = batchsize - ab_step
-                cliargs['batchsize'] = batchsize
-                if cliargs['verbose'] or cliargs['debug']:
-                    if batchsize_prev != batchsize:
-                        logger.info('Batch size: %s' % batchsize)
+                batchsize = adaptive_batch(q, batchsize)
+
     # add any remaining in batch to queue
     q.enqueue(diskover_worker_bot.calc_hot_dirs, args=(dirbatch, cliargs,))
 
@@ -1499,6 +1524,8 @@ def wait_for_worker_bots(logger):
 
 
 def check_workers_running(logger):
+    """This is the check worker bots are running function.
+    """
     logger.info('Waiting for diskover worker bots to be done with any jobs in rq...')
     busyworkers = []
     while True:
@@ -1701,6 +1728,9 @@ if __name__ == "__main__":
         if IS_PY3:
             print('Python 3 not supported using --qumulo, please use Python 2.7.')
             sys.exit(0)
+        if cliargs['rootdir'] == '.' or cliargs['rootdir'] == "":
+            logger.error("Rootdir path missing, use -d /rootdir, exiting")
+            sys.exit(1)
         import diskover_qumulo
         logger.info('Connecting to Qumulo storage api... (--qumulo)')
         qumulo_ip, qumulo_ses = diskover_qumulo.qumulo_connection()

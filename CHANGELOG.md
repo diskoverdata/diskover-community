@@ -1,17 +1,21 @@
 # Diskover Change Log
 
-## [1.5.0-rc17] = 2018-10-02
+## [1.5.0-rc17] = 2018-10-04
 ### added
 - reduced crawl times
 - reduced number of es bulk updates and optimized frequency of bulk updates
 - improved crawl performance over nfs/cifs mounts
 - bots will now enqueue paths into redis queue (rq) if other bots are idle to improve crawl efficiency
 - improved adaptive batch algorithm to help speed up crawls, use with -a flag
+- threads for es bulk adds and file meta collecting in bots
+- faster treewalk function to replace scandir's walk to help improve queue fill rate
 ### changed
 - removed filethreadtime from diskover.cfg.sample, removed thread code for long running directories
 - removed treethreads from diskover.cfg.sample, removed thread code for crawling directories in rootdir since
-provided no real benefit and was causing slow crawls over nfs and cifs
-- adaptive batch algorithm (-a)
+provided no real benefit and was causing slower crawls over nfs and cifs
+- use datetime isoformat instead of strftime (faster)
+### fixed
+- python error when not using -d rootdir flag with qumulo crawl (--qumulo)
 
 ## [1.5.0-rc16] = 2018-09-13
 ### fixed

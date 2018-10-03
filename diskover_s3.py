@@ -113,7 +113,7 @@ def process_line(row, tree_dirs, tree_files, tree_crawltimes, cliargs):
                 "path": current_path,
                 "worker_name": workername,
                 "crawl_time": 0,
-                "indexing_date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f"),
+                "indexing_date": datetime.utcnow().isoformat(),
                 "_type": "crawlstat"})
             prev_path = current_path
 
@@ -132,7 +132,7 @@ def process_line(row, tree_dirs, tree_files, tree_crawltimes, cliargs):
     # modified time in unix
     mtime_unix = time.mktime(time.strptime(mtime_utc, '%Y-%m-%dT%H:%M:%S'))
     # get time
-    indextime_utc = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
+    indextime_utc = datetime.utcnow().isoformat()
     # get absolute path of parent directory
     parentdir = os.path.abspath(os.path.join(path, os.pardir))
     # absolute full path
@@ -179,7 +179,7 @@ def process_line(row, tree_dirs, tree_files, tree_crawltimes, cliargs):
             "path": path,
             "worker_name": workername,
             "crawl_time": time.time() - starttime,
-            "indexing_date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f"),
+            "indexing_date": datetime.utcnow().isoformat(),
             "_type": "crawlstat"})
 
     else:  # file
@@ -257,19 +257,19 @@ def process_s3_inventory(inventory_file, cliargs):
                             "path": '/s3/' + row[0],
                             "worker_name": workername,
                             "crawl_time": 0,
-                            "indexing_date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f"),
+                            "indexing_date": datetime.utcnow().isoformat(),
                             "_type": "crawlstat"})
             tree_dirs, tree_files, tree_crawltimes = process_line(row, tree_dirs, tree_files, tree_crawltimes, cliargs)
             l += 1
 
             if len(tree_dirs) + len(tree_files) + len(tree_crawltimes) >= diskover.config['es_chunksize']:
-                diskover_worker_bot.es_bulk_adder(workername, (tree_dirs, tree_files, tree_crawltimes), cliargs, 0)
+                diskover_worker_bot.es_bulk_add(workername, (tree_dirs, tree_files, tree_crawltimes), cliargs, 0)
                 del tree_dirs[:]
                 del tree_files[:]
                 del tree_crawltimes[:]
 
     if len(tree_dirs) + len(tree_files) + len(tree_crawltimes) > 0:
-        diskover_worker_bot.es_bulk_adder(workername, (tree_dirs, tree_files, tree_crawltimes), cliargs, 0)
+        diskover_worker_bot.es_bulk_add(workername, (tree_dirs, tree_files, tree_crawltimes), cliargs, 0)
 
 
 def make_fake_s3_dir(parent, file, cliargs):
@@ -297,7 +297,7 @@ def make_fake_s3_dir(parent, file, cliargs):
     dir_dict["last_modified"] = mtime_utc
     dir_dict["tag"] = ""
     dir_dict["tag_custom"] = ""
-    dir_dict["indexing_date"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
+    dir_dict["indexing_date"] = datetime.utcnow().isoformat()
     dir_dict["worker_name"] = workername
     dir_dict["change_percent_filesize"] = ""
     dir_dict["change_percent_items"] = ""
@@ -499,12 +499,12 @@ def start_importing(es, cliargs, logger):
         "used": 0,
         "free": 0,
         "available": 0,
-        "indexing_date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
+        "indexing_date": datetime.utcnow().isoformat()
     }
     es.index(index=cliargs['index'], doc_type='diskspace', body=data)
 
     # create fake root directory doc
-    time_utc_now = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
+    time_utc_now = datetime.utcnow().isoformat()
     time_utc_epoch_start = "1970-01-01T00:00:00"
     root_dict = {}
     root_dict['filename'] = "s3"

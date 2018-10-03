@@ -30,6 +30,7 @@ try:
 except ImportError:
     from queue import Queue as pyQueue
 from random import shuffle
+from threading import Thread
 
 
 # cache uid/gid names
@@ -412,26 +413,27 @@ def get_dir_meta(worker_name, path, cliargs, reindex_dict):
     """
 
     try:
-        lstat_path = os.lstat(path)
-        mtime_unix = lstat_path.st_mtime
-        mtime_utc = datetime.utcfromtimestamp(mtime_unix).strftime("%Y-%m-%dT%H:%M:%S")
-        atime_unix = lstat_path.st_atime
-        atime_utc = datetime.utcfromtimestamp(atime_unix).strftime("%Y-%m-%dT%H:%M:%S")
-        ctime_unix = lstat_path.st_ctime
-        ctime_utc = datetime.utcfromtimestamp(ctime_unix).strftime("%Y-%m-%dT%H:%M:%S")
+        # get directory meta using lstat
+        mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime = os.lstat(path)
+
+        # convert times to utc for es
+        mtime_utc = datetime.utcfromtimestamp(mtime).isoformat()
+        atime_utc = datetime.utcfromtimestamp(atime).isoformat()
+        ctime_utc = datetime.utcfromtimestamp(ctime).isoformat()
+
         if cliargs['index2']:
             # check if directory times cached in Redis
             redis_dirtime = redis_conn.get(base64.encodestring(path.encode('utf-8', errors='ignore')))
             if redis_dirtime:
                 cached_times = float(redis_dirtime.decode('utf-8'))
                 # check if cached times are the same as on disk
-                current_times = float(mtime_unix + ctime_unix)
+                current_times = float(mtime + ctime)
                 if cached_times == current_times:
                     return "sametimes"
+
         # get time now in utc
-        indextime_utc = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
-        # get user id of owner
-        uid = lstat_path.st_uid
+        indextime_utc = datetime.utcnow().isoformat()
+
         # try to get owner user name
         # first check cache
         if uid in uids:
@@ -452,8 +454,7 @@ def get_dir_meta(worker_name, path, cliargs, reindex_dict):
             if not uid in uids:
                 uids.append(uid)
                 owners[uid] = owner
-        # get group id
-        gid = lstat_path.st_gid
+
         # try to get group name
         # first check cache
         if gid in gids:
@@ -475,9 +476,6 @@ def get_dir_meta(worker_name, path, cliargs, reindex_dict):
                 gids.append(gid)
                 groups[gid] = group
 
-        inode = lstat_path.st_ino
-        hardlinks = lstat_path.st_nlink
-
         filename = os.path.basename(path)
         parentdir = os.path.abspath(os.path.join(path, os.pardir))
         fullpath = os.path.abspath(os.path.join(parentdir, filename))
@@ -492,8 +490,8 @@ def get_dir_meta(worker_name, path, cliargs, reindex_dict):
             "last_modified": mtime_utc,
             "last_access": atime_utc,
             "last_change": ctime_utc,
-            "hardlinks": hardlinks,
-            "inode": inode,
+            "hardlinks": nlink,
+            "inode": ino,
             "owner": owner,
             "group": group,
             "tag": "",
@@ -520,7 +518,7 @@ def get_dir_meta(worker_name, path, cliargs, reindex_dict):
 
         # add any autotags to dirmeta_dict
         if cliargs['autotag'] and len(diskover.config['autotag_dirs']) > 0:
-            auto_tag(dirmeta_dict, 'directory', mtime_unix, atime_unix, ctime_unix)
+            auto_tag(dirmeta_dict, 'directory', mtime, atime, ctime)
 
         # search for and copy over any existing tags from reindex_dict
         for sublist in reindex_dict['directory']:
@@ -534,10 +532,24 @@ def get_dir_meta(worker_name, path, cliargs, reindex_dict):
 
     # cache directory times in Redis, encode path (key) using base64
     if diskover.config['redis_cachedirtimes'] == 'True' or diskover.config['redis_cachedirtimes'] == 'true':
-        redis_conn.set(base64.encodestring(path.encode('utf-8', errors='ignore')), mtime_unix + ctime_unix,
+        redis_conn.set(base64.encodestring(path.encode('utf-8', errors='ignore')), mtime + ctime,
                        ex=diskover.config['redis_dirtimesttl'])
 
     return dirmeta_dict
+
+
+def file_meta_collector():
+    while True:
+        item = filequeue.get()
+        worker_name, path, cliargs, reindex_dict = item
+        if cliargs['qumulo']:
+            import diskover_qumulo
+            meta = diskover_qumulo.qumulo_get_file_meta(worker_name, path, cliargs, reindex_dict)
+        else:
+            meta = get_file_meta(worker_name, path, cliargs, reindex_dict)
+        if meta:
+            filequeue_meta.put(meta)
+        filequeue.task_done()
 
 
 def get_file_meta(worker_name, path, cliargs, reindex_dict):
@@ -556,38 +568,24 @@ def get_file_meta(worker_name, path, cliargs, reindex_dict):
             return None
 
         # use lstat to get meta and not follow sym links
-        stat = os.lstat(path)
-
-        # get file size (bytes)
-        size = stat.st_size
+        mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime = os.lstat(path)
 
         # Skip files smaller than minsize cli flag
         if size < cliargs['minsize']:
             return None
 
-        # check file modified time
-        mtime_unix = stat.st_mtime
-        mtime_utc = \
-            datetime.utcfromtimestamp(mtime_unix).strftime("%Y-%m-%dT%H:%M:%S")
-
         # Convert time in days (mtime cli arg) to seconds
         time_sec = cliargs['mtime'] * 86400
-        file_mtime_sec = time.time() - mtime_unix
+        file_mtime_sec = time.time() - mtime
         # Only process files modified at least x days ago
         if file_mtime_sec < time_sec:
             return None
 
-        # get access time
-        atime_unix = stat.st_atime
-        atime_utc = \
-            datetime.utcfromtimestamp(atime_unix).strftime("%Y-%m-%dT%H:%M:%S")
-        # get change time
-        ctime_unix = stat.st_ctime
-        ctime_utc = \
-            datetime.utcfromtimestamp(ctime_unix).strftime("%Y-%m-%dT%H:%M:%S")
+        # convert times to utc for es
+        mtime_utc = datetime.utcfromtimestamp(mtime).isoformat()
+        atime_utc = datetime.utcfromtimestamp(atime).isoformat()
+        ctime_utc = datetime.utcfromtimestamp(ctime).isoformat()
 
-        # get user id of owner
-        uid = stat.st_uid
         # try to get owner user name
         # first check cache
         if uid in uids:
@@ -608,8 +606,7 @@ def get_file_meta(worker_name, path, cliargs, reindex_dict):
             if not uid in uids:
                 uids.append(uid)
                 owners[uid] = owner
-        # get group id
-        gid = stat.st_gid
+
         # try to get group name
         # first check cache
         if gid in gids:
@@ -631,16 +628,13 @@ def get_file_meta(worker_name, path, cliargs, reindex_dict):
                 gids.append(gid)
                 groups[gid] = group
 
-        # get inode number
-        inode = stat.st_ino
-        # get number of hardlinks
-        hardlinks = stat.st_nlink
-
         # create md5 hash of file using metadata filesize and mtime
-        filestring = str(size) + str(mtime_unix)
+        filestring = str(size) + str(mtime)
         filehash = hashlib.md5(filestring.encode('utf-8')).hexdigest()
+
         # get time
-        indextime_utc = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
+        indextime_utc = datetime.utcnow().isoformat()
+
         # get absolute path of parent directory
         parentdir = os.path.abspath(os.path.join(path, os.pardir))
 
@@ -655,8 +649,8 @@ def get_file_meta(worker_name, path, cliargs, reindex_dict):
             "last_modified": mtime_utc,
             "last_access": atime_utc,
             "last_change": ctime_utc,
-            "hardlinks": hardlinks,
-            "inode": inode,
+            "hardlinks": nlink,
+            "inode": ino,
             "filehash": filehash,
             "tag": "",
             "tag_custom": "",
@@ -678,7 +672,7 @@ def get_file_meta(worker_name, path, cliargs, reindex_dict):
 
         # add any autotags to filemeta_dict
         if cliargs['autotag'] and len(diskover.config['autotag_files']) > 0:
-            auto_tag(filemeta_dict, 'file', mtime_unix, atime_unix, ctime_unix)
+            auto_tag(filemeta_dict, 'file', mtime, atime, ctime)
 
         # search for and copy over any existing tags from reindex_dict
         for sublist in reindex_dict['file']:
@@ -794,7 +788,15 @@ def calc_dir_size(dirlist, cliargs):
     bot_logger.info('*** FINISHED CALC DIR, Elapsed Time: ' + str(elapsed_time))
 
 
-def es_bulk_adder(worker_name, dirlist, filelist, cliargs, totalcrawltime=None):
+def es_bulk_adder():
+    while True:
+        item = esbulkqueue.get()
+        worker_name, dirlist, filelist, cliargs, totalcrawltime = item
+        es_bulk_add(worker_name, dirlist, filelist, cliargs, totalcrawltime)
+        esbulkqueue.task_done()
+
+
+def es_bulk_add(worker_name, dirlist, filelist, cliargs, totalcrawltime=None):
     starttime = time.time()
 
     if not cliargs['s3']:
@@ -807,7 +809,7 @@ def es_bulk_adder(worker_name, dirlist, filelist, cliargs, totalcrawltime=None):
         data = {"worker_name": worker_name, "dir_count": len(dirlist),
                 "file_count": len(filelist), "bulk_time": round(time.time() - starttime, 6),
                 "crawl_time": round(totalcrawltime, 6),
-                "indexing_date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")}
+                "indexing_date": datetime.utcnow().isoformat()}
         es.index(index=cliargs['index'], doc_type='worker', body=data)
 
     if not cliargs['s3']:
@@ -887,6 +889,7 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
             paths = paths[n:]
             diskover.q_crawl.enqueue(scrape_tree_meta,
                             args=(tosspaths, cliargs, reindex_dict,))
+
     for path in paths:
         starttime = time.time()
         root, files = path
@@ -899,12 +902,12 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
             dmeta = diskover_qumulo.qumulo_get_dir_meta(worker, root, cliargs, reindex_dict, redis_conn)
         else:
             root_path = root
-            dmeta = get_dir_meta(worker, root, cliargs, reindex_dict)
+            dmeta = get_dir_meta(worker, root_path, cliargs, reindex_dict)
         if dmeta == "sametimes":
             # fetch meta data for directory and all it's files (doc sources) from index2 since
             # directory times haven't changed
             dir_source, files_source = get_metadata(root_path, cliargs)
-            datenow = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")
+            datenow = datetime.utcnow().isoformat()
             for file_source in files_source:
                 # update indexed at time
                 file_source['indexing_date'] = datenow
@@ -921,14 +924,18 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
                 dir_source['crawl_time'] = round(elapsed, 6)
                 tree_dirs.append(dir_source)
                 totalcrawltime += elapsed
-        else:  # get meta off disk since times different in Redis than on disk
+        # get meta off disk since times different in Redis than on disk
+        else:
             for file in files:
                 if qumulo:
-                    fmeta = diskover_qumulo.qumulo_get_file_meta(worker, file, cliargs, reindex_dict)
+                    filequeue.put((worker, file, cliargs, reindex_dict))
                 else:
-                    fmeta = get_file_meta(worker, os.path.join(root, file), cliargs, reindex_dict)
-                if fmeta:
-                    tree_files.append(fmeta)
+                    filequeue.put((worker, os.path.join(root_path, file), cliargs, reindex_dict))
+            filequeue.join()
+            while filequeue_meta.qsize() > 0:
+                fmeta = filequeue_meta.get()
+                tree_files.append(fmeta)
+                filequeue_meta.task_done()
             if dmeta:
                 # update crawl time
                 elapsed = time.time() - starttime
@@ -938,13 +945,17 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
 
         # check if doc count is more than es chunksize and bulk add to es
         if len(tree_dirs) + len(tree_files) >= diskover.config['es_chunksize']:
-            es_bulk_adder(worker, tree_dirs, tree_files, cliargs, totalcrawltime)
+            td = tree_dirs[:]
+            tf = tree_files[:]
+            esbulkqueue.put((worker, td, tf, cliargs, totalcrawltime))
             del tree_dirs[:]
             del tree_files[:]
 
     # bulk add to es
     if len(tree_dirs) > 0 or len(tree_files) > 0:
-        es_bulk_adder(worker, tree_dirs, tree_files, cliargs, totalcrawltime)
+        esbulkqueue.put((worker, tree_dirs, tree_files, cliargs, totalcrawltime))
+
+    esbulkqueue.join()
 
     elapsed_time = round(time.time() - jobstart, 6)
     bot_logger.info('*** FINISHED JOB, Elapsed Time: ' + str(elapsed_time))
@@ -1153,6 +1164,20 @@ def calc_hot_dirs(dirlist, cliargs):
 # set up bot logging
 bot_logger = bot_log_setup()
 
+# create thread queue for files
+filequeue = pyQueue()
+filequeue_meta = pyQueue()
+esbulkqueue = pyQueue()
+# create threads to get file meta
+for i in range(4):
+    t = Thread(target=file_meta_collector)
+    t.daemon = True
+    t.start()
+# create threads to bulk add docs to es
+for i in range(4):
+    t = Thread(target=es_bulk_adder)
+    t.daemon = True
+    t.start()
 
 if __name__ == '__main__':
     # parse cli arguments into cliargs dictionary
