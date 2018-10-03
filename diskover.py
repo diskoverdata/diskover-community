@@ -1318,7 +1318,7 @@ def fastwalker(top):
     for entry in scandir(top):
         if entry.is_dir(follow_symlinks=False):
             dirs.append(entry.name)
-        else:
+        elif entry.is_file(follow_symlinks=False):
             nondirs.append(entry.name)
     # Yield before recursion
     yield top, dirs, nondirs
