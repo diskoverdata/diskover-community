@@ -82,7 +82,7 @@ $ cd diskover
 
 ## Getting Started
 
-Install Python dependencies using `pip`.
+Check Redis and Elasticsearch are running and install Python dependencies using `pip`.
 
 ```sh
 $ pip install -r requirements.txt
