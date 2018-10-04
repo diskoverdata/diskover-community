@@ -46,7 +46,6 @@ es = diskover.elasticsearch_connect(diskover.config)
 redis_conn = Redis(host=diskover.config['redis_host'], port=diskover.config['redis_port'],
                    password=diskover.config['redis_password'])
 
-
 def parse_cli_args():
     """This is the parse CLI arguments function.
     It parses command line arguments.
@@ -950,6 +949,7 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
             esbulkqueue.put((worker, td, tf, cliargs, totalcrawltime))
             del tree_dirs[:]
             del tree_files[:]
+            totalcrawltime = 0
 
     # bulk add to es
     if len(tree_dirs) > 0 or len(tree_files) > 0:
