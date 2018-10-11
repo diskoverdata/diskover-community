@@ -20,20 +20,16 @@ except ImportError:
             Urllib3HttpConnection
     except ImportError:
         raise ImportError('elasticsearch module not installed')
+from scandir import walk
+from redis import Redis
+from rq import Worker, Queue
 from datetime import datetime
-from scandir import scandir, walk
+from random import randint
 try:
     import configparser as ConfigParser
 except ImportError:
     import ConfigParser
 import progressbar
-from redis import Redis
-from rq import Worker, Queue
-from random import randint
-try:
-    from Queue import Queue as pyQueue
-except ImportError:
-    from queue import Queue as pyQueue
 import argparse
 import logging
 import imp
@@ -45,7 +41,7 @@ import sys
 import json
 
 
-version = '1.5.0-rc17'
+version = '1.5.0-rc18'
 __version__ = version
 
 IS_PY3 = sys.version_info >= (3, 0)
@@ -1131,7 +1127,9 @@ def parse_cli_args(indexname):
                         help="Find hot dirs by calculating change percents from index2 (prev index) and update \
                                 change_percent fields in index")
     parser.add_argument("-l", "--listen", action="store_true",
-                        help="Start socket server and listen for remote commands")
+                        help="Start tcp socket server and listen for remote commands")
+    parser.add_argument("-L", "--listentwc", action="store_true",
+                        help="Start tcp socket server and listen for messages from diskover treewalk client")
     parser.add_argument("-B", "--crawlbot", action="store_true",
                         help="Starts up crawl bot continuous scanner \
                             to scan for dir changes in index")
@@ -1563,6 +1561,31 @@ def tune_es_for_crawl(defaults=False):
             es.indices.forcemerge(index=cliargs['index'], max_num_segments=1, request_timeout=config['es_timeout'])
 
 
+def post_crawl_tasks():
+    """This is the post crawl tasks function.
+    It runs at the end of the crawl and does post tasks.
+    """
+
+    # add elapsed time crawl stat to es
+    if not cliargs['reindex'] and not cliargs['reindexrecurs']:
+        add_crawl_stats(es, cliargs['index'], rootdir_path, (time.time() - starttime), "finished_crawl")
+
+    # calculate directory sizes and items
+    if cliargs['reindex'] or cliargs['reindexrecurs']:
+        calc_dir_sizes(cliargs, logger, path=rootdir_path)
+    else:
+        calc_dir_sizes(cliargs, logger)
+
+    # add elapsed time crawl stat to es
+    if not cliargs['reindex'] and not cliargs['reindexrecurs']:
+        add_crawl_stats(es, cliargs['index'], rootdir_path, (time.time() - starttime), "finished_dircalc")
+
+    check_workers_running(logger)
+
+    # set Elasticsearch index settings back to default
+    tune_es_for_crawl(defaults=True)
+
+
 # load config file into config dictionary
 config = load_config()
 
@@ -1585,9 +1608,6 @@ listen = ['diskover', 'diskover_crawl', 'diskover_calcdir']
 q = Queue(listen[0], connection=redis_conn, default_timeout=86400)
 q_crawl = Queue(listen[1], connection=redis_conn, default_timeout=86400)
 q_calc = Queue(listen[2], connection=redis_conn, default_timeout=86400)
-
-# set up thread python Queue
-thread_q = pyQueue()
 
 # load any available plugins
 plugins = load_plugins()
@@ -1646,7 +1666,7 @@ if __name__ == "__main__":
     # check for listen socket cli flag to start socket server
     if cliargs['listen']:
         import diskover_socket_server
-        diskover_socket_server.start_socket_server(cliargs, logger, cliargs['verbose'])
+        diskover_socket_server.start_socket_server(None, cliargs, logger, None)
         sys.exit(0)
 
     # check for gource cli flags
@@ -1832,25 +1852,20 @@ if __name__ == "__main__":
             add_diskspace(cliargs['index'], logger, rootdir_path)
 
     starttime = time.time()
-    # start crawling
-    crawl_tree(rootdir_path, cliargs, logger, reindex_dict)
-    # add elapsed time crawl stat to es
-    if not cliargs['reindex'] and not cliargs['reindexrecurs']:
-        add_crawl_stats(es, cliargs['index'], rootdir_path, (time.time() - starttime), "finished_crawl")
 
-    # calculate directory sizes and items
-    if cliargs['reindex'] or cliargs['reindexrecurs']:
-        calc_dir_sizes(cliargs, logger, path=rootdir_path)
+    # check for listenlwc socket cli flag to start socket server
+    if cliargs['listentwc']:
+        import diskover_socket_server
+
+        while True:
+            diskover_socket_server.start_socket_server(rootdir_path, cliargs, logger, reindex_dict)
+            post_crawl_tasks()
+            logger.info('All DONE! Restarting socket server...')
+
     else:
-        calc_dir_sizes(cliargs, logger)
+        # start crawling
+        crawl_tree(rootdir_path, cliargs, logger, reindex_dict)
 
-    # add elapsed time crawl stat to es
-    if not cliargs['reindex'] and not cliargs['reindexrecurs']:
-        add_crawl_stats(es, cliargs['index'], rootdir_path, (time.time() - starttime), "finished_dircalc")
-
-    check_workers_running(logger)
-
-    # set Elasticsearch index settings back to default
-    tune_es_for_crawl(defaults=True)
+    post_crawl_tasks()
 
     logger.info('All DONE! Sayonara!')

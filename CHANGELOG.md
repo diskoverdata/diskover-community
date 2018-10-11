@@ -1,5 +1,11 @@
 # Diskover Change Log
 
+## [1.5.0-rc18] = 2018-10-12
+### added
+- improved socket server
+- cli arg -L --listentwc to listen for directory listings messages (pickle) from remote python diskover-treewalk-client.py
+- diskover-treewalk-client.py - python client for diskover socket server to run direct on storage servers for faster tree walking (see wiki)
+
 ## [1.5.0-rc17] = 2018-10-04
 ### added
 - reduced crawl times

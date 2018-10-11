@@ -6,12 +6,13 @@ your file metadata into Elasticsearch.
 See README.md or https://github.com/shirosaidev/diskover
 for more information.
 
-Copyright (C) Chris Park 2017
+Copyright (C) Chris Park 2017-2018
 diskover is released under the Apache 2.0 license. See
 LICENSE for the full license text.
 """
 
 import diskover
+import diskover_worker_bot
 import socket
 import subprocess
 try:
@@ -23,6 +24,8 @@ import uuid
 import json
 import time
 import sys
+import os
+import pickle
 
 
 # dict to hold socket tasks
@@ -31,77 +34,154 @@ socket_tasks = {}
 clientlist = []
 
 
-def socket_thread_handler(threadnum, q, cliargs, logger, verbose):
+def socket_thread_handler(threadnum, q, q_kill, rootdir, cliargs, logger, reindex_dict):
     """This is the socket thread handler function.
     It runs the command msg sent from client.
     """
+    global killswitch
     BUFF = 1024
-    while True:
-        try:
-            c = q.get()
-            clientsock, addr = c
-            logger.debug(clientsock)
-            logger.debug(addr)
-            data = clientsock.recv(BUFF)
-            data = data.decode('utf-8')
-            logger.debug('Data:')
-            logger.debug(data)
-            if not data:
+
+    # if we are receiving a stream of messages (pickle) from diskover treewalk client,
+    # push into redis queue as fast as possible
+    if cliargs['listentwc']:
+
+        BUFF = 4096
+        batchsize = cliargs['batchsize']
+
+        while True:
+
+            try:
+
+                c = q.get()
+                clientsock, addr = c
+                logger.debug(clientsock)
+                logger.debug(addr)
+
+                data = []
+                while True:
+                    packet = clientsock.recv(BUFF)
+                    if not packet:
+                        # close connection to client
+                        clientsock.close()
+                        logger.info("[thread-%s]: %s closed connection"
+                                    % (threadnum, str(addr)))
+                        break
+                    data.append(packet)
+
+                data_decoded = pickle.loads(b"".join(data))
+                #logger.debug(data_decoded)
+
+                # check for kill switch
+                if data_decoded == b'SIGKILL' or data_decoded == 'SIGKILL':
+                    q_kill.put(data_decoded)
+                    q.task_done()
+                    continue
+
+                # enqueue to redis
+
+                batch = []
+
+                for root, dirs, files in data_decoded:
+                    if len(dirs) == 0 and len(files) == 0 and not cliargs['indexemptydirs']:
+                        continue
+                    if not diskover.dir_excluded(root, diskover.config, cliargs['verbose']):
+                        batch.append((root, files))
+                        batch_len = len(batch)
+                        if batch_len >= 5:
+                            diskover.q_crawl.enqueue(diskover_worker_bot.scrape_tree_meta,
+                                            args=(batch, cliargs, reindex_dict,))
+                            del batch[:]
+                            if cliargs['adaptivebatch']:
+                                batchsize = diskover.adaptive_batch(diskover.q_crawl, batchsize)
+
+                    else:  # directory excluded
+                        del dirs[:]
+                        del files[:]
+
+                # add any remaining in batch to queue
+                diskover.q_crawl.enqueue(diskover_worker_bot.scrape_tree_meta, args=(batch, cliargs, reindex_dict,))
+
+            except socket.error as e:
+                q.task_done()
+                logger.error("[thread-%s]: Socket error (%s)" % (threadnum, e))
                 # close connection to client
                 clientsock.close()
                 logger.info("[thread-%s]: %s closed connection"
                             % (threadnum, str(addr)))
+                pass
+
+            q.task_done()
+
+    else:
+
+        while True:
+
+            try:
+                c = q.get()
+                clientsock, addr = c
+                logger.debug(clientsock)
+                logger.debug(addr)
+                data = clientsock.recv(BUFF)
+                data = data.decode('utf-8')
+                logger.debug('Data:')
+                logger.debug(data)
+                if not data:
+                    q.task_done()
+                    # close connection to client
+                    clientsock.close()
+                    logger.info("[thread-%s]: %s closed connection"
+                                % (threadnum, str(addr)))
+                    continue
+
+                # check if ping msg
+                if data == 'ping':
+                    logger.info("[thread-%s]: Got ping from %s"
+                                % (threadnum, str(addr)))
+                    # send pong reply
+                    message = b'pong'
+                    clientsock.send(message)
+                    logger.debug(message)
+                else:
+                    # strip away any headers sent by curl
+                    data = data.split('\r\n')[-1]
+                    logger.info("[thread-%s]: Got command from %s"
+                                % (threadnum, str(addr)))
+                    # load json and store in dict
+                    command_dict = json.loads(data)
+                    logger.debug(command_dict)
+                    # run command from json data
+                    run_command(threadnum, command_dict, clientsock, cliargs, logger)
+
                 q.task_done()
-                continue
-            # check if ping msg
-            elif data == 'ping':
-                logger.info("[thread-%s]: Got ping from %s"
+                # close connection to client
+                clientsock.close()
+                logger.info("[thread-%s]: %s closed connection"
                             % (threadnum, str(addr)))
-                # send pong reply
-                message = b'pong'
+
+            except (ValueError, TypeError) as e:
+                q.task_done()
+                logger.error("[thread-%s]: Invalid JSON from %s: (%s)"
+                               % (threadnum, str(addr), e))
+                message = b'{"msg": "error", "error": ' + e + b'}\n'
                 clientsock.send(message)
                 logger.debug(message)
-            else:
-                # strip away any headers sent by curl
-                data = data.split('\r\n')[-1]
-                logger.info("[thread-%s]: Got command from %s"
+                # close connection to client
+                clientsock.close()
+                logger.info("[thread-%s]: %s closed connection"
                             % (threadnum, str(addr)))
-                # load json and store in dict
-                command_dict = json.loads(data)
-                logger.debug(command_dict)
-                # run command from json data
-                run_command(threadnum, command_dict, clientsock, cliargs, logger, verbose)
+                pass
 
-            # close connection to client
-            clientsock.close()
-            logger.info("[thread-%s]: %s closed connection"
-                        % (threadnum, str(addr)))
-            q.task_done()
-
-        except (ValueError, TypeError) as e:
-            logger.warning("[thread-%s]: Invalid JSON from %s: (%s)"
-                           % (threadnum, str(addr), e))
-            message = b'{"msg": "error", "error": ' + e + b'}\n'
-            clientsock.send(message)
-            logger.debug(message)
-            # close connection to client
-            clientsock.close()
-            logger.info("[thread-%s]: %s closed connection"
-                        % (threadnum, str(addr)))
-            q.task_done()
-            pass
-
-        except socket.error as e:
-            logger.error("[thread-%s]: Socket error (%s)" % (threadnum, e))
-            # close connection to client
-            clientsock.close()
-            logger.info("[thread-%s]: %s closed connection"
-                        % (threadnum, str(addr)))
-            q.task_done()
-            pass
+            except socket.error as e:
+                q.task_done()
+                logger.error("[thread-%s]: Socket error (%s)" % (threadnum, e))
+                # close connection to client
+                clientsock.close()
+                logger.info("[thread-%s]: %s closed connection"
+                            % (threadnum, str(addr)))
+                pass
 
 
-def start_socket_server(cliargs, logger, verbose):
+def start_socket_server(rootdir, cliargs, logger, reindex_dict):
     """This is the start socket server function.
     It opens a socket and waits for remote commands.
     """
@@ -112,6 +192,8 @@ def start_socket_server(cliargs, logger, verbose):
 
     # Queue for socket threads
     q = Queue.Queue(maxsize=max_connections)
+    # Queue to hold kill command
+    q_kill = Queue.Queue()
 
     try:
         # create TCP socket object
@@ -121,6 +203,10 @@ def start_socket_server(cliargs, logger, verbose):
 
         host = diskover.config['listener_host']  # default is localhost
         port = diskover.config['listener_port']  # default is 9999
+
+        # if running listentwc, use 1 port lower
+        if cliargs['listentwc']:
+            port -= 1
 
         # bind to port
         serversock.bind((host, port))
@@ -132,12 +218,16 @@ def start_socket_server(cliargs, logger, verbose):
         for i in range(max_connections):
             # create thread
             t = threading.Thread(target=socket_thread_handler,
-                                 args=(i, q, cliargs, logger, verbose,))
+                                 args=(i, q, q_kill, rootdir, cliargs, logger, reindex_dict,))
             t.daemon = True
             t.start()
 
         while True:
-            logger.info("Waiting for connection, listening on %s port %s TCP"
+            if q_kill.qsize() > 0:
+                logger.info("Received signal to close socket server")
+                serversock.close()
+                break
+            logger.info("Waiting for connection, listening on %s port %s TCP (ctrl-c to shutdown)"
                         % (str(host), str(port)))
             # establish connection
             clientsock, addr = serversock.accept()
@@ -162,7 +252,7 @@ def start_socket_server(cliargs, logger, verbose):
         sys.exit(0)
 
 
-def run_command(threadnum, command_dict, clientsock, cliargs, logger, verbose):
+def run_command(threadnum, command_dict, clientsock, cliargs, logger):
     """This is the run command function.
     It runs commands from the listener socket
     using values in command_dict.
