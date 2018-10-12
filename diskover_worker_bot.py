@@ -523,8 +523,14 @@ def get_dir_meta(worker_name, path, cliargs, reindex_dict):
                 dirmeta_dict['tag_custom'] = sublist[2]
                 break
 
-    except (IOError, OSError):
-        return None
+    except (IOError, OSError) as e:
+        bot_logger.error("Exception: IOError or OSError caused by %s" % e)
+        raise
+        pass
+    except FileNotFoundError as e:
+        bot_logger.error("Exception: file not found error caused by %s" % e)
+        raise
+        pass
 
     # cache directory times in Redis, encode path (key) using base64
     if diskover.config['redis_cachedirtimes'] == 'True' or diskover.config['redis_cachedirtimes'] == 'true':
@@ -677,8 +683,15 @@ def get_file_meta(worker_name, path, cliargs, reindex_dict):
                 filemeta_dict['tag_custom'] = sublist[2]
                 break
 
-    except (IOError, OSError):
-        return None
+    except (IOError, OSError) as e:
+        bot_logger.error("Exception: IOError or OSError caused by %s" % e)
+        raise
+        pass
+
+    except FileNotFoundError as e:
+        bot_logger.error("Exception: file not found error caused by %s" % e)
+        raise
+        pass
 
     return filemeta_dict
 

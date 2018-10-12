@@ -8,6 +8,7 @@
 - additional redis config options in diskover.cfg: db, timeout, queues (copy from diskover.cfg.sample into your config)
 - additional socket server options in diskover.cfg: maxconnections, buffsize, twcport, twcbuffsize (copy from diskover.cfg.sample into your config))
 - can now specify different diskover config file using env var DISKOVER_CONFIG
+- failed job and error output to rq failed queue if directory or file is not found or other os/io error
 ### changed
 - updated diskover-bot-launcher.sh to v1.5
 - removed -q queue cli arg from diskover-bot-launcher.sh, use queues in diskover.cfg redis section
