@@ -1586,6 +1586,29 @@ def post_crawl_tasks():
     tune_es_for_crawl(defaults=True)
 
 
+def pre_crawl_tasks():
+    # create Elasticsearch index
+    index_create(cliargs['index'])
+
+    # add crawl stat to index
+    if not cliargs['reindex'] and not cliargs['reindexrecurs']:
+        add_crawl_stats(es, cliargs['index'], rootdir_path, 0, "running")
+
+    # optimize Elasticsearch index settings for crawling
+    tune_es_for_crawl()
+
+    # check if using prev index for metadata
+    if cliargs['index2']:
+        logger.info('Using %s for metadata cache (-I)' % cliargs['index2'][0])
+
+    # add disk space info to es index
+    if not cliargs['reindex'] and not cliargs['reindexrecurs']:
+        if cliargs['qumulo']:
+            diskover_qumulo.qumulo_add_diskspace(es, cliargs['index'], rootdir_path, qumulo_ip, qumulo_ses, logger)
+        else:
+            add_diskspace(cliargs['index'], logger, rootdir_path)
+
+
 # load config file into config dictionary
 config = load_config()
 
@@ -1830,38 +1853,14 @@ if __name__ == "__main__":
         diskover_crawlbot.start_crawlbot_scanner(cliargs, logger, rootdir_path, botdirlist, reindex_dict)
         sys.exit(0)
 
-    # create Elasticsearch index
-    index_create(cliargs['index'])
-
-    # add crawl stat to index
-    if not cliargs['reindex'] and not cliargs['reindexrecurs']:
-        add_crawl_stats(es, cliargs['index'], rootdir_path, 0, "running")
-
-    # optimize Elasticsearch index settings for crawling
-    tune_es_for_crawl()
-
-    # check if using prev index for metadata
-    if cliargs['index2']:
-        logger.info('Using %s for metadata cache (-I)' % cliargs['index2'][0])
-
-    # add disk space info to es index
-    if not cliargs['reindex'] and not cliargs['reindexrecurs']:
-        if cliargs['qumulo']:
-            diskover_qumulo.qumulo_add_diskspace(es, cliargs['index'], rootdir_path, qumulo_ip, qumulo_ses, logger)
-        else:
-            add_diskspace(cliargs['index'], logger, rootdir_path)
+    pre_crawl_tasks()
 
     starttime = time.time()
 
     # check for listenlwc socket cli flag to start socket server
     if cliargs['listentwc']:
         import diskover_socket_server
-
-        while True:
-            diskover_socket_server.start_socket_server(rootdir_path, cliargs, logger, reindex_dict)
-            post_crawl_tasks()
-            logger.info('All DONE! Restarting socket server...')
-
+        diskover_socket_server.start_socket_server(rootdir_path, cliargs, logger, reindex_dict)
     else:
         # start crawling
         crawl_tree(rootdir_path, cliargs, logger, reindex_dict)
