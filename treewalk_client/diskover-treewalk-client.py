@@ -130,6 +130,7 @@ if __name__ == "__main__":
 			root = ""
 			dirs = []
 			nondirs = []
+			root = root.replace(ROOTDIR_LOCAL, ROOTDIR_REMOTE)
 			while True:
 				line = proc.stdout.readline()
 				if line != '':
