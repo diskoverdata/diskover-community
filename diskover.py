@@ -137,10 +137,15 @@ def load_config():
     configsettings = {}
     config = ConfigParser.ConfigParser()
     dir_path = os.path.dirname(os.path.realpath(__file__))
-    configfile = '%s/diskover.cfg' % dir_path
+    # check if env var for config file and use that
+    try:
+        configfile = os.environ['DISKOVER_CONFIG']
+    except KeyError:
+        configfile = '%s/diskover.cfg' % dir_path
+        pass
     # Check for config file
     if not os.path.isfile(configfile):
-        print('Config file diskover.cfg not found')
+        print('Config file %s not found', configfile)
         sys.exit(1)
     config.read(configfile)
     try:
@@ -268,6 +273,26 @@ def load_config():
     except ConfigParser.NoOptionError:
         configsettings['redis_dirtimesttl'] = 604800
     try:
+        configsettings['redis_db'] = int(config.get('redis', 'db'))
+    except ConfigParser.NoOptionError:
+        configsettings['redis_db'] = 0
+    try:
+        configsettings['redis_rq_timeout'] = int(config.get('redis', 'timeout'))
+    except ConfigParser.NoOptionError:
+        configsettings['redis_rq_timeout'] = 86400
+    try:
+        configsettings['redis_queue'] = config.get('redis', 'queue')
+    except ConfigParser.NoOptionError:
+        configsettings['redis_queue'] = "diskover"
+    try:
+        configsettings['redis_queue_crawl'] = config.get('redis', 'queuecrawl')
+    except ConfigParser.NoOptionError:
+        configsettings['redis_queue_crawl'] = "diskover_crawl"
+    try:
+        configsettings['redis_queue_calcdir'] = config.get('redis', 'queuecalcdir')
+    except ConfigParser.NoOptionError:
+        configsettings['redis_queue_calcdir'] = "diskover_calcdir"
+    try:
         configsettings['adaptivebatch_startsize'] = int(config.get('adaptivebatch', 'startsize'))
     except ConfigParser.NoOptionError:
         configsettings['adaptivebatch_startsize'] = 50
@@ -297,6 +322,21 @@ def load_config():
             int(config.get('socketlistener', 'port'))
     except ConfigParser.NoOptionError:
         configsettings['listener_port'] = 9999
+    try:
+        configsettings['listener_twcport'] = \
+            int(config.get('socketlistener', 'twcport'))
+    except ConfigParser.NoOptionError:
+        configsettings['listener_twcport'] = 9998
+    try:
+        configsettings['listener_buffsize'] = \
+            int(config.get('socketlistener', 'buffize'))
+    except ConfigParser.NoOptionError:
+        configsettings['listener_buffsize'] = 1024
+    try:
+        configsettings['listener_twcbuffsize'] = \
+            int(config.get('socketlistener', 'twcbuffize'))
+    except ConfigParser.NoOptionError:
+        configsettings['listener_twcbuffsize'] = 4096
     try:
         configsettings['diskover_path'] = \
             config.get('paths', 'diskoverpath')
@@ -353,7 +393,7 @@ def load_config():
     except ConfigParser.NoOptionError:
         configsettings['qumulo_api_password'] = ""
 
-    return configsettings
+    return configsettings, configfile
 
 
 def get_plugins_info():
@@ -1610,7 +1650,7 @@ def pre_crawl_tasks():
 
 
 # load config file into config dictionary
-config = load_config()
+config, configfile = load_config()
 
 # set adaptive batch sizes from config
 ab_start = config['adaptivebatch_startsize']
@@ -1622,15 +1662,15 @@ es = elasticsearch_connect(config)
 
 # create Reddis connection
 redis_conn = Redis(host=config['redis_host'], port=config['redis_port'],
-                   password=config['redis_password'])
+                   password=config['redis_password'], db=config['redis_db'])
 
 # Redis queue names
-listen = ['diskover', 'diskover_crawl', 'diskover_calcdir']
+listen = [config['redis_queue'], config['redis_queue_crawl'], config['redis_queue_calcdir']]
 
 # set up Redis q
-q = Queue(listen[0], connection=redis_conn, default_timeout=86400)
-q_crawl = Queue(listen[1], connection=redis_conn, default_timeout=86400)
-q_calc = Queue(listen[2], connection=redis_conn, default_timeout=86400)
+q = Queue(listen[0], connection=redis_conn, default_timeout=config['redis_rq_timeout'])
+q_crawl = Queue(listen[1], connection=redis_conn, default_timeout=config['redis_rq_timeout'])
+q_calc = Queue(listen[2], connection=redis_conn, default_timeout=config['redis_rq_timeout'])
 
 # load any available plugins
 plugins = load_plugins()
@@ -1646,6 +1686,8 @@ if __name__ == "__main__":
     if not cliargs['quiet'] and not cliargs['gourcert'] and not cliargs['gourcemt']:
         # print random banner
         print_banner(version)
+
+    logger.info("Using config file: %s" % configfile)
 
     # list plugins
     if cliargs['listplugins']:

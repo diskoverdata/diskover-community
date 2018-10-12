@@ -39,13 +39,13 @@ def socket_thread_handler(threadnum, q, q_kill, rootdir, cliargs, logger, reinde
     It runs the command msg sent from client.
     """
     global killswitch
-    BUFF = 1024
+    BUFF = diskover.config['listener_buffsize']
 
     # if we are receiving a stream of messages (pickle) from diskover treewalk client,
     # push into redis queue as fast as possible
     if cliargs['listentwc']:
 
-        BUFF = 4096
+        BUFF = diskover.config['listener_twcbuffsize']
         batchsize = cliargs['batchsize']
 
         while True:
@@ -188,7 +188,7 @@ def start_socket_server(rootdir, cliargs, logger, reindex_dict):
     global clientlist
 
     # set thread/connection limit
-    max_connections = 5
+    max_connections = diskover.config['listener_maxconnections']
 
     # Queue for socket threads
     q = Queue.Queue(maxsize=max_connections)
@@ -202,11 +202,12 @@ def start_socket_server(rootdir, cliargs, logger, reindex_dict):
         serversock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
         host = diskover.config['listener_host']  # default is localhost
-        port = diskover.config['listener_port']  # default is 9999
 
-        # if running listentwc, use 1 port lower
+        # if running listentwc
         if cliargs['listentwc']:
-            port -= 1
+            port = diskover.config['listener_twcport']  # default is 9998
+        else:
+            port = diskover.config['listener_port']  # default is 9999
 
         # bind to port
         serversock.bind((host, port))

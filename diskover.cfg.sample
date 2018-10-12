@@ -63,6 +63,14 @@ port = 6379
 cachedirtimes = False
 ; how long in seconds directory keys lives in Redis (default 1 day)
 dirtimesttl = 604800
+; database to use (default is 0)
+db = 0
+; rq default time out in sec (default 86400)
+timeout = 86400
+; rq queue names to use (default is diskover, diskover_crawl, diskover_calcdir)
+queue = diskover
+queuecrawl = diskover_crawl
+queuecalcdir = diskover_calcdir
 
 [adaptivebatch]
 ; adaptive batch settings when using -a (intelligent crawling)
@@ -91,6 +99,14 @@ pythonpath = python
 ; hostname and port (TCP) for diskover socket server for remote commands
 host = localhost
 port = 9999
+; max connections for diskover socket server
+maxconnections = 5
+; buffer size for diskover socket server
+buffsize = 1024
+; port (TCP) for diskover socket server for messages from diskover treewalk client
+twcport = 9998
+; buffer size for diskover treewalk client
+twcbuffsize = 4096
 
 [dupescheck]
 ; read size (bytes) for md5 sum check (how many bytes to read in at a time when md5 checking, default 64 KB)

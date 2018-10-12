@@ -5,6 +5,13 @@
 - improved socket server
 - cli arg -L --listentwc to listen for directory listings messages (pickle) from remote python diskover-treewalk-client.py
 - diskover-treewalk-client.py - python client for diskover socket server to run direct on storage servers for faster tree walking (see wiki)
+- additional redis config options in diskover.cfg: db, timeout, queues (copy from diskover.cfg.sample into your config)
+- additional socket server options in diskover.cfg: maxconnections, buffsize, twcport, twcbuffsize (copy from diskover.cfg.sample into your config))
+- can now specify different diskover config file using env var DISKOVER_CONFIG
+### changed
+- updated diskover-bot-launcher.sh to v1.5
+- removed -q queue cli arg from diskover-bot-launcher.sh, use queues in diskover.cfg redis section
+- removed -q queue cli arg from diskover bots, use queues in diskover.cfg redis section
 
 ## [1.5.0-rc17] = 2018-10-04
 ### added

@@ -44,7 +44,7 @@ es = diskover.elasticsearch_connect(diskover.config)
 
 # create Reddis connection
 redis_conn = Redis(host=diskover.config['redis_host'], port=diskover.config['redis_port'],
-                   password=diskover.config['redis_password'])
+                   password=diskover.config['redis_password'], db=diskover.config['redis_db'])
 
 def parse_cli_args():
     """This is the parse CLI arguments function.
@@ -53,9 +53,6 @@ def parse_cli_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-b", "--burst", action="store_true",
                         help="Burst mode (worker will quit after all work is done)")
-    parser.add_argument("-q", "--queue", metavar="QUEUE", nargs="+", default=None,
-                        help="Queue worker bot should listen on \
-                        (queues: diskover, diskover_crawl, diskover_calcdir) (default all)")
     args = parser.parse_args()
     return args
 
@@ -1183,12 +1180,6 @@ if __name__ == '__main__':
     # parse cli arguments into cliargs dictionary
     cliargs_bot = vars(parse_cli_args())
 
-    # Redis queue names
-    if cliargs_bot['queue'] is None:
-        listen = ['diskover', 'diskover_crawl', 'diskover_calcdir']
-    else:
-        listen = cliargs_bot['queue']
-
     print("""\033[31m
 
      ___  _ ____ _  _ ____ _  _ ____ ____     ;
@@ -1202,7 +1193,7 @@ if __name__ == '__main__':
     \033[0m""" % (diskover.version))
 
     with Connection(redis_conn):
-        w = Worker(listen)
+        w = Worker(diskover.listen)
         if cliargs_bot['burst']:
             w.work(burst=True)
         else:
