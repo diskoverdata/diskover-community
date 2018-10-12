@@ -525,12 +525,10 @@ def get_dir_meta(worker_name, path, cliargs, reindex_dict):
 
     except (IOError, OSError) as e:
         bot_logger.error("Exception: IOError or OSError caused by %s" % e)
-        raise
-        pass
+        return False
     except FileNotFoundError as e:
         bot_logger.error("Exception: file not found error caused by %s" % e)
-        raise
-        pass
+        return False
 
     # cache directory times in Redis, encode path (key) using base64
     if diskover.config['redis_cachedirtimes'] == 'True' or diskover.config['redis_cachedirtimes'] == 'true':
@@ -551,6 +549,8 @@ def file_meta_collector():
             meta = get_file_meta(worker_name, path, cliargs, reindex_dict)
         if meta:
             filequeue_meta.put(meta)
+        else:
+            bot_logger.error("Couldn't get meta for file %s" % path)
         filequeue.task_done()
 
 
@@ -685,13 +685,11 @@ def get_file_meta(worker_name, path, cliargs, reindex_dict):
 
     except (IOError, OSError) as e:
         bot_logger.error("Exception: IOError or OSError caused by %s" % e)
-        raise
-        pass
+        return False
 
     except FileNotFoundError as e:
         bot_logger.error("Exception: file not found error caused by %s" % e)
-        raise
-        pass
+        return False
 
     return filemeta_dict
 
@@ -934,7 +932,7 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
                 tree_dirs.append(dir_source)
                 totalcrawltime += elapsed
         # get meta off disk since times different in Redis than on disk
-        else:
+        elif dmeta:
             for file in files:
                 if qumulo:
                     filequeue.put((worker, file, cliargs, reindex_dict))
@@ -945,12 +943,13 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
                 fmeta = filequeue_meta.get()
                 tree_files.append(fmeta)
                 filequeue_meta.task_done()
-            if dmeta:
-                # update crawl time
-                elapsed = time.time() - starttime
-                dmeta['crawl_time'] = round(elapsed, 6)
-                tree_dirs.append(dmeta)
-                totalcrawltime += elapsed
+            # update crawl time
+            elapsed = time.time() - starttime
+            dmeta['crawl_time'] = round(elapsed, 6)
+            tree_dirs.append(dmeta)
+            totalcrawltime += elapsed
+        else:
+            bot_logger.error("Couldn't get directory meta for %s" % root)
 
         # check if doc count is more than es chunksize and bulk add to es
         if len(tree_dirs) + len(tree_files) >= diskover.config['es_chunksize']:
