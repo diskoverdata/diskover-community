@@ -323,6 +323,11 @@ def load_config():
     except ConfigParser.NoOptionError:
         configsettings['listener_port'] = 9999
     try:
+        configsettings['listener_maxconnections'] = \
+            int(config.get('socketlistener', 'maxconnections'))
+    except ConfigParser.NoOptionError:
+        configsettings['listener_maxconnections'] = 5
+    try:
         configsettings['listener_twcport'] = \
             int(config.get('socketlistener', 'twcport'))
     except ConfigParser.NoOptionError:
