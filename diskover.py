@@ -1275,9 +1275,7 @@ def adaptive_batch(q, cliargs, batchsize):
         if (batchsize + ab_step) <= ab_max:
             batchsize = batchsize + ab_step
     cliargs['batchsize'] = batchsize
-    if cliargs['verbose'] or cliargs['debug']:
-        if batchsize_prev != batchsize:
-            logger.info('Batch size: %s' % batchsize)
+
     return batchsize
 
 

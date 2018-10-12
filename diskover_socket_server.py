@@ -87,7 +87,7 @@ def socket_thread_handler(threadnum, q, q_kill, rootdir, cliargs, logger, reinde
                     if not diskover.dir_excluded(root, diskover.config, cliargs['verbose']):
                         batch.append((root, files))
                         batch_len = len(batch)
-                        if batch_len >= 5:
+                        if batch_len >= batchsize:
                             diskover.q_crawl.enqueue(diskover_worker_bot.scrape_tree_meta,
                                             args=(batch, cliargs, reindex_dict,))
                             del batch[:]

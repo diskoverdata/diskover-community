@@ -156,7 +156,7 @@ if __name__ == "__main__":
 					else:
 						items = line.split(',')
 						for entry in items:
-							entry = entry.ltrim(' ')
+							entry = entry.lstrip(' ')
 							if entry != '':
 								if entry.endswith('/'):
 									dirs.append(entry.rstrip('/'))
