@@ -17,7 +17,10 @@ import pickle
 import socket
 import time
 import threading
-from queue import Queue
+try:
+	from Queue import Queue
+except ImportError:
+	from queue import Queue
 
 
 try:
