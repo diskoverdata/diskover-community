@@ -136,6 +136,9 @@ Import Amazon S3 Inventory file(s) (gzipped csv) with:
 $ python /path/to/diskover.py -i diskover_s3-indexname --s3 /dir/inventoryfile1.csv.gz
 ```
 
+## TCP socket client for running tree walk directly on remote storage
+diskover has a tcp socket client that can tree walk locally on storage and send data to diskover socket server which acts as a proxy for enqueuing to redis rq. [Read more](https://github.com/shirosaidev/diskover/wiki/Tree-walk-tcp-socket-client) about this on the wiki.
+
 ## OVA image file (for vmware, etc)
 
 Becoming a Patron gets you access to the OVA files running the latest version of diskover/diskover-web. Fastest way to get up and running diskover. Check out the [Patreon](https://www.patreon.com/diskover) page to learn more about how to get access to the OVA downloads.
