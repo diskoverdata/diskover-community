@@ -25,6 +25,16 @@ except ImportError:
 version = '1.0.1'
 __version__ = version
 
+# Force I/O to be unbuffered...
+buf_arg = 0
+if sys.version_info[0] == 3:
+	os.environ['PYTHONUNBUFFERED'] = 1
+	buf_arg = 1
+sys.stdin = os.fdopen(sys.stdin.fileno(), 'r', buf_arg)
+sys.stdout = os.fdopen(sys.stdout.fileno(), 'a+', buf_arg)
+sys.stderr = sys.stdout
+
+
 try:
 	TCP_IP =  str(sys.argv[1])
 	TCP_PORT = int(sys.argv[2])
@@ -127,32 +137,33 @@ if __name__ == "__main__":
 			findCMD = ['ls', '-RFAwm', ROOTDIR_LOCAL]
 			proc = subprocess.Popen(findCMD, stdout=subprocess.PIPE)
 
-			root = ""
 			dirs = []
 			nondirs = []
-			root = root.replace(ROOTDIR_LOCAL, ROOTDIR_REMOTE)
+			root = ROOTDIR_LOCAL.replace(ROOTDIR_LOCAL, ROOTDIR_REMOTE)
 			while True:
 				line = proc.stdout.readline()
 				if line != '':
 					line = line.rstrip()
-					if line.startswith('/'):
-						root = root.replace(ROOTDIR_LOCAL, ROOTDIR_REMOTE).rstrip(':')
-						packet.append((root, dirs, nondirs))
+					if line.startswith('/') and line.endswith(':'):
+						newroot = line.replace(ROOTDIR_LOCAL, ROOTDIR_REMOTE).rstrip(':')
+						packet.append((root, dirs[:], nondirs[:]))
 						if len(packet) >= BATCH_SIZE:
 							q.put(pickle.dumps(packet))
 							del packet[:]
 						del dirs[:]
-						del nondirs [:]
-						root = line
+						del nondirs[:]
+						root = newroot
 					else:
-						items = line.split(', ')
+						items = line.split(',')
 						for entry in items:
+							entry = entry.ltrim(' ')
 							if entry != '':
 								if entry.endswith('/'):
 									dirs.append(entry.rstrip('/'))
 								else:
 									nondirs.append(entry.rstrip('*'))
 				else:
+					packet.append((root, dirs[:], nondirs[:]))
 					break
 
 		else:
