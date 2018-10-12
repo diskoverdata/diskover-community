@@ -92,7 +92,7 @@ def socket_thread_handler(threadnum, q, q_kill, rootdir, cliargs, logger, reinde
                                             args=(batch, cliargs, reindex_dict,))
                             del batch[:]
                             if cliargs['adaptivebatch']:
-                                batchsize = diskover.adaptive_batch(diskover.q_crawl, batchsize)
+                                batchsize = diskover.adaptive_batch(diskover.q_crawl, cliargs, batchsize)
 
                     else:  # directory excluded
                         del dirs[:]

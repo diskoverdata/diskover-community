@@ -1216,7 +1216,7 @@ def progress_bar(event):
     return bar
 
 
-def adaptive_batch(q, batchsize):
+def adaptive_batch(q, cliargs, batchsize):
     """This is the adaptive batch function.
     It auto adjusts the batch size sent to rq.
     Could be made better :)
@@ -1269,7 +1269,7 @@ def calc_dir_sizes(cliargs, logger, path=None):
                 jobcount += 1
                 del dirbatch[:]
                 if cliargs['adaptivebatch']:
-                    batchsize = adaptive_batch(q_calc, batchsize)
+                    batchsize = adaptive_batch(q_calc, cliargs, batchsize)
 
         # add any remaining in batch to queue
         q_calc.enqueue(diskover_worker_bot.calc_dir_size, args=(dirbatch, cliargs,))
@@ -1326,7 +1326,7 @@ def treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict, bar):
                                 args=(batch, cliargs, reindex_dict,))
                 del batch[:]
                 if cliargs['adaptivebatch']:
-                    batchsize = adaptive_batch(q_crawl, batchsize)
+                    batchsize = adaptive_batch(q_crawl, cliargs, batchsize)
 
             # check if at maxdepth level and delete dirs/files lists to not
             # descend further down the tree
@@ -1454,7 +1454,7 @@ def hotdirs():
             q.enqueue(diskover_worker_bot.calc_hot_dirs, args=(dirbatch, cliargs,))
             del dirbatch[:]
             if cliargs['adaptivebatch']:
-                batchsize = adaptive_batch(q, batchsize)
+                batchsize = adaptive_batch(q, cliargs, batchsize)
 
     # add any remaining in batch to queue
     q.enqueue(diskover_worker_bot.calc_hot_dirs, args=(dirbatch, cliargs,))
