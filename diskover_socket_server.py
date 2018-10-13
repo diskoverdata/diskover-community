@@ -34,7 +34,7 @@ socket_tasks = {}
 clientlist = []
 
 
-def socket_thread_handler(threadnum, q, q_kill, rootdir, cliargs, logger, reindex_dict):
+def socket_thread_handler(threadnum, q, q_kill, rootdir, num_sep, level, batchsize, cliargs, logger, reindex_dict):
     """This is the socket thread handler function.
     It runs the command msg sent from client.
     """
@@ -46,7 +46,6 @@ def socket_thread_handler(threadnum, q, q_kill, rootdir, cliargs, logger, reinde
     if cliargs['listentwc']:
 
         BUFF = diskover.config['listener_twcbuffsize']
-        batchsize = cliargs['batchsize']
 
         while True:
 
@@ -93,6 +92,13 @@ def socket_thread_handler(threadnum, q, q_kill, rootdir, cliargs, logger, reinde
                             del batch[:]
                             if cliargs['adaptivebatch']:
                                 batchsize = diskover.adaptive_batch(diskover.q_crawl, cliargs, batchsize)
+
+                        # check if at maxdepth level and delete dirs/files lists to not
+                        # descend further down the tree
+                        num_sep_this = root.count(os.path.sep)
+                        if num_sep + level <= num_sep_this:
+                            del dirs[:]
+                            del files[:]
 
                     else:  # directory excluded
                         del dirs[:]
@@ -181,7 +187,7 @@ def socket_thread_handler(threadnum, q, q_kill, rootdir, cliargs, logger, reinde
                 pass
 
 
-def start_socket_server(rootdir, cliargs, logger, reindex_dict):
+def start_socket_server(rootdir_path, num_sep, level, batchsize, cliargs, logger, reindex_dict):
     """This is the start socket server function.
     It opens a socket and waits for remote commands.
     """
@@ -218,8 +224,8 @@ def start_socket_server(rootdir, cliargs, logger, reindex_dict):
         # set up the threads and start them
         for i in range(max_connections):
             # create thread
-            t = threading.Thread(target=socket_thread_handler,
-                                 args=(i, q, q_kill, rootdir, cliargs, logger, reindex_dict,))
+            t = threading.Thread(target=socket_thread_handler, args=(i, q, q_kill, rootdir_path, num_sep,
+                                                                     level, batchsize, cliargs, logger, reindex_dict,))
             t.daemon = True
             t.start()
 
@@ -238,8 +244,13 @@ def start_socket_server(rootdir, cliargs, logger, reindex_dict):
             # add client to list
             client = [clientsock, addr]
             clientlist.append(client)
+            # set start time to first connection
+            if len(clientlist) == 1:
+                starttime = time.time()
             # add task to Queue
             q.put(client)
+
+        return starttime
 
     except socket.error as e:
         serversock.close()

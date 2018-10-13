@@ -1448,6 +1448,15 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
         # set current depth
         num_sep = path.count(os.path.sep)
 
+        # check for listenlwc socket cli flag to start socket server
+        if cliargs['listentwc']:
+            import diskover_socket_server
+            starttime = diskover_socket_server.start_socket_server(rootdir_path, num_sep, level, batchsize,
+                                                                   cliargs, logger, reindex_dict)
+            return starttime
+
+        starttime = time.time()
+
         logger.info("Starting crawl (maxdepth %s)" % cliargs['maxdepth'])
 
         if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
@@ -1459,8 +1468,8 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
         # qumulo api crawl
         if cliargs['qumulo']:
             qumulo_ip, qumulo_ses = diskover_qumulo.qumulo_connection()
-            diskover_qumulo.qumulo_treewalk(path, qumulo_ip, qumulo_ses, q_crawl, num_sep, level,
-                                 batchsize, cliargs, reindex_dict, bar)
+            diskover_qumulo.qumulo_treewalk(path, qumulo_ip, qumulo_ses, q_crawl, num_sep, level, batchsize,
+                                            cliargs, reindex_dict, bar)
         # regular crawl using scandir/walk
         else:
             treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict, bar)
@@ -1470,6 +1479,8 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
             bar.finish()
 
         logger.info("Finished crawling!")
+
+        return starttime
 
     except KeyboardInterrupt:
         print("Ctrl-c keyboard interrupt, shutting down...")
@@ -1900,15 +1911,8 @@ if __name__ == "__main__":
 
     pre_crawl_tasks()
 
-    starttime = time.time()
-
-    # check for listenlwc socket cli flag to start socket server
-    if cliargs['listentwc']:
-        import diskover_socket_server
-        diskover_socket_server.start_socket_server(rootdir_path, cliargs, logger, reindex_dict)
-    else:
-        # start crawling
-        crawl_tree(rootdir_path, cliargs, logger, reindex_dict)
+    # start crawling
+    starttime = crawl_tree(rootdir_path, cliargs, logger, reindex_dict)
 
     post_crawl_tasks()
 
