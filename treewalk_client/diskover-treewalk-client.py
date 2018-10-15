@@ -35,7 +35,7 @@ try:
 	ROOTDIR_LOCAL = str(sys.argv[6])
 	ROOTDIR_REMOTE = str(sys.argv[7])
 except IndexError:
-	print("Usage: " + sys.argv[0] + " <host> <post> <batch_size> <num_connections> <treewalk_method> <rootdir_local> <rootdir_remote>")
+	print("Usage: " + sys.argv[0] + " <host> <port> <batch_size> <num_connections> <treewalk_method> <rootdir_local> <rootdir_remote>")
 	sys.exit(1)
 
 # Force I/O to be unbuffered...
