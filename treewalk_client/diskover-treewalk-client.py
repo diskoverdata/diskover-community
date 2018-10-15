@@ -22,52 +22,40 @@ try:
 except ImportError:
 	from queue import Queue
 
-version = '1.0.1'
+version = '1.0.2'
 __version__ = version
+
+
+try:
+	HOST =  str(sys.argv[1])
+	PORT = int(sys.argv[2])
+	BATCH_SIZE = int(sys.argv[3])
+	NUM_CONNECTIONS = int(sys.argv[4])
+	TREEWALK_METHOD = str(sys.argv[5])
+	ROOTDIR_LOCAL = str(sys.argv[6])
+	ROOTDIR_REMOTE = str(sys.argv[7])
+except IndexError:
+	print("Usage: " + sys.argv[0] + " <host> <post> <batch_size> <num_connections> <treewalk_method> <rootdir_local> <rootdir_remote>")
+	sys.exit(1)
 
 # Force I/O to be unbuffered...
 buf_arg = 0
 if sys.version_info[0] == 3:
-	os.environ['PYTHONUNBUFFERED'] = 1
+	os.environ['PYTHONUNBUFFERED'] = "1"
 	buf_arg = 1
 sys.stdin = os.fdopen(sys.stdin.fileno(), 'r', buf_arg)
 sys.stdout = os.fdopen(sys.stdout.fileno(), 'a+', buf_arg)
 sys.stderr = sys.stdout
 
 
-try:
-	TCP_IP =  str(sys.argv[1])
-	TCP_PORT = int(sys.argv[2])
-	BATCH_SIZE = int(sys.argv[3])
-	THREADS = int(sys.argv[4])
-	TREEWALK_METHOD = str(sys.argv[5])
-	ROOTDIR_LOCAL = str(sys.argv[6])
-	ROOTDIR_REMOTE = str(sys.argv[7])
-except IndexError:
-	print("Usage: " + sys.argv[0] + " TCP_IP TCP_PORT BATCH_SIZE THREADS TREEWALK_METHOD ROOTDIR_LOCAL ROOTDIR_REMOTE")
-	sys.exit(1)
+q = Queue()
+connections = []
 
-def socket_sender(item):
-	try:
-		while True:
-			s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-			s.connect((TCP_IP, TCP_PORT))
-			s.send(item)
-			s.close()
-			break
-	except socket.error as e:
-		try:
-			print("Can't connect to diskover socket server %s, will retry in 1 sec (ctrl-c to quit)" % e)
-			time.sleep(1)
-			socket_sender(item)
-		except KeyboardInterrupt:
-			print("Ctrl-c keyboard interrupt, shutting down...")
-			sys.exit(0)
 
-def socket_worker():
+def socket_worker(conn):
 	while True:
 		item = q.get()
-		socket_sender(item)
+		conn.sendall(item)
 		q.task_done()
 
 
@@ -93,21 +81,27 @@ if __name__ == "__main__":
 
 		print(banner)
 
+		if TREEWALK_METHOD != "oswalk" and TREEWALK_METHOD != "scandir" and TREEWALK_METHOD != "ls":
+			print("Unknown or no TREEWALK_METHOD, methods are oswalk, scandir, ls")
+			sys.exit(1)
+
 		starttime = time.time()
 
-		print("Connecting to diskover socket server...")
-
-		socket_sender(pickle.dumps(b''))
-
-		print("Connected")
-
-		print("Starting tree walk... (ctrl-c to stop)")
-
-		q = Queue()
-		for i in range(THREADS):
-			t = threading.Thread(target=socket_worker)
+		for i in range(NUM_CONNECTIONS):
+			try:
+				clientsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+				clientsock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+				clientsock.connect((HOST, PORT))
+			except socket.error as e:
+				print("Exception connecting to diskover socket server caused by %s" % e)
+				sys.exit(1)
+			connections.append(clientsock)
+			print("thread %s connected to socket server %s" % (i, clientsock.getsockname()))
+			t = threading.Thread(target=socket_worker, args=(clientsock,))
 			t.daemon = True
 			t.start()
+
+		print("Starting tree walk... (ctrl-c to stop)")
 
 		packet = []
 		if TREEWALK_METHOD == "oswalk":
@@ -166,25 +160,26 @@ if __name__ == "__main__":
 					packet.append((root, dirs[:], nondirs[:]))
 					break
 
-		else:
-			print("Unknown or no TREEWALK_METHOD, methods are oswalk, scandir, ls")
-			sys.exit(1)
-
 		q.put(pickle.dumps(packet))
 		q.join()
-		time.sleep(1)
-		socket_sender(pickle.dumps(b'SIGKILL'))
-		time.sleep(1)
-		socket_sender(pickle.dumps(b''))
 
 		print("Finished tree walking, elapsed time %s sec" % (time.time() - starttime))
 
+		for conn in connections:
+			print('closing connection', conn.getsockname())
+			conn.close()
+
+		time.sleep(2)
+		clientsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		clientsock.connect((HOST, PORT))
+		clientsock.sendall(b'SIGKILL')
+		clientsock.close()
+		time.sleep(2)
+		clientsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		clientsock.connect((HOST, PORT))
+		clientsock.sendall(b'')
+		clientsock.close()
+
 	except KeyboardInterrupt:
-		print("Ctrl-c keyboard interrupt, shutting down...")
-		q.put(pickle.dumps(packet))
-		q.join()
-		time.sleep(1)
-		socket_sender(pickle.dumps(b'SIGKILL'))
-		time.sleep(1)
-		socket_sender(pickle.dumps(b''))
+		print("Ctrl-c keyboard interrupt, exiting...")
 		sys.exit(0)

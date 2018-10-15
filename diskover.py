@@ -1451,7 +1451,7 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
         # check for listenlwc socket cli flag to start socket server
         if cliargs['listentwc']:
             import diskover_socket_server
-            starttime = diskover_socket_server.start_socket_server(rootdir_path, num_sep, level, batchsize,
+            starttime = diskover_socket_server.start_socket_server_twc(rootdir_path, num_sep, level, batchsize,
                                                                    cliargs, logger, reindex_dict)
             return starttime
 
@@ -1745,7 +1745,7 @@ if __name__ == "__main__":
     # check for listen socket cli flag to start socket server
     if cliargs['listen']:
         import diskover_socket_server
-        diskover_socket_server.start_socket_server(None, cliargs, logger, None)
+        diskover_socket_server.start_socket_server(cliargs, logger)
         sys.exit(0)
 
     # check for gource cli flags

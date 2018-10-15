@@ -34,52 +34,110 @@ socket_tasks = {}
 clientlist = []
 
 
-def socket_thread_handler(threadnum, q, q_kill, rootdir, num_sep, level, batchsize, cliargs, logger, reindex_dict):
+def socket_thread_handler(threadnum, q, cliargs, logger):
     """This is the socket thread handler function.
     It runs the command msg sent from client.
     """
-    global killswitch
+
     BUFF = diskover.config['listener_buffsize']
 
-    # if we are receiving a stream of messages (pickle) from diskover treewalk client,
-    # push into redis queue as fast as possible
-    if cliargs['listentwc']:
+    while True:
 
-        BUFF = diskover.config['listener_twcbuffsize']
+        try:
+            c = q.get()
+            clientsock, addr = c
+            logger.debug(clientsock)
+            logger.debug(addr)
+            data = clientsock.recv(BUFF)
+            data = data.decode('utf-8')
+            logger.debug('received data: %s' % data)
+            if not data:
+                q.task_done()
+                # close connection to client
+                clientsock.close()
+                logger.info("[thread-%s]: %s closed connection" % (threadnum, str(addr)))
+                continue
 
-        while True:
+            # check if ping msg
+            if data == 'ping':
+                logger.info("[thread-%s]: Got ping from %s" % (threadnum, str(addr)))
+                # send pong reply
+                message = b'pong'
+                clientsock.send(message)
+                logger.debug('sending data: %s' % message)
+            else:
+                # strip away any headers sent by curl
+                data = data.split('\r\n')[-1]
+                logger.info("[thread-%s]: Got command from %s" % (threadnum, str(addr)))
+                # load json and store in dict
+                command_dict = json.loads(data)
+                logger.debug(command_dict)
+                # run command from json data
+                run_command(threadnum, command_dict, clientsock, cliargs, logger)
 
-            try:
+            q.task_done()
+            # close connection to client
+            clientsock.close()
+            logger.info("[thread-%s]: %s closed connection" % (threadnum, str(addr)))
 
-                c = q.get()
-                clientsock, addr = c
-                logger.debug(clientsock)
-                logger.debug(addr)
+        except (ValueError, TypeError) as e:
+            q.task_done()
+            logger.error("[thread-%s]: Invalid JSON from %s: (%s)" % (threadnum, str(addr), e))
+            message = b'{"msg": "error", "error": ' + e + b'}\n'
+            clientsock.send(message)
+            logger.debug(message)
+            # close connection to client
+            clientsock.close()
+            logger.info("[thread-%s]: %s closed connection" % (threadnum, str(addr)))
+            pass
 
-                data = []
+        except socket.error as e:
+            q.task_done()
+            logger.error("[thread-%s]: Socket error (%s)" % (threadnum, e))
+            # close connection to client
+            clientsock.close()
+            logger.info("[thread-%s]: %s closed connection" % (threadnum, str(addr)))
+            pass
+
+
+def socket_thread_handler_twc(threadnum, q, q_kill, rootdir, num_sep, level, batchsize, cliargs, logger, reindex_dict):
+    """This is the socket thread handler tree walk client function.
+    Stream of directory listings (pickle) from diskover treewalk
+    client connections are enqueued to redis rq queue.
+    """
+
+    BUFF = diskover.config['listener_twcbuffsize']
+
+    while True:
+
+        try:
+
+            c = q.get()
+            clientsock, addr = c
+            logger.debug(clientsock)
+            logger.debug(addr)
+
+            while True:
+                data = b''
                 while True:
-                    packet = clientsock.recv(BUFF)
-                    if not packet:
-                        # close connection to client
-                        clientsock.close()
-                        logger.info("[thread-%s]: %s closed connection"
-                                    % (threadnum, str(addr)))
+                    part = clientsock.recv(BUFF)
+                    data += part
+                    if len(part) < BUFF:
                         break
-                    data.append(packet)
 
-                data_decoded = pickle.loads(b"".join(data))
-                #logger.debug(data_decoded)
+                if not data:
+                    break
 
-                # check for kill switch
-                if data_decoded == b'SIGKILL' or data_decoded == 'SIGKILL':
-                    q_kill.put(data_decoded)
-                    q.task_done()
-                    continue
+                if data == b'SIGKILL':
+                    q_kill.put(b'SIGKILL')
+                    break
+
+                data_decoded = pickle.loads(data)
+
+                logger.debug(data_decoded)
 
                 # enqueue to redis
-
                 batch = []
-
                 for root, dirs, files in data_decoded:
                     if len(dirs) == 0 and len(files) == 0 and not cliargs['indexemptydirs']:
                         continue
@@ -104,90 +162,22 @@ def socket_thread_handler(threadnum, q, q_kill, rootdir, num_sep, level, batchsi
                         del dirs[:]
                         del files[:]
 
-                # add any remaining in batch to queue
-                diskover.q_crawl.enqueue(diskover_worker_bot.scrape_tree_meta, args=(batch, cliargs, reindex_dict,))
+                if len(batch) > 0:
+                    # add any remaining in batch to queue
+                    diskover.q_crawl.enqueue(diskover_worker_bot.scrape_tree_meta,
+                                             args=(batch, cliargs, reindex_dict,))
+                    del batch[:]
 
-            except socket.error as e:
-                q.task_done()
-                logger.error("[thread-%s]: Socket error (%s)" % (threadnum, e))
-                # close connection to client
-                clientsock.close()
-                logger.info("[thread-%s]: %s closed connection"
-                            % (threadnum, str(addr)))
-                pass
-
+            # close connection to client
+            clientsock.close()
+            logger.info("[thread-%s]: %s closed connection" % (threadnum, str(addr)))
             q.task_done()
 
-    else:
-
-        while True:
-
-            try:
-                c = q.get()
-                clientsock, addr = c
-                logger.debug(clientsock)
-                logger.debug(addr)
-                data = clientsock.recv(BUFF)
-                data = data.decode('utf-8')
-                logger.debug('Data:')
-                logger.debug(data)
-                if not data:
-                    q.task_done()
-                    # close connection to client
-                    clientsock.close()
-                    logger.info("[thread-%s]: %s closed connection"
-                                % (threadnum, str(addr)))
-                    continue
-
-                # check if ping msg
-                if data == 'ping':
-                    logger.info("[thread-%s]: Got ping from %s"
-                                % (threadnum, str(addr)))
-                    # send pong reply
-                    message = b'pong'
-                    clientsock.send(message)
-                    logger.debug(message)
-                else:
-                    # strip away any headers sent by curl
-                    data = data.split('\r\n')[-1]
-                    logger.info("[thread-%s]: Got command from %s"
-                                % (threadnum, str(addr)))
-                    # load json and store in dict
-                    command_dict = json.loads(data)
-                    logger.debug(command_dict)
-                    # run command from json data
-                    run_command(threadnum, command_dict, clientsock, cliargs, logger)
-
-                q.task_done()
-                # close connection to client
-                clientsock.close()
-                logger.info("[thread-%s]: %s closed connection"
-                            % (threadnum, str(addr)))
-
-            except (ValueError, TypeError) as e:
-                q.task_done()
-                logger.error("[thread-%s]: Invalid JSON from %s: (%s)"
-                               % (threadnum, str(addr), e))
-                message = b'{"msg": "error", "error": ' + e + b'}\n'
-                clientsock.send(message)
-                logger.debug(message)
-                # close connection to client
-                clientsock.close()
-                logger.info("[thread-%s]: %s closed connection"
-                            % (threadnum, str(addr)))
-                pass
-
-            except socket.error as e:
-                q.task_done()
-                logger.error("[thread-%s]: Socket error (%s)" % (threadnum, e))
-                # close connection to client
-                clientsock.close()
-                logger.info("[thread-%s]: %s closed connection"
-                            % (threadnum, str(addr)))
-                pass
+        except socket.error as e:
+            logger.error("[thread-%s]: Socket error (%s)" % (threadnum, e))
 
 
-def start_socket_server(rootdir_path, num_sep, level, batchsize, cliargs, logger, reindex_dict):
+def start_socket_server(cliargs, logger):
     """This is the start socket server function.
     It opens a socket and waits for remote commands.
     """
@@ -198,23 +188,70 @@ def start_socket_server(rootdir_path, num_sep, level, batchsize, cliargs, logger
 
     # Queue for socket threads
     q = Queue.Queue(maxsize=max_connections)
-    # Queue to hold kill command
+
+    try:
+        # create TCP socket object
+        serversock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        serversock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        host = diskover.config['listener_host']  # default is localhost
+        port = diskover.config['listener_port']  # default is 9999
+        # bind to port
+        serversock.bind((host, port))
+        # start listener
+        serversock.listen(max_connections)
+
+        # set up the threads and start them
+        for i in range(max_connections):
+            # create thread
+            t = threading.Thread(target=socket_thread_handler, args=(i, q, cliargs, logger,))
+            t.daemon = True
+            t.start()
+
+        while True:
+            logger.info("Waiting for connection, listening on %s port %s TCP (ctrl-c to shutdown)"
+                        % (str(host), str(port)))
+            # establish connection
+            clientsock, addr = serversock.accept()
+            logger.debug(clientsock)
+            logger.debug(addr)
+            logger.info("Got a connection from %s" % str(addr))
+            # add client to list
+            client = [clientsock, addr]
+            clientlist.append(client)
+            # add task to Queue
+            q.put(client)
+
+    except socket.error as e:
+        serversock.close()
+        logger.error("Error opening socket (%s)" % e)
+        sys.exit(1)
+
+    except KeyboardInterrupt:
+        print('\nCtrl-c keyboard interrupt received, shutting down...')
+        q.join()
+        serversock.close()
+        sys.exit(0)
+
+
+def start_socket_server_twc(rootdir_path, num_sep, level, batchsize, cliargs, logger, reindex_dict):
+    """This is the start socket server function.
+    It opens a socket and waits for remote commands.
+    """
+    global clientlist
+
+    # set thread/connection limit
+    max_connections = diskover.config['listener_maxconnections']
+
+    # Queue for socket threads
+    q = Queue.Queue(maxsize=max_connections)
     q_kill = Queue.Queue()
 
     try:
         # create TCP socket object
         serversock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
         serversock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-
         host = diskover.config['listener_host']  # default is localhost
-
-        # if running listentwc
-        if cliargs['listentwc']:
-            port = diskover.config['listener_twcport']  # default is 9998
-        else:
-            port = diskover.config['listener_port']  # default is 9999
-
+        port = diskover.config['listener_twcport']  # default is 9998
         # bind to port
         serversock.bind((host, port))
 
@@ -224,16 +261,17 @@ def start_socket_server(rootdir_path, num_sep, level, batchsize, cliargs, logger
         # set up the threads and start them
         for i in range(max_connections):
             # create thread
-            t = threading.Thread(target=socket_thread_handler, args=(i, q, q_kill, rootdir_path, num_sep,
+            t = threading.Thread(target=socket_thread_handler_twc, args=(i, q, q_kill, rootdir_path, num_sep,
                                                                      level, batchsize, cliargs, logger, reindex_dict,))
             t.daemon = True
             t.start()
 
         while True:
             if q_kill.qsize() > 0:
-                logger.info("Received signal to close socket server")
+                logger.info("Received signal to shutdown socket server")
+                q.join()
                 serversock.close()
-                break
+                return starttime
             logger.info("Waiting for connection, listening on %s port %s TCP (ctrl-c to shutdown)"
                         % (str(host), str(port)))
             # establish connection
@@ -250,7 +288,6 @@ def start_socket_server(rootdir_path, num_sep, level, batchsize, cliargs, logger
             # add task to Queue
             q.put(client)
 
-        return starttime
 
     except socket.error as e:
         serversock.close()
@@ -261,7 +298,8 @@ def start_socket_server(rootdir_path, num_sep, level, batchsize, cliargs, logger
         print('\nCtrl-c keyboard interrupt received, shutting down...')
         q.join()
         serversock.close()
-        sys.exit(0)
+        #sys.exit(0)
+        return starttime
 
 
 def run_command(threadnum, command_dict, clientsock, cliargs, logger):
