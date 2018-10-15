@@ -1,10 +1,10 @@
 # Diskover Change Log
 
-## [1.5.0-rc18] = 2018-10-13
+## [1.5.0-rc18] = 2018-10-16
 ### added
 - improved socket server
 - cli arg -L --listentwc to listen for directory listings messages (pickle) from remote python diskover-treewalk-client.py
-- diskover-treewalk-client.py - v1.0.1 python client for diskover socket server to run direct on storage servers for faster tree walking (see wiki)
+- diskover-treewalk-client.py - v1.0.2 python client for diskover socket server to run direct on storage servers for faster tree walking (see wiki)
 - additional redis config options in diskover.cfg: db, timeout, queues (copy from diskover.cfg.sample into your config)
 - additional socket server options in diskover.cfg: maxconnections, buffsize, twcport, twcbuffsize (copy from diskover.cfg.sample into your config))
 - can now specify different diskover config file using env var DISKOVER_CONFIG
