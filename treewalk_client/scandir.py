@@ -25,6 +25,10 @@ from stat import S_IFDIR, S_IFLNK, S_IFREG
 import collections
 import sys
 
+# diskover patch for isilon
+_scandir = None
+ctypes = None
+"""
 try:
     import _scandir
 except ImportError:
@@ -39,6 +43,7 @@ if _scandir is None and ctypes is None:
     import warnings
     warnings.warn("scandir can't find the compiled _scandir C module "
                   "or ctypes, using slow generic fallback")
+"""
 
 __version__ = '1.9.0'
 __all__ = ['scandir', 'walk']
