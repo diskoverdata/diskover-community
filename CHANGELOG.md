@@ -9,6 +9,7 @@
 - additional socket server options in diskover.cfg: maxconnections, buffsize, twcport, twcbuffsize (copy from diskover.cfg.sample into your config))
 - can now specify different diskover config file using env var DISKOVER_CONFIG
 - better log output in worker bot if errors accessing directory or file
+-- cli arg --dircalcs for calculating sizes and item counts in all directory docs in existing index
 ### changed
 - updated diskover-bot-launcher.sh to v1.5
 - removed -q queue cli arg from diskover-bot-launcher.sh, use queues in diskover.cfg redis section

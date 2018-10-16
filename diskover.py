@@ -1182,6 +1182,9 @@ def parse_cli_args(indexname):
                         help="Qumulo storage type, use Qumulo api instead of scandir")
     parser.add_argument("--s3", metavar='FILE', nargs='+',
                         help="Import AWS S3 inventory csv file(s) (gzipped) to diskover index")
+    parser.add_argument("--dircalcs", action="store_true",
+                        help="Calculate sizes and item counts for each directory doc in existing index \
+                                (crawl does this automatically)")
     parser.add_argument("--gourcert", action="store_true",
                         help="Get realtime crawl data from ES for gource")
     parser.add_argument("--gourcemt", action="store_true",
@@ -1707,6 +1710,11 @@ if __name__ == "__main__":
     if cliargs['listplugins']:
         print("diskover plugins:")
         list_plugins()
+        sys.exit(0)
+
+    # run just dir calcs if cli arg
+    if cliargs['dircalcs']:
+        calc_dir_sizes(cliargs, logger)
         sys.exit(0)
 
     # check index name for Qumulo storage
