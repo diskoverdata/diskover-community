@@ -866,10 +866,12 @@ def index_delete_path(path, cliargs, logger, reindex_dict, recursive=False):
 
 
 def index_get_docs(cliargs, logger, doctype='directory', copytags=False, hotdirs=False,
-                   index=None, path=None, sort=False, maxdepth=None):
+                   index=None, path=None, sort=False, maxdepth=None, yielddocs=False):
     """This is the es get docs function.
     It finds all docs (by doctype) in es and returns doclist
     which contains doc id, fullpath and mtime for all docs.
+    If yielddocs is True, will yield as it scroll es index rather than waiting
+    for all docs to be found and added to doclist.
     If copytags is True will return tags from previous index.
     If path is specified will return just documents in and under directory path.
     If sort is True, will return paths in asc path order.
@@ -950,6 +952,7 @@ def index_get_docs(cliargs, logger, doctype='directory', copytags=False, hotdirs
     res = es.search(index=index, doc_type=doctype, scroll='1m',
                     size=1000, body=data, request_timeout=config['es_timeout'])
 
+    doccount = 0
     while res['hits']['hits'] and len(res['hits']['hits']) > 0:
         for hit in res['hits']['hits']:
             fullpath = os.path.abspath(os.path.join(hit['_source']['path_parent'], hit['_source']['filename']))
@@ -963,13 +966,23 @@ def index_get_docs(cliargs, logger, doctype='directory', copytags=False, hotdirs
                 mtime = time.mktime(datetime.strptime(
                     hit['_source']['last_modified'],
                     '%Y-%m-%dT%H:%M:%S').timetuple())
-                doclist.append((hit['_id'], fullpath, mtime, doctype))
+                # yield instead of adding to doclist
+                if yielddocs:
+                    doclist.append((hit['_id'], fullpath, mtime, doctype))
+                    if len(doclist) >= 1000:
+                        logger.debug(doclist)
+                        yield doclist
+                        del doclist[:]
+                else:
+                    doclist.append((hit['_id'], fullpath, mtime, doctype))
+            doccount += 1
         # use es scroll api
         res = es.scroll(scroll_id=res['_scroll_id'], scroll='1m',
                         request_timeout=config['es_timeout'])
+    if yielddocs:
+        logger.debug(doclist)
 
-    logger.info('Found %s %s docs' % (len(doclist), doctype))
-
+    logger.info('Found %s %s docs' % (str(doccount), doctype))
     return doclist
 
 
@@ -1185,6 +1198,9 @@ def parse_cli_args(indexname):
     parser.add_argument("--dircalcs", action="store_true",
                         help="Calculate sizes and item counts for each directory doc in existing index \
                                 (crawl does this automatically)")
+    parser.add_argument("--dircalcsgen", action="store_true",
+                        help="Same as dircalcs but yields directory docs instead of waiting \
+                                for all docs to be returned (fills queue as results are returned)")
     parser.add_argument("--gourcert", action="store_true",
                         help="Get realtime crawl data from ES for gource")
     parser.add_argument("--gourcemt", action="store_true",
@@ -1282,21 +1298,36 @@ def adaptive_batch(q, cliargs, batchsize):
     return batchsize
 
 
+def update_progress_bar_dircalcs(bar, jobcount):
+    workers_busy = False
+    workers = Worker.all(connection=redis_conn)
+    for worker in workers:
+        if worker._state == "busy":
+            workers_busy = True
+            break
+    q_len = len(q_calc)
+    if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+        try:
+            percent = int("{0:.0f}".format(100 * ((jobcount - q_len) / float(jobcount))))
+            bar.update(percent)
+        except ZeroDivisionError:
+            bar.update(0)
+        except ValueError:
+            bar.update(0)
+    return q_len, workers_busy
+
+
 def calc_dir_sizes(cliargs, logger, path=None):
     import diskover_worker_bot
     # maximum tree depth to calculate
     maxdepth = cliargs['maxdcdepth']
+    yielddocs = cliargs['dircalcsgen']
     jobcount = 0
+    dirbatch = []
 
     try:
         check_workers_running(logger)
 
-        if path:
-            dirlist = index_get_docs(cliargs, logger, path=path)
-        else:
-            dirlist = index_get_docs(cliargs, logger, sort=True, maxdepth=maxdepth)
-        logger.info('Getting diskover bots to calculate directory sizes (maxdepth %s)...' % maxdepth)
-        dirbatch = []
         if cliargs['adaptivebatch']:
             batchsize = ab_start
         else:
@@ -1308,40 +1339,66 @@ def calc_dir_sizes(cliargs, logger, path=None):
             bar.start()
         else:
             bar = None
-        for d in dirlist:
-            dirbatch.append(d)
-            if len(dirbatch) >= batchsize:
-                q_calc.enqueue(diskover_worker_bot.calc_dir_size, args=(dirbatch, cliargs,))
-                jobcount += 1
-                del dirbatch[:]
-                if cliargs['adaptivebatch']:
-                    batchsize = adaptive_batch(q_calc, cliargs, batchsize)
 
-        # add any remaining in batch to queue
-        q_calc.enqueue(diskover_worker_bot.calc_dir_size, args=(dirbatch, cliargs,))
-        jobcount += 1
+        # yield docs while scrolling index in es
+        if yielddocs:
 
-        # wait for queue to be empty and update progress bar
-        time.sleep(1)
-        while True:
-            workers_busy = False
-            workers = Worker.all(connection=redis_conn)
-            for worker in workers:
-                if worker._state == "busy":
-                    workers_busy = True
+            logger.info('Getting diskover bots to calculate directory sizes (maxdepth %s)...' % maxdepth)
+
+            if path:
+                for d in index_get_docs(cliargs, logger, path=path, yielddocs=yielddocs):
+                    dirbatch.append(d)
+                    if len(dirbatch) >= batchsize:
+                        q_calc.enqueue(diskover_worker_bot.calc_dir_size, args=(dirbatch, cliargs,))
+                        jobcount += 1
+                        del dirbatch[:]
+                        if cliargs['adaptivebatch']:
+                            batchsize = adaptive_batch(q_calc, cliargs, batchsize)
+                    update_progress_bar_dircalcs(bar, jobcount)
+            else:
+                for d in index_get_docs(cliargs, logger, sort=True, maxdepth=maxdepth, yielddocs=yielddocs):
+                    dirbatch.append(d)
+                    if len(dirbatch) >= batchsize:
+                        q_calc.enqueue(diskover_worker_bot.calc_dir_size, args=(dirbatch, cliargs,))
+                        jobcount += 1
+                        del dirbatch[:]
+                        if cliargs['adaptivebatch']:
+                            batchsize = adaptive_batch(q_calc, cliargs, batchsize)
+                    update_progress_bar_dircalcs(bar, jobcount)
+
+            # add any remaining in batch to queue
+            q_calc.enqueue(diskover_worker_bot.calc_dir_size, args=(dirbatch, cliargs,))
+            jobcount += 1
+
+        # wait to get all docs returned to dirlist
+        else:
+            if path:
+                dirlist = index_get_docs(cliargs, logger, path=path)
+            else:
+                dirlist = index_get_docs(cliargs, logger, sort=True, maxdepth=maxdepth)
+
+            logger.info('Getting diskover bots to calculate directory sizes (maxdepth %s)...' % maxdepth)
+
+            for d in dirlist:
+                dirbatch.append(d)
+                if len(dirbatch) >= batchsize:
+                    q_calc.enqueue(diskover_worker_bot.calc_dir_size, args=(dirbatch, cliargs,))
+                    jobcount += 1
+                    del dirbatch[:]
+                    if cliargs['adaptivebatch']:
+                        batchsize = adaptive_batch(q_calc, cliargs, batchsize)
+
+            # add any remaining in batch to queue
+            q_calc.enqueue(diskover_worker_bot.calc_dir_size, args=(dirbatch, cliargs,))
+            jobcount += 1
+
+            # wait for queue to be empty and update progress bar
+            time.sleep(1)
+            while True:
+                q_len, workers_busy = update_progress_bar_dircalcs(bar, jobcount)
+                if q_len == 0 and workers_busy == False:
                     break
-            q_len = len(q_calc)
-            if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
-                try:
-                    percent = int("{0:.0f}".format(100 * ((jobcount - q_len) / float(jobcount))))
-                    bar.update(percent)
-                except ZeroDivisionError:
-                    bar.update(0)
-                except ValueError:
-                    bar.update(0)
-            if q_len == 0 and workers_busy == False:
-                break
-            time.sleep(.5)
+                time.sleep(.5)
 
         if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
             bar.finish()
@@ -1713,7 +1770,7 @@ if __name__ == "__main__":
         sys.exit(0)
 
     # run just dir calcs if cli arg
-    if cliargs['dircalcs']:
+    if cliargs['dircalcs'] or cliargs['dircalcsgen']:
         calc_dir_sizes(cliargs, logger)
         sys.exit(0)
 
