@@ -550,7 +550,7 @@ def file_meta_collector():
         if meta:
             filequeue_meta.put(meta)
         else:
-            bot_logger.warning("Didn't get meta for file %s" % path)
+            bot_logger.info("Skipped file %s" % path)
         filequeue.task_done()
 
 
@@ -949,7 +949,7 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
             tree_dirs.append(dmeta)
             totalcrawltime += elapsed
         else:
-            bot_logger.error("Couldn't get directory meta for %s" % root)
+            bot_logger.info("Skipped directory %s" % root)
 
         # check if doc count is more than es chunksize and bulk add to es
         if len(tree_dirs) + len(tree_files) >= diskover.config['es_chunksize']:

@@ -26,6 +26,7 @@ import time
 import sys
 import os
 import pickle
+import struct
 
 
 # dict to hold socket tasks
@@ -39,7 +40,7 @@ def socket_thread_handler(threadnum, q, cliargs, logger):
     It runs the command msg sent from client.
     """
 
-    BUFF = diskover.config['listener_buffsize']
+    BUFF = 1024
 
     while True:
 
@@ -100,13 +101,29 @@ def socket_thread_handler(threadnum, q, cliargs, logger):
             pass
 
 
+def recvall(sock, count):
+    buf = b''
+    while count:
+        newbuf = sock.recv(count)
+        if not newbuf: return None
+        buf += newbuf
+        count -= len(newbuf)
+    return buf
+
+
+def recv_one_message(sock):
+    lengthbuf = recvall(sock, 4)
+    if not lengthbuf:
+        return None
+    length, = struct.unpack('!I', lengthbuf)
+    return recvall(sock, length)
+
+
 def socket_thread_handler_twc(threadnum, q, q_kill, rootdir, num_sep, level, batchsize, cliargs, logger, reindex_dict):
     """This is the socket thread handler tree walk client function.
     Stream of directory listings (pickle) from diskover treewalk
     client connections are enqueued to redis rq queue.
     """
-
-    BUFF = diskover.config['listener_twcbuffsize']
 
     while True:
 
@@ -118,22 +135,17 @@ def socket_thread_handler_twc(threadnum, q, q_kill, rootdir, num_sep, level, bat
             logger.debug(addr)
 
             while True:
-                data = b''
-                while True:
-                    part = clientsock.recv(BUFF)
-                    data += part
-                    if len(part) < BUFF:
-                        break
+                data = recv_one_message(clientsock)
+                logger.debug(data)
 
                 if not data:
                     break
 
-                if data == b'SIGKILL':
+                if data == b'SIGKILL' or data == 'SIGKILL':
                     q_kill.put(b'SIGKILL')
                     break
 
                 data_decoded = pickle.loads(data)
-
                 logger.debug(data_decoded)
 
                 # enqueue to redis
@@ -296,10 +308,8 @@ def start_socket_server_twc(rootdir_path, num_sep, level, batchsize, cliargs, lo
 
     except KeyboardInterrupt:
         print('\nCtrl-c keyboard interrupt received, shutting down...')
-        q.join()
         serversock.close()
-        #sys.exit(0)
-        return starttime
+        sys.exit(0)
 
 
 def run_command(threadnum, command_dict, clientsock, cliargs, logger):

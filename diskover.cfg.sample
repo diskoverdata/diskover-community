@@ -101,12 +101,8 @@ host = localhost
 port = 9999
 ; max connections for diskover socket server
 maxconnections = 5
-; buffer size for diskover socket server
-buffsize = 1024
 ; port (TCP) for diskover socket server for messages from diskover treewalk client
 twcport = 9998
-; buffer size for diskover treewalk client
-twcbuffsize = 4096
 
 [dupescheck]
 ; read size (bytes) for md5 sum check (how many bytes to read in at a time when md5 checking, default 64 KB)

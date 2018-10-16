@@ -17,12 +17,13 @@ import pickle
 import socket
 import time
 import threading
+import struct
 try:
 	from Queue import Queue
 except ImportError:
 	from queue import Queue
 
-version = '1.0.2'
+version = '1.0.3'
 __version__ = version
 
 
@@ -54,10 +55,16 @@ q = Queue()
 connections = []
 
 
+def send_one_message(sock, data):
+	length = len(data)
+	sock.sendall(struct.pack('!I', length))
+	sock.sendall(data)
+
+
 def socket_worker(conn):
 	while True:
 		item = q.get()
-		conn.sendall(item)
+		send_one_message(conn, item)
 		q.task_done()
 
 
@@ -174,12 +181,12 @@ if __name__ == "__main__":
 		time.sleep(2)
 		clientsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		clientsock.connect((HOST, PORT))
-		clientsock.sendall(b'SIGKILL')
+		send_one_message(clientsock, b'SIGKILL')
 		clientsock.close()
 		time.sleep(2)
 		clientsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		clientsock.connect((HOST, PORT))
-		clientsock.sendall(b'')
+		send_one_message(clientsock, b'')
 		clientsock.close()
 
 	except KeyboardInterrupt:

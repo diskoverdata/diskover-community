@@ -333,16 +333,6 @@ def load_config():
     except ConfigParser.NoOptionError:
         configsettings['listener_twcport'] = 9998
     try:
-        configsettings['listener_buffsize'] = \
-            int(config.get('socketlistener', 'buffize'))
-    except ConfigParser.NoOptionError:
-        configsettings['listener_buffsize'] = 1024
-    try:
-        configsettings['listener_twcbuffsize'] = \
-            int(config.get('socketlistener', 'twcbuffize'))
-    except ConfigParser.NoOptionError:
-        configsettings['listener_twcbuffsize'] = 4096
-    try:
         configsettings['diskover_path'] = \
             config.get('paths', 'diskoverpath')
     except ConfigParser.NoOptionError:
