@@ -1233,10 +1233,11 @@ def parse_cli_args(indexname):
     parser.add_argument("--s3", metavar='FILE', nargs='+',
                         help="Import AWS S3 inventory csv file(s) (gzipped) to diskover index")
     parser.add_argument("--dircalcsonly", action="store_true",
-                        help="Calculate sizes and item counts for each directory doc in existing index")
+                        help="Calculate sizes and item counts for each directory doc in existing index \
+                                (done automatically after each crawl)")
     parser.add_argument("--dircalcsgen", action="store_true",
-                        help="Same as dircalcs but yields directory docs instead of waiting \
-                                for all docs to be returned (fills queue as results are returned)")
+                        help="During dir calcs, uses generator to yield directory docs instead of waiting \
+                                for all docs to be returned (fills queue as ES results are returned)")
     parser.add_argument("--gourcert", action="store_true",
                         help="Get realtime crawl data from ES for gource")
     parser.add_argument("--gourcemt", action="store_true",
