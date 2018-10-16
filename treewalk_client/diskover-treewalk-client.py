@@ -26,26 +26,28 @@ version = '1.0.2'
 __version__ = version
 
 
+# Force I/O to be unbuffered...
+buf_arg = 0
+if sys.version_info[0] == 3:
+	os.environ['PYTHONUNBUFFERED'] = "1"
+	buf_arg = 1
+	unicode = str
+sys.stdin = os.fdopen(sys.stdin.fileno(), 'r', buf_arg)
+sys.stdout = os.fdopen(sys.stdout.fileno(), 'a+', buf_arg)
+sys.stderr = sys.stdout
+
+
 try:
 	HOST =  str(sys.argv[1])
 	PORT = int(sys.argv[2])
 	BATCH_SIZE = int(sys.argv[3])
 	NUM_CONNECTIONS = int(sys.argv[4])
 	TREEWALK_METHOD = str(sys.argv[5])
-	ROOTDIR_LOCAL = str(sys.argv[6])
-	ROOTDIR_REMOTE = str(sys.argv[7])
+	ROOTDIR_LOCAL = unicode(sys.argv[6])
+	ROOTDIR_REMOTE = unicode(sys.argv[7])
 except IndexError:
 	print("Usage: " + sys.argv[0] + " <host> <port> <batch_size> <num_connections> <treewalk_method> <rootdir_local> <rootdir_remote>")
 	sys.exit(1)
-
-# Force I/O to be unbuffered...
-buf_arg = 0
-if sys.version_info[0] == 3:
-	os.environ['PYTHONUNBUFFERED'] = "1"
-	buf_arg = 1
-sys.stdin = os.fdopen(sys.stdin.fileno(), 'r', buf_arg)
-sys.stdout = os.fdopen(sys.stdout.fileno(), 'a+', buf_arg)
-sys.stderr = sys.stdout
 
 
 q = Queue()
