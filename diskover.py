@@ -866,7 +866,7 @@ def index_delete_path(path, cliargs, logger, reindex_dict, recursive=False):
 
 
 def index_get_docs(cliargs, logger, doctype='directory', copytags=False, hotdirs=False,
-                   index=None, path=None, sort=False, maxdepth=None, yielddocs=False):
+                   index=None, path=None, sort=False, maxdepth=None):
     """This is the es get docs function.
     It finds all docs (by doctype) in es and returns doclist
     which contains doc id, fullpath and mtime for all docs.
@@ -876,11 +876,96 @@ def index_get_docs(cliargs, logger, doctype='directory', copytags=False, hotdirs
     If path is specified will return just documents in and under directory path.
     If sort is True, will return paths in asc path order.
     """
-    doclist = []
 
     if index is None:
         index = cliargs['index']
 
+    data = _index_get_docs_data(index, copytags, hotdirs, doctype, path, maxdepth, sort)
+
+    # refresh index
+    es.indices.refresh(index)
+
+    # search es and start scroll
+    res = es.search(index=index, doc_type=doctype, scroll='1m',
+                    size=1000, body=data, request_timeout=config['es_timeout'])
+
+    doclist = []
+    doccount = 0
+    while res['hits']['hits'] and len(res['hits']['hits']) > 0:
+        for hit in res['hits']['hits']:
+            fullpath = os.path.abspath(os.path.join(hit['_source']['path_parent'], hit['_source']['filename']))
+            if copytags:
+                doclist.append((fullpath, hit['_source']['tag'], hit['_source']['tag_custom'], doctype))
+            elif hotdirs:
+                doclist.append((hit['_id'], fullpath, hit['_source']['filesize'], hit['_source']['items'],
+                                hit['_source']['items_files'], hit['_source']['items_subdirs']))
+            else:
+                # convert es time to unix time format
+                mtime = time.mktime(datetime.strptime(
+                    hit['_source']['last_modified'],
+                    '%Y-%m-%dT%H:%M:%S').timetuple())
+                doclist.append((hit['_id'], fullpath, mtime, doctype))
+            doccount += 1
+        # use es scroll api
+        res = es.scroll(scroll_id=res['_scroll_id'], scroll='1m',
+                        request_timeout=config['es_timeout'])
+
+    logger.info('Found %s %s docs' % (str(doccount), doctype))
+
+    return doclist
+
+
+def index_get_docs_generator(cliargs, logger, doctype='directory', copytags=False, hotdirs=False,
+                   index=None, path=None, sort=False, maxdepth=None):
+    """This is the es get docs generator function.
+    It does the same thing as index_get_docs function, but is a generator
+    and yields as it scroll es index.
+    """
+
+    if index is None:
+        index = cliargs['index']
+
+    data = _index_get_docs_data(index, copytags, hotdirs, doctype, path, maxdepth, sort)
+
+    # refresh index
+    es.indices.refresh(index)
+
+    # search es and start scroll
+    res = es.search(index=index, doc_type=doctype, scroll='1m',
+                    size=1000, body=data, request_timeout=config['es_timeout'])
+
+    doclist = []
+    doccount = 0
+    while res['hits']['hits'] and len(res['hits']['hits']) > 0:
+        for hit in res['hits']['hits']:
+            fullpath = os.path.abspath(os.path.join(hit['_source']['path_parent'], hit['_source']['filename']))
+            if copytags:
+                doclist.append((fullpath, hit['_source']['tag'], hit['_source']['tag_custom'], doctype))
+            elif hotdirs:
+                doclist.append((hit['_id'], fullpath, hit['_source']['filesize'], hit['_source']['items'],
+                                hit['_source']['items_files'], hit['_source']['items_subdirs']))
+            else:
+                # convert es time to unix time format
+                mtime = time.mktime(datetime.strptime(
+                    hit['_source']['last_modified'],
+                    '%Y-%m-%dT%H:%M:%S').timetuple())
+                doclist.append((hit['_id'], fullpath, mtime, doctype))
+                if len(doclist) >= 1000:
+                    logger.debug(doclist)
+                    yield doclist
+                    del doclist[:]
+            doccount += 1
+        # use es scroll api
+        res = es.scroll(scroll_id=res['_scroll_id'], scroll='1m',
+                        request_timeout=config['es_timeout'])
+
+    logger.info('Found %s %s docs' % (str(doccount), doctype))
+
+    logger.debug(doclist)
+    yield doclist
+
+
+def _index_get_docs_data(index, copytags, hotdirs, doctype, path, maxdepth, sort):
     if copytags:
         logger.info('Searching for all %s docs with tags in %s...', doctype, index)
         data = {
@@ -918,7 +1003,7 @@ def index_get_docs(cliargs, logger, doctype='directory', copytags=False, hotdirs
                 data = {
                     '_source': ['path_parent', 'filename', 'last_modified'],
                     'query': {
-                        'regexp': { 'path_parent': regexp }
+                        'regexp': {'path_parent': regexp}
                     }
                 }
         else:
@@ -933,57 +1018,19 @@ def index_get_docs(cliargs, logger, doctype='directory', copytags=False, hotdirs
             data = {
                 '_source': ['path_parent', 'filename', 'last_modified'],
                 'query': {
-                        'query_string': {
-                            'query': '(path_parent: ' + newpath + ') OR '
-                             '(path_parent: ' + newpathwildcard + ') OR (filename: "'
-                             + os.path.basename(path) + '" AND path_parent: "'
-                             + os.path.abspath(os.path.join(path, os.pardir)) + '")',
+                    'query_string': {
+                        'query': '(path_parent: ' + newpath + ') OR '
+                                                              '(path_parent: ' + newpathwildcard + ') OR (filename: "'
+                                 + os.path.basename(path) + '" AND path_parent: "'
+                                 + os.path.abspath(os.path.join(path, os.pardir)) + '")',
                     }
                 }
             }
 
     if sort:
-        data['sort'] = [{'path_parent': { 'order': 'desc'}}]
+        data['sort'] = [{'path_parent': {'order': 'desc'}}]
 
-    # refresh index
-    es.indices.refresh(index)
-
-    # search es and start scroll
-    res = es.search(index=index, doc_type=doctype, scroll='1m',
-                    size=1000, body=data, request_timeout=config['es_timeout'])
-
-    doccount = 0
-    while res['hits']['hits'] and len(res['hits']['hits']) > 0:
-        for hit in res['hits']['hits']:
-            fullpath = os.path.abspath(os.path.join(hit['_source']['path_parent'], hit['_source']['filename']))
-            if copytags:
-                doclist.append((fullpath, hit['_source']['tag'], hit['_source']['tag_custom'], doctype))
-            elif hotdirs:
-                doclist.append((hit['_id'], fullpath, hit['_source']['filesize'], hit['_source']['items'],
-                                hit['_source']['items_files'], hit['_source']['items_subdirs']))
-            else:
-                # convert es time to unix time format
-                mtime = time.mktime(datetime.strptime(
-                    hit['_source']['last_modified'],
-                    '%Y-%m-%dT%H:%M:%S').timetuple())
-                # yield instead of adding to doclist
-                if yielddocs:
-                    doclist.append((hit['_id'], fullpath, mtime, doctype))
-                    if len(doclist) >= 1000:
-                        logger.debug(doclist)
-                        yield doclist
-                        del doclist[:]
-                else:
-                    doclist.append((hit['_id'], fullpath, mtime, doctype))
-            doccount += 1
-        # use es scroll api
-        res = es.scroll(scroll_id=res['_scroll_id'], scroll='1m',
-                        request_timeout=config['es_timeout'])
-    if yielddocs:
-        logger.debug(doclist)
-
-    logger.info('Found %s %s docs' % (str(doccount), doctype))
-    return doclist
+    return data
 
 
 def add_diskspace(index, logger, path):
@@ -1195,9 +1242,8 @@ def parse_cli_args(indexname):
                         help="Qumulo storage type, use Qumulo api instead of scandir")
     parser.add_argument("--s3", metavar='FILE', nargs='+',
                         help="Import AWS S3 inventory csv file(s) (gzipped) to diskover index")
-    parser.add_argument("--dircalcs", action="store_true",
-                        help="Calculate sizes and item counts for each directory doc in existing index \
-                                (crawl does this automatically)")
+    parser.add_argument("--dircalcsonly", action="store_true",
+                        help="Calculate sizes and item counts for each directory doc in existing index")
     parser.add_argument("--dircalcsgen", action="store_true",
                         help="Same as dircalcs but yields directory docs instead of waiting \
                                 for all docs to be returned (fills queue as results are returned)")
@@ -1321,7 +1367,6 @@ def calc_dir_sizes(cliargs, logger, path=None):
     import diskover_worker_bot
     # maximum tree depth to calculate
     maxdepth = cliargs['maxdcdepth']
-    yielddocs = cliargs['dircalcsgen']
     jobcount = 0
     dirbatch = []
 
@@ -1334,37 +1379,40 @@ def calc_dir_sizes(cliargs, logger, path=None):
             batchsize = cliargs['batchsize']
         if cliargs['verbose'] or cliargs['debug']:
             logger.info('Batch size: %s' % batchsize)
-        if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
-            bar = progress_bar('Calculating')
-            bar.start()
-        else:
-            bar = None
 
-        # yield docs while scrolling index in es
-        if yielddocs:
+        # use generator and yield docs while scrolling index in es
+        if cliargs['dircalcsgen']:
 
             logger.info('Getting diskover bots to calculate directory sizes (maxdepth %s)...' % maxdepth)
 
-            if path:
-                for d in index_get_docs(cliargs, logger, path=path, yielddocs=yielddocs):
-                    dirbatch.append(d)
-                    if len(dirbatch) >= batchsize:
-                        q_calc.enqueue(diskover_worker_bot.calc_dir_size, args=(dirbatch, cliargs,))
-                        jobcount += 1
-                        del dirbatch[:]
-                        if cliargs['adaptivebatch']:
-                            batchsize = adaptive_batch(q_calc, cliargs, batchsize)
-                    update_progress_bar_dircalcs(bar, jobcount)
+            if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+                bar = progress_bar('Calculating')
+                bar.start()
             else:
-                for d in index_get_docs(cliargs, logger, sort=True, maxdepth=maxdepth, yielddocs=yielddocs):
-                    dirbatch.append(d)
-                    if len(dirbatch) >= batchsize:
-                        q_calc.enqueue(diskover_worker_bot.calc_dir_size, args=(dirbatch, cliargs,))
-                        jobcount += 1
-                        del dirbatch[:]
-                        if cliargs['adaptivebatch']:
-                            batchsize = adaptive_batch(q_calc, cliargs, batchsize)
-                    update_progress_bar_dircalcs(bar, jobcount)
+                bar = None
+
+            if path:
+                for items in index_get_docs_generator(cliargs, logger, path=path):
+                    for d in items:
+                        dirbatch.append(d)
+                        if len(dirbatch) >= batchsize:
+                            q_calc.enqueue(diskover_worker_bot.calc_dir_size, args=(dirbatch, cliargs,))
+                            jobcount += 1
+                            del dirbatch[:]
+                            if cliargs['adaptivebatch']:
+                                batchsize = adaptive_batch(q_calc, cliargs, batchsize)
+                        update_progress_bar_dircalcs(bar, jobcount)
+            else:
+                for items in index_get_docs_generator(cliargs, logger, sort=True, maxdepth=maxdepth):
+                    for d in items:
+                        dirbatch.append(d)
+                        if len(dirbatch) >= batchsize:
+                            q_calc.enqueue(diskover_worker_bot.calc_dir_size, args=(dirbatch, cliargs,))
+                            jobcount += 1
+                            del dirbatch[:]
+                            if cliargs['adaptivebatch']:
+                                batchsize = adaptive_batch(q_calc, cliargs, batchsize)
+                        update_progress_bar_dircalcs(bar, jobcount)
 
             # add any remaining in batch to queue
             q_calc.enqueue(diskover_worker_bot.calc_dir_size, args=(dirbatch, cliargs,))
@@ -1379,9 +1427,16 @@ def calc_dir_sizes(cliargs, logger, path=None):
 
             logger.info('Getting diskover bots to calculate directory sizes (maxdepth %s)...' % maxdepth)
 
+            if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+                bar = progress_bar('Calculating')
+                bar.start()
+            else:
+                bar = None
+
             for d in dirlist:
                 dirbatch.append(d)
                 if len(dirbatch) >= batchsize:
+                    logger.debug(dirbatch)
                     q_calc.enqueue(diskover_worker_bot.calc_dir_size, args=(dirbatch, cliargs,))
                     jobcount += 1
                     del dirbatch[:]
@@ -1389,6 +1444,7 @@ def calc_dir_sizes(cliargs, logger, path=None):
                         batchsize = adaptive_batch(q_calc, cliargs, batchsize)
 
             # add any remaining in batch to queue
+            logger.debug(dirbatch)
             q_calc.enqueue(diskover_worker_bot.calc_dir_size, args=(dirbatch, cliargs,))
             jobcount += 1
 
@@ -1770,7 +1826,7 @@ if __name__ == "__main__":
         sys.exit(0)
 
     # run just dir calcs if cli arg
-    if cliargs['dircalcs'] or cliargs['dircalcsgen']:
+    if cliargs['dircalcsonly']:
         calc_dir_sizes(cliargs, logger)
         sys.exit(0)
 

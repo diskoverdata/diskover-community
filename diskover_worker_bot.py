@@ -550,7 +550,7 @@ def file_meta_collector():
         if meta:
             filequeue_meta.put(meta)
         else:
-            bot_logger.error("Couldn't get meta for file %s" % path)
+            bot_logger.warning("Didn't get meta for file %s" % path)
         filequeue.task_done()
 
 
