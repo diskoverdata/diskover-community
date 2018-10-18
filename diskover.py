@@ -684,7 +684,8 @@ def index_create(indexname):
 
     # check plugins for additional mappings
     for plugin in plugins:
-        mappings = (plugin.add_mappings(mappings))
+        if getattr(plugin, '__version__', 1) == 1:
+            mappings = (plugin.add_mappings(mappings))
 
     logger.info('Creating es index')
     es.indices.create(index=indexname, body=mappings)

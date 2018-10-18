@@ -507,8 +507,13 @@ def get_dir_meta(worker_name, path, cliargs, reindex_dict):
             try:
                 # check if plugin is for directory doc
                 mappings = {'mappings': {'directory': {'properties': {}}}}
-                plugin.add_mappings(mappings)
-                dirmeta_dict.update(plugin.add_meta(fullpath))
+                if getattr(plugin, '__version__', 1) == 1:
+                    plugin.add_mappings(mappings)
+                    dirmeta_dict.update(plugin.add_meta(fullpath))
+                elif getattr(plugin, '__version__') == 2:
+                    p = plugin.Handler(fullpath)
+                    p.add_mappings(mappings)
+                    dirmeta_dict.update(p.add_meta())
             except KeyError:
                 pass
 
@@ -667,8 +672,14 @@ def get_file_meta(worker_name, path, cliargs, reindex_dict):
             try:
                 # check if plugin is for file doc
                 mappings = {'mappings': {'file': {'properties': {}}}}
-                plugin.add_mappings(mappings)
-                filemeta_dict.update(plugin.add_meta(path))
+                logging.info("Plugin: %s", plugin)
+                if getattr(plugin, '__version__', 1) == 1:
+                    plugin.add_mappings(mappings)
+                    filemeta_dict.update(plugin.add_meta(path))
+                elif getattr(plugin, '__version__') == 2:
+                    p = plugin.Handler(path)
+                    p.add_mappings(mappings)
+                    filemeta_dict.update(p.add_meta())
             except KeyError:
                 pass
 
