@@ -23,7 +23,7 @@ try:
 except ImportError:
 	from queue import Queue
 
-version = '1.0.3'
+version = '1.0.4'
 __version__ = version
 
 
@@ -50,6 +50,7 @@ except IndexError:
 	print("Usage: " + sys.argv[0] + " <host> <port> <batch_size> <num_connections> <treewalk_method> <rootdir_local> <rootdir_remote>")
 	sys.exit(1)
 
+EXCLUDED_DIRS = ['.snapshot', '.zfs']
 
 q = Queue()
 connections = []
@@ -116,6 +117,10 @@ if __name__ == "__main__":
 		if TREEWALK_METHOD == "oswalk":
 			for root, dirs, files in os.walk(ROOTDIR_LOCAL):
 				root = root.replace(ROOTDIR_LOCAL, ROOTDIR_REMOTE)
+				if os.path.basename(root) in EXCLUDED_DIRS:
+					del dirs[:]
+					del files[:]
+					continue
 				packet.append((root, dirs, files))
 				if len(packet) >= BATCH_SIZE:
 					q.put(pickle.dumps(packet))
@@ -130,6 +135,10 @@ if __name__ == "__main__":
 
 			for root, dirs, files in walk(ROOTDIR_LOCAL):
 				root = root.replace(ROOTDIR_LOCAL, ROOTDIR_REMOTE)
+				if os.path.basename(root) in EXCLUDED_DIRS:
+					del dirs[:]
+					del files[:]
+					continue
 				packet.append((root, dirs, files))
 				if len(packet) >= BATCH_SIZE:
 					q.put(pickle.dumps(packet))
@@ -137,8 +146,8 @@ if __name__ == "__main__":
 
 		elif TREEWALK_METHOD == "ls":
 			import subprocess
-			findCMD = ['ls', '-RFAwm', ROOTDIR_LOCAL]
-			proc = subprocess.Popen(findCMD, stdout=subprocess.PIPE)
+			lsCMD = ['ls', '-RFAwm', ROOTDIR_LOCAL]
+			proc = subprocess.Popen(lsCMD, stdout=subprocess.PIPE)
 
 			dirs = []
 			nondirs = []
@@ -149,7 +158,8 @@ if __name__ == "__main__":
 					line = line.rstrip()
 					if line.startswith('/') and line.endswith(':'):
 						newroot = line.replace(ROOTDIR_LOCAL, ROOTDIR_REMOTE).rstrip(':')
-						packet.append((root, dirs[:], nondirs[:]))
+						if os.path.basename(root) not in EXCLUDED_DIRS:
+							packet.append((root, dirs[:], nondirs[:]))
 						if len(packet) >= BATCH_SIZE:
 							q.put(pickle.dumps(packet))
 							del packet[:]
@@ -166,7 +176,8 @@ if __name__ == "__main__":
 								else:
 									nondirs.append(entry.rstrip('*'))
 				else:
-					packet.append((root, dirs[:], nondirs[:]))
+					if os.path.basename(root) not in EXCLUDED_DIRS:
+						packet.append((root, dirs[:], nondirs[:]))
 					break
 
 		q.put(pickle.dumps(packet))
