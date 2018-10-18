@@ -23,9 +23,10 @@ try:
 except ImportError:
 	from queue import Queue
 
-version = '1.0.4'
+version = '1.0.5'
 __version__ = version
 
+EXCLUDED_DIRS = ['.snapshot', '.zfs']
 
 # Force I/O to be unbuffered...
 buf_arg = 0
@@ -36,7 +37,6 @@ if sys.version_info[0] == 3:
 sys.stdin = os.fdopen(sys.stdin.fileno(), 'r', buf_arg)
 sys.stdout = os.fdopen(sys.stdout.fileno(), 'a+', buf_arg)
 sys.stderr = sys.stdout
-
 
 try:
 	HOST =  str(sys.argv[1])
@@ -49,8 +49,6 @@ try:
 except IndexError:
 	print("Usage: " + sys.argv[0] + " <host> <port> <batch_size> <num_connections> <treewalk_method> <rootdir_local> <rootdir_remote>")
 	sys.exit(1)
-
-EXCLUDED_DIRS = ['.snapshot', '.zfs']
 
 q = Queue()
 connections = []
@@ -146,7 +144,19 @@ if __name__ == "__main__":
 
 		elif TREEWALK_METHOD == "ls":
 			import subprocess
-			lsCMD = ['ls', '-RFAwm', ROOTDIR_LOCAL]
+			if len(EXCLUDED_DIRS) > 0:
+				excludesls = ""
+				i = 0
+				while i < len(EXCLUDED_DIRS):
+					excludesls += EXCLUDED_DIRS[i]
+					i += 1
+					if i < len(EXCLUDED_DIRS):
+						excludesls += "|"
+				cmd = 'ls -RFAwm ' + ROOTDIR_LOCAL + ' !(' + excludesls + ')'
+				lsCMD = ['bash', '-O', 'extglob', '-c', cmd]
+			else:
+				cmd = 'ls -RFAwm ' + ROOTDIR_LOCAL
+				lsCMD = ['bash', '-c', cmd]
 			proc = subprocess.Popen(lsCMD, stdout=subprocess.PIPE)
 
 			dirs = []
@@ -157,7 +167,8 @@ if __name__ == "__main__":
 				if line != '':
 					line = line.rstrip()
 					if line.startswith('/') and line.endswith(':'):
-						newroot = line.replace(ROOTDIR_LOCAL, ROOTDIR_REMOTE).rstrip(':')
+						line = line.rstrip(':')
+						newroot = line.replace(ROOTDIR_LOCAL, ROOTDIR_REMOTE)
 						if os.path.basename(root) not in EXCLUDED_DIRS:
 							packet.append((root, dirs[:], nondirs[:]))
 						if len(packet) >= BATCH_SIZE:
