@@ -10,6 +10,7 @@ Copyright (C) Chris Park 2017-2018
 diskover is released under the Apache 2.0 license. See
 LICENSE for the full license text.
 """
+import inspect
 
 try:
     from elasticsearch5 import Elasticsearch, helpers, RequestsHttpConnection, \
@@ -39,7 +40,7 @@ import re
 import os
 import sys
 import json
-
+import plugins as dynamic_plugins
 
 version = '1.5.0-rc18'
 __version__ = version
@@ -418,7 +419,13 @@ def load_plugins():
     plugins_info = get_plugins_info()
     for plugin_info in plugins_info:
         plugin_module = imp.load_module(plugin_info["name"], *plugin_info["info"])
-        loaded_plugins.append(plugin_module)
+        for name, obj in inspect.getmembers(plugin_module):
+            # If the class is a fully implemented subclass of the plugin Handler, add it to the list
+            if inspect.isclass(obj) and issubclass(obj, dynamic_plugins.Handler) and len(obj.__abstractmethods__) == 0:
+                loaded_plugins.append(obj)
+        # Only include plugins that defined both the app_mappings and add_meta functions
+        if hasattr(plugin_module, 'add_mappings') and hasattr(plugin_module, 'add_meta'):
+            loaded_plugins.append(plugin_module)
     return loaded_plugins
 
 
