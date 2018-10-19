@@ -12,7 +12,7 @@ Copyright (C) Chris Park 2017-2018
 diskover is released under the Apache 2.0 license. See
 LICENSE for the full license text.
 """
-
+import inspect
 import os
 import gzip
 import csv
@@ -169,8 +169,14 @@ def process_line(row, tree_dirs, tree_files, tree_crawltimes, cliargs):
             try:
                 # check if plugin is for directory doc
                 mappings = {'mappings': {'directory': {'properties': {}}}}
-                plugin.add_mappings(mappings)
-                inventory_dict.update(plugin.add_meta(fullpath))
+                if inspect.isclass(plugin):
+                    p = plugin.Handler(fullpath)
+                    p.initialize()
+                    p.add_mappings(mappings)
+                    inventory_dict.update(p.add_meta())
+                else:
+                    plugin.add_mappings(mappings)
+                    inventory_dict.update(plugin.add_meta(fullpath))
             except KeyError:
                 pass
 
@@ -211,8 +217,14 @@ def process_line(row, tree_dirs, tree_files, tree_crawltimes, cliargs):
             try:
                 # check if plugin is for file doc
                 mappings = {'mappings': {'file': {'properties': {}}}}
-                plugin.add_mappings(mappings)
-                inventory_dict.update(plugin.add_meta(fullpath))
+                if inspect.isclass(plugin):
+                    p = plugin.Handler(fullpath)
+                    p.initialize()
+                    p.add_mappings(mappings)
+                    inventory_dict.update(p.add_meta())
+                else:
+                    plugin.add_mappings(mappings)
+                    inventory_dict.update(plugin.add_meta(fullpath))
             except KeyError:
                 pass
 
@@ -314,8 +326,14 @@ def make_fake_s3_dir(parent, file, cliargs):
         try:
             # check if plugin is for directory doc
             mappings = {'mappings': {'directory': {'properties': {}}}}
-            plugin.add_mappings(mappings)
-            dir_dict.update(plugin.add_meta(fullpath))
+            if inspect.isclass(plugin):
+                p = plugin.Handler(fullpath)
+                p.initialize()
+                p.add_mappings(mappings)
+                dir_dict.update(p.add_meta())
+            else:
+                plugin.add_mappings(mappings)
+                dir_dict.update(plugin.add_meta(fullpath))
         except KeyError:
             pass
 

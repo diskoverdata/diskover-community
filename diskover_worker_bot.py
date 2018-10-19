@@ -10,6 +10,7 @@ Copyright (C) Chris Park 2017-2018
 diskover is released under the Apache 2.0 license. See
 LICENSE for the full license text.
 """
+import inspect
 
 import diskover
 from redis import Redis
@@ -507,13 +508,14 @@ def get_dir_meta(worker_name, path, cliargs, reindex_dict):
             try:
                 # check if plugin is for directory doc
                 mappings = {'mappings': {'directory': {'properties': {}}}}
-                if getattr(plugin, '__version__', 1) == 1:
-                    plugin.add_mappings(mappings)
-                    dirmeta_dict.update(plugin.add_meta(fullpath))
-                elif getattr(plugin, '__version__') == 2:
+                if inspect.isclass(plugin):
                     p = plugin.Handler(fullpath)
+                    p.initialize()
                     p.add_mappings(mappings)
                     dirmeta_dict.update(p.add_meta())
+                else:
+                    plugin.add_mappings(mappings)
+                    dirmeta_dict.update(plugin.add_meta(fullpath))
             except KeyError:
                 pass
 
@@ -672,14 +674,14 @@ def get_file_meta(worker_name, path, cliargs, reindex_dict):
             try:
                 # check if plugin is for file doc
                 mappings = {'mappings': {'file': {'properties': {}}}}
-                logging.info("Plugin: %s", plugin)
-                if getattr(plugin, '__version__', 1) == 1:
-                    plugin.add_mappings(mappings)
-                    filemeta_dict.update(plugin.add_meta(path))
-                elif getattr(plugin, '__version__') == 2:
+                if inspect.isclass(plugin):
                     p = plugin.Handler(path)
+                    p.initialize()
                     p.add_mappings(mappings)
                     filemeta_dict.update(p.add_meta())
+                else:
+                    plugin.add_mappings(mappings)
+                    filemeta_dict.update(plugin.add_meta(path))
             except KeyError:
                 pass
 

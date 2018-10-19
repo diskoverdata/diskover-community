@@ -10,6 +10,7 @@ Copyright (C) Chris Park 2017-2018
 diskover is released under the Apache 2.0 license. See
 LICENSE for the full license text.
 """
+import inspect
 
 try:
     from qumulo.rest_client import RestClient
@@ -293,8 +294,14 @@ def qumulo_get_dir_meta(worker_name, path, cliargs, reindex_dict, redis_conn):
         try:
             # check if plugin is for directory doc
             mappings = {'mappings': {'directory': {'properties': {}}}}
-            plugin.add_mappings(mappings)
-            dirmeta_dict.update(plugin.add_meta(fullpath))
+            if inspect.isclass(plugin):
+                p = plugin.Handler(fullpath)
+                p.initialize()
+                p.add_mappings(mappings)
+                dirmeta_dict.update(p.add_meta())
+            else:
+                plugin.add_mappings(mappings)
+                dirmeta_dict.update(plugin.add_meta(fullpath))
         except KeyError:
             pass
 
@@ -428,8 +435,14 @@ def qumulo_get_file_meta(worker_name, path, cliargs, reindex_dict):
         try:
             # check if plugin is for file doc
             mappings = {'mappings': {'file': {'properties': {}}}}
-            plugin.add_mappings(mappings)
-            filemeta_dict.update(plugin.add_meta(path['path']))
+            if inspect.isclass(plugin):
+                p = plugin.Handler(path['path'])
+                p.initialize()
+                p.add_mappings(mappings)
+                filemeta_dict.update(p.add_meta())
+            else:
+                plugin.add_mappings(mappings)
+                filemeta_dict.update(plugin.add_meta(path['path']))
         except KeyError:
             pass
 
