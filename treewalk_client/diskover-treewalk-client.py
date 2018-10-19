@@ -26,8 +26,11 @@ except ImportError:
 version = '1.0.6'
 __version__ = version
 
+
 EXCLUDED_DIRS = ['.snapshot', '.zfs']
-NUM_SPIDERS = 8
+
+# Number of threads for metaspider treewalk_method
+NUM_SPIDERS = 20
 
 # Force I/O to be unbuffered...
 buf_arg = 0
@@ -70,8 +73,8 @@ def socket_worker(conn):
 def spider_worker():
 	while True:
 		item = q_spider.get()
-		filemeta = os.lstat(item)
-		q_spider_meta.put((item, filemeta))
+		mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime = os.lstat(item)
+		q_spider_meta.put((item, (mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime)))
 		q_spider.task_done()
 
 
@@ -121,35 +124,32 @@ if __name__ == "__main__":
 		print("Starting tree walk... (ctrl-c to stop)")
 
 		packet = []
-		if TREEWALK_METHOD == "oswalk":
-			for root, dirs, files in os.walk(ROOTDIR_LOCAL):
-				root = root.replace(ROOTDIR_LOCAL, ROOTDIR_REMOTE)
-				if os.path.basename(root) in EXCLUDED_DIRS:
-					del dirs[:]
-					del files[:]
-					continue
-				packet.append((root, dirs, files))
-				if len(packet) >= BATCH_SIZE:
-					q.put(pickle.dumps(packet))
-					del packet [:]
-
-		elif TREEWALK_METHOD == "scandir":
-			try:
-				from scandir import scandir, walk
-			except ImportError:
-				print("scandir python module not found")
-				sys.exit(1)
-
+		if TREEWALK_METHOD == "oswalk" or TREEWALK_METHOD == "scandir":
+			if TREEWALK_METHOD == "scandir":
+				try:
+					from scandir import walk
+				except ImportError:
+					print("scandir python module not found")
+					sys.exit(1)
+			else:
+				from os import walk
 			for root, dirs, files in walk(ROOTDIR_LOCAL):
 				root = root.replace(ROOTDIR_LOCAL, ROOTDIR_REMOTE)
 				if os.path.basename(root) in EXCLUDED_DIRS:
 					del dirs[:]
 					del files[:]
 					continue
+				# check for symlinks
+				for d in dirs:
+					if os.path.islink(os.path.join(root, d)):
+						dirs.remove(d)
+				for f in files:
+					if os.path.islink(os.path.join(root, f)):
+						files.remove(f)
 				packet.append((root, dirs, files))
 				if len(packet) >= BATCH_SIZE:
 					q.put(pickle.dumps(packet))
-					del packet[:]
+					del packet [:]
 
 		elif TREEWALK_METHOD == "metaspider":
 			# use threads to collect meta and send to diskover proxy rather than
@@ -182,30 +182,18 @@ if __name__ == "__main__":
 				while q_spider_meta.qsize() > 0:
 					item = q_spider_meta.get()
 					filemeta.append(item)
-					q_spider.task_done()
+					q_spider_meta.task_done()
 
-				rootmeta = (root, os.lstat(root))
+				mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime = os.lstat(root)
 
-				packet.append(('statembeded', rootmeta, dirs, filemeta))
+				packet.append(((root, (mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime)), dirs, filemeta))
 				if len(packet) >= BATCH_SIZE:
 					q.put(pickle.dumps(packet))
 					del packet[:]
 
 		elif TREEWALK_METHOD == "ls":
 			import subprocess
-			if len(EXCLUDED_DIRS) > 0:
-				excludesls = ""
-				i = 0
-				while i < len(EXCLUDED_DIRS):
-					excludesls += EXCLUDED_DIRS[i]
-					i += 1
-					if i < len(EXCLUDED_DIRS):
-						excludesls += "|"
-				cmd = 'ls -RFAwm ' + ROOTDIR_LOCAL + '/!(' + excludesls + ')'
-				lsCMD = ['bash', '-O', 'extglob', '-c', cmd]
-			else:
-				cmd = 'ls -RFAwm ' + ROOTDIR_LOCAL
-				lsCMD = ['bash', '-c', cmd]
+			lsCMD = ['ls', '-RFAw', ROOTDIR_LOCAL]
 			proc = subprocess.Popen(lsCMD, stdout=subprocess.PIPE)
 
 			dirs = []
@@ -227,13 +215,16 @@ if __name__ == "__main__":
 						del nondirs[:]
 						root = newroot
 					else:
-						items = line.split(',')
+						items = line.split('\n')
 						for entry in items:
 							entry = entry.lstrip(' ')
 							if entry != '':
 								if entry.endswith('/'):
 									dirs.append(entry.rstrip('/'))
 								else:
+									if entry.endswith('@'):
+										# skip symlink
+										continue
 									nondirs.append(entry.rstrip('*'))
 				else:
 					if os.path.basename(root) not in EXCLUDED_DIRS:
@@ -243,7 +234,7 @@ if __name__ == "__main__":
 		q.put(pickle.dumps(packet))
 		q.join()
 
-		print("Finished tree walking, elapsed time %s sec" % (time.time() - starttime))
+		print("Finished tree walking, elapsed time %s sec" % (round(time.time() - starttime, 3)))
 
 		for conn in connections:
 			print('closing connection', conn.getsockname())

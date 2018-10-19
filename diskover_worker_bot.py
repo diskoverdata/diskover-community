@@ -410,11 +410,14 @@ def get_dir_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
 
     try:
         if statsembeded:
+            metadata = path[1]
+            dirpath = path[0]
             # get directory meta embeded in path
-            mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime = path[1]
+            mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime = metadata
         else:
+            dirpath = path
             # get directory meta using lstat
-            mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime = os.lstat(path)
+            mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime = os.lstat(dirpath)
 
         # convert times to utc for es
         mtime_utc = datetime.utcfromtimestamp(mtime).isoformat()
@@ -423,7 +426,7 @@ def get_dir_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
 
         if cliargs['index2']:
             # check if directory times cached in Redis
-            redis_dirtime = redis_conn.get(base64.encodestring(path.encode('utf-8', errors='ignore')))
+            redis_dirtime = redis_conn.get(base64.encodestring(dirpath.encode('utf-8', errors='ignore')))
             if redis_dirtime:
                 cached_times = float(redis_dirtime.decode('utf-8'))
                 # check if cached times are the same as on disk
@@ -476,9 +479,8 @@ def get_dir_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
                 gids.append(gid)
                 groups[gid] = group
 
-        filename = os.path.basename(path)
-        parentdir = os.path.abspath(os.path.join(path, os.pardir))
-        fullpath = os.path.abspath(os.path.join(parentdir, filename))
+        filename = os.path.basename(dirpath)
+        parentdir = os.path.abspath(os.path.join(dirpath, os.pardir))
 
         dirmeta_dict = {
             "filename": filename,
@@ -512,7 +514,7 @@ def get_dir_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
                 # check if plugin is for directory doc
                 mappings = {'mappings': {'directory': {'properties': {}}}}
                 plugin.add_mappings(mappings)
-                dirmeta_dict.update(plugin.add_meta(fullpath))
+                dirmeta_dict.update(plugin.add_meta(dirpath))
             except KeyError:
                 pass
 
@@ -522,7 +524,7 @@ def get_dir_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
 
         # search for and copy over any existing tags from reindex_dict
         for sublist in reindex_dict['directory']:
-            if sublist[0] == fullpath:
+            if sublist[0] == dirpath:
                 dirmeta_dict['tag'] = sublist[1]
                 dirmeta_dict['tag_custom'] = sublist[2]
                 break
@@ -536,7 +538,7 @@ def get_dir_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
 
     # cache directory times in Redis, encode path (key) using base64
     if diskover.config['redis_cachedirtimes'] == 'True' or diskover.config['redis_cachedirtimes'] == 'true':
-        redis_conn.set(base64.encodestring(path.encode('utf-8', errors='ignore')), mtime + ctime,
+        redis_conn.set(base64.encodestring(dirpath.encode('utf-8', errors='ignore')), mtime + ctime,
                        ex=diskover.config['redis_dirtimesttl'])
 
     return dirmeta_dict
@@ -568,23 +570,24 @@ def get_file_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
     try:
         # check if stats embeded in path
         if statsembeded:
-            filename = os.path.basename(path[0])
-            filepath = path[0]
+            metadata = path[1]
+            fullpath = path[0]
         else:
-            filename = os.path.basename(path)
-            filepath = path
+            fullpath = path
+
+        filename = os.path.basename(fullpath)
 
         # check if file is in exluded_files list
         extension = os.path.splitext(filename)[1][1:].strip().lower()
-        if file_excluded(filename, extension, filepath, cliargs['verbose']):
+        if file_excluded(filename, extension, fullpath, cliargs['verbose']):
             return None
 
         if statsembeded:
             # get embeded stats from path
-            mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime = path[1]
+            mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime = metadata
         else:
             # use lstat to get meta and not follow sym links
-            mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime = os.lstat(path)
+            mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime = os.lstat(fullpath)
 
         # Skip files smaller than minsize cli flag
         if size < cliargs['minsize']:
@@ -652,7 +655,7 @@ def get_file_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
         indextime_utc = datetime.utcnow().isoformat()
 
         # get absolute path of parent directory
-        parentdir = os.path.abspath(os.path.join(path, os.pardir))
+        parentdir = os.path.abspath(os.path.join(fullpath, os.pardir))
 
         # create file metadata dictionary
         filemeta_dict = {
@@ -682,7 +685,7 @@ def get_file_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
                 # check if plugin is for file doc
                 mappings = {'mappings': {'file': {'properties': {}}}}
                 plugin.add_mappings(mappings)
-                filemeta_dict.update(plugin.add_meta(path))
+                filemeta_dict.update(plugin.add_meta(fullpath))
             except KeyError:
                 pass
 
@@ -692,7 +695,7 @@ def get_file_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
 
         # search for and copy over any existing tags from reindex_dict
         for sublist in reindex_dict['file']:
-            if sublist[0] == path:
+            if sublist[0] == fullpath:
                 filemeta_dict['tag'] = sublist[1]
                 filemeta_dict['tag_custom'] = sublist[2]
                 break
@@ -913,12 +916,12 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
 
     for path in paths:
         starttime = time.time()
+        root, files = path
         # check if stats embeded in data from diskover tree walk client
-        statsembeded = False
-        if len(path) > 2:
-            statsembeded, root, files = path
+        if type(root) is tuple:
+            statsembeded = True
         else:
-            root, files = path
+            statsembeded = False
         if qumulo:
             import diskover_qumulo
             if root['path'] != '/':
@@ -959,7 +962,9 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
             # check if meta for files embeded
             if statsembeded:
                 for file in files:
-                    get_file_meta(worker, file, cliargs, reindex_dict, statsembeded=True)
+                    fmeta = get_file_meta(worker, file, cliargs, reindex_dict, statsembeded=True)
+                    if fmeta:
+                        tree_files.append(fmeta)
             else:
                 for file in files:
                     if qumulo:

@@ -27,6 +27,7 @@ import sys
 import os
 import pickle
 import struct
+from collections import deque
 
 
 # dict to hold socket tasks
@@ -154,15 +155,12 @@ def socket_thread_handler_twc(threadnum, q, q_kill, rootdir, num_sep, level, bat
                     if len(dirs) == 0 and len(files) == 0 and not cliargs['indexemptydirs']:
                         continue
                     # check if meta stat data has been embeded in the data from client
-                    if data_decoded[0] == "statsembeded":
+                    if type(root) is tuple:
                         rootpath = root[0]
                     else:
                         rootpath = root
                     if not diskover.dir_excluded(rootpath, diskover.config, cliargs['verbose']):
-                        if data_decoded[0] == "statsembeded":
-                            batch.append(("statsembeded", root, files))
-                        else:
-                            batch.append((root, files))
+                        batch.append((root, files))
                         batch_len = len(batch)
                         if batch_len >= batchsize:
                             diskover.q_crawl.enqueue(diskover_worker_bot.scrape_tree_meta,
