@@ -23,29 +23,29 @@ try:
 except ImportError:
 	from queue import Queue
 
-version = '1.0.5'
+version = '1.0.6'
 __version__ = version
 
 EXCLUDED_DIRS = ['.snapshot', '.zfs']
+NUM_SPIDERS = 8
 
 # Force I/O to be unbuffered...
 buf_arg = 0
 if sys.version_info[0] == 3:
 	os.environ['PYTHONUNBUFFERED'] = "1"
 	buf_arg = 1
-	unicode = str
 sys.stdin = os.fdopen(sys.stdin.fileno(), 'r', buf_arg)
 sys.stdout = os.fdopen(sys.stdout.fileno(), 'a+', buf_arg)
 sys.stderr = sys.stdout
 
 try:
-	HOST =  str(sys.argv[1])
+	HOST =  sys.argv[1]
 	PORT = int(sys.argv[2])
 	BATCH_SIZE = int(sys.argv[3])
 	NUM_CONNECTIONS = int(sys.argv[4])
-	TREEWALK_METHOD = str(sys.argv[5])
-	ROOTDIR_LOCAL = unicode(sys.argv[6])
-	ROOTDIR_REMOTE = unicode(sys.argv[7])
+	TREEWALK_METHOD = sys.argv[5]
+	ROOTDIR_LOCAL = sys.argv[6]
+	ROOTDIR_REMOTE = sys.argv[7]
 except IndexError:
 	print("Usage: " + sys.argv[0] + " <host> <port> <batch_size> <num_connections> <treewalk_method> <rootdir_local> <rootdir_remote>")
 	sys.exit(1)
@@ -65,6 +65,14 @@ def socket_worker(conn):
 		item = q.get()
 		send_one_message(conn, item)
 		q.task_done()
+
+
+def spider_worker():
+	while True:
+		item = q_spider.get()
+		filemeta = os.lstat(item)
+		q_spider_meta.put((item, filemeta))
+		q_spider.task_done()
 
 
 if __name__ == "__main__":
@@ -89,8 +97,9 @@ if __name__ == "__main__":
 
 		print(banner)
 
-		if TREEWALK_METHOD != "oswalk" and TREEWALK_METHOD != "scandir" and TREEWALK_METHOD != "ls":
-			print("Unknown or no TREEWALK_METHOD, methods are oswalk, scandir, ls")
+		if TREEWALK_METHOD != "oswalk" and TREEWALK_METHOD != "scandir" \
+				and TREEWALK_METHOD != "ls" and TREEWALK_METHOD != "metaspider":
+			print("Unknown or no treewalk_method, methods are oswalk, scandir, ls, metaspider")
 			sys.exit(1)
 
 		starttime = time.time()
@@ -142,6 +151,46 @@ if __name__ == "__main__":
 					q.put(pickle.dumps(packet))
 					del packet[:]
 
+		elif TREEWALK_METHOD == "metaspider":
+			# use threads to collect meta and send to diskover proxy rather than
+			# the bots scraping the meta
+			try:
+				from scandir import scandir, walk
+			except ImportError:
+				print("scandir python module not found")
+				sys.exit(1)
+
+			q_spider = Queue()
+			q_spider_meta = Queue()
+
+			for i in range(NUM_SPIDERS):
+				t = threading.Thread(target=spider_worker)
+				t.daemon = True
+				t.start()
+
+			for root, dirs, files in walk(ROOTDIR_LOCAL):
+				root = root.replace(ROOTDIR_LOCAL, ROOTDIR_REMOTE)
+				if os.path.basename(root) in EXCLUDED_DIRS:
+					del dirs[:]
+					del files[:]
+					continue
+				for f in files:
+					q_spider.put(os.path.join(root, f))
+				q_spider.join()
+
+				filemeta = []
+				while q_spider_meta.qsize() > 0:
+					item = q_spider_meta.get()
+					filemeta.append(item)
+					q_spider.task_done()
+
+				rootmeta = (root, os.lstat(root))
+
+				packet.append(('statembeded', rootmeta, dirs, filemeta))
+				if len(packet) >= BATCH_SIZE:
+					q.put(pickle.dumps(packet))
+					del packet[:]
+
 		elif TREEWALK_METHOD == "ls":
 			import subprocess
 			if len(EXCLUDED_DIRS) > 0:
@@ -152,7 +201,7 @@ if __name__ == "__main__":
 					i += 1
 					if i < len(EXCLUDED_DIRS):
 						excludesls += "|"
-				cmd = 'ls -RFAwm ' + ROOTDIR_LOCAL + ' !(' + excludesls + ')'
+				cmd = 'ls -RFAwm ' + ROOTDIR_LOCAL + '/!(' + excludesls + ')'
 				lsCMD = ['bash', '-O', 'extglob', '-c', cmd]
 			else:
 				cmd = 'ls -RFAwm ' + ROOTDIR_LOCAL
@@ -163,7 +212,7 @@ if __name__ == "__main__":
 			nondirs = []
 			root = ROOTDIR_LOCAL.replace(ROOTDIR_LOCAL, ROOTDIR_REMOTE)
 			while True:
-				line = proc.stdout.readline()
+				line = proc.stdout.readline().decode('utf-8')
 				if line != '':
 					line = line.rstrip()
 					if line.startswith('/') and line.endswith(':'):

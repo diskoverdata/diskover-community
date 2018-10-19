@@ -16,6 +16,9 @@ during getting directory doc results from es rather than waiting for all docs to
 - updated diskover-bot-launcher.sh to v1.5
 - removed -q queue cli arg from diskover-bot-launcher.sh, use queues in diskover.cfg redis section
 - removed -q queue cli arg from diskover bots, use queues in diskover.cfg redis section
+### fixed
+- file symlinks getting indexed
+- directories containing just symlinks (no actual file/subdirs) getting indexed
 
 ## [1.5.0-rc17] = 2018-10-04
 ### added

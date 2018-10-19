@@ -400,7 +400,7 @@ def auto_tag_time_check(pattern, mtime, atime, ctime):
     return timepass
 
 
-def get_dir_meta(worker_name, path, cliargs, reindex_dict):
+def get_dir_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
     """This is the get directory meta data function.
     It gets directory metadata and returns dir meta dict.
     It checks if meta data is in Redis and compares times
@@ -409,8 +409,12 @@ def get_dir_meta(worker_name, path, cliargs, reindex_dict):
     """
 
     try:
-        # get directory meta using lstat
-        mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime = os.lstat(path)
+        if statsembeded:
+            # get directory meta embeded in path
+            mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime = path[1]
+        else:
+            # get directory meta using lstat
+            mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime = os.lstat(path)
 
         # convert times to utc for es
         mtime_utc = datetime.utcfromtimestamp(mtime).isoformat()
@@ -546,7 +550,7 @@ def file_meta_collector():
             import diskover_qumulo
             meta = diskover_qumulo.qumulo_get_file_meta(worker_name, path, cliargs, reindex_dict)
         else:
-            meta = get_file_meta(worker_name, path, cliargs, reindex_dict)
+            meta = get_file_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False)
         if meta:
             filequeue_meta.put(meta)
         else:
@@ -554,7 +558,7 @@ def file_meta_collector():
         filequeue.task_done()
 
 
-def get_file_meta(worker_name, path, cliargs, reindex_dict):
+def get_file_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
     """This is the get file meta data function.
     It scrapes file meta and ignores files smaller
     than minsize Bytes, newer than mtime
@@ -562,15 +566,25 @@ def get_file_meta(worker_name, path, cliargs, reindex_dict):
     """
 
     try:
-        filename = os.path.basename(path)
+        # check if stats embeded in path
+        if statsembeded:
+            filename = os.path.basename(path[0])
+            filepath = path[0]
+        else:
+            filename = os.path.basename(path)
+            filepath = path
 
         # check if file is in exluded_files list
         extension = os.path.splitext(filename)[1][1:].strip().lower()
-        if file_excluded(filename, extension, path, cliargs['verbose']):
+        if file_excluded(filename, extension, filepath, cliargs['verbose']):
             return None
 
-        # use lstat to get meta and not follow sym links
-        mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime = os.lstat(path)
+        if statsembeded:
+            # get embeded stats from path
+            mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime = path[1]
+        else:
+            # use lstat to get meta and not follow sym links
+            mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime = os.lstat(path)
 
         # Skip files smaller than minsize cli flag
         if size < cliargs['minsize']:
@@ -899,7 +913,12 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
 
     for path in paths:
         starttime = time.time()
-        root, files = path
+        # check if stats embeded in data from diskover tree walk client
+        statsembeded = False
+        if len(path) > 2:
+            statsembeded, root, files = path
+        else:
+            root, files = path
         if qumulo:
             import diskover_qumulo
             if root['path'] != '/':
@@ -908,8 +927,12 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
                 root_path = root['path']
             dmeta = diskover_qumulo.qumulo_get_dir_meta(worker, root, cliargs, reindex_dict, redis_conn)
         else:
-            root_path = root
-            dmeta = get_dir_meta(worker, root_path, cliargs, reindex_dict)
+            if statsembeded:
+                root_path = root[0]
+                dmeta = get_dir_meta(worker, root, cliargs, reindex_dict, statsembeded=True)
+            else:
+                root_path = root
+                dmeta = get_dir_meta(worker, root_path, cliargs, reindex_dict, statsembeded=False)
         if dmeta == "sametimes":
             # fetch meta data for directory and all it's files (doc sources) from index2 since
             # directory times haven't changed
@@ -933,16 +956,21 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
                 totalcrawltime += elapsed
         # get meta off disk since times different in Redis than on disk
         elif dmeta:
-            for file in files:
-                if qumulo:
-                    filequeue.put((worker, file, cliargs, reindex_dict))
-                else:
-                    filequeue.put((worker, os.path.join(root_path, file), cliargs, reindex_dict))
-            filequeue.join()
-            while filequeue_meta.qsize() > 0:
-                fmeta = filequeue_meta.get()
-                tree_files.append(fmeta)
-                filequeue_meta.task_done()
+            # check if meta for files embeded
+            if statsembeded:
+                for file in files:
+                    get_file_meta(worker, file, cliargs, reindex_dict, statsembeded=True)
+            else:
+                for file in files:
+                    if qumulo:
+                        filequeue.put((worker, file, cliargs, reindex_dict))
+                    else:
+                        filequeue.put((worker, os.path.join(root_path, file), cliargs, reindex_dict))
+                filequeue.join()
+                while filequeue_meta.qsize() > 0:
+                    fmeta = filequeue_meta.get()
+                    tree_files.append(fmeta)
+                    filequeue_meta.task_done()
             # update crawl time
             elapsed = time.time() - starttime
             dmeta['crawl_time'] = round(elapsed, 6)

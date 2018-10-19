@@ -136,7 +136,7 @@ def socket_thread_handler_twc(threadnum, q, q_kill, rootdir, num_sep, level, bat
 
             while True:
                 data = recv_one_message(clientsock)
-                logger.debug(data)
+                #logger.debug(data)
 
                 if not data:
                     break
@@ -153,19 +153,27 @@ def socket_thread_handler_twc(threadnum, q, q_kill, rootdir, num_sep, level, bat
                 for root, dirs, files in data_decoded:
                     if len(dirs) == 0 and len(files) == 0 and not cliargs['indexemptydirs']:
                         continue
-                    if not diskover.dir_excluded(root, diskover.config, cliargs['verbose']):
-                        batch.append((root, files))
+                    # check if meta stat data has been embeded in the data from client
+                    if data_decoded[0] == "statsembeded":
+                        rootpath = root[0]
+                    else:
+                        rootpath = root
+                    if not diskover.dir_excluded(rootpath, diskover.config, cliargs['verbose']):
+                        if data_decoded[0] == "statsembeded":
+                            batch.append(("statsembeded", root, files))
+                        else:
+                            batch.append((root, files))
                         batch_len = len(batch)
                         if batch_len >= batchsize:
                             diskover.q_crawl.enqueue(diskover_worker_bot.scrape_tree_meta,
-                                            args=(batch, cliargs, reindex_dict,))
+                                                     args=(batch, cliargs, reindex_dict,))
                             del batch[:]
                             if cliargs['adaptivebatch']:
                                 batchsize = diskover.adaptive_batch(diskover.q_crawl, cliargs, batchsize)
 
                         # check if at maxdepth level and delete dirs/files lists to not
                         # descend further down the tree
-                        num_sep_this = root.count(os.path.sep)
+                        num_sep_this = rootpath.count(os.path.sep)
                         if num_sep + level <= num_sep_this:
                             del dirs[:]
                             del files[:]

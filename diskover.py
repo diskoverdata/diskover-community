@@ -1427,7 +1427,7 @@ def calc_dir_sizes(cliargs, logger, path=None):
             for d in dirlist:
                 dirbatch.append(d)
                 if len(dirbatch) >= batchsize:
-                    logger.debug(dirbatch)
+                    #logger.debug(dirbatch)
                     q_calc.enqueue(diskover_worker_bot.calc_dir_size, args=(dirbatch, cliargs,))
                     jobcount += 1
                     del dirbatch[:]
@@ -1435,7 +1435,7 @@ def calc_dir_sizes(cliargs, logger, path=None):
                         batchsize = adaptive_batch(q_calc, cliargs, batchsize)
 
             # add any remaining in batch to queue
-            logger.debug(dirbatch)
+            #logger.debug(dirbatch)
             q_calc.enqueue(diskover_worker_bot.calc_dir_size, args=(dirbatch, cliargs,))
             jobcount += 1
 
@@ -1466,9 +1466,17 @@ def treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict, bar):
     batch = []
 
     for root, dirs, files in walk(path):
-        if len(dirs) == 0 and len(files) == 0 and not cliargs['indexemptydirs']:
-            continue
         if not dir_excluded(root, config, cliargs['verbose']):
+            # check for symlinks
+            for d in dirs:
+                if os.path.islink(os.path.join(root, d)):
+                    dirs.remove(d)
+            for f in files:
+                if os.path.islink(os.path.join(root, f)):
+                    files.remove(f)
+            # check for emptry dirs
+            if len(dirs) == 0 and len(files) == 0 and not cliargs['indexemptydirs']:
+                continue
             batch.append((root, files))
             batch_len = len(batch)
             if batch_len >= batchsize:
