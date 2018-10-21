@@ -23,7 +23,7 @@ try:
 except ImportError:
 	from queue import Queue
 
-version = '1.0.6'
+version = '1.0.7'
 __version__ = version
 
 
@@ -32,14 +32,6 @@ EXCLUDED_DIRS = ['.snapshot', '.zfs']
 # Number of threads for metaspider treewalk_method
 NUM_SPIDERS = 20
 
-# Force I/O to be unbuffered...
-buf_arg = 0
-if sys.version_info[0] == 3:
-	os.environ['PYTHONUNBUFFERED'] = "1"
-	buf_arg = 1
-sys.stdin = os.fdopen(sys.stdin.fileno(), 'r', buf_arg)
-sys.stdout = os.fdopen(sys.stdout.fileno(), 'a+', buf_arg)
-sys.stderr = sys.stdout
 
 try:
 	HOST =  sys.argv[1]
@@ -194,7 +186,7 @@ if __name__ == "__main__":
 		elif TREEWALK_METHOD == "ls":
 			import subprocess
 			lsCMD = ['ls', '-RFAw', ROOTDIR_LOCAL]
-			proc = subprocess.Popen(lsCMD, stdout=subprocess.PIPE)
+			proc = subprocess.Popen(lsCMD, bufsize=-1, stdout=subprocess.PIPE)
 
 			dirs = []
 			nondirs = []
