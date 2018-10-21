@@ -161,7 +161,6 @@ if __name__ == "__main__":
 				t.start()
 
 			for root, dirs, files in walk(ROOTDIR_LOCAL):
-				root = root.replace(ROOTDIR_LOCAL, ROOTDIR_REMOTE)
 				if os.path.basename(root) in EXCLUDED_DIRS:
 					del dirs[:]
 					del files[:]
@@ -177,6 +176,8 @@ if __name__ == "__main__":
 					q_spider_meta.task_done()
 
 				mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime = os.lstat(root)
+
+				root = root.replace(ROOTDIR_LOCAL, ROOTDIR_REMOTE)
 
 				packet.append(((root, (mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime)), dirs, filemeta))
 				if len(packet) >= BATCH_SIZE:
