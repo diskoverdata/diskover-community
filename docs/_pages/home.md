@@ -39,7 +39,7 @@ github:
   - excerpt: '{::nomarkdown}<iframe style="display: inline-block;" src="https://ghbtns.com/github-btn.html?user=shirosaidev&repo=diskover&type=star&count=true&size=large" frameborder="0" scrolling="0" width="160px" height="30px"></iframe> <iframe style="display: inline-block;" src="https://ghbtns.com/github-btn.html?user=shirosaidev&repo=diskover&type=fork&count=true&size=large" frameborder="0" scrolling="0" width="158px" height="30px"></iframe>
 <script async defer src="https://buttons.github.io/buttons.js"></script>{:/nomarkdown}'
 intro:
-  - excerpt: '{::nomarkdown}Support the development&nbsp;<a href="https://www.patreon.com/diskover"><input type="button" class=".btn .btn--primary"><i class="fa fa-heart" aria-hidden="true"></i> Sponsor Patreon</input></a>&nbsp;<a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=CLF223XAS4W72"><input type="button" class=".btn .btn--primary"><i class="fa fa-credit-card" aria-hidden="true"></i> Donate PayPal</input></a>{:/nomarkdown}'
+  - excerpt: '{::nomarkdown}Support the development&nbsp;<a href="https://www.patreon.com/diskover"><input type="button" class="btn btn--primary"><i class="fa fa-heart" aria-hidden="true"></i> Sponsor Patreon</input></a>&nbsp;<a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=CLF223XAS4W72"><input type="button" class="btn btn--primary"><i class="fa fa-credit-card" aria-hidden="true"></i> Donate PayPal</input></a>{:/nomarkdown}'
 ---
 
 {% include feature_row id="intro" type="center" %}
