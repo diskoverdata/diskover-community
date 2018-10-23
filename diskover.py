@@ -1253,6 +1253,10 @@ def parse_cli_args(indexname):
                         version="diskover v%s" % version,
                         help="Prints version and exits")
     args = parser.parse_args()
+    if args.index:
+        args.index = args.index.lower()
+    if args.index2:
+        args.index2 = args.index2.lower()
     return args
 
 
