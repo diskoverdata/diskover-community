@@ -950,7 +950,6 @@ def index_get_docs_generator(cliargs, logger, doctype='directory', copytags=Fals
 
     logger.info('Found %s %s docs' % (str(doccount), doctype))
 
-    logger.debug(doclist)
     yield doclist
 
 
