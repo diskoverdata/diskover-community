@@ -23,7 +23,7 @@ try:
 except ImportError:
 	from queue import Queue
 
-version = '1.0.7'
+version = '1.0.8'
 __version__ = version
 
 
@@ -31,6 +31,9 @@ EXCLUDED_DIRS = ['.snapshot', '.zfs']
 
 # Number of threads for metaspider treewalk_method
 NUM_SPIDERS = 20
+
+# Subprocess buffer size for ls treewalk method
+SP_BUFFSIZE = -1
 
 
 try:
@@ -187,7 +190,7 @@ if __name__ == "__main__":
 		elif TREEWALK_METHOD == "ls":
 			import subprocess
 			lsCMD = ['ls', '-RFAwf', ROOTDIR_LOCAL]
-			proc = subprocess.Popen(lsCMD, bufsize=-1, stdout=subprocess.PIPE, close_fds=True)
+			proc = subprocess.Popen(lsCMD, bufsize=SP_BUFFSIZE, stdout=subprocess.PIPE, close_fds=True)
 
 			dirs = []
 			nondirs = []
