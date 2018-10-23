@@ -941,7 +941,6 @@ def index_get_docs_generator(cliargs, logger, doctype='directory', copytags=Fals
                     '%Y-%m-%dT%H:%M:%S').timetuple())
                 doclist.append((hit['_id'], fullpath, mtime, doctype))
                 if len(doclist) >= 1000:
-                    logger.debug(doclist)
                     yield doclist
                     del doclist[:]
             doccount += 1
@@ -1477,7 +1476,7 @@ def treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict, bar):
             # check for emptry dirs
             if len(dirs) == 0 and len(files) == 0 and not cliargs['indexemptydirs']:
                 continue
-            batch.append((root, files))
+            batch.append((root, dirs, files))
             batch_len = len(batch)
             if batch_len >= batchsize:
                 q_crawl.enqueue(diskover_worker_bot.scrape_tree_meta,

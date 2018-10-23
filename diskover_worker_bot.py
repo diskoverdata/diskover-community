@@ -713,23 +713,23 @@ def get_file_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
 
 def calc_dir_size(dirlist, cliargs):
     """This is the calculate directory size worker function.
-    It gets a directory list from the Queue and searches ES for all files
-    in each directory (recursive) and sums their filesizes
-    to create a total filesize and item count for each dir.
-    Updates dir doc's filesize and items fields.
+    It gets a directory list from the Queue and searches ES for all
+    subdirs in each directory (recursive) and sums their filesize and
+    items fields to create a total filesize and item count for each directory doc.
+    Updates directory doc's filesize and items fields.
     """
     jobstart = time.time()
     bot_logger.info('*** Calculating directory sizes...')
 
     doclist = []
     for path in dirlist:
-        totalsize = 0
         totalitems = 1  # 1 for itself
-        totalitems_files = 0
-        totalitems_subdirs = 0
         # file doc search with aggregate for sum filesizes
         # escape special characters
         newpath = diskover.escape_chars(path[1])
+        parentpath = diskover.escape_chars(os.path.abspath(os.path.join(path[1], os.pardir)))
+        pathbasename = diskover.escape_chars(os.path.basename(path[1]))
+
         # create wildcard string and check for / (root) path
         if newpath == '\/':
             newpathwildcard = '\/*'
@@ -759,7 +759,7 @@ def calc_dir_size(dirlist, cliargs):
                 "size": 0,
                 "query": {
                     "query_string": {
-                        'query': 'path_parent: ' + newpath + ' OR path_parent: ' + newpathwildcard,
+                        'query': '(path_parent: ' + parentpath + ' AND filename: ' + pathbasename + ') OR path_parent: ' + newpath + ' OR path_parent: ' + newpathwildcard,
                         'analyze_wildcard': 'true'
                     }
                 },
@@ -768,31 +768,34 @@ def calc_dir_size(dirlist, cliargs):
                         "sum": {
                             "field": "filesize"
                         }
+                    },
+                    "total_files": {
+                        "sum": {
+                            "field": "items_files"
+                        }
+                    },
+                    "total_subdirs": {
+                        "sum": {
+                            "field": "items_subdirs"
+                        }
                     }
                 }
             }
 
-        # search ES and start scroll
-        res = es.search(index=cliargs['index'], doc_type='file', body=data,
-                        request_timeout=diskover.config['es_timeout'])
-
-        # total items sum
-        totalitems_files += res['hits']['total']
-
-        # total file size sum
-        totalsize += res['aggregations']['total_size']['value']
-
-        # directory doc search (subdirs)
-
-        # search ES and start scroll
+        # search ES and start scroll for all directory doc search (subdirs)
         res = es.search(index=cliargs['index'], doc_type='directory', body=data,
                         request_timeout=diskover.config['es_timeout'])
 
-        # total items sum
-        totalitems_subdirs += res['hits']['total']
+        # total file size sum
+        totalsize = res['aggregations']['total_size']['value']
 
-        # total items
-        totalitems += totalitems_files + totalitems_subdirs
+        # total items sum for all subdirs count
+        totalitems_subdirs = res['aggregations']['total_subdirs']['value']
+
+        # total items sum for all files count
+        totalitems_files = res['aggregations']['total_files']['value']
+
+        totalitems += totalitems_subdirs + totalitems_files
 
         # update filesize and items fields for directory (path) doc
         d = {
@@ -916,7 +919,11 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
 
     for path in paths:
         starttime = time.time()
-        root, files = path
+        root, dirs, files = path
+        totaldirsize = 0
+        totaldiritems_subdirs = len(dirs)
+        totaldiritems_files = 0
+
         # check if stats embeded in data from diskover tree walk client
         if type(root) is tuple:
             statsembeded = True
@@ -965,6 +972,9 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
                     fmeta = get_file_meta(worker, file, cliargs, reindex_dict, statsembeded=True)
                     if fmeta:
                         tree_files.append(fmeta)
+                        # add file size to totaldirsize
+                        totaldirsize += fmeta['filesize']
+                        totaldiritems_files += 1
             else:
                 for file in files:
                     if qumulo:
@@ -975,10 +985,19 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
                 while filequeue_meta.qsize() > 0:
                     fmeta = filequeue_meta.get()
                     tree_files.append(fmeta)
+                    # add file size to totaldirsize
+                    totaldirsize += fmeta['filesize']
+                    totaldiritems_files += 1
                     filequeue_meta.task_done()
             # update crawl time
             elapsed = time.time() - starttime
             dmeta['crawl_time'] = round(elapsed, 6)
+            # update directory meta filesize, items
+            dmeta['filesize'] = totaldirsize
+            dmeta['items_files'] = totaldiritems_files
+            dmeta['items_subdirs'] = totaldiritems_subdirs
+            totaldiritems = totaldiritems_files + totaldiritems_subdirs
+            dmeta['items'] += totaldiritems
             tree_dirs.append(dmeta)
             totalcrawltime += elapsed
         else:

@@ -1,10 +1,11 @@
 # Diskover Change Log
 
-## [1.5.0-rc18] = 2018-10-21
+## [1.5.0-rc18] = 2018-10-23
 ### added
+- reduced time for directory calculations
 - improved socket server
 - cli arg -L --listentwc to listen for directory listings messages (pickle) from remote python diskover-treewalk-client.py
-- diskover-treewalk-client.py - v1.0.7 python client for diskover socket server to run direct on storage servers for faster tree walking (see wiki)
+- diskover-treewalk-client.py - v1.0.8 python client for diskover socket server to run direct on storage servers for faster tree walking (see wiki)
 - additional redis config options in diskover.cfg: db, timeout, queues (copy from diskover.cfg.sample into your config)
 - additional socket server options in diskover.cfg: maxconnections, twcport (copy from diskover.cfg.sample into your config))
 - can now specify different diskover config file using env var DISKOVER_CONFIG
@@ -13,12 +14,17 @@
 - cli arg --dircalcsgen yields directory results during es scroll to fill the queue rather than waiting for all directory docs list
 during getting directory doc results from es rather than waiting for all docs to be returned before bots start calculating
 ### changed
+- directory docs now store their actual filesize, items, items_files, items_subdirs when indexed (non-recursive values), this is to help speed up
+directory calulations at end of crawl
 - updated diskover-bot-launcher.sh to v1.5
 - removed -q queue cli arg from diskover-bot-launcher.sh, use queues in diskover.cfg redis section
 - removed -q queue cli arg from diskover bots, use queues in diskover.cfg redis section
+- any uppercase index names are automatically lowercased (helge000 pr)
+- set file mode to 755 for py and sh files (helge000 pr)
 ### fixed
 - file symlinks getting indexed
 - directories containing just symlinks (no actual file/subdirs) getting indexed
+- elasticsearch error when using index with uppercase letters (helge000 pr)
 
 ## [1.5.0-rc17] = 2018-10-04
 ### added

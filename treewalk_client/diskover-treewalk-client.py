@@ -186,8 +186,8 @@ if __name__ == "__main__":
 
 		elif TREEWALK_METHOD == "ls":
 			import subprocess
-			lsCMD = ['ls', '-RFAw', ROOTDIR_LOCAL]
-			proc = subprocess.Popen(lsCMD, bufsize=-1, stdout=subprocess.PIPE)
+			lsCMD = ['ls', '-RFAwf', ROOTDIR_LOCAL]
+			proc = subprocess.Popen(lsCMD, bufsize=-1, stdout=subprocess.PIPE, close_fds=True)
 
 			dirs = []
 			nondirs = []
@@ -213,7 +213,8 @@ if __name__ == "__main__":
 							entry = entry.lstrip(' ')
 							if entry != '':
 								if entry.endswith('/'):
-									dirs.append(entry.rstrip('/'))
+									if entry != './' and entry != '../':
+										dirs.append(entry.rstrip('/'))
 								else:
 									if entry.endswith('@'):
 										# skip symlink

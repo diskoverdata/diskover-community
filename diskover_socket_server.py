@@ -160,7 +160,7 @@ def socket_thread_handler_twc(threadnum, q, q_kill, rootdir, num_sep, level, bat
                     else:
                         rootpath = root
                     if not diskover.dir_excluded(rootpath, diskover.config, cliargs['verbose']):
-                        batch.append((root, files))
+                        batch.append((root, dirs, files))
                         batch_len = len(batch)
                         if batch_len >= batchsize:
                             diskover.q_crawl.enqueue(diskover_worker_bot.scrape_tree_meta,
