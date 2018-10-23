@@ -64,6 +64,7 @@ If you are a fan of the project or you are using diskover and it's helping you s
 * [netdata](https://my-netdata.io/) (for realtime monitoring cpu/disk/mem/network/elasticsearch/redis/etc metrics, plugin for rq-dashboard in netdata directory)
 * [Kibana](https://www.elastic.co/products/kibana) (for visualizing Elasticsearch data, tested on Kibana 5.6.9)
 * [X-Pack](https://www.elastic.co/downloads/x-pack) (Kibana plugin for graphs, reports, monitoring and http auth)
+* [Grafana ES dashboard](https://grafana.com/dashboards/878) (Grafana dashboard for Elasticsearch)
 * [crontab-ui](https://github.com/alseambusher/crontab-ui) (web ui for managing cron jobs - for scheduling crawls)
 * [cronkeep](https://github.com/cronkeep/cronkeep) (alternative web ui for managing cron jobs)
 * [Gource](http://gource.io) (for Gource visualizations of diskover Elasticsearch data, see videos above)
