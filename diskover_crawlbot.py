@@ -11,7 +11,7 @@ diskover is released under the Apache 2.0 license. See
 LICENSE for the full license text.
 """
 
-import diskover
+from diskover import get_time, crawl_tree, calc_dir_sizes, config, index_delete_path, index_get_docs, add_diskspace
 from random import randint
 import time
 import sys
@@ -32,7 +32,7 @@ def bot_thread(threadnum, cliargs, logger, rootdir_path, reindex_dict):
     last_path = ''
     while True:
         if time.time() - t >= 60:
-            t = diskover.get_time(time.time() - starttime)
+            t = get_time(time.time() - starttime)
             # display stats if 1 min elapsed
             logger.info(
                 '### crawlbot thread-%s: %s dirs checked (%s dir/s), %s dirs updated, %s same dir hits, running for %s ###',
@@ -66,12 +66,12 @@ def bot_thread(threadnum, cliargs, logger, rootdir_path, reindex_dict):
             c += 1
             logger.info('*** Mtime changed! Reindexing: %s' % path)
             # delete existing path docs (non-recursive)
-            reindex_dict = diskover.index_delete_path(path, cliargs, logger, reindex_dict)
+            reindex_dict = index_delete_path(path, cliargs, logger, reindex_dict)
             # start crawling
-            diskover.crawl_tree(path, cliargs, logger, reindex_dict)
+            crawl_tree(path, cliargs, logger, reindex_dict)
             # calculate directory size for path
-            diskover.calc_dir_sizes(cliargs, logger, path=path)
-        time.sleep(diskover.config['botsleep'])
+            calc_dir_sizes(cliargs, logger, path=path)
+        time.sleep(config['botsleep'])
         n += 1
 
 
@@ -85,12 +85,12 @@ def start_crawlbot_scanner(cliargs, logger, rootdir_path, botdirlist, reindex_di
 
     logger.info('diskover crawl bot continuous scanner starting up')
     logger.info('Randomly scanning for changes every %s sec using %s threads',
-                diskover.config['botsleep'], diskover.config['botthreads'])
+                config['botsleep'], config['botthreads'])
     logger.info('*** Press Ctrl-c to shutdown ***')
 
     threadlist = []
     try:
-        for i in range(diskover.config['botthreads']):
+        for i in range(config['botthreads']):
             thread = threading.Thread(target=bot_thread,
                                       args=(i, cliargs, logger, rootdir_path, reindex_dict,))
             thread.daemon = True
@@ -106,14 +106,14 @@ def start_crawlbot_scanner(cliargs, logger, rootdir_path, botdirlist, reindex_di
             # every 1 hour calculate directory sizes
             time.sleep(3600)
             t = time.time()
-            elapsed = diskover.get_time(t - starttime)
+            elapsed = get_time(t - starttime)
             logger.info(
                 '*** crawlbot: getting new dirlist from ES, crawlbot has been running for %s', elapsed)
-            dirlist = diskover.index_get_docs(cliargs, logger, doctype='directory')
+            dirlist = index_get_docs(cliargs, logger, doctype='directory')
             # add disk space info to es index
-            diskover.add_diskspace(cliargs['index'], logger, rootdir_path)
+            add_diskspace(cliargs['index'], logger, rootdir_path)
             # calculate directory sizes and items
-            diskover.calc_dir_sizes(cliargs, logger)
+            calc_dir_sizes(cliargs, logger)
 
     except KeyboardInterrupt:
         print('Ctrl-c keyboard interrupt, shutting down...')

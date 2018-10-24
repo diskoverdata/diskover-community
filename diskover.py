@@ -11,17 +11,7 @@ diskover is released under the Apache 2.0 license. See
 LICENSE for the full license text.
 """
 
-try:
-    from elasticsearch5 import Elasticsearch, helpers, RequestsHttpConnection, \
-        Urllib3HttpConnection
-except ImportError:
-    try:
-        from elasticsearch import Elasticsearch, helpers, RequestsHttpConnection, \
-            Urllib3HttpConnection
-    except ImportError:
-        raise ImportError('elasticsearch module not installed')
 from scandir import walk
-from redis import Redis
 from rq import Worker, Queue
 from datetime import datetime
 from random import randint
@@ -432,30 +422,6 @@ def list_plugins():
         print(plugin_info["name"])
 
 
-def elasticsearch_connect(config):
-    """This is the Elasticsearch connect function.
-    It creates the connection to Elasticsearch and returns es instance.
-    """
-
-    # Check if we are using AWS es
-    if config['aws'] == "True" or config['aws'] == "true":
-        es = Elasticsearch(
-            hosts=[{'host': config['es_host'], 'port': config['es_port']}],
-            use_ssl=True, verify_certs=True,
-            connection_class=RequestsHttpConnection,
-            timeout=config['es_timeout'], maxsize=config['es_maxsize'],
-            max_retries=config['es_max_retries'], retry_on_timeout=True)
-    # Local connection to es
-    else:
-        es = Elasticsearch(
-            hosts=[{'host': config['es_host'], 'port': config['es_port']}],
-            http_auth=(config['es_user'], config['es_password']),
-            connection_class=Urllib3HttpConnection,
-            timeout=config['es_timeout'], maxsize=config['es_maxsize'],
-            max_retries=config['es_max_retries'], retry_on_timeout=True)
-    return es
-
-
 def index_create(indexname):
     """This is the es index create function.
     It checks for existing index and deletes if
@@ -482,9 +448,11 @@ def index_create(indexname):
             es.indices.delete(index=indexname, ignore=[400, 404])
     # set up es index mappings and create new index
     if cliargs['qumulo']:
-        mappings = diskover_qumulo.get_qumulo_mappings(config)
+        from diskover_qumulo import get_qumulo_mappings
+        mappings = get_qumulo_mappings(config)
     elif cliargs['s3']:
-        mappings = diskover_s3.get_s3_mappings(config)
+        from diskover_s3 import get_s3_mappings
+        mappings = get_s3_mappings(config)
     else:
         mappings = {
             "settings": {
@@ -705,7 +673,7 @@ def index_bulk_add(es, doclist, config, cliargs):
                           request_timeout=config['es_timeout'])
 
     # bulk load data to Elasticsearch index
-    helpers.bulk(es, doclist, index=cliargs['index'], chunk_size=config['es_chunksize'],
+    diskover_connections.helpers.bulk(es, doclist, index=cliargs['index'], chunk_size=config['es_chunksize'],
                  request_timeout=config['es_timeout'])
 
 
@@ -1357,7 +1325,7 @@ def update_progress_bar_dircalcs(bar, jobcount):
 
 
 def calc_dir_sizes(cliargs, logger, path=None):
-    import diskover_worker_bot
+    from diskover_worker_bot import calc_dir_size
     # maximum tree depth to calculate
     maxdepth = cliargs['maxdcdepth']
     jobcount = 0
@@ -1389,7 +1357,7 @@ def calc_dir_sizes(cliargs, logger, path=None):
                     for d in items:
                         dirbatch.append(d)
                         if len(dirbatch) >= batchsize:
-                            q_calc.enqueue(diskover_worker_bot.calc_dir_size, args=(dirbatch, cliargs,))
+                            q_calc.enqueue(calc_dir_size, args=(dirbatch, cliargs,))
                             jobcount += 1
                             del dirbatch[:]
                             if cliargs['adaptivebatch']:
@@ -1408,7 +1376,7 @@ def calc_dir_sizes(cliargs, logger, path=None):
                         update_progress_bar_dircalcs(bar, jobcount)
 
             # add any remaining in batch to queue
-            q_calc.enqueue(diskover_worker_bot.calc_dir_size, args=(dirbatch, cliargs,))
+            q_calc.enqueue(calc_dir_size, args=(dirbatch, cliargs,))
             jobcount += 1
 
         # wait to get all docs returned to dirlist
@@ -1430,7 +1398,7 @@ def calc_dir_sizes(cliargs, logger, path=None):
                 dirbatch.append(d)
                 if len(dirbatch) >= batchsize:
                     #logger.debug(dirbatch)
-                    q_calc.enqueue(diskover_worker_bot.calc_dir_size, args=(dirbatch, cliargs,))
+                    q_calc.enqueue(calc_dir_size, args=(dirbatch, cliargs,))
                     jobcount += 1
                     del dirbatch[:]
                     if cliargs['adaptivebatch']:
@@ -1438,7 +1406,7 @@ def calc_dir_sizes(cliargs, logger, path=None):
 
             # add any remaining in batch to queue
             #logger.debug(dirbatch)
-            q_calc.enqueue(diskover_worker_bot.calc_dir_size, args=(dirbatch, cliargs,))
+            q_calc.enqueue(calc_dir_size, args=(dirbatch, cliargs,))
             jobcount += 1
 
             # wait for queue to be empty and update progress bar
@@ -1464,7 +1432,7 @@ def treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict, bar):
     it's files to redis queue for rq worker bots to scrape meta and upload
     to ES index after batch size (dir count) has been reached.
     """
-    import diskover_worker_bot
+    from diskover_worker_bot import scrape_tree_meta
     batch = []
 
     for root, dirs, files in walk(path):
@@ -1482,7 +1450,7 @@ def treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict, bar):
             batch.append((root, dirs, files))
             batch_len = len(batch)
             if batch_len >= batchsize:
-                q_crawl.enqueue(diskover_worker_bot.scrape_tree_meta,
+                q_crawl.enqueue(scrape_tree_meta,
                                 args=(batch, cliargs, reindex_dict,))
                 del batch[:]
                 if cliargs['adaptivebatch']:
@@ -1509,7 +1477,7 @@ def treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict, bar):
                 bar.update(0)
 
     # add any remaining in batch to queue
-    q_crawl.enqueue(diskover_worker_bot.scrape_tree_meta, args=(batch, cliargs, reindex_dict,))
+    q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,))
 
     # wait for queue to be empty and update progress bar
     while True:
@@ -1567,8 +1535,8 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
 
         # check for listenlwc socket cli flag to start socket server
         if cliargs['listentwc']:
-            import diskover_socket_server
-            starttime = diskover_socket_server.start_socket_server_twc(rootdir_path, num_sep, level, batchsize,
+            from diskover_socket_server import start_socket_server_twc
+            starttime = start_socket_server_twc(rootdir_path, num_sep, level, batchsize,
                                                                    cliargs, logger, reindex_dict)
             return starttime
 
@@ -1584,8 +1552,9 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
 
         # qumulo api crawl
         if cliargs['qumulo']:
-            qumulo_ip, qumulo_ses = diskover_qumulo.qumulo_connection()
-            diskover_qumulo.qumulo_treewalk(path, qumulo_ip, qumulo_ses, q_crawl, num_sep, level, batchsize,
+            from diskover_qumulo import qumulo_connection, qumulo_treewalk
+            qumulo_ip, qumulo_ses = qumulo_connection()
+            qumulo_treewalk(path, qumulo_ip, qumulo_ses, q_crawl, num_sep, level, batchsize,
                                             cliargs, reindex_dict, bar)
         # regular crawl using scandir/walk
         else:
@@ -1605,6 +1574,7 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
 
 
 def hotdirs():
+    from diskover_worker_bot import calc_hot_dirs
     """This is the calculate hot dirs function.
     """
     logger.info('Getting diskover bots to calculate change percent '
@@ -1622,13 +1592,13 @@ def hotdirs():
     for d in dirlist:
         dirbatch.append(d)
         if len(dirbatch) >= batchsize:
-            q.enqueue(diskover_worker_bot.calc_hot_dirs, args=(dirbatch, cliargs,))
+            q.enqueue(calc_hot_dirs, args=(dirbatch, cliargs,))
             del dirbatch[:]
             if cliargs['adaptivebatch']:
                 batchsize = adaptive_batch(q, cliargs, batchsize)
 
     # add any remaining in batch to queue
-    q.enqueue(diskover_worker_bot.calc_hot_dirs, args=(dirbatch, cliargs,))
+    q.enqueue(calc_hot_dirs, args=(dirbatch, cliargs,))
 
     if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
         bar = progress_bar('Checking')
@@ -1775,7 +1745,8 @@ def pre_crawl_tasks():
     # add disk space info to es index
     if not cliargs['reindex'] and not cliargs['reindexrecurs']:
         if cliargs['qumulo']:
-            diskover_qumulo.qumulo_add_diskspace(es, cliargs['index'], rootdir_path, qumulo_ip, qumulo_ses, logger)
+            from diskover_qumulo import qumulo_add_diskspace
+            qumulo_add_diskspace(es, cliargs['index'], rootdir_path, qumulo_ip, qumulo_ses, logger)
         else:
             add_diskspace(cliargs['index'], logger, rootdir_path)
 
@@ -1788,12 +1759,17 @@ ab_start = config['adaptivebatch_startsize']
 ab_max = config['adaptivebatch_maxsize']
 ab_step = config['adaptivebatch_stepsize']
 
+# load any available plugins
+plugins = load_plugins()
+
 # create Elasticsearch connection
-es = elasticsearch_connect(config)
+import diskover_connections
+diskover_connections.connect_to_elasticsearch()
+from diskover_connections import es_conn as es
 
 # create Reddis connection
-redis_conn = Redis(host=config['redis_host'], port=config['redis_port'],
-                   password=config['redis_password'], db=config['redis_db'])
+diskover_connections.connect_to_redis()
+from diskover_connections import redis_conn
 
 # Redis queue names
 listen = [config['redis_queue'], config['redis_queue_crawl'], config['redis_queue_calcdir']]
@@ -1802,9 +1778,6 @@ listen = [config['redis_queue'], config['redis_queue_crawl'], config['redis_queu
 q = Queue(listen[0], connection=redis_conn, default_timeout=config['redis_rq_timeout'])
 q_crawl = Queue(listen[1], connection=redis_conn, default_timeout=config['redis_rq_timeout'])
 q_calc = Queue(listen[2], connection=redis_conn, default_timeout=config['redis_rq_timeout'])
-
-# load any available plugins
-plugins = load_plugins()
 
 
 if __name__ == "__main__":
@@ -1866,42 +1839,41 @@ if __name__ == "__main__":
 
     # check for listen socket cli flag to start socket server
     if cliargs['listen']:
-        import diskover_socket_server
-        diskover_socket_server.start_socket_server(cliargs, logger)
+        from diskover_socket_server import start_socket_server
+        start_socket_server(cliargs, logger)
         sys.exit(0)
 
     # check for gource cli flags
     if cliargs['gourcert'] or cliargs['gourcemt']:
         try:
-            import diskover_gource
-            diskover_gource.gource(es, cliargs)
+            from diskover_gource import gource
+            gource(es, cliargs)
         except KeyboardInterrupt:
             print('\nCtrl-c keyboard interrupt received, exiting')
         sys.exit(0)
 
     # tag duplicate files if cli argument
     if cliargs['finddupes']:
-        import diskover_worker_bot
-        import diskover_dupes
+        from diskover_dupes import dupes_finder
         wait_for_worker_bots(logger)
         # Set up worker threads for duplicate file checker queue
-        diskover_dupes.dupes_finder(es, q, cliargs, logger)
+        dupes_finder(es, q, cliargs, logger)
         logger.info('DONE checking for dupes! Sayonara!')
         sys.exit(0)
 
     # copy tags from index2 to index if cli argument
     if cliargs['copytags']:
-        import diskover_worker_bot
+        from diskover_worker_bot import tag_copier
         wait_for_worker_bots(logger)
         logger.info('Copying tags from %s to %s', cliargs['copytags'][0], cliargs['index'])
         # look in index2 for all directory docs with tags and add to queue
         dirlist = index_get_docs(cliargs, logger, doctype='directory', copytags=True, index=cliargs['copytags'][0])
         for path in dirlist:
-            q.enqueue(diskover_worker_bot.tag_copier, args=(path, cliargs,))
+            q.enqueue(tag_copier, args=(path, cliargs,))
         # look in index2 for all file docs with tags and add to queue
         filelist = index_get_docs(cliargs, logger, doctype='file', copytags=True, index=cliargs['copytags'][0])
         for path in filelist:
-            q.enqueue(diskover_worker_bot.tag_copier, args=(path, cliargs,))
+            q.enqueue(tag_copier, args=(path, cliargs,))
         if len(dirlist) == 0 and len(filelist) == 0:
             logger.info('No tags to copy')
         else:
@@ -1911,7 +1883,6 @@ if __name__ == "__main__":
 
     # Calculate directory change percent from index2 to index if cli argument
     if cliargs['hotdirs']:
-        import diskover_worker_bot
         wait_for_worker_bots(logger)
         hotdirs()
         logger.info('DONE finding hotdirs! Sayonara!')
@@ -1932,19 +1903,19 @@ if __name__ == "__main__":
         if cliargs['rootdir'] == '.' or cliargs['rootdir'] == "":
             logger.error("Rootdir path missing, use -d /rootdir, exiting")
             sys.exit(1)
-        import diskover_qumulo
+        from diskover_qumulo import qumulo_connection, qumulo_get_file_attr
         logger.info('Connecting to Qumulo storage api... (--qumulo)')
-        qumulo_ip, qumulo_ses = diskover_qumulo.qumulo_connection()
+        qumulo_ip, qumulo_ses = qumulo_connection()
         logger.info('Connected to Qumulo api at %s' % qumulo_ip)
         # check using qumulo api
         try:
-            diskover_qumulo.qumulo_get_file_attr(cliargs['rootdir'], qumulo_ip, qumulo_ses)
+            qumulo_get_file_attr(cliargs['rootdir'], qumulo_ip, qumulo_ses)
         except ValueError:
             logger.error("Rootdir path not found or not a directory, exiting")
             sys.exit(1)
     elif cliargs['s3']:
         # ingest s3 inventory files
-        import diskover_s3
+        from diskover_s3 import start_importing
         rootdir_path = '/'
         cliargs['rootdir'] = rootdir_path
         logger.debug('Excluded dirs: %s', config['excluded_dirs'])
@@ -1966,7 +1937,7 @@ if __name__ == "__main__":
         starttime = time.time()
 
         # start importing
-        diskover_s3.start_importing(es, cliargs, logger)
+        start_importing(es, cliargs, logger)
 
         # add elapsed time crawl stat to es
         add_crawl_stats(es, cliargs['index'], rootdir_path, (time.time() - starttime), "finished_crawl")
@@ -2023,12 +1994,11 @@ if __name__ == "__main__":
 
     # start crawlbot if cli argument
     if cliargs['crawlbot']:
-        import diskover_crawlbot
-        import diskover_worker_bot
+        from diskover_crawlbot import start_crawlbot_scanner
         wait_for_worker_bots(logger)
         botdirlist = index_get_docs(cliargs, logger, doctype='directory')
         # Set up worker threads for crawlbot
-        diskover_crawlbot.start_crawlbot_scanner(cliargs, logger, rootdir_path, botdirlist, reindex_dict)
+        start_crawlbot_scanner(cliargs, logger, rootdir_path, botdirlist, reindex_dict)
         sys.exit(0)
 
     pre_crawl_tasks()

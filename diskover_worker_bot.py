@@ -11,8 +11,7 @@ diskover is released under the Apache 2.0 license. See
 LICENSE for the full license text.
 """
 
-import diskover
-from redis import Redis
+from diskover import config, escape_chars, q_crawl, q_calc, index_bulk_add, plugins, listen, version
 from rq import Worker, Connection
 from datetime import datetime
 import argparse
@@ -39,14 +38,8 @@ gids = []
 owners = {}
 groups = {}
 
-# create Elasticsearch connection
-es = diskover.elasticsearch_connect(diskover.config)
 
-# create Reddis connection
-redis_conn = Redis(host=diskover.config['redis_host'], port=diskover.config['redis_port'],
-                   password=diskover.config['redis_password'], db=diskover.config['redis_db'])
-
-def parse_cli_args():
+def parse_cliargs_bot():
     """This is the parse CLI arguments function.
     It parses command line arguments.
     """
@@ -65,11 +58,11 @@ def bot_log_setup():
     es_logger = logging.getLogger('elasticsearch')
     es_logger.setLevel(logging.WARNING)
 
-    if diskover.config['botlogs'] == "True" or \
-                    diskover.config['botlogs'] == "true":
+    if config['botlogs'] == "True" or \
+                    config['botlogs'] == "true":
         botlogfile = 'diskover_bot_worker_' + get_worker_name() \
                      + '_' + str(int(time.time())) + '_log'
-        fh = logging.FileHandler(os.path.join(diskover.config['botlogfiledir'], botlogfile))
+        fh = logging.FileHandler(os.path.join(config['botlogfiledir'], botlogfile))
         fh.setLevel(logging.INFO)
         bot_logger.addHandler(fh)
 
@@ -112,7 +105,7 @@ def auto_tag(metadict, type, mtime, atime, ctime):
     timepass = True
 
     if type == 'file':
-        for pattern in diskover.config['autotag_files']:
+        for pattern in config['autotag_files']:
             try:
                 for name in pattern['name_exclude']:
                     if name.startswith('*') and name.endswith('*'):
@@ -256,7 +249,7 @@ def auto_tag(metadict, type, mtime, atime, ctime):
                 return metadict
 
     elif type == 'directory':
-        for pattern in diskover.config['autotag_dirs']:
+        for pattern in config['autotag_dirs']:
             try:
                 for name in pattern['name_exclude']:
                     if name.startswith('*') and name.endswith('*'):
@@ -509,7 +502,7 @@ def get_dir_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
         }
 
         # check plugins for adding extra meta data to dirmeta_dict
-        for plugin in diskover.plugins:
+        for plugin in plugins:
             try:
                 # check if plugin is for directory doc
                 mappings = {'mappings': {'directory': {'properties': {}}}}
@@ -519,7 +512,7 @@ def get_dir_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
                 pass
 
         # add any autotags to dirmeta_dict
-        if cliargs['autotag'] and len(diskover.config['autotag_dirs']) > 0:
+        if cliargs['autotag'] and len(config['autotag_dirs']) > 0:
             auto_tag(dirmeta_dict, 'directory', mtime, atime, ctime)
 
         # search for and copy over any existing tags from reindex_dict
@@ -537,9 +530,9 @@ def get_dir_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
         return False
 
     # cache directory times in Redis, encode path (key) using base64
-    if diskover.config['redis_cachedirtimes'] == 'True' or diskover.config['redis_cachedirtimes'] == 'true':
+    if config['redis_cachedirtimes'] == 'True' or config['redis_cachedirtimes'] == 'true':
         redis_conn.set(base64.encodestring(dirpath.encode('utf-8', errors='ignore')), mtime + ctime,
-                       ex=diskover.config['redis_dirtimesttl'])
+                       ex=config['redis_dirtimesttl'])
 
     return dirmeta_dict
 
@@ -549,8 +542,8 @@ def file_meta_collector():
         item = filequeue.get()
         worker_name, path, cliargs, reindex_dict = item
         if cliargs['qumulo']:
-            import diskover_qumulo
-            meta = diskover_qumulo.qumulo_get_file_meta(worker_name, path, cliargs, reindex_dict)
+            from diskover_qumulo import qumulo_get_file_meta
+            meta = qumulo_get_file_meta(worker_name, path, cliargs, reindex_dict)
         else:
             meta = get_file_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False)
         if meta:
@@ -680,7 +673,7 @@ def get_file_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
         }
 
         # check plugins for adding extra meta data to filemeta_dict
-        for plugin in diskover.plugins:
+        for plugin in plugins:
             try:
                 # check if plugin is for file doc
                 mappings = {'mappings': {'file': {'properties': {}}}}
@@ -690,7 +683,7 @@ def get_file_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
                 pass
 
         # add any autotags to filemeta_dict
-        if cliargs['autotag'] and len(diskover.config['autotag_files']) > 0:
+        if cliargs['autotag'] and len(config['autotag_files']) > 0:
             auto_tag(filemeta_dict, 'file', mtime, atime, ctime)
 
         # search for and copy over any existing tags from reindex_dict
@@ -721,14 +714,34 @@ def calc_dir_size(dirlist, cliargs):
     jobstart = time.time()
     bot_logger.info('*** Calculating directory sizes...')
 
+    # check if other bots are idle and throw them some jobs (dir paths)
+    if len(dirlist) >= cliargs['batchsize']:
+        workers_idle = 0
+        workers = Worker.all(connection=redis_conn)
+        num_workers = len(workers)
+        for w in workers:
+            if w._state == "idle":
+                workers_idle += 1
+            if workers_idle > num_workers // 2:
+                workers_idle = True
+                break
+        q_len = len(q_calc)
+        if q_len == 0 and workers_idle == True:
+            # take half the paths randomly
+            shuffle(dirlist)
+            n = len(dirlist) // 2
+            tossdirs = dirlist[:n]
+            dirlist = dirlist[n:]
+            q_crawl.enqueue(calc_dir_size, args=(tossdirs, cliargs,))
+
     doclist = []
     for path in dirlist:
         totalitems = 1  # 1 for itself
         # file doc search with aggregate for sum filesizes
         # escape special characters
-        newpath = diskover.escape_chars(path[1])
-        parentpath = diskover.escape_chars(os.path.abspath(os.path.join(path[1], os.pardir)))
-        pathbasename = diskover.escape_chars(os.path.basename(path[1]))
+        newpath = escape_chars(path[1])
+        parentpath = escape_chars(os.path.abspath(os.path.join(path[1], os.pardir)))
+        pathbasename = escape_chars(os.path.basename(path[1]))
 
         # create wildcard string and check for / (root) path
         if newpath == '\/':
@@ -784,7 +797,7 @@ def calc_dir_size(dirlist, cliargs):
 
         # search ES and start scroll for all directory doc search (subdirs)
         res = es.search(index=cliargs['index'], doc_type='directory', body=data,
-                        request_timeout=diskover.config['es_timeout'])
+                        request_timeout=config['es_timeout'])
 
         # total file size sum
         totalsize = res['aggregations']['total_size']['value']
@@ -809,7 +822,7 @@ def calc_dir_size(dirlist, cliargs):
         }
         doclist.append(d)
 
-    diskover.index_bulk_add(es, doclist, diskover.config, cliargs)
+    index_bulk_add(es, doclist, config, cliargs)
 
     elapsed_time = round(time.time() - jobstart, 6)
     bot_logger.info('*** FINISHED CALC DIR, Elapsed Time: ' + str(elapsed_time))
@@ -830,7 +843,7 @@ def es_bulk_add(worker_name, dirlist, filelist, cliargs, totalcrawltime=None):
         bot_logger.info('*** Bulk adding to ES index...')
 
     docs = dirlist + filelist
-    diskover.index_bulk_add(es, docs, diskover.config, cliargs)
+    index_bulk_add(es, docs, config, cliargs)
 
     if not cliargs['reindex'] and not cliargs['reindexrecurs'] and not cliargs['crawlbot']:
         data = {"worker_name": worker_name, "dir_count": len(dirlist),
@@ -846,9 +859,9 @@ def es_bulk_add(worker_name, dirlist, filelist, cliargs, totalcrawltime=None):
 
 def get_metadata(path, cliargs):
     dir_source = ""
-    filename = diskover.escape_chars(os.path.basename(path))
-    parent_dir = diskover.escape_chars(os.path.abspath(os.path.join(path, os.pardir)))
-    fullpath = diskover.escape_chars(os.path.abspath(path))
+    filename = escape_chars(os.path.basename(path))
+    parent_dir = escape_chars(os.path.abspath(os.path.join(path, os.pardir)))
+    fullpath = escape_chars(os.path.abspath(path))
 
     data = {
         "size": 1,
@@ -859,7 +872,7 @@ def get_metadata(path, cliargs):
         }
     }
     res = es.search(index=cliargs['index2'], doc_type='directory', body=data,
-                    request_timeout=diskover.config['es_timeout'])
+                    request_timeout=config['es_timeout'])
     try:
         dir_source = res['hits']['hits'][0]['_source']
     except IndexError:
@@ -874,7 +887,7 @@ def get_metadata(path, cliargs):
     }
     files_source = []
     res = es.search(index=cliargs['index2'], doc_type='file', scroll='1m',
-                    size=1000, body=data, request_timeout=diskover.config['es_timeout'])
+                    size=1000, body=data, request_timeout=config['es_timeout'])
 
     while res['hits']['hits'] and len(res['hits']['hits']) > 0:
         for hit in res['hits']['hits']:
@@ -883,7 +896,7 @@ def get_metadata(path, cliargs):
         scroll_id = res['_scroll_id']
         # use es scroll api
         res = es.scroll(scroll_id=scroll_id, scroll='1m',
-                        request_timeout=diskover.config['es_timeout'])
+                        request_timeout=config['es_timeout'])
 
     return dir_source, files_source
 
@@ -907,14 +920,14 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
             if workers_idle > num_workers//2:
                 workers_idle = True
                 break
-        q_len = len(diskover.q_crawl)
+        q_len = len(q_crawl)
         if q_len == 0 and workers_idle == True:
             # take half the paths randomly
             shuffle(paths)
             n = len(paths)//2
             tosspaths = paths[:n]
             paths = paths[n:]
-            diskover.q_crawl.enqueue(scrape_tree_meta,
+            q_crawl.enqueue(scrape_tree_meta,
                             args=(tosspaths, cliargs, reindex_dict,))
 
     for path in paths:
@@ -930,12 +943,12 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
         else:
             statsembeded = False
         if qumulo:
-            import diskover_qumulo
+            from diskover_qumulo import qumulo_get_dir_meta
             if root['path'] != '/':
                 root_path = root['path'].rstrip(os.path.sep)
             else:
                 root_path = root['path']
-            dmeta = diskover_qumulo.qumulo_get_dir_meta(worker, root, cliargs, reindex_dict, redis_conn)
+            dmeta = qumulo_get_dir_meta(worker, root, cliargs, reindex_dict, redis_conn)
         else:
             if statsembeded:
                 root_path = root[0]
@@ -1004,7 +1017,7 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
             bot_logger.info("Skipped directory %s" % root)
 
         # check if doc count is more than es chunksize and bulk add to es
-        if len(tree_dirs) + len(tree_files) >= diskover.config['es_chunksize']:
+        if len(tree_dirs) + len(tree_files) >= config['es_chunksize']:
             td = tree_dirs[:]
             tf = tree_files[:]
             esbulkqueue.put((worker, td, tf, cliargs, totalcrawltime))
@@ -1026,17 +1039,17 @@ def file_excluded(filename, extension, path, verbose):
     """Return True if path or ext in excluded_files set,
     False if not in the set"""
     # return if filename in included list (whitelist)
-    if filename in diskover.config['included_files']:
+    if filename in config['included_files']:
         return False
     # check for extension in and . (dot) files in excluded_files
-    if (not extension and 'NULLEXT' in diskover.config['excluded_files']) or \
-                            '*.' + extension in diskover.config['excluded_files'] or \
-            (filename.startswith('.') and u'.*' in diskover.config['excluded_files']):
+    if (not extension and 'NULLEXT' in config['excluded_files']) or \
+                            '*.' + extension in config['excluded_files'] or \
+            (filename.startswith('.') and u'.*' in config['excluded_files']):
         if verbose:
             bot_logger.info('Skipping (excluded file) %s', path)
         return True
     # check for filename in excluded_files set
-    if filename in diskover.config['excluded_files']:
+    if filename in config['excluded_files']:
         if verbose:
             bot_logger.info('Skipping (excluded file) %s', path)
         return True
@@ -1047,15 +1060,15 @@ def dupes_process_hashkey(hashkey, cliargs):
     """This is the duplicate file worker function.
     It processes hash keys in the dupes Queue.
     """
-    import diskover_dupes
+    from diskover_dupes import populate_hashgroup, verify_dupes, index_dupes
     bot_logger.info('*** Processing Hash Key: ' + hashkey)
     jobstart = time.time()
     # find all files in ES matching hashkey
-    hashgroup = diskover_dupes.populate_hashgroup(hashkey, cliargs)
+    hashgroup = populate_hashgroup(hashkey, cliargs)
     # process the duplicate files in hashgroup
-    hashgroup = diskover_dupes.verify_dupes(hashgroup, cliargs)
+    hashgroup = verify_dupes(hashgroup, cliargs)
     if hashgroup:
-        diskover_dupes.index_dupes(hashgroup, cliargs)
+        index_dupes(hashgroup, cliargs)
     elapsed_time = round(time.time() - jobstart, 6)
     bot_logger.info('*** FINISHED JOB, Elapsed Time: ' + str(elapsed_time))
 
@@ -1090,10 +1103,10 @@ def tag_copier(path, cliargs):
     if path[3] == 'directory':
         # search ES
         res = es.search(index=cliargs['index'], doc_type='directory', body=data,
-                        request_timeout=diskover.config['es_timeout'])
+                        request_timeout=config['es_timeout'])
     else:
         res = es.search(index=cliargs['index'], doc_type='file', body=data,
-                        request_timeout=diskover.config['es_timeout'])
+                        request_timeout=config['es_timeout'])
 
     # mark task done if no matching path in index and continue
     if len(res['hits']['hits']) == 0:
@@ -1116,7 +1129,7 @@ def tag_copier(path, cliargs):
     else:
         doclist.append(d)
 
-    diskover.index_bulk_add(es, doclist, diskover.config, cliargs)
+    index_bulk_add(es, doclist, config, cliargs)
 
     elapsed_time = round(time.time() - jobstart, 6)
     bot_logger.info('*** FINISHED JOB, Elapsed Time: ' + str(elapsed_time))
@@ -1153,7 +1166,7 @@ def calc_hot_dirs(dirlist, cliargs):
 
         # search ES
         res = es.search(index=cliargs['hotdirs'][0], doc_type='directory', body=data,
-                        request_timeout=diskover.config['es_timeout'])
+                        request_timeout=config['es_timeout'])
 
         # calculate change percent
 
@@ -1216,7 +1229,7 @@ def calc_hot_dirs(dirlist, cliargs):
         }
         doclist.append(d)
 
-    diskover.index_bulk_add(es, doclist, diskover.config, cliargs)
+    index_bulk_add(es, doclist, config, cliargs)
 
     elapsed_time = round(time.time() - jobstart, 6)
     bot_logger.info('*** FINISHED JOB, Elapsed Time: ' + str(elapsed_time))
@@ -1229,6 +1242,7 @@ bot_logger = bot_log_setup()
 filequeue = pyQueue()
 filequeue_meta = pyQueue()
 esbulkqueue = pyQueue()
+
 # create threads to get file meta
 for i in range(4):
     t = Thread(target=file_meta_collector)
@@ -1240,24 +1254,35 @@ for i in range(4):
     t.daemon = True
     t.start()
 
-if __name__ == '__main__':
+# create Elasticsearch connection
+import diskover_connections
+
+diskover_connections.connect_to_elasticsearch()
+from diskover_connections import es_conn as es
+
+# create Reddis connection
+diskover_connections.connect_to_redis()
+from diskover_connections import redis_conn
+
+
+if __name__ == "__main__":
     # parse cli arguments into cliargs dictionary
-    cliargs_bot = vars(parse_cli_args())
+    cliargs_bot = vars(parse_cliargs_bot())
 
     print("""\033[31m
-
+    
      ___  _ ____ _  _ ____ _  _ ____ ____     ;
      |__> | ==== |-:_ [__]  \/  |=== |--<    ["]
      ____ ____ ____ _  _ _    ___  ____ ___ /[_]\\
      |___ |--< |--| |/\| |___ |==] [__]  |   ] [ v%s
-
+    
      Redis RQ worker bot for diskover crawler
      Crawling all your stuff.
-
-    \033[0m""" % (diskover.version))
+    
+    \033[0m""" % (version))
 
     with Connection(redis_conn):
-        w = Worker(diskover.listen)
+        w = Worker(listen)
         if cliargs_bot['burst']:
             w.work(burst=True)
         else:

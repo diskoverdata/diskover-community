@@ -15,8 +15,8 @@ try:
     from qumulo.rest_client import RestClient
 except ImportError:
     raise ImportError("qumulo-api module not installed")
-import diskover
-import diskover_worker_bot
+from diskover import config, dir_excluded, logger, ab_start, ab_max, ab_step, plugins
+from diskover_worker_bot import scrape_tree_meta, auto_tag, uids, owners, gids, groups, file_excluded
 import os
 import random
 import requests
@@ -60,9 +60,9 @@ def qumulo_connect_api(qumulo_cluster_ips, qumulo_api_user, qumulo_api_password)
 
 
 def qumulo_connection():
-    qumulo_host = diskover.config['qumulo_host']
-    qumulo_api_user = diskover.config['qumulo_api_user']
-    qumulo_api_password = diskover.config['qumulo_api_password']
+    qumulo_host = config['qumulo_host']
+    qumulo_api_user = config['qumulo_api_user']
+    qumulo_api_password = config['qumulo_api_password']
     # Get Qumulo cluster ips
     qumulo_cluster_ips = \
         get_qumulo_cluster_ips(qumulo_host, qumulo_api_user, qumulo_api_password)
@@ -144,25 +144,24 @@ def qumulo_treewalk(path, ip, ses, q_crawl, num_sep, level, batchsize, cliargs, 
             root_path = root['path'].rstrip(os.path.sep)
         else:
             root_path = root['path']
-        if not diskover.dir_excluded(root_path, diskover.config, cliargs['verbose']):
+        if not dir_excluded(root_path, config, cliargs['verbose']):
             batch.append((root, files))
             if len(batch) >= batchsize:
-                q_crawl.enqueue(diskover_worker_bot.scrape_tree_meta,
-                          args=(batch, cliargs, reindex_dict,))
+                q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,))
                 del batch[:]
                 batchsize_prev = batchsize
                 if cliargs['adaptivebatch']:
                     q_len = len(q_crawl)
                     if q_len == 0:
-                        if (batchsize - diskover.ab_step) >= diskover.ab_start:
-                            batchsize = batchsize - diskover.ab_step
+                        if (batchsize - ab_step) >= ab_start:
+                            batchsize = batchsize - ab_step
                     elif q_len > 0:
-                        if (batchsize + diskover.ab_step) <= diskover.ab_max:
-                            batchsize = batchsize + diskover.ab_step
+                        if (batchsize + ab_step) <= ab_max:
+                            batchsize = batchsize + ab_step
                     cliargs['batchsize'] = batchsize
                     if cliargs['verbose'] or cliargs['debug']:
                         if batchsize_prev != batchsize:
-                            diskover.logger.info('Batch size: %s' % batchsize)
+                            logger.info('Batch size: %s' % batchsize)
 
             # check if at maxdepth level and delete dirs/files lists to not
             # descend further down the tree
@@ -185,7 +184,7 @@ def qumulo_treewalk(path, ip, ses, q_crawl, num_sep, level, batchsize, cliargs, 
                 bar.update(0)
 
     # add any remaining in batch to queue
-    q_crawl.enqueue(diskover_worker_bot.scrape_tree_meta, args=(batch, cliargs, reindex_dict,))
+    q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,))
 
 
 def qumulo_get_dir_meta(worker_name, path, cliargs, reindex_dict, redis_conn):
@@ -214,8 +213,8 @@ def qumulo_get_dir_meta(worker_name, path, cliargs, reindex_dict, redis_conn):
         uid = int(path['owner'])
         # try to get owner user name
         # first check cache
-        if uid in diskover_worker_bot.uids:
-            owner = diskover_worker_bot.owners[uid]
+        if uid in uids:
+            owner = owners[uid]
         # not in cache
         else:
             try:
@@ -229,9 +228,9 @@ def qumulo_get_dir_meta(worker_name, path, cliargs, reindex_dict, redis_conn):
             except KeyError:
                 owner = uid
             # store it in cache
-            if not uid in diskover_worker_bot.uids:
-                diskover_worker_bot.uids.append(uid)
-                diskover_worker_bot.owners[uid] = owner
+            if not uid in uids:
+                uids.append(uid)
+                owners[uid] = owner
     except ValueError:  # Qumulo local user type
         owner = path['owner']
     # get group id
@@ -239,8 +238,8 @@ def qumulo_get_dir_meta(worker_name, path, cliargs, reindex_dict, redis_conn):
         gid = int(path['group'])
         # try to get group name
         # first check cache
-        if gid in diskover_worker_bot.gids:
-            group = diskover_worker_bot.groups[gid]
+        if gid in gids:
+            group = groups[gid]
         # not in cache
         else:
             try:
@@ -254,9 +253,9 @@ def qumulo_get_dir_meta(worker_name, path, cliargs, reindex_dict, redis_conn):
             except KeyError:
                 group = gid
             # store in cache
-            if not gid in diskover_worker_bot.gids:
-                diskover_worker_bot.gids.append(gid)
-                diskover_worker_bot.groups[gid] = group
+            if not gid in gids:
+                gids.append(gid)
+                groups[gid] = group
     except ValueError:  # Qumulo local group type
         group = path['group']
 
@@ -289,7 +288,7 @@ def qumulo_get_dir_meta(worker_name, path, cliargs, reindex_dict, redis_conn):
     }
 
     # check plugins for adding extra meta data to dirmeta_dict
-    for plugin in diskover.plugins:
+    for plugin in plugins:
         try:
             # check if plugin is for directory doc
             mappings = {'mappings': {'directory': {'properties': {}}}}
@@ -299,8 +298,8 @@ def qumulo_get_dir_meta(worker_name, path, cliargs, reindex_dict, redis_conn):
             pass
 
     # add any autotags to dirmeta_dict
-    if cliargs['autotag'] and len(diskover.config['autotag_dirs']) > 0:
-        diskover_worker_bot.auto_tag(dirmeta_dict, 'directory', mtime_unix, None, ctime_unix)
+    if cliargs['autotag'] and len(config['autotag_dirs']) > 0:
+        auto_tag(dirmeta_dict, 'directory', mtime_unix, None, ctime_unix)
 
     # search for and copy over any existing tags from reindex_dict
     for sublist in reindex_dict['directory']:
@@ -310,9 +309,9 @@ def qumulo_get_dir_meta(worker_name, path, cliargs, reindex_dict, redis_conn):
             break
 
     # cache directory times in Redis
-    if diskover.config['redis_cachedirtimes'] == 'True' or diskover.config['redis_cachedirtimes'] == 'true':
+    if config['redis_cachedirtimes'] == 'True' or config['redis_cachedirtimes'] == 'true':
         redis_conn.set(base64.encodestring(fullpath.encode('utf-8', errors='ignore')), mtime_unix + ctime_unix,
-                       ex=diskover.config['redis_dirtimesttl'])
+                       ex=config['redis_dirtimesttl'])
 
     return dirmeta_dict
 
@@ -322,7 +321,7 @@ def qumulo_get_file_meta(worker_name, path, cliargs, reindex_dict):
 
     # check if file is in exluded_files list
     extension = os.path.splitext(filename)[1][1:].strip().lower()
-    if diskover_worker_bot.file_excluded(filename, extension, path['path'], cliargs['verbose']):
+    if file_excluded(filename, extension, path['path'], cliargs['verbose']):
         return None
 
     # get file size (bytes)
@@ -360,8 +359,8 @@ def qumulo_get_file_meta(worker_name, path, cliargs, reindex_dict):
     uid = int(path['owner'])
     # try to get owner user name
     # first check cache
-    if uid in diskover_worker_bot.uids:
-        owner = diskover_worker_bot.owners[uid]
+    if uid in uids:
+        owner = owners[uid]
     # not in cache
     else:
         try:
@@ -375,15 +374,15 @@ def qumulo_get_file_meta(worker_name, path, cliargs, reindex_dict):
         except KeyError:
             owner = uid
         # store it in cache
-        if not uid in diskover_worker_bot.uids:
-            diskover_worker_bot.uids.append(uid)
-            diskover_worker_bot.owners[uid] = owner
+        if not uid in uids:
+            uids.append(uid)
+            owners[uid] = owner
     # get group id
     gid = int(path['group'])
     # try to get group name
     # first check cache
-    if gid in diskover_worker_bot.gids:
-        group = diskover_worker_bot.groups[gid]
+    if gid in gids:
+        group = groups[gid]
     # not in cache
     else:
         try:
@@ -397,9 +396,9 @@ def qumulo_get_file_meta(worker_name, path, cliargs, reindex_dict):
         except KeyError:
             group = gid
         # store in cache
-        if not gid in diskover_worker_bot.gids:
-            diskover_worker_bot.gids.append(gid)
-            diskover_worker_bot.groups[gid] = group
+        if not gid in gids:
+            gids.append(gid)
+            groups[gid] = group
 
     # create file metadata dictionary
     filemeta_dict = {
@@ -424,7 +423,7 @@ def qumulo_get_file_meta(worker_name, path, cliargs, reindex_dict):
     }
 
     # check plugins for adding extra meta data to filemeta_dict
-    for plugin in diskover.plugins:
+    for plugin in plugins:
         try:
             # check if plugin is for file doc
             mappings = {'mappings': {'file': {'properties': {}}}}
@@ -434,8 +433,8 @@ def qumulo_get_file_meta(worker_name, path, cliargs, reindex_dict):
             pass
 
     # add any autotags to filemeta_dict
-    if cliargs['autotag'] and len(diskover.config['autotag_files']) > 0:
-        diskover_worker_bot.auto_tag(filemeta_dict, 'file', mtime_unix, None, ctime_unix)
+    if cliargs['autotag'] and len(config['autotag_files']) > 0:
+        auto_tag(filemeta_dict, 'file', mtime_unix, None, ctime_unix)
 
     # search for and copy over any existing tags from reindex_dict
     for sublist in reindex_dict['file']:

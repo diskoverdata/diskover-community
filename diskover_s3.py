@@ -24,13 +24,13 @@ try:
 except ImportError:
     from queue import Queue as pyQueue
 from threading import Thread, RLock
-import diskover
-import diskover_worker_bot
+from diskover import config, plugins, add_crawl_stats, progress_bar
+from diskover_worker_bot import get_worker_name, auto_tag, es_bulk_add, file_excluded
 
 
 fake_dirs = []
 buckets = []
-workername = diskover_worker_bot.get_worker_name()
+workername = get_worker_name()
 
 # create queue and threads for bulk adding to ES
 s3queue = pyQueue()
@@ -122,7 +122,7 @@ def process_line(row, tree_dirs, tree_files, tree_crawltimes, cliargs):
     filename = os.path.basename(path)
     # check if file is in exluded_files list
     extension = os.path.splitext(filename)[1][1:].strip().lower()
-    if diskover_worker_bot.file_excluded(filename, extension, path, cliargs['verbose']):
+    if file_excluded(filename, extension, path, cliargs['verbose']):
         return tree_dirs, tree_files, tree_crawltimes
     # Skip files smaller than minsize cli flag
     if not isdir and size < cliargs['minsize']:
@@ -161,11 +161,11 @@ def process_line(row, tree_dirs, tree_files, tree_crawltimes, cliargs):
         inventory_dict["_type"] = "directory"
 
         # add any autotags to inventory_dict
-        if cliargs['autotag'] and len(diskover.config['autotag_dirs']) > 0:
-            diskover_worker_bot.auto_tag(inventory_dict, 'directory', mtime_unix, None, None)
+        if cliargs['autotag'] and len(config['autotag_dirs']) > 0:
+            auto_tag(inventory_dict, 'directory', mtime_unix, None, None)
 
         # check plugins for adding extra meta data to dirmeta_dict
-        for plugin in diskover.plugins:
+        for plugin in plugins:
             try:
                 # check if plugin is for directory doc
                 mappings = {'mappings': {'directory': {'properties': {}}}}
@@ -207,7 +207,7 @@ def process_line(row, tree_dirs, tree_files, tree_crawltimes, cliargs):
         inventory_dict["_type"] = "file"
 
         # check plugins for adding extra meta data to inventory_dict
-        for plugin in diskover.plugins:
+        for plugin in plugins:
             try:
                 # check if plugin is for file doc
                 mappings = {'mappings': {'file': {'properties': {}}}}
@@ -217,8 +217,8 @@ def process_line(row, tree_dirs, tree_files, tree_crawltimes, cliargs):
                 pass
 
         # add any autotags to inventory_dict
-        if cliargs['autotag'] and len(diskover.config['autotag_files']) > 0:
-            diskover_worker_bot.auto_tag(inventory_dict, 'file', mtime_unix, None, None)
+        if cliargs['autotag'] and len(config['autotag_files']) > 0:
+            auto_tag(inventory_dict, 'file', mtime_unix, None, None)
 
         tree_files.append(inventory_dict)
 
@@ -262,14 +262,14 @@ def process_s3_inventory(inventory_file, cliargs):
             tree_dirs, tree_files, tree_crawltimes = process_line(row, tree_dirs, tree_files, tree_crawltimes, cliargs)
             l += 1
 
-            if len(tree_dirs) + len(tree_files) + len(tree_crawltimes) >= diskover.config['es_chunksize']:
-                diskover_worker_bot.es_bulk_add(workername, (tree_dirs, tree_files, tree_crawltimes), cliargs, 0)
+            if len(tree_dirs) + len(tree_files) + len(tree_crawltimes) >= config['es_chunksize']:
+                es_bulk_add(workername, (tree_dirs, tree_files, tree_crawltimes), cliargs, 0)
                 del tree_dirs[:]
                 del tree_files[:]
                 del tree_crawltimes[:]
 
     if len(tree_dirs) + len(tree_files) + len(tree_crawltimes) > 0:
-        diskover_worker_bot.es_bulk_add(workername, (tree_dirs, tree_files, tree_crawltimes), cliargs, 0)
+        es_bulk_add(workername, (tree_dirs, tree_files, tree_crawltimes), cliargs, 0)
 
 
 def make_fake_s3_dir(parent, file, cliargs):
@@ -306,11 +306,11 @@ def make_fake_s3_dir(parent, file, cliargs):
     dir_dict["_type"] = "directory"
 
     # add any autotags to inventory_dict
-    if cliargs['autotag'] and len(diskover.config['autotag_dirs']) > 0:
-        diskover_worker_bot.auto_tag(dir_dict, 'directory', mtime_unix, None, None)
+    if cliargs['autotag'] and len(config['autotag_dirs']) > 0:
+        auto_tag(dir_dict, 'directory', mtime_unix, None, None)
 
     # check plugins for adding extra meta data to dirmeta_dict
-    for plugin in diskover.plugins:
+    for plugin in plugins:
         try:
             # check if plugin is for directory doc
             mappings = {'mappings': {'directory': {'properties': {}}}}
@@ -523,14 +523,14 @@ def start_importing(es, cliargs, logger):
     root_dict["change_percent_items_files"] = ""
     root_dict["change_percent_items_subdirs"] = ""
     es.index(index=cliargs['index'], doc_type='directory', body=root_dict)
-    diskover.add_crawl_stats(es, cliargs['index'], '/s3', 0)
+    add_crawl_stats(es, cliargs['index'], '/s3', 0)
 
     # add all s3 inventory files to queue
     for file in inventory_files:
         s3queue.put((file, cliargs))
 
     # set up progress bar
-    bar = diskover.progress_bar('Importing')
+    bar = progress_bar('Importing')
     bar.start()
 
     if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:

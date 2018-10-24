@@ -11,7 +11,7 @@ diskover is released under the Apache 2.0 license. See
 LICENSE for the full license text.
 """
 
-import diskover
+from diskover import config
 from datetime import datetime
 import time
 import sys
@@ -44,7 +44,7 @@ def gource(es, cliargs):
     es.indices.refresh(index=cliargs['index'])
     # search es and start scroll
     res = es.search(index=cliargs['index'], doc_type='file', scroll='1m',
-                    size=100, body=data, request_timeout=diskover.config['es_timeout'])
+                    size=100, body=data, request_timeout=config['es_timeout'])
 
     while res['hits']['hits'] and len(res['hits']['hits']) > 0:
         for hit in res['hits']['hits']:
@@ -72,11 +72,11 @@ def gource(es, cliargs):
                 sys.exit(1)
             if cliargs['gourcert']:
                 # slow down output for gource
-                time.sleep(diskover.config['gource_maxfilelag'])
+                time.sleep(config['gource_maxfilelag'])
 
         # get es scroll id
         scroll_id = res['_scroll_id']
 
         # use es scroll api
         res = es.scroll(scroll_id=scroll_id, scroll='1m',
-                        request_timeout=diskover.config['es_timeout'])
+                        request_timeout=config['es_timeout'])

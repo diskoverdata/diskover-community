@@ -11,8 +11,8 @@ diskover is released under the Apache 2.0 license. See
 LICENSE for the full license text.
 """
 
-import diskover
-import diskover_worker_bot
+from diskover import index_bulk_add, config, es, progress_bar, Worker, redis_conn
+from diskover_worker_bot import bot_logger, dupes_process_hashkey
 import base64
 import hashlib
 import os
@@ -24,15 +24,11 @@ except ImportError:
 from threading import Thread
 
 
-# create Elasticsearch connection
-es = diskover.elasticsearch_connect(diskover.config)
-
 def index_dupes(hashgroup, cliargs):
     """This is the ES dupe_md5 tag update function.
     It updates a file's dupe_md5 field to be md5sum of file
     if it's marked as a duplicate.
     """
-    bot_logger = diskover_worker_bot.bot_logger
 
     file_id_list = []
     # bulk update data in Elasticsearch index
@@ -48,7 +44,7 @@ def index_dupes(hashgroup, cliargs):
     if len(file_id_list) > 0:
         if cliargs['verbose'] or cliargs['debug']:
             bot_logger.info('Bulk updating %s files in ES index' % len(file_id_list))
-        diskover.index_bulk_add(es, file_id_list, diskover.config, cliargs)
+        index_bulk_add(es, file_id_list, config, cliargs)
 
 
 def start_file_threads(file_in_thread_q, file_out_thread_q, threads=4):
@@ -66,7 +62,7 @@ def md5_hasher(file_in_thread_q, file_out_thread_q):
         # get md5 sum, don't load whole file into memory,
         # load in n bytes at a time (read_size blocksize)
         try:
-            read_size = diskover.config['md5_readsize']
+            read_size = config['md5_readsize']
             hasher = hashlib.md5()
             with open(filename, 'rb') as f:
                 buf = f.read(read_size)
@@ -99,11 +95,9 @@ def verify_dupes(hashgroup, cliargs):
     """
 
     # number of bytes to check at start and end of file
-    read_bytes = diskover.config['dupes_checkbytes']
+    read_bytes = config['dupes_checkbytes']
     # min bytes to read of file size less than above
     min_read_bytes = 1
-
-    bot_logger = diskover_worker_bot.bot_logger
 
     if cliargs['verbose'] or cliargs['debug']:
         bot_logger.info('Processing %s files in hashgroup: %s' %
@@ -241,8 +235,6 @@ def populate_hashgroup(key, cliargs):
     Return None if only 1 file matching.
     """
 
-    bot_logger = diskover_worker_bot.bot_logger
-
     if cliargs['verbose'] or cliargs['debug']:
         bot_logger.info('Searching ES for all files matching hash key %s' % key)
 
@@ -261,7 +253,7 @@ def populate_hashgroup(key, cliargs):
     # refresh index
     #es.indices.refresh(index=cliargs['index'])
     res = es.search(index=cliargs['index'], doc_type='file', size="1000",
-                    body=data, request_timeout=diskover.config['es_timeout'])
+                    body=data, request_timeout=config['es_timeout'])
 
     # add any hits to hashgroups
     for hit in res['hits']['hits']:
@@ -299,7 +291,7 @@ def dupes_finder(es, q, cliargs, logger):
                 "filter": {
                     "range": {
                         "filesize": {
-                            "lte": diskover.config['dupes_maxsize'],
+                            "lte": config['dupes_maxsize'],
                             "gte": cliargs['minsize']
                         }
                     }
@@ -324,17 +316,16 @@ def dupes_finder(es, q, cliargs, logger):
     # refresh index
     es.indices.refresh(index=cliargs['index'])
     res = es.search(index=cliargs['index'], doc_type='file', body=data,
-                    request_timeout=diskover.config['es_timeout'])
+                    request_timeout=config['es_timeout'])
 
     # add hash keys to Queue
     for bucket in res['aggregations']['dupe_filehash']['buckets']:
-        q.enqueue(diskover_worker_bot.dupes_process_hashkey,
-                  args=(bucket['key'], cliargs,))
+        q.enqueue(dupes_process_hashkey, args=(bucket['key'], cliargs,))
 
     logger.info('All file hashes have been enqueued')
 
     if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
-        bar = diskover.progress_bar('Checking')
+        bar = progress_bar('Checking')
         bar.start()
     else:
         bar = None
@@ -343,12 +334,12 @@ def dupes_finder(es, q, cliargs, logger):
     time.sleep(1)
     while True:
         workers_busy = False
-        workers = diskover.Worker.all(connection=diskover.redis_conn)
+        workers = Worker.all(connection=redis_conn)
         for worker in workers:
             if worker._state == "busy":
                 workers_busy = True
                 break
-        q_len = len(diskover.q)
+        q_len = len(q)
         if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
             try:
                 bar.update(q_len)

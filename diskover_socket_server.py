@@ -11,8 +11,8 @@ diskover is released under the Apache 2.0 license. See
 LICENSE for the full license text.
 """
 
-import diskover
-import diskover_worker_bot
+from diskover import dir_excluded, q_crawl, adaptive_batch, config, get_time
+from diskover_worker_bot import scrape_tree_meta
 import socket
 import subprocess
 try:
@@ -27,7 +27,6 @@ import sys
 import os
 import pickle
 import struct
-from collections import deque
 
 
 # dict to hold socket tasks
@@ -159,15 +158,14 @@ def socket_thread_handler_twc(threadnum, q, q_kill, rootdir, num_sep, level, bat
                         rootpath = root[0]
                     else:
                         rootpath = root
-                    if not diskover.dir_excluded(rootpath, diskover.config, cliargs['verbose']):
+                    if not dir_excluded(rootpath, config, cliargs['verbose']):
                         batch.append((root, dirs, files))
                         batch_len = len(batch)
                         if batch_len >= batchsize:
-                            diskover.q_crawl.enqueue(diskover_worker_bot.scrape_tree_meta,
-                                                     args=(batch, cliargs, reindex_dict,))
+                            q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,))
                             del batch[:]
                             if cliargs['adaptivebatch']:
-                                batchsize = diskover.adaptive_batch(diskover.q_crawl, cliargs, batchsize)
+                                batchsize = adaptive_batch(q_crawl, cliargs, batchsize)
 
                         # check if at maxdepth level and delete dirs/files lists to not
                         # descend further down the tree
@@ -182,8 +180,7 @@ def socket_thread_handler_twc(threadnum, q, q_kill, rootdir, num_sep, level, bat
 
                 if len(batch) > 0:
                     # add any remaining in batch to queue
-                    diskover.q_crawl.enqueue(diskover_worker_bot.scrape_tree_meta,
-                                             args=(batch, cliargs, reindex_dict,))
+                    q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,))
                     del batch[:]
 
             # close connection to client
@@ -202,7 +199,7 @@ def start_socket_server(cliargs, logger):
     global clientlist
 
     # set thread/connection limit
-    max_connections = diskover.config['listener_maxconnections']
+    max_connections = config['listener_maxconnections']
 
     # Queue for socket threads
     q = Queue.Queue(maxsize=max_connections)
@@ -211,8 +208,8 @@ def start_socket_server(cliargs, logger):
         # create TCP socket object
         serversock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         serversock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        host = diskover.config['listener_host']  # default is localhost
-        port = diskover.config['listener_port']  # default is 9999
+        host = config['listener_host']  # default is localhost
+        port = config['listener_port']  # default is 9999
         # bind to port
         serversock.bind((host, port))
         # start listener
@@ -258,7 +255,7 @@ def start_socket_server_twc(rootdir_path, num_sep, level, batchsize, cliargs, lo
     global clientlist
 
     # set thread/connection limit
-    max_connections = diskover.config['listener_maxconnections']
+    max_connections = config['listener_maxconnections']
 
     # Queue for socket threads
     q = Queue.Queue(maxsize=max_connections)
@@ -268,8 +265,8 @@ def start_socket_server_twc(rootdir_path, num_sep, level, batchsize, cliargs, lo
         # create TCP socket object
         serversock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         serversock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        host = diskover.config['listener_host']  # default is localhost
-        port = diskover.config['listener_twcport']  # default is 9998
+        host = config['listener_host']  # default is localhost
+        port = config['listener_twcport']  # default is 9998
         # bind to port
         serversock.bind((host, port))
 
@@ -330,7 +327,7 @@ def run_command(threadnum, command_dict, clientsock, cliargs, logger):
     try:
         index = str(command_dict['index'])
     except KeyError:
-        index = str(diskover.config['index'])
+        index = str(config['index'])
         pass
     # try to get worker batch size from command or use default
     try:
@@ -347,8 +344,8 @@ def run_command(threadnum, command_dict, clientsock, cliargs, logger):
 
     try:
         action = command_dict['action']
-        pythonpath = diskover.config['python_path']
-        diskoverpath = diskover.config['diskover_path']
+        pythonpath = config['python_path']
+        diskoverpath = config['diskover_path']
 
         # set up command for different action
         if action == 'crawl':
@@ -423,7 +420,7 @@ def run_command(threadnum, command_dict, clientsock, cliargs, logger):
         logger.debug(output.decode('utf-8'))
         logger.debug('Command error:')
         logger.debug(error.decode('utf-8'))
-        elapsedtime = str(diskover.get_time(time.time() - starttime)).encode('utf-8')
+        elapsedtime = str(get_time(time.time() - starttime)).encode('utf-8')
         logger.info("Finished command (taskid:%s), exit code: %s, elapsed time: %s"
                     % (taskid.decode('utf-8'), exitcode.decode('utf-8'), elapsedtime.decode('utf-8')))
         message = b'{"msg": "taskfinish", "taskid": "%s", "exitcode": %s, "elapsedtime": "%s"}\n' \

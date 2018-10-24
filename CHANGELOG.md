@@ -1,7 +1,8 @@
 # Diskover Change Log
 
-## [1.5.0-rc18] = 2018-10-23
+## [1.5.0-rc18] = 2018-10-24
 ### added
+- diskover_connections.py
 - reduced time for directory calculations
 - improved socket server
 - cli arg -L --listentwc to listen for directory listings messages (pickle) from remote python diskover-treewalk-client.py
@@ -14,6 +15,8 @@
 - cli arg --dircalcsgen yields directory results during es scroll to fill the queue rather than waiting for all directory docs list
 during getting directory doc results from es rather than waiting for all docs to be returned before bots start calculating
 ### changed
+- diskover modules import cleanup
+- moved elasticsearch and redis connection code into diskover_connections.py
 - directory docs now store their actual filesize, items, items_files, items_subdirs when indexed (non-recursive values), this is to help speed up
 directory calulations at end of crawl
 - updated diskover-bot-launcher.sh to v1.5
