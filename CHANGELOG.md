@@ -5,6 +5,7 @@
 - diskover_connections.py
 - diskover_bot_module.py
 - scrollsize (elasticsearch search scroll size) to diskover.cfg.sample elasticsearch section (copy to your diskover.cfg and adjust for your env)
+- job sharing between bots when doing dir calcs
 ### changed
 - diskover modules import cleanup
 - moved elasticsearch and redis connection code into diskover_connections.py
