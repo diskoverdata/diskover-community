@@ -912,10 +912,10 @@ def index_get_docs_generator(cliargs, logger, doctype='directory', copytags=Fals
                     hit['_source']['last_modified'],
                     '%Y-%m-%dT%H:%M:%S').timetuple())
                 doclist.append((hit['_id'], fullpath, mtime, doctype))
-                if len(doclist) >= cliargs['batchsize']:
-                    yield doclist
-                    del doclist[:]
             doccount += 1
+        # yield results before loop
+        yield doclist
+        del doclist[:]
         # use es scroll api
         res = es.scroll(scroll_id=res['_scroll_id'], scroll='1m',
                         request_timeout=config['es_timeout'])
@@ -1281,7 +1281,7 @@ def log_setup(cliargs):
 
 
 def progress_bar(event):
-    if event == 'Crawling' or event == 'Checking':
+    if event == 'Crawling' or event == 'Checking' or event == 'Calculating(gen)':
         widgets = [progressbar.AnimatedMarker(), ' ', event + ' (Queue: ', progressbar.Counter(), ') ', progressbar.Timer()]
         bar = progressbar.ProgressBar(widgets=widgets, max_value=progressbar.UnknownLength)
     else:
@@ -1309,25 +1309,6 @@ def adaptive_batch(q, cliargs, batchsize):
     return batchsize
 
 
-def update_progress_bar_dircalcs(bar, jobcount):
-    workers_busy = False
-    workers = Worker.all(connection=redis_conn)
-    for worker in workers:
-        if worker._state == "busy":
-            workers_busy = True
-            break
-    q_len = len(q_calc)
-    if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
-        try:
-            percent = int("{0:.0f}".format(100 * ((jobcount - q_len) / float(jobcount))))
-            bar.update(percent)
-        except ZeroDivisionError:
-            bar.update(0)
-        except ValueError:
-            bar.update(0)
-    return q_len, workers_busy
-
-
 def calc_dir_sizes(cliargs, logger, path=None):
     from diskover_bot_module import calc_dir_size
     # maximum tree depth to calculate
@@ -1351,37 +1332,66 @@ def calc_dir_sizes(cliargs, logger, path=None):
             logger.info('Getting diskover bots to calculate directory sizes (maxdepth %s)...' % maxdepth)
 
             if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
-                bar = progress_bar('Calculating')
+                bar = progress_bar('Calculating(gen)')
                 bar.start()
             else:
                 bar = None
 
             if path:
-                for items in index_get_docs_generator(cliargs, logger, path=path):
-                    for d in items:
-                        dirbatch.append(d)
-                        if len(dirbatch) >= batchsize:
-                            q_calc.enqueue(calc_dir_size, args=(dirbatch, cliargs,))
-                            jobcount += 1
-                            del dirbatch[:]
-                            if cliargs['adaptivebatch']:
-                                batchsize = adaptive_batch(q_calc, cliargs, batchsize)
-                        update_progress_bar_dircalcs(bar, jobcount)
+                for dirbatch in index_get_docs_generator(cliargs, logger, path=path):
+                    if len(dirbatch) >= batchsize:
+                        q_calc.enqueue(calc_dir_size, args=(dirbatch, cliargs,))
+                        jobcount += 1
+                        del dirbatch[:]
+                        if cliargs['adaptivebatch']:
+                            batchsize = adaptive_batch(q_calc, cliargs, batchsize)
+                    # update progress bar
+                    if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+                        try:
+                            bar.update(len(q_calc))
+                        except ZeroDivisionError:
+                            bar.update(0)
+                        except ValueError:
+                            bar.update(0)
             else:
-                for items in index_get_docs_generator(cliargs, logger, sort=True, maxdepth=maxdepth):
-                    for d in items:
-                        dirbatch.append(d)
-                        if len(dirbatch) >= batchsize:
-                            q_calc.enqueue(calc_dir_size, args=(dirbatch, cliargs,))
-                            jobcount += 1
-                            del dirbatch[:]
-                            if cliargs['adaptivebatch']:
-                                batchsize = adaptive_batch(q_calc, cliargs, batchsize)
-                        update_progress_bar_dircalcs(bar, jobcount)
+                for dirbatch in index_get_docs_generator(cliargs, logger, sort=True, maxdepth=maxdepth):
+                    if len(dirbatch) >= batchsize:
+                        q_calc.enqueue(calc_dir_size, args=(dirbatch, cliargs,))
+                        jobcount += 1
+                        del dirbatch[:]
+                        if cliargs['adaptivebatch']:
+                            batchsize = adaptive_batch(q_calc, cliargs, batchsize)
+                    # update progress bar
+                    if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+                        try:
+                            bar.update(len(q_calc))
+                        except ZeroDivisionError:
+                            bar.update(0)
+                        except ValueError:
+                            bar.update(0)
 
             # add any remaining in batch to queue
             q_calc.enqueue(calc_dir_size, args=(dirbatch, cliargs,))
             jobcount += 1
+
+            # wait for queue to be empty and update progress bar
+            while True:
+                workers_busy = False
+                workers = Worker.all(connection=redis_conn)
+                for worker in workers:
+                    if worker._state == "busy":
+                        workers_busy = True
+                        break
+                q_len = len(q_calc)
+                if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+                    try:
+                        bar.update(q_len)
+                    except ZeroDivisionError:
+                        bar.update(0)
+                    except ValueError:
+                        bar.update(0)
+                if q_len == 0 and workers_busy == False:
+                    break
 
         # wait to get all docs returned to dirlist
         else:
@@ -1416,7 +1426,21 @@ def calc_dir_sizes(cliargs, logger, path=None):
             # wait for queue to be empty and update progress bar
             time.sleep(1)
             while True:
-                q_len, workers_busy = update_progress_bar_dircalcs(bar, jobcount)
+                workers_busy = False
+                workers = Worker.all(connection=redis_conn)
+                for worker in workers:
+                    if worker._state == "busy":
+                        workers_busy = True
+                        break
+                q_len = len(q_calc)
+                if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+                    try:
+                        percent = int("{0:.0f}".format(100 * ((jobcount - q_len) / float(jobcount))))
+                        bar.update(percent)
+                    except ZeroDivisionError:
+                        bar.update(0)
+                    except ValueError:
+                        bar.update(0)
                 if q_len == 0 and workers_busy == False:
                     break
                 time.sleep(.5)
