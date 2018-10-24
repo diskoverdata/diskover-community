@@ -25,7 +25,7 @@ except ImportError:
     from queue import Queue as pyQueue
 from threading import Thread, RLock
 from diskover import config, plugins, add_crawl_stats, progress_bar
-from diskover_worker_bot import get_worker_name, auto_tag, es_bulk_add, file_excluded
+from diskover_bot_module import get_worker_name, auto_tag, es_bulk_add, file_excluded
 
 
 fake_dirs = []

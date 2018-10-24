@@ -12,7 +12,7 @@ LICENSE for the full license text.
 """
 
 from diskover import dir_excluded, q_crawl, adaptive_batch, config, get_time
-from diskover_worker_bot import scrape_tree_meta
+from diskover_bot_module import scrape_tree_meta
 import socket
 import subprocess
 try:

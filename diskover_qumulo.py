@@ -16,7 +16,7 @@ try:
 except ImportError:
     raise ImportError("qumulo-api module not installed")
 from diskover import config, dir_excluded, logger, ab_start, ab_max, ab_step, plugins
-from diskover_worker_bot import scrape_tree_meta, auto_tag, uids, owners, gids, groups, file_excluded
+from diskover_bot_module import scrape_tree_meta, auto_tag, uids, owners, gids, groups, file_excluded
 import os
 import random
 import requests
