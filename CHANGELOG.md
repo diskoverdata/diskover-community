@@ -1,8 +1,18 @@
 # Diskover Change Log
 
-## [1.5.0-rc18] = 2018-10-24
+## [1.5.0-rc19] = 2018-10-24
 ### added
 - diskover_connections.py
+- diskover_bot_module.py
+- scrollsize (elasticsearch search scroll size) to diskover.cfg.sample elasticsearch section (copy to your diskover.cfg and adjust for your env)
+### changed
+- diskover modules import cleanup
+- moved elasticsearch and redis connection code into diskover_connections.py
+- moved worker bot functions into diskover_bot_module.py
+- reduced output logging for worker bots
+
+## [1.5.0-rc18] = 2018-10-23
+### added
 - reduced time for directory calculations
 - improved socket server
 - cli arg -L --listentwc to listen for directory listings messages (pickle) from remote python diskover-treewalk-client.py
@@ -10,15 +20,10 @@
 - additional redis config options in diskover.cfg: db, timeout, queues (copy from diskover.cfg.sample into your config)
 - additional socket server options in diskover.cfg: maxconnections, twcport (copy from diskover.cfg.sample into your config))
 - can now specify different diskover config file using env var DISKOVER_CONFIG
-- better log output in worker bot if errors accessing directory or file
 - cli arg --dircalcsonly for calculating sizes and item counts in all directory docs in existing index
 - cli arg --dircalcsgen yields directory results during es scroll to fill the queue rather than waiting for all directory docs list
 during getting directory doc results from es rather than waiting for all docs to be returned before bots start calculating
-- -F (file worker threads) and -B (es bulk add threads) to worker bot cli args
-- scrollsize (elasticsearch search scroll size) to diskover.cfg.sample elasticsearch section (copy to your diskover.cfg and adjust for your env)
 ### changed
-- diskover modules import cleanup
-- moved elasticsearch and redis connection code into diskover_connections.py
 - directory docs now store their actual filesize, items, items_files, items_subdirs when indexed (non-recursive values), this is to help speed up
 directory calulations at end of crawl
 - updated diskover-bot-launcher.sh to v1.5

@@ -31,7 +31,7 @@ import sys
 import json
 
 
-version = '1.5.0-rc18'
+version = '1.5.0-rc19'
 __version__ = version
 
 IS_PY3 = sys.version_info >= (3, 0)
@@ -243,7 +243,7 @@ def load_config():
     except ConfigParser.NoOptionError:
         configsettings['index_translog_size'] = "512mb"
     try:
-        configsettings['es_scrollsize'] = config.get('elasticsearch', 'scrollsize')
+        configsettings['es_scrollsize'] = int(config.get('elasticsearch', 'scrollsize'))
     except ConfigParser.NoOptionError:
         configsettings['es_scrollsize'] = 100
     try:
@@ -1329,7 +1329,7 @@ def update_progress_bar_dircalcs(bar, jobcount):
 
 
 def calc_dir_sizes(cliargs, logger, path=None):
-    from diskover_worker_bot import calc_dir_size
+    from diskover_bot_module import calc_dir_size
     # maximum tree depth to calculate
     maxdepth = cliargs['maxdcdepth']
     jobcount = 0
@@ -1372,7 +1372,7 @@ def calc_dir_sizes(cliargs, logger, path=None):
                     for d in items:
                         dirbatch.append(d)
                         if len(dirbatch) >= batchsize:
-                            q_calc.enqueue(diskover_worker_bot.calc_dir_size, args=(dirbatch, cliargs,))
+                            q_calc.enqueue(calc_dir_size, args=(dirbatch, cliargs,))
                             jobcount += 1
                             del dirbatch[:]
                             if cliargs['adaptivebatch']:
@@ -1436,7 +1436,7 @@ def treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict, bar):
     it's files to redis queue for rq worker bots to scrape meta and upload
     to ES index after batch size (dir count) has been reached.
     """
-    from diskover_worker_bot import scrape_tree_meta
+    from diskover_bot_module import scrape_tree_meta
     batch = []
 
     for root, dirs, files in walk(path):
@@ -1454,8 +1454,7 @@ def treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict, bar):
             batch.append((root, dirs, files))
             batch_len = len(batch)
             if batch_len >= batchsize:
-                q_crawl.enqueue(scrape_tree_meta,
-                                args=(batch, cliargs, reindex_dict,))
+                q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,))
                 del batch[:]
                 if cliargs['adaptivebatch']:
                     batchsize = adaptive_batch(q_crawl, cliargs, batchsize)
@@ -1766,8 +1765,9 @@ ab_step = config['adaptivebatch_stepsize']
 # load any available plugins
 plugins = load_plugins()
 
-# create Elasticsearch connection
 import diskover_connections
+
+# create Elasticsearch connection
 diskover_connections.connect_to_elasticsearch()
 from diskover_connections import es_conn as es
 
