@@ -14,6 +14,8 @@
 - cli arg --dircalcsonly for calculating sizes and item counts in all directory docs in existing index
 - cli arg --dircalcsgen yields directory results during es scroll to fill the queue rather than waiting for all directory docs list
 during getting directory doc results from es rather than waiting for all docs to be returned before bots start calculating
+- -F (file worker threads) and -B (es bulk add threads) to worker bot cli args
+- scrollsize (elasticsearch search scroll size) to diskover.cfg.sample elasticsearch section (copy to your diskover.cfg and adjust for your env)
 ### changed
 - diskover modules import cleanup
 - moved elasticsearch and redis connection code into diskover_connections.py

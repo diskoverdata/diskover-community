@@ -243,6 +243,10 @@ def load_config():
     except ConfigParser.NoOptionError:
         configsettings['index_translog_size'] = "512mb"
     try:
+        configsettings['es_scrollsize'] = config.get('elasticsearch', 'scrollsize')
+    except ConfigParser.NoOptionError:
+        configsettings['es_scrollsize'] = 100
+    try:
         configsettings['redis_host'] = config.get('redis', 'host')
     except ConfigParser.NoOptionError:
         configsettings['redis_host'] = "localhost"
@@ -724,7 +728,7 @@ def index_delete_path(path, cliargs, logger, reindex_dict, recursive=False):
     logger.info('Searching for all files in %s' % path)
     # search es and start scroll
     res = es.search(index=cliargs['index'], doc_type='file', scroll='1m',
-                    size=1000, body=data,
+                    size=config['es_scrollsize'], body=data,
                     request_timeout=config['es_timeout'])
 
     while res['hits']['hits'] and len(res['hits']['hits']) > 0:
@@ -786,7 +790,7 @@ def index_delete_path(path, cliargs, logger, reindex_dict, recursive=False):
     logger.info('Searching for all directories in %s' % path)
     # search es and start scroll
     res = es.search(index=cliargs['index'], doc_type='directory', scroll='1m',
-                    size=1000, body=data, request_timeout=config['es_timeout'])
+                    size=config['es_scrollsize'], body=data, request_timeout=config['es_timeout'])
 
     while res['hits']['hits'] and len(res['hits']['hits']) > 0:
         for hit in res['hits']['hits']:
@@ -845,7 +849,7 @@ def index_get_docs(cliargs, logger, doctype='directory', copytags=False, hotdirs
 
     # search es and start scroll
     res = es.search(index=index, doc_type=doctype, scroll='1m',
-                    size=1000, body=data, request_timeout=config['es_timeout'])
+                    size=config['es_scrollsize'], body=data, request_timeout=config['es_timeout'])
 
     doclist = []
     doccount = 0
@@ -890,7 +894,7 @@ def index_get_docs_generator(cliargs, logger, doctype='directory', copytags=Fals
 
     # search es and start scroll
     res = es.search(index=index, doc_type=doctype, scroll='1m',
-                    size=1000, body=data, request_timeout=config['es_timeout'])
+                    size=config['es_scrollsize'], body=data, request_timeout=config['es_timeout'])
 
     doclist = []
     doccount = 0
@@ -908,7 +912,7 @@ def index_get_docs_generator(cliargs, logger, doctype='directory', copytags=Fals
                     hit['_source']['last_modified'],
                     '%Y-%m-%dT%H:%M:%S').timetuple())
                 doclist.append((hit['_id'], fullpath, mtime, doctype))
-                if len(doclist) >= 1000:
+                if len(doclist) >= cliargs['batchsize']:
                     yield doclist
                     del doclist[:]
             doccount += 1

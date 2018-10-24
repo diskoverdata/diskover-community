@@ -52,6 +52,8 @@ indexrefresh = 30s
 disablereplicas = True
 ; transaction log flush threshold size (default 512mb)
 translogsize = 1gb
+; search scroll size (default 100 docs)
+scrollsize = 1000
 
 [redis]
 host = 127.0.0.1

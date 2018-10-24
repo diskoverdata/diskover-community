@@ -46,6 +46,10 @@ def parse_cliargs_bot():
     parser = argparse.ArgumentParser()
     parser.add_argument("-b", "--burst", action="store_true",
                         help="Burst mode (worker will quit after all work is done)")
+    parser.add_argument("-B", "--bulkthreads", type=int, default=4,
+                        help="Elasticsearch bulk add worker threads (default 4)")
+    parser.add_argument("-F", "--filethreads", type=int, default=4,
+                        help="File meta data worker threads (default 4)")
     args = parser.parse_args()
     return args
 
@@ -887,7 +891,7 @@ def get_metadata(path, cliargs):
     }
     files_source = []
     res = es.search(index=cliargs['index2'], doc_type='file', scroll='1m',
-                    size=1000, body=data, request_timeout=config['es_timeout'])
+                    size=config['es_scrollsize'], body=data, request_timeout=config['es_timeout'])
 
     while res['hits']['hits'] and len(res['hits']['hits']) > 0:
         for hit in res['hits']['hits']:
@@ -1243,17 +1247,6 @@ filequeue = pyQueue()
 filequeue_meta = pyQueue()
 esbulkqueue = pyQueue()
 
-# create threads to get file meta
-for i in range(4):
-    t = Thread(target=file_meta_collector)
-    t.daemon = True
-    t.start()
-# create threads to bulk add docs to es
-for i in range(4):
-    t = Thread(target=es_bulk_adder)
-    t.daemon = True
-    t.start()
-
 # create Elasticsearch connection
 import diskover_connections
 
@@ -1280,6 +1273,17 @@ if __name__ == "__main__":
      Crawling all your stuff.
     
     \033[0m""" % (version))
+
+    # create threads to get file meta
+    for i in range(cliargs_bot['filethreads']):
+        t = Thread(target=file_meta_collector)
+        t.daemon = True
+        t.start()
+    # create threads to bulk add docs to es
+    for i in range(cliargs_bot['bulkthreads']):
+        t = Thread(target=es_bulk_adder)
+        t.daemon = True
+        t.start()
 
     with Connection(redis_conn):
         w = Worker(listen)
