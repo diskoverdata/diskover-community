@@ -11,6 +11,7 @@
 - moved elasticsearch and redis connection code into diskover_connections.py
 - moved worker bot functions into diskover_bot_module.py
 - reduced output logging for worker bots
+- removed threads for file meta scraping and es bulk adding in worker bots as did not see any real performance gain
 
 ## [1.5.0-rc18] = 2018-10-23
 ### added
