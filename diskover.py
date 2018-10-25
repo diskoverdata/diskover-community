@@ -11,7 +11,8 @@ diskover is released under the Apache 2.0 license. See
 LICENSE for the full license text.
 """
 
-from scandir import walk
+#from scandir import walk
+from diskover_lswalk import lswalk as walk
 from rq import Worker, Queue
 from datetime import datetime
 from random import randint
@@ -1296,7 +1297,6 @@ def adaptive_batch(q, cliargs, batchsize):
     It auto adjusts the batch size sent to rq.
     Could be made better :)
     """
-    batchsize_prev = batchsize
     q_len = len(q)
     if q_len == 0:
         if (batchsize - ab_step) >= ab_start:
@@ -1456,8 +1456,8 @@ def calc_dir_sizes(cliargs, logger, path=None):
 
 def treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict, bar):
     """This is the tree walk function.
-    It walks the tree using scandir walk and adds tuple of directory and
-    it's files to redis queue for rq worker bots to scrape meta and upload
+    It walks the tree and adds tuple of directory and it's items
+    to redis queue for rq worker bots to scrape meta and upload
     to ES index after batch size (dir count) has been reached.
     """
     from diskover_bot_module import scrape_tree_meta
@@ -1465,13 +1465,6 @@ def treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict, bar):
 
     for root, dirs, files in walk(path):
         if not dir_excluded(root, config, cliargs['verbose']):
-            # check for symlinks
-            for d in dirs:
-                if os.path.islink(os.path.join(root, d)):
-                    dirs.remove(d)
-            for f in files:
-                if os.path.islink(os.path.join(root, f)):
-                    files.remove(f)
             # check for emptry dirs
             if len(dirs) == 0 and len(files) == 0 and not cliargs['indexemptydirs']:
                 continue
