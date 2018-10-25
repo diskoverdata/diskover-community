@@ -23,16 +23,19 @@ try:
 except ImportError:
 	from queue import Queue
 
-version = '1.0.8'
+version = '1.0.9'
 __version__ = version
 
 
 EXCLUDED_DIRS = ['.snapshot', '.zfs']
 
 # Number of threads for metaspider treewalk_method
-NUM_SPIDERS = 20
+NUM_SPIDERS = 8
 
-# Subprocess buffer size for ls treewalk method
+# Number of threads for lsthreaded treewalk_method
+NUM_LS_THREADS = 8
+
+# Subprocess buffer size for ls and lsthreaded treewalk method
 SP_BUFFSIZE = -1
 
 
@@ -73,6 +76,60 @@ def spider_worker():
 		q_spider.task_done()
 
 
+def ls_worker():
+	from subprocess import Popen, PIPE
+
+	while True:
+		item = q_ls.get()
+
+		lsCMD = ['ls', '-RFAwf', item]
+		proc = Popen(lsCMD, bufsize=SP_BUFFSIZE, stdout=PIPE, close_fds=True)
+
+		dirs = []
+		nondirs = []
+		root = item.replace(ROOTDIR_LOCAL, ROOTDIR_REMOTE)
+		while True:
+			line = proc.stdout.readline().decode('utf-8')
+			if line != '':
+				line = line.rstrip()
+				if line.startswith('/') and line.endswith(':'):
+					line = line.rstrip(':')
+					newroot = line.replace(ROOTDIR_LOCAL, ROOTDIR_REMOTE)
+					if os.path.basename(root) not in EXCLUDED_DIRS:
+						packet.append((root, dirs[:], nondirs[:]))
+					if len(packet) >= BATCH_SIZE:
+						q.put(pickle.dumps(packet))
+						del packet[:]
+					del dirs[:]
+					del nondirs[:]
+					root = newroot
+				else:
+					items = line.split('\n')
+					for entry in items:
+						entry = entry.lstrip(' ')
+						if entry != '':
+							if entry.endswith('/'):
+								if entry != './' and entry != '../':
+									dirs.append(entry.rstrip('/'))
+							else:
+								if entry.endswith('@'):
+									# skip symlink
+									continue
+								nondirs.append(entry.rstrip('*'))
+			else:
+				if os.path.basename(root) not in EXCLUDED_DIRS:
+					packet.append((root, dirs[:], nondirs[:]))
+				break
+
+		q.put(pickle.dumps(packet))
+
+		del dirs[:]
+		del nondirs[:]
+		del packet[:]
+
+		q_ls.task_done()
+
+
 if __name__ == "__main__":
 
 	try:
@@ -96,8 +153,8 @@ if __name__ == "__main__":
 		print(banner)
 
 		if TREEWALK_METHOD != "oswalk" and TREEWALK_METHOD != "scandir" \
-				and TREEWALK_METHOD != "ls" and TREEWALK_METHOD != "metaspider":
-			print("Unknown or no treewalk_method, methods are oswalk, scandir, ls, metaspider")
+				and TREEWALK_METHOD != "ls" and TREEWALK_METHOD != "lsthreaded" and TREEWALK_METHOD != "metaspider":
+			print("Unknown or no treewalk_method, methods are oswalk, scandir, ls, lsthreaded, metaspider")
 			sys.exit(1)
 
 		starttime = time.time()
@@ -187,6 +244,31 @@ if __name__ == "__main__":
 					q.put(pickle.dumps(packet))
 					del packet[:]
 
+		elif TREEWALK_METHOD == "lsthreaded":
+			dirs = []
+			nondirs = []
+			q_ls = Queue()
+
+			for i in range(NUM_LS_THREADS):
+				t = threading.Thread(target=ls_worker)
+				t.daemon = True
+				t.start()
+
+			# get all items at rootdir
+			dirlist = os.listdir(ROOTDIR_LOCAL)
+			for entry in dirlist:
+				fullpath = os.path.join(ROOTDIR_LOCAL, entry)
+				if os.path.isdir(fullpath):
+					dirs.append(entry)
+					# enqueue dir to ls worker thread queue
+					q_ls.put(fullpath)
+				elif os.path.isfile(entry):
+					nondirs.append(entry)
+			# enqueue rootdir items
+			q.put(pickle.dumps([(ROOTDIR_LOCAL, dirs, nondirs)]))
+
+			q_ls.join()
+
 		elif TREEWALK_METHOD == "ls":
 			import subprocess
 			lsCMD = ['ls', '-RFAwf', ROOTDIR_LOCAL]
@@ -228,7 +310,6 @@ if __name__ == "__main__":
 						packet.append((root, dirs[:], nondirs[:]))
 					break
 
-		q.put(pickle.dumps(packet))
 		q.join()
 
 		print("Finished tree walking, elapsed time %s sec" % (round(time.time() - starttime, 3)))
