@@ -1601,7 +1601,7 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
 
 
 def hotdirs():
-    from diskover_worker_bot import calc_hot_dirs
+    from diskover_bot_module import calc_hot_dirs
     """This is the calculate hot dirs function.
     """
     logger.info('Getting diskover bots to calculate change percent '
@@ -1891,7 +1891,7 @@ if __name__ == "__main__":
 
     # copy tags from index2 to index if cli argument
     if cliargs['copytags']:
-        from diskover_worker_bot import tag_copier
+        from diskover_bot_module import tag_copier
         wait_for_worker_bots(logger)
         logger.info('Copying tags from %s to %s', cliargs['copytags'][0], cliargs['index'])
         # look in index2 for all directory docs with tags and add to queue
