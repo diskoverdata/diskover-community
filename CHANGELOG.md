@@ -1,6 +1,6 @@
 # Diskover Change Log
 
-## [1.5.0-rc19] = 2018-10-25
+## [1.5.0-rc19] = 2018-10-27
 ### added
 - diskover_connections.py
 - diskover_bot_module.py
@@ -15,6 +15,7 @@
 - moved worker bot functions into diskover_bot_module.py
 - reduced output logging for worker bots
 - removed threads for file meta scraping and es bulk adding in worker bots as did not see any real performance gain
+- removed job passing between bots as did not provide any performance gain
 ### fixed
 - --dircalcsgen taking a long time
 

@@ -660,27 +660,6 @@ def calc_dir_size(dirlist, cliargs):
     Updates directory doc's filesize and items fields.
     """
 
-    # check if other bots are idle and throw them some jobs (dir paths)
-    if len(dirlist) >= cliargs['batchsize']:
-        workers_idle_count = 0
-        workers_idle = True
-        workers = Worker.all(connection=redis_conn)
-        num_workers = len(workers)
-        for w in workers:
-            if w._state == "idle":
-                workers_idle_count += 1
-            if workers_idle > num_workers // 2:
-                workers_idle = True
-                break
-        q_len = len(q_calc)
-        if q_len == 0 and workers_idle == True:
-            # take half the paths randomly
-            shuffle(dirlist)
-            n = len(dirlist) // 2
-            tossdirs = dirlist[:n]
-            dirlist = dirlist[n:]
-            q_crawl.enqueue(calc_dir_size, args=(tossdirs, cliargs,))
-
     doclist = []
     for path in dirlist:
         totalitems = 1  # 1 for itself
@@ -840,27 +819,6 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
     else:
         qumulo = False
     totalcrawltime = 0
-
-    # check if other bots are idle and throw them some jobs (dir paths)
-    if len(paths) >= cliargs['batchsize']:
-        workers_idle_count = 0
-        workers_idle = False
-        workers = Worker.all(connection=redis_conn)
-        num_workers = len(workers)
-        for w in workers:
-            if w._state == "idle":
-                workers_idle_count += 1
-            if workers_idle_count > num_workers//2:
-                workers_idle = True
-                break
-        q_len = len(q_crawl)
-        if q_len == 0 and workers_idle == True:
-            # take half the paths randomly
-            shuffle(paths)
-            n = len(paths)//2
-            tosspaths = paths[:n]
-            paths = paths[n:]
-            q_crawl.enqueue(scrape_tree_meta, args=(tosspaths, cliargs, reindex_dict,))
 
     for path in paths:
         starttime = time.time()
