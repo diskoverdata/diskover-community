@@ -1338,13 +1338,9 @@ def calc_dir_sizes(cliargs, logger, path=None):
                 bar = None
 
             if path:
-                for dirbatch in index_get_docs_generator(cliargs, logger, path=path):
-                    if len(dirbatch) >= batchsize:
-                        q_calc.enqueue(calc_dir_size, args=(dirbatch, cliargs,))
-                        jobcount += 1
-                        del dirbatch[:]
-                        if cliargs['adaptivebatch']:
-                            batchsize = adaptive_batch(q_calc, cliargs, batchsize)
+                for dirlist in index_get_docs_generator(cliargs, logger, path=path):
+                    q_calc.enqueue(calc_dir_size, args=(dirlist, cliargs,))
+                    jobcount += 1
                     # update progress bar
                     if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
                         try:
@@ -1354,13 +1350,9 @@ def calc_dir_sizes(cliargs, logger, path=None):
                         except ValueError:
                             bar.update(0)
             else:
-                for dirbatch in index_get_docs_generator(cliargs, logger, sort=True, maxdepth=maxdepth):
-                    if len(dirbatch) >= batchsize:
-                        q_calc.enqueue(calc_dir_size, args=(dirbatch, cliargs,))
-                        jobcount += 1
-                        del dirbatch[:]
-                        if cliargs['adaptivebatch']:
-                            batchsize = adaptive_batch(q_calc, cliargs, batchsize)
+                for dirlist in index_get_docs_generator(cliargs, logger, sort=True, maxdepth=maxdepth):
+                    q_calc.enqueue(calc_dir_size, args=(dirlist, cliargs,))
+                    jobcount += 1
                     # update progress bar
                     if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
                         try:
@@ -1369,10 +1361,6 @@ def calc_dir_sizes(cliargs, logger, path=None):
                             bar.update(0)
                         except ValueError:
                             bar.update(0)
-
-            # add any remaining in batch to queue
-            q_calc.enqueue(calc_dir_size, args=(dirbatch, cliargs,))
-            jobcount += 1
 
             # wait for queue to be empty and update progress bar
             while True:
@@ -1392,6 +1380,7 @@ def calc_dir_sizes(cliargs, logger, path=None):
                         bar.update(0)
                 if q_len == 0 and workers_busy == False:
                     break
+                time.sleep(.5)
 
         # wait to get all docs returned to dirlist
         else:
@@ -1517,6 +1506,7 @@ def treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict, bar):
                 bar.update(0)
         if q_len == 0 and workers_busy == False:
             break
+        time.sleep(.5)
 
 
 def crawl_tree(path, cliargs, logger, reindex_dict):
