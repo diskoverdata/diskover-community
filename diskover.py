@@ -1532,6 +1532,8 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
             if cliargs['verbose'] or cliargs['debug']:
                 logger.info('Batch size: %s' % batchsize)
             logger.info("Sending batches of %s to worker bots", batchsize)
+            if batchsize < 50:
+                logger.warning("Using a small batch size can decrease performance")
 
         # set maxdepth level to 1 if reindex or crawlbot (non-recursive)
         if cliargs['reindex'] or cliargs['crawlbot']:
