@@ -662,12 +662,13 @@ def calc_dir_size(dirlist, cliargs):
 
     # check if other bots are idle and throw them some jobs (dir paths)
     if len(dirlist) >= cliargs['batchsize']:
-        workers_idle = 0
+        workers_idle_count = 0
+        workers_idle = True
         workers = Worker.all(connection=redis_conn)
         num_workers = len(workers)
         for w in workers:
             if w._state == "idle":
-                workers_idle += 1
+                workers_idle_count += 1
             if workers_idle > num_workers // 2:
                 workers_idle = True
                 break
@@ -842,13 +843,14 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
 
     # check if other bots are idle and throw them some jobs (dir paths)
     if len(paths) >= cliargs['batchsize']:
-        workers_idle = 0
+        workers_idle_count = 0
+        workers_idle = False
         workers = Worker.all(connection=redis_conn)
         num_workers = len(workers)
         for w in workers:
             if w._state == "idle":
-                workers_idle += 1
-            if workers_idle > num_workers//2:
+                workers_idle_count += 1
+            if workers_idle_count > num_workers//2:
                 workers_idle = True
                 break
         q_len = len(q_crawl)
