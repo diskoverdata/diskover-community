@@ -12,7 +12,7 @@ LICENSE for the full license text.
 """
 
 from diskover import listen, version
-from rq import Worker, Connection
+from rq import SimpleWorker, Connection
 
 from diskover_bot_module import parse_cliargs_bot
 
@@ -40,7 +40,7 @@ if __name__ == "__main__":
     \033[0m""" % (version))
 
     with Connection(redis_conn):
-        w = Worker(listen)
+        w = SimpleWorker(listen)
         if cliargs_bot['burst']:
             w.work(burst=True)
         else:

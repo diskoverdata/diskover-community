@@ -1,6 +1,6 @@
 # Diskover Change Log
 
-## [1.5.0-rc19] = 2018-10-27
+## [1.5.0-rc19] = 2018-10-29
 ### added
 - diskover_connections.py
 - diskover_bot_module.py
@@ -8,6 +8,7 @@
 - scrollsize (elasticsearch search scroll size) to diskover.cfg.sample elasticsearch section (copy to your diskover.cfg and adjust for your env)
 - job sharing between bots when doing dir calcs
 ### changed
+- switched to rq SimpleWorker since Worker was opening up new connections to es and redis due to fork for every new job
 - replaced scandir walk with custom lswalk generator (faster treewalk)
 - diskover-treewalk-client.py v1.0.9 - added lsthreaded tree walk method, threads adjustable at top of client py
 - diskover modules import cleanup

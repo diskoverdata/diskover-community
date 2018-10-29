@@ -682,6 +682,7 @@ def index_bulk_add(es, doclist, config, cliargs):
                  request_timeout=config['es_timeout'])
 
 
+
 def index_delete_path(path, cliargs, logger, reindex_dict, recursive=False):
     """This is the es delete path bulk function.
     It finds all file and directory docs in path and deletes them from es
