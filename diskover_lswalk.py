@@ -19,7 +19,7 @@ def lswalk(top='.', buffsize=-1):
 	nondirs = []
 	root = top
 
-	lsCMD = ['ls', '-RFAwf', root]
+	lsCMD = ['ls', '-RFAf', root]
 	proc = Popen(lsCMD, bufsize=buffsize, stdout=PIPE, close_fds=True)
 
 	while True:

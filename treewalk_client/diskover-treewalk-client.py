@@ -82,7 +82,7 @@ def ls_worker():
 	while True:
 		item = q_ls.get()
 
-		lsCMD = ['ls', '-RFAwf', item]
+		lsCMD = ['ls', '-RFAf', item]
 		proc = Popen(lsCMD, bufsize=SP_BUFFSIZE, stdout=PIPE, close_fds=True)
 
 		dirs = []
