@@ -7,9 +7,9 @@
 - diskover_lswalk.py
 - scrollsize (elasticsearch search scroll size) to diskover.cfg.sample elasticsearch section (copy to your diskover.cfg and adjust for your env)
 - job sharing between bots when doing dir calcs
+- --lswalk cli arg which uses custom lswalk generator (faster treewalk) instead of default scandir walk
 ### changed
 - switched to rq SimpleWorker since Worker was opening up new connections to es and redis due to fork for every new job
-- replaced scandir walk with custom lswalk generator (faster treewalk)
 - diskover-treewalk-client.py v1.0.9 - added lsthreaded tree walk method, threads adjustable at top of client py
 - diskover modules import cleanup
 - moved elasticsearch and redis connection code into diskover_connections.py

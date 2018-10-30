@@ -11,8 +11,6 @@ diskover is released under the Apache 2.0 license. See
 LICENSE for the full license text.
 """
 
-#from scandir import walk
-from diskover_lswalk import lswalk as walk
 from rq import SimpleWorker, Queue
 from datetime import datetime
 from random import randint
@@ -1177,6 +1175,8 @@ def parse_cli_args(indexname):
                             50)")
     parser.add_argument("-a", "--adaptivebatch", action="store_true",
                         help="Adaptive batch size for sending to worker bots (intelligent crawl)")
+    parser.add_argument("--lswalk", action="store_true",
+                        help="Use ls walk instead of scandir walk")
     parser.add_argument("-A", "--autotag", action="store_true",
                         help="Get bots to auto-tag files/dirs based on patterns in config")
     parser.add_argument("-O", "--optimizeindex", action="store_true",
@@ -1451,6 +1451,10 @@ def treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict, bar):
     to ES index after batch size (dir count) has been reached.
     """
     from diskover_bot_module import scrape_tree_meta
+    if cliargs['lswalk']:
+        from diskover_lswalk import lswalk as walk
+    else:
+        from scandir import walk
     batch = []
 
     for root, dirs, files in walk(path):
