@@ -24,7 +24,7 @@ try:
 except ImportError:
     from queue import Queue as pyQueue
 from threading import Thread, RLock
-from diskover import config, plugins, add_crawl_stats, progress_bar
+from diskover import config, plugins, progress_bar
 from diskover_bot_module import get_worker_name, auto_tag, es_bulk_add, file_excluded
 
 
@@ -37,10 +37,9 @@ s3queue = pyQueue()
 s3threadlock = RLock()
 
 
-def process_line(row, tree_dirs, tree_files, tree_crawltimes, cliargs):
+def process_line(row, tree_dirs, tree_files, cliargs):
     global fake_dirs
 
-    starttime = time.time()
     n = 2
     # S3 Inventory csv column headers
     inventory_dict = {'s3_bucket': row[0], 's3_key': row[1]}
@@ -108,13 +107,12 @@ def process_line(row, tree_dirs, tree_files, tree_crawltimes, cliargs):
                 prev_path = current_path
                 continue
             tree_dirs.append(dir_dict)
-            # create fake crawltime entry
-            tree_crawltimes.append({
-                "path": current_path,
-                "worker_name": workername,
-                "crawl_time": 0,
-                "indexing_date": datetime.utcnow().isoformat(),
-                "_type": "crawlstat"})
+            # increment items counts of parentdir
+            for d in tree_dirs:
+                if d['filename'] == os.path.basename(dir_dict['path_parent']):
+                    d['items_subdirs'] += 1
+                    d['items'] += 1
+                    break
             prev_path = current_path
 
     size = inventory_dict['s3_size']
@@ -123,10 +121,10 @@ def process_line(row, tree_dirs, tree_files, tree_crawltimes, cliargs):
     # check if file is in exluded_files list
     extension = os.path.splitext(filename)[1][1:].strip().lower()
     if file_excluded(filename, extension, path, cliargs['verbose']):
-        return tree_dirs, tree_files, tree_crawltimes
+        return tree_dirs, tree_files
     # Skip files smaller than minsize cli flag
     if not isdir and size < cliargs['minsize']:
-        return tree_dirs, tree_files, tree_crawltimes
+        return tree_dirs, tree_files
     # modified time
     mtime_utc = inventory_dict['s3_last_modified_date'].partition('.')[0]
     # modified time in unix
@@ -160,6 +158,13 @@ def process_line(row, tree_dirs, tree_files, tree_crawltimes, cliargs):
         inventory_dict["change_percent_items_subdirs"] = ""
         inventory_dict["_type"] = "directory"
 
+        # increment items counts of parentdir
+        for d in tree_dirs:
+            if d['filename'] == os.path.basename(parentdir):
+                d['items_subdirs'] += 1
+                d['items'] += 1
+                break
+
         # add any autotags to inventory_dict
         if cliargs['autotag'] and len(config['autotag_dirs']) > 0:
             auto_tag(inventory_dict, 'directory', mtime_unix, None, None)
@@ -175,12 +180,6 @@ def process_line(row, tree_dirs, tree_files, tree_crawltimes, cliargs):
                 pass
 
         tree_dirs.append(inventory_dict)
-        tree_crawltimes.append({
-            "path": path,
-            "worker_name": workername,
-            "crawl_time": time.time() - starttime,
-            "indexing_date": datetime.utcnow().isoformat(),
-            "_type": "crawlstat"})
 
     else:  # file
         # Convert time in days (mtime cli arg) to seconds
@@ -188,7 +187,7 @@ def process_line(row, tree_dirs, tree_files, tree_crawltimes, cliargs):
         file_mtime_sec = time.time() - mtime_unix
         # Only process files modified at least x days ago
         if file_mtime_sec < time_sec:
-            return tree_files, tree_dirs, tree_crawltimes
+            return tree_files, tree_dirs
         # create md5 hash of file using metadata filesize and mtime
         filestring = str(size) + str(mtime_unix)
         filehash = hashlib.md5(filestring.encode('utf-8')).hexdigest()
@@ -206,6 +205,14 @@ def process_line(row, tree_dirs, tree_files, tree_crawltimes, cliargs):
         inventory_dict["worker_name"] = workername
         inventory_dict["_type"] = "file"
 
+        # add file size and increment items counts to parentdir
+        for d in tree_dirs:
+            if d['filename'] == os.path.basename(parentdir):
+                d['filesize'] += size
+                d['items_files'] += 1
+                d['items'] += 1
+                break
+
         # check plugins for adding extra meta data to inventory_dict
         for plugin in plugins:
             try:
@@ -222,7 +229,7 @@ def process_line(row, tree_dirs, tree_files, tree_crawltimes, cliargs):
 
         tree_files.append(inventory_dict)
 
-    return tree_dirs, tree_files, tree_crawltimes
+    return tree_dirs, tree_files
 
 
 def process_s3_inventory(inventory_file, cliargs):
@@ -233,7 +240,6 @@ def process_s3_inventory(inventory_file, cliargs):
     global buckets
     tree_dirs = []
     tree_files = []
-    tree_crawltimes = []
 
     with gzip.open(inventory_file, mode='rt') as f:
         reader = csv.reader(f, delimiter=',', quotechar='"')
@@ -241,6 +247,16 @@ def process_s3_inventory(inventory_file, cliargs):
         for row in reader:
             # get bucket name from first line of inventory file
             if l == 1:
+                # add fake root /s3 directory entry to list
+                if "/s3" not in buckets:
+                    s3threadlock.acquire()
+                    buckets.append("/s3")
+                    # create fake root /s3/bucketname directory entry for s3 bucket
+                    root_dict = make_fake_s3_dir('/', 's3', cliargs)
+                    s3threadlock.release()
+                    # check if bucket fake dir already created
+                    if root_dict:
+                        tree_dirs.append(root_dict)
                 # add fake root /s3/bucketname directory entry for s3 bucket to list
                 bucket_path = os.path.abspath(os.path.join('/s3', row[0]))
                 if bucket_path not in buckets:
@@ -252,24 +268,11 @@ def process_s3_inventory(inventory_file, cliargs):
                     # check if bucket fake dir already created
                     if root_dict:
                         tree_dirs.append(root_dict)
-                        # create fake crawltime entry
-                        tree_crawltimes.append({
-                            "path": '/s3/' + row[0],
-                            "worker_name": workername,
-                            "crawl_time": 0,
-                            "indexing_date": datetime.utcnow().isoformat(),
-                            "_type": "crawlstat"})
-            tree_dirs, tree_files, tree_crawltimes = process_line(row, tree_dirs, tree_files, tree_crawltimes, cliargs)
+            tree_dirs, tree_files = process_line(row, tree_dirs, tree_files, cliargs)
             l += 1
 
-            if len(tree_dirs) + len(tree_files) + len(tree_crawltimes) >= config['es_chunksize']:
-                es_bulk_add(workername, (tree_dirs, tree_files, tree_crawltimes), cliargs, 0)
-                del tree_dirs[:]
-                del tree_files[:]
-                del tree_crawltimes[:]
-
-    if len(tree_dirs) + len(tree_files) + len(tree_crawltimes) > 0:
-        es_bulk_add(workername, (tree_dirs, tree_files, tree_crawltimes), cliargs, 0)
+    if len(tree_dirs) + len(tree_files) > 0:
+        es_bulk_add(workername, tree_dirs, tree_files, cliargs, 0)
 
 
 def make_fake_s3_dir(parent, file, cliargs):
@@ -502,28 +505,6 @@ def start_importing(es, cliargs, logger):
         "indexing_date": datetime.utcnow().isoformat()
     }
     es.index(index=cliargs['index'], doc_type='diskspace', body=data)
-
-    # create fake root directory doc
-    time_utc_now = datetime.utcnow().isoformat()
-    time_utc_epoch_start = "1970-01-01T00:00:00"
-    root_dict = {}
-    root_dict['filename'] = "s3"
-    root_dict['path_parent'] = "/"
-    root_dict["filesize"] = 0
-    root_dict["items"] = 1  # 1 for itself
-    root_dict["items_files"] = 0
-    root_dict["items_subdirs"] = 0
-    root_dict["last_modified"] = time_utc_epoch_start
-    root_dict["tag"] = ""
-    root_dict["tag_custom"] = ""
-    root_dict["indexing_date"] = time_utc_now
-    root_dict["worker_name"] = "main"
-    root_dict["change_percent_filesize"] = ""
-    root_dict["change_percent_items"] = ""
-    root_dict["change_percent_items_files"] = ""
-    root_dict["change_percent_items_subdirs"] = ""
-    es.index(index=cliargs['index'], doc_type='directory', body=root_dict)
-    add_crawl_stats(es, cliargs['index'], '/s3', 0)
 
     # add all s3 inventory files to queue
     for file in inventory_files:

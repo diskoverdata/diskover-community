@@ -11,8 +11,7 @@ diskover is released under the Apache 2.0 license. See
 LICENSE for the full license text.
 """
 
-from diskover import config, escape_chars, q_crawl, q_calc, index_bulk_add, plugins
-from rq import Worker
+from diskover import config, escape_chars, index_bulk_add, plugins
 from datetime import datetime
 import argparse
 import os
@@ -23,7 +22,6 @@ import grp
 import time
 import re
 import base64
-from random import shuffle
 
 import diskover_connections
 
@@ -681,7 +679,7 @@ def calc_dir_size(dirlist, cliargs):
                 "size": 0,
                 "query": {
                     "query_string": {
-                        "query": "path_parent: " + newpath + "*",
+                        "query": "path_parent:" + newpath + "*",
                         "analyze_wildcard": "true"
                     }
                 },
@@ -689,6 +687,16 @@ def calc_dir_size(dirlist, cliargs):
                     "total_size": {
                         "sum": {
                             "field": "filesize"
+                        }
+                    },
+                    "total_files": {
+                        "sum": {
+                            "field": "items_files"
+                        }
+                    },
+                    "total_subdirs": {
+                        "sum": {
+                            "field": "items_subdirs"
                         }
                     }
                 }
@@ -819,6 +827,7 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
     else:
         qumulo = False
     totalcrawltime = 0
+    statsembeded = False
 
     for path in paths:
         starttime = time.time()
@@ -827,11 +836,6 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
         totaldiritems_subdirs = len(dirs)
         totaldiritems_files = 0
 
-        # check if stats embeded in data from diskover tree walk client
-        if type(root) is tuple:
-            statsembeded = True
-        else:
-            statsembeded = False
         if qumulo:
             if root['path'] != '/':
                 root_path = root['path'].rstrip(os.path.sep)
@@ -839,7 +843,9 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
                 root_path = root['path']
             dmeta = qumulo_get_dir_meta(worker, root, cliargs, reindex_dict, redis_conn)
         else:
-            if statsembeded:
+            # check if stats embeded in data from diskover tree walk client
+            if type(root) is tuple:
+                statsembeded = True
                 root_path = root[0]
                 dmeta = get_dir_meta(worker, root, cliargs, reindex_dict, statsembeded=True)
             else:

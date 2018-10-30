@@ -13,7 +13,7 @@ LICENSE for the full license text.
 
 #from scandir import walk
 from diskover_lswalk import lswalk as walk
-from rq import Worker, Queue
+from rq import SimpleWorker, Queue
 from datetime import datetime
 from random import randint
 try:
@@ -1366,7 +1366,7 @@ def calc_dir_sizes(cliargs, logger, path=None):
             # wait for queue to be empty and update progress bar
             while True:
                 workers_busy = False
-                workers = Worker.all(connection=redis_conn)
+                workers = SimpleWorker.all(connection=redis_conn)
                 for worker in workers:
                     if worker._state == "busy":
                         workers_busy = True
@@ -1417,7 +1417,7 @@ def calc_dir_sizes(cliargs, logger, path=None):
             time.sleep(1)
             while True:
                 workers_busy = False
-                workers = Worker.all(connection=redis_conn)
+                workers = SimpleWorker.all(connection=redis_conn)
                 for worker in workers:
                     if worker._state == "busy":
                         workers_busy = True
@@ -1492,7 +1492,7 @@ def treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict, bar):
     # wait for queue to be empty and update progress bar
     while True:
         workers_busy = False
-        workers = Worker.all(connection=redis_conn)
+        workers = SimpleWorker.all(connection=redis_conn)
         for worker in workers:
             if worker._state == "busy":
                 workers_busy = True
@@ -1565,11 +1565,10 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
 
         # qumulo api crawl
         if cliargs['qumulo']:
-            from diskover_qumulo import qumulo_connection, qumulo_treewalk
-            qumulo_ip, qumulo_ses = qumulo_connection()
+            from diskover_qumulo import qumulo_treewalk
             qumulo_treewalk(path, qumulo_ip, qumulo_ses, q_crawl, num_sep, level, batchsize,
                                             cliargs, reindex_dict, bar)
-        # regular crawl using scandir/walk
+        # regular crawl using walk
         else:
             treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict, bar)
 
@@ -1623,7 +1622,7 @@ def hotdirs():
     time.sleep(1)
     while True:
         workers_busy = False
-        workers = Worker.all(connection=redis_conn)
+        workers = SimpleWorker.all(connection=redis_conn)
         for worker in workers:
             if worker._state == "busy":
                 workers_busy = True
@@ -1647,11 +1646,11 @@ def hotdirs():
 def wait_for_worker_bots(logger):
     """This is the wait for worker bots function.
     """
-    workers = Worker.all(connection=redis_conn)
+    workers = SimpleWorker.all(connection=redis_conn)
     while len(workers) == 0:
         logger.info('Waiting for diskover worker bots to start...')
         time.sleep(2)
-        workers = Worker.all(connection=redis_conn)
+        workers = SimpleWorker.all(connection=redis_conn)
     logger.info('Found %s diskover RQ worker bots', len(workers))
 
 
@@ -1661,7 +1660,7 @@ def check_workers_running(logger):
     logger.info('Waiting for diskover worker bots to be done with any jobs in rq...')
     busyworkers = []
     while True:
-        workers = Worker.all(connection=redis_conn)
+        workers = SimpleWorker.all(connection=redis_conn)
         for worker in workers:
             if worker._state == "busy":
                 busyworkers.append(worker._name)

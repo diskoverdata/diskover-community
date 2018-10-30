@@ -1,6 +1,6 @@
 # Diskover Change Log
 
-## [1.5.0-rc19] = 2018-10-29
+## [1.5.0-rc19] = 2018-10-30
 ### added
 - diskover_connections.py
 - diskover_bot_module.py
@@ -19,6 +19,8 @@
 - removed job passing between bots as did not provide any performance gain
 ### fixed
 - --dircalcsgen taking a long time
+- Qumulo api crawl
+- s3 inventory file importing
 
 ## [1.5.0-rc18] = 2018-10-23
 ### added
