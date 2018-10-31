@@ -11,8 +11,9 @@ diskover is released under the Apache 2.0 license. See
 LICENSE for the full license text.
 """
 
-from diskover import index_bulk_add, config, es, progress_bar, Worker, redis_conn
+from diskover import index_bulk_add, config, es, progress_bar, redis_conn
 from diskover_bot_module import dupes_process_hashkey
+from rq import SimpleWorker
 import base64
 import hashlib
 import os
@@ -286,7 +287,7 @@ def dupes_finder(es, q, cliargs, logger):
     time.sleep(1)
     while True:
         workers_busy = False
-        workers = Worker.all(connection=redis_conn)
+        workers = SimpleWorker.all(connection=redis_conn)
         for worker in workers:
             if worker._state == "busy":
                 workers_busy = True
