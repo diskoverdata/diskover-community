@@ -56,7 +56,7 @@ def get_worker_name():
     """This is the get worker name function.
     It returns worker name hostname.pid .
     """
-    return '{0}.{1}'.format(socket.gethostname().partition('.')[0], os.getppid())
+    return '{0}.{1}'.format(socket.gethostname().partition('.')[0], os.getpid())
 
 
 def auto_tag(metadict, type, mtime, atime, ctime):
