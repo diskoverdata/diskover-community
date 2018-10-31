@@ -652,21 +652,21 @@ def get_file_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
 
 def calc_dir_size(dirlist, cliargs):
     """This is the calculate directory size worker function.
-    It gets a directory list from the Queue and searches ES for all
-    subdirs in each directory (recursive) and sums their filesize and
-    items fields to create a total filesize and item count for each directory doc.
-    Updates directory doc's filesize and items fields.
+    It gets a directory list from the Queue and searches ES for all files
+    in each directory (recursive) and sums their filesizes
+    to create a total filesize and item count for each dir.
+    Updates dir doc's filesize and items fields.
     """
 
     doclist = []
     for path in dirlist:
+        totalsize = 0
         totalitems = 1  # 1 for itself
+        totalitems_files = 0
+        totalitems_subdirs = 0
         # file doc search with aggregate for sum filesizes
         # escape special characters
         newpath = escape_chars(path[1])
-        parentpath = escape_chars(os.path.abspath(os.path.join(path[1], os.pardir)))
-        pathbasename = escape_chars(os.path.basename(path[1]))
-
         # create wildcard string and check for / (root) path
         if newpath == '\/':
             newpathwildcard = '\/*'
@@ -679,7 +679,7 @@ def calc_dir_size(dirlist, cliargs):
                 "size": 0,
                 "query": {
                     "query_string": {
-                        "query": "path_parent:" + newpath + "*",
+                        "query": "path_parent: " + newpath + "*",
                         "analyze_wildcard": "true"
                     }
                 },
@@ -688,25 +688,16 @@ def calc_dir_size(dirlist, cliargs):
                         "sum": {
                             "field": "filesize"
                         }
-                    },
-                    "total_files": {
-                        "sum": {
-                            "field": "items_files"
-                        }
-                    },
-                    "total_subdirs": {
-                        "sum": {
-                            "field": "items_subdirs"
-                        }
                     }
                 }
             }
         else:
             data = {
                 "size": 0,
+                "_source": ['inode', 'filesize'],
                 "query": {
                     "query_string": {
-                        'query': '(path_parent: ' + parentpath + ' AND filename: ' + pathbasename + ') OR path_parent: ' + newpath + ' OR path_parent: ' + newpathwildcard,
+                        'query': 'path_parent: ' + newpath + ' OR path_parent: ' + newpathwildcard,
                         'analyze_wildcard': 'true'
                     }
                 },
@@ -715,34 +706,31 @@ def calc_dir_size(dirlist, cliargs):
                         "sum": {
                             "field": "filesize"
                         }
-                    },
-                    "total_files": {
-                        "sum": {
-                            "field": "items_files"
-                        }
-                    },
-                    "total_subdirs": {
-                        "sum": {
-                            "field": "items_subdirs"
-                        }
                     }
                 }
             }
 
-        # search ES and start scroll for all directory doc search (subdirs)
+        # search ES and start scroll
+        res = es.search(index=cliargs['index'], doc_type='file', body=data,
+                        request_timeout=config['es_timeout'])
+
+        # total items sum
+        totalitems_files += res['hits']['total']
+
+        # total file size sum
+        totalsize += res['aggregations']['total_size']['value']
+
+        # directory doc search (subdirs)
+
+        # search ES and start scroll
         res = es.search(index=cliargs['index'], doc_type='directory', body=data,
                         request_timeout=config['es_timeout'])
 
-        # total file size sum
-        totalsize = res['aggregations']['total_size']['value']
+        # total items sum
+        totalitems_subdirs += res['hits']['total']
 
-        # total items sum for all subdirs count
-        totalitems_subdirs = res['aggregations']['total_subdirs']['value']
-
-        # total items sum for all files count
-        totalitems_files = res['aggregations']['total_files']['value']
-
-        totalitems += totalitems_subdirs + totalitems_files
+        # total items
+        totalitems += totalitems_files + totalitems_subdirs
 
         # update filesize and items fields for directory (path) doc
         d = {
@@ -803,7 +791,7 @@ def get_metadata(path, cliargs):
     }
     files_source = []
     res = es.search(index=cliargs['index2'], doc_type='file', scroll='1m',
-                    size=1000, body=data, request_timeout=config['es_timeout'])
+                    size=config['es_scrollsize'], body=data, request_timeout=config['es_timeout'])
 
     while res['hits']['hits'] and len(res['hits']['hits']) > 0:
         for hit in res['hits']['hits']:
@@ -828,15 +816,10 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
         qumulo = False
     totalcrawltime = 0
     statsembeded = False
-    # store file inodes to not count hardlinks
-    inodes = []
 
     for path in paths:
         starttime = time.time()
-        root, dirs, files = path
-        totaldirsize = 0
-        totaldiritems_subdirs = len(dirs)
-        totaldiritems_files = 0
+        root, files = path
 
         if qumulo:
             if root['path'] != '/':
@@ -879,46 +862,22 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
             # check if meta for files embeded
             if statsembeded:
                 for file in files:
-                    hardlink = False
                     fmeta = get_file_meta(worker, file, cliargs, reindex_dict, statsembeded=True)
                     if fmeta:
-                        if fmeta['inode'] not in inodes:
-                            inodes.append(fmeta['inode'])
-                        else:
-                            hardlink = True
                         tree_files.append(fmeta)
-                        # add file size to totaldirsize
-                        if not hardlink:
-                            totaldirsize += fmeta['filesize']
-                        totaldiritems_files += 1
             else:
                 for file in files:
-                    hardlink = False
                     if qumulo:
                         fmeta = qumulo_get_file_meta(worker, file, cliargs, reindex_dict)
                     else:
                         fmeta = get_file_meta(worker, os.path.join(root_path, file), cliargs,
                                              reindex_dict, statsembeded=False)
                     if fmeta:
-                        if fmeta['inode'] not in inodes:
-                            inodes.append(fmeta['inode'])
-                        else:
-                            hardlink = True
                         tree_files.append(fmeta)
-                        # add file size to totaldirsize
-                        if not hardlink:
-                            totaldirsize += fmeta['filesize']
-                        totaldiritems_files += 1
 
             # update crawl time
             elapsed = time.time() - starttime
             dmeta['crawl_time'] = round(elapsed, 6)
-            # update directory meta filesize, items
-            dmeta['filesize'] = totaldirsize
-            dmeta['items_files'] = totaldiritems_files
-            dmeta['items_subdirs'] = totaldiritems_subdirs
-            totaldiritems = totaldiritems_files + totaldiritems_subdirs
-            dmeta['items'] += totaldiritems
             tree_dirs.append(dmeta)
             totalcrawltime += elapsed
 
@@ -930,9 +889,6 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
             del tree_dirs[:]
             del tree_files[:]
             totalcrawltime = 0
-
-        # empty the inodes list before next directory path
-        del inodes[:]
 
     # bulk add to es
     if len(tree_dirs) > 0 or len(tree_files) > 0:

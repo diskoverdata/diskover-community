@@ -159,7 +159,7 @@ def socket_thread_handler_twc(threadnum, q, q_kill, rootdir, num_sep, level, bat
                     else:
                         rootpath = root
                     if not dir_excluded(rootpath, config, cliargs['verbose']):
-                        batch.append((root, dirs, files))
+                        batch.append((root, files))
                         batch_len = len(batch)
                         if batch_len >= batchsize:
                             q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,))
