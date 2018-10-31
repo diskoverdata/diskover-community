@@ -1,6 +1,6 @@
 # Diskover Change Log
 
-## [1.5.0-rc19] = 2018-10-30
+## [1.5.0-rc19] = 2018-10-31
 ### added
 - diskover_connections.py
 - diskover_bot_module.py
@@ -21,6 +21,7 @@
 - --dircalcsgen taking a long time
 - Qumulo api crawl
 - s3 inventory file importing
+- when using -O to optimize index at end of crawl, stack trace could occur if running longer than es timeout, added catch for this event
 
 ## [1.5.0-rc18] = 2018-10-23
 ### added

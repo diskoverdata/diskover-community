@@ -1715,7 +1715,11 @@ def tune_es_for_crawl(defaults=False):
         # check if we should optimize index
         if cliargs['optimizeindex']:
             logger.info('Optimizing ES index... this could take a while... (-O)')
-            es.indices.forcemerge(index=cliargs['index'], max_num_segments=1, request_timeout=config['es_timeout'])
+            try:
+                es.indices.forcemerge(index=cliargs['index'], max_num_segments=1, request_timeout=config['es_timeout'])
+            except exceptions.ConnectionTimeout:
+                logger.info("Optimizing timed out, will finish in background")
+                pass
 
 
 def post_crawl_tasks():
@@ -1783,6 +1787,7 @@ import diskover_connections
 # create Elasticsearch connection
 diskover_connections.connect_to_elasticsearch()
 from diskover_connections import es_conn as es
+from diskover_connections import exceptions
 
 # create Reddis connection
 diskover_connections.connect_to_redis()

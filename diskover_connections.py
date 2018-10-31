@@ -13,11 +13,11 @@ LICENSE for the full license text.
 
 try:
     from elasticsearch5 import Elasticsearch, helpers, RequestsHttpConnection, \
-        Urllib3HttpConnection
+        Urllib3HttpConnection, exceptions
 except ImportError:
     try:
         from elasticsearch import Elasticsearch, helpers, RequestsHttpConnection, \
-            Urllib3HttpConnection
+            Urllib3HttpConnection, exceptions
     except ImportError:
         raise ImportError('elasticsearch module not installed')
 from redis import Redis
