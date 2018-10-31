@@ -828,6 +828,8 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
         qumulo = False
     totalcrawltime = 0
     statsembeded = False
+    # store file inodes to not count hardlinks
+    inodes = []
 
     for path in paths:
         starttime = time.time()
@@ -877,23 +879,35 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
             # check if meta for files embeded
             if statsembeded:
                 for file in files:
+                    hardlink = False
                     fmeta = get_file_meta(worker, file, cliargs, reindex_dict, statsembeded=True)
                     if fmeta:
+                        if fmeta['inode'] not in inodes:
+                            inodes.append(fmeta['inode'])
+                        else:
+                            hardlink = True
                         tree_files.append(fmeta)
                         # add file size to totaldirsize
-                        totaldirsize += fmeta['filesize']
+                        if not hardlink:
+                            totaldirsize += fmeta['filesize']
                         totaldiritems_files += 1
             else:
                 for file in files:
+                    hardlink = False
                     if qumulo:
                         fmeta = qumulo_get_file_meta(worker, file, cliargs, reindex_dict)
                     else:
                         fmeta = get_file_meta(worker, os.path.join(root_path, file), cliargs,
                                              reindex_dict, statsembeded=False)
                     if fmeta:
+                        if fmeta['inode'] not in inodes:
+                            inodes.append(fmeta['inode'])
+                        else:
+                            hardlink = True
                         tree_files.append(fmeta)
                         # add file size to totaldirsize
-                        totaldirsize += fmeta['filesize']
+                        if not hardlink:
+                            totaldirsize += fmeta['filesize']
                         totaldiritems_files += 1
 
             # update crawl time
@@ -916,6 +930,9 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
             del tree_dirs[:]
             del tree_files[:]
             totalcrawltime = 0
+
+        # empty the inodes list before next directory path
+        del inodes[:]
 
     # bulk add to es
     if len(tree_dirs) > 0 or len(tree_files) > 0:
