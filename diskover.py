@@ -1513,6 +1513,8 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
 
         logger.info("Finished crawling!")
 
+        return starttime
+
     except KeyboardInterrupt:
         print("Ctrl-c keyboard interrupt, shutting down...")
         sys.exit(0)
@@ -1662,23 +1664,6 @@ def post_crawl_tasks():
     # calculate directory sizes and items
     if cliargs['reindex'] or cliargs['reindexrecurs'] or cliargs['crawlbot']:
         calc_dir_sizes(cliargs, logger, path=rootdir_path)
-        # calculate all directories above
-        # find top path
-        data = {
-            "_source": ['path'],
-            "query": {
-                "match_all": {}
-            }
-        }
-        res = es.search(index=cliargs['index'], doc_type='diskspace', body=data, request_timeout=config['es_timeout'])
-        root = res['hits']['hits'][0]['_source']['path']
-        p = rootdir_path
-        while True:
-            parentpath = os.path.abspath(os.path.join(p, os.pardir))
-            calc_dir_sizes(cliargs, logger, path=parentpath)
-            if parentpath == root:
-                break
-            p = parentpath
     else:
         calc_dir_sizes(cliargs, logger)
 
@@ -1969,7 +1954,7 @@ if __name__ == "__main__":
     pre_crawl_tasks()
 
     # start crawling
-    crawl_tree(rootdir_path, cliargs, logger, reindex_dict)
+    starttime = crawl_tree(rootdir_path, cliargs, logger, reindex_dict)
 
     post_crawl_tasks()
 
