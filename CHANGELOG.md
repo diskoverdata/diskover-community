@@ -1,6 +1,6 @@
 # Diskover Change Log
 
-## [1.5.0-rc20] = 2018-11-02
+## [1.5.0-rc20] = 2018-11-03
 ### NOTE
 - rc18 and rc19 had bugs with dir calcs and were calculating incorrect sizes, please update to rc20
 ### added
