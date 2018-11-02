@@ -169,10 +169,11 @@ def socket_thread_handler_twc(threadnum, q, q_kill, rootdir, num_sep, level, bat
 
                         # check if at maxdepth level and delete dirs/files lists to not
                         # descend further down the tree
-                        num_sep_this = rootpath.count(os.path.sep)
-                        if num_sep + level <= num_sep_this:
-                            del dirs[:]
-                            del files[:]
+                        if cliargs['maxdepth']:
+                            num_sep_this = rootpath.count(os.path.sep)
+                            if num_sep + level <= num_sep_this:
+                                del dirs[:]
+                                del files[:]
 
                     else:  # directory excluded
                         del dirs[:]

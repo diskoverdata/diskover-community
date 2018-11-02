@@ -434,16 +434,14 @@ def index_create(indexname):
     logger.info('Checking es index: %s', indexname)
     # check for existing es index
     if es.indices.exists(index=indexname):
-        # check if nodelete, reindex, cli argument
-        # and don't delete existing index
+        # check if crawlbot or reindex cli argument and don't delete existing index
         if cliargs['reindex']:
             logger.info('Reindexing (non-recursive, preserving tags)')
             return
         elif cliargs['reindexrecurs']:
             logger.info('Reindexing (recursive, preserving tags)')
             return
-        elif cliargs['nodelete']:
-            logger.info('Adding to es index')
+        elif cliargs['crawlbot']:
             return
         # delete existing index
         else:
@@ -1159,33 +1157,26 @@ def parse_cli_args(indexname):
     parser.add_argument("-I", "--index2", metavar='INDEX2', nargs=1,
                         help="Compare directory times with previous index to get metadata \
                             from index2 instead of off disk (requires cached dir times in Redis)")
-    parser.add_argument("-n", "--nodelete", action="store_true",
-                        help="Add data to existing index (default: overwrite \
-                        index)")
-    parser.add_argument("-M", "--maxdepth", type=int, default=100,
-                        help="Maximum directory depth to crawl (default: \
-                        100)")
-    parser.add_argument("-c", "--maxdcdepth", type=int, default=100,
-                        help="Maximum directory depth to calculate directory sizes/items (default: \
-                            100)")
+    parser.add_argument("-M", "--maxdepth", type=int, default=None,
+                        help="Maximum directory depth to crawl (default: None), does not work with lswalk")
+    parser.add_argument("-c", "--maxdcdepth", type=int, default=None,
+                        help="Maximum directory depth to calculate directory sizes/items (default: None)")
     parser.add_argument("-b", "--batchsize", type=int, default=50,
-                        help="Batch size (dir count) for sending to worker bots (default: \
-                            50)")
+                        help="Batch size (dir count) for sending to worker bots (default: 50)")
     parser.add_argument("-a", "--adaptivebatch", action="store_true",
                         help="Adaptive batch size for sending to worker bots (intelligent crawl)")
     parser.add_argument("--lswalk", action="store_true",
-                        help="Use ls walk instead of scandir walk")
+                        help="Use ls walk instead of scandir walk, does not work with maxdepth")
     parser.add_argument("-A", "--autotag", action="store_true",
                         help="Get bots to auto-tag files/dirs based on patterns in config")
     parser.add_argument("-O", "--optimizeindex", action="store_true",
                         help="Optimize index at end of crawl (reduce size)")
     parser.add_argument("-r", "--reindex", action="store_true",
-                        help="Reindex directory (non-recursive)")
+                        help="Reindex directory (non-recursive), data is added to existing index")
     parser.add_argument("-R", "--reindexrecurs", action="store_true",
-                        help="Reindex directory and all subdirs (recursive)")
+                        help="Reindex directory and all subdirs (recursive), data is added to existing index")
     parser.add_argument("-D", "--finddupes", action="store_true",
-                        help="Find duplicate files in existing index and update \
-                            their dupe_md5 field")
+                        help="Find duplicate files in existing index and update their dupe_md5 field")
     parser.add_argument("-C", "--copytags", metavar='INDEX2', nargs=1,
                         help="Copy tags from index2 to index")
     parser.add_argument("-H", "--hotdirs", metavar='INDEX2', nargs=1,
@@ -1196,8 +1187,7 @@ def parse_cli_args(indexname):
     parser.add_argument("-L", "--listentwc", action="store_true",
                         help="Start tcp socket server and listen for messages from diskover treewalk client")
     parser.add_argument("-B", "--crawlbot", action="store_true",
-                        help="Starts up crawl bot continuous scanner \
-                            to scan for dir changes in index")
+                        help="Starts up crawl bot continuous scanner to scan for dir changes in index")
     parser.add_argument("--qumulo", action="store_true",
                         help="Qumulo storage type, use Qumulo api instead of scandir")
     parser.add_argument("--s3", metavar='FILE', nargs='+',
@@ -1412,10 +1402,11 @@ def treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict, bar):
 
             # check if at maxdepth level and delete dirs/files lists to not
             # descend further down the tree
-            num_sep_this = root.count(os.path.sep)
-            if num_sep + level <= num_sep_this:
-                del dirs[:]
-                del files[:]
+            if cliargs['maxdepth']:
+                num_sep_this = root.count(os.path.sep)
+                if num_sep + level <= num_sep_this:
+                    del dirs[:]
+                    del files[:]
 
         else:  # directory excluded
             del dirs[:]
@@ -1521,8 +1512,6 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
             bar.finish()
 
         logger.info("Finished crawling!")
-
-        return starttime
 
     except KeyboardInterrupt:
         print("Ctrl-c keyboard interrupt, shutting down...")
@@ -1668,18 +1657,33 @@ def post_crawl_tasks():
     """
 
     # add elapsed time crawl stat to es
-    if not cliargs['reindex'] and not cliargs['reindexrecurs']:
-        add_crawl_stats(es, cliargs['index'], rootdir_path, (time.time() - starttime), "finished_crawl")
+    add_crawl_stats(es, cliargs['index'], rootdir_path, (time.time() - starttime), "finished_crawl")
 
     # calculate directory sizes and items
-    if cliargs['reindex'] or cliargs['reindexrecurs']:
+    if cliargs['reindex'] or cliargs['reindexrecurs'] or cliargs['crawlbot']:
         calc_dir_sizes(cliargs, logger, path=rootdir_path)
+        # calculate all directories above
+        # find top path
+        data = {
+            "_source": ['path'],
+            "query": {
+                "match_all": {}
+            }
+        }
+        res = es.search(index=cliargs['index'], doc_type='diskspace', body=data, request_timeout=config['es_timeout'])
+        root = res['hits']['hits'][0]['_source']['path']
+        p = rootdir_path
+        while True:
+            parentpath = os.path.abspath(os.path.join(p, os.pardir))
+            calc_dir_sizes(cliargs, logger, path=parentpath)
+            if parentpath == root:
+                break
+            p = parentpath
     else:
         calc_dir_sizes(cliargs, logger)
 
     # add elapsed time crawl stat to es
-    if not cliargs['reindex'] and not cliargs['reindexrecurs']:
-        add_crawl_stats(es, cliargs['index'], rootdir_path, (time.time() - starttime), "finished_dircalc")
+    add_crawl_stats(es, cliargs['index'], rootdir_path, (time.time() - starttime), "finished_dircalc")
 
     check_workers_running(logger)
 
@@ -1692,8 +1696,7 @@ def pre_crawl_tasks():
     index_create(cliargs['index'])
 
     # add crawl stat to index
-    if not cliargs['reindex'] and not cliargs['reindexrecurs']:
-        add_crawl_stats(es, cliargs['index'], rootdir_path, 0, "running")
+    add_crawl_stats(es, cliargs['index'], rootdir_path, 0, "running")
 
     # optimize Elasticsearch index settings for crawling
     tune_es_for_crawl()
@@ -1703,7 +1706,7 @@ def pre_crawl_tasks():
         logger.info('Using %s for metadata cache (-I)' % cliargs['index2'][0])
 
     # add disk space info to es index
-    if not cliargs['reindex'] and not cliargs['reindexrecurs']:
+    if not cliargs['reindex'] and not cliargs['reindexrecurs'] and not cliargs['crawlbot']:
         if cliargs['qumulo']:
             from diskover_qumulo import qumulo_add_diskspace
             qumulo_add_diskspace(es, cliargs['index'], rootdir_path, qumulo_ip, qumulo_ses, logger)
@@ -1966,7 +1969,7 @@ if __name__ == "__main__":
     pre_crawl_tasks()
 
     # start crawling
-    starttime = crawl_tree(rootdir_path, cliargs, logger, reindex_dict)
+    crawl_tree(rootdir_path, cliargs, logger, reindex_dict)
 
     post_crawl_tasks()
 

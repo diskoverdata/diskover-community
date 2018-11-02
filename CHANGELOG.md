@@ -1,10 +1,11 @@
 # Diskover Change Log
 
-## [1.5.0-rc20] = 2018-10-31
+## [1.5.0-rc20] = 2018-11-02
 ### NOTE
 - rc18 and rc19 had bugs with dir calcs and were calculating incorrect sizes, please update to rc20
 ### added
 - improved socket server
+- improved dir calc speeds
 - cli arg -L --listentwc to listen for directory listings messages (pickle) from remote python diskover-treewalk-client.py
 - diskover-treewalk-client.py - v1.0.8 python client for diskover socket server to run direct on storage servers for faster tree walking (see wiki)
 - additional redis config options in diskover.cfg: db, timeout, queues (copy from diskover.cfg.sample into your config)
@@ -31,6 +32,7 @@
 - removed threads for file meta scraping and es bulk adding in worker bots as did not see any real performance gain
 - removed job passing between bots as did not provide any performance gain
 - switched to generator for dir calcs to help speed up dir calc processing time
+- removed -n --nodelete cli arg, use --reindex or --reindexrecurs to add data to existing index
 ### fixed
 - file symlinks getting indexed
 - directories containing just symlinks (no actual file/subdirs) getting indexed

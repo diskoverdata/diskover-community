@@ -753,12 +753,11 @@ def es_bulk_add(worker_name, dirlist, filelist, cliargs, totalcrawltime=None):
     docs = dirlist + filelist
     index_bulk_add(es, docs, config, cliargs)
 
-    if not cliargs['reindex'] and not cliargs['reindexrecurs'] and not cliargs['crawlbot']:
-        data = {"worker_name": worker_name, "dir_count": len(dirlist),
-                "file_count": len(filelist), "bulk_time": round(time.time() - starttime, 6),
-                "crawl_time": round(totalcrawltime, 6),
-                "indexing_date": datetime.utcnow().isoformat()}
-        es.index(index=cliargs['index'], doc_type='worker', body=data)
+    data = {"worker_name": worker_name, "dir_count": len(dirlist),
+            "file_count": len(filelist), "bulk_time": round(time.time() - starttime, 6),
+            "crawl_time": round(totalcrawltime, 6),
+            "indexing_date": datetime.utcnow().isoformat()}
+    es.index(index=cliargs['index'], doc_type='worker', body=data)
 
 
 def get_metadata(path, cliargs):

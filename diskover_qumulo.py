@@ -156,10 +156,11 @@ def qumulo_treewalk(path, ip, ses, q_crawl, num_sep, level, batchsize, cliargs, 
 
             # check if at maxdepth level and delete dirs/files lists to not
             # descend further down the tree
-            num_sep_this = root_path.count(os.path.sep)
-            if num_sep + level <= num_sep_this:
-                del dirs[:]
-                del files[:]
+            if cliargs['maxdepth']:
+                num_sep_this = root_path.count(os.path.sep)
+                if num_sep + level <= num_sep_this:
+                    del dirs[:]
+                    del files[:]
 
         else:  # directory excluded
             del dirs[:]
