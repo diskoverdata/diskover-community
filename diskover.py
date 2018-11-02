@@ -1389,10 +1389,19 @@ def treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict, bar):
 
     for root, dirs, files in walk(path):
         if not dir_excluded(root, config, cliargs['verbose']):
+            # check for symlinks
+            dirlist = []
+            filelist = []
+            for d in dirs:
+                if not os.path.islink(os.path.join(root, d)):
+                    dirlist.append(d)
+            for f in files:
+                if not os.path.islink(os.path.join(root, f)):
+                    filelist.append(f)
             # check for emptry dirs
-            if len(dirs) == 0 and len(files) == 0 and not cliargs['indexemptydirs']:
+            if len(dirlist) == 0 and len(filelist) == 0 and not cliargs['indexemptydirs']:
                 continue
-            batch.append((root, files))
+            batch.append((root, filelist))
             batch_len = len(batch)
             if batch_len >= batchsize:
                 q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,))

@@ -23,7 +23,7 @@ try:
 except ImportError:
 	from queue import Queue
 
-version = '1.0.9'
+version = '1.0.10'
 __version__ = version
 
 
@@ -192,13 +192,15 @@ if __name__ == "__main__":
 					del files[:]
 					continue
 				# check for symlinks
+				dirlist = []
+				filelist = []
 				for d in dirs:
-					if os.path.islink(os.path.join(root, d)):
-						dirs.remove(d)
+					if not os.path.islink(os.path.join(root, d)):
+						dirlist.append(d)
 				for f in files:
-					if os.path.islink(os.path.join(root, f)):
-						files.remove(f)
-				packet.append((root, dirs, files))
+					if not os.path.islink(os.path.join(root, f)):
+						filelist.append(f)
+				packet.append((root, dirlist, filelist))
 				if len(packet) >= BATCH_SIZE:
 					q.put(pickle.dumps(packet))
 					del packet [:]
