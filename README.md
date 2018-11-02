@@ -137,13 +137,14 @@ Only index files which are >90 days modified time and >1 KB filesize:
 $ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl -m 90 -s 1024
 ```
 
-Create index with just level 1 directories and files, then run background crawls in parallel for each directory in rootdir and merge the data into same index:
+Create index with just level 1 directories and files, then run background crawls in parallel for each directory in rootdir and merge the data into same index. After all crawls are finished, calculate rootdir doc's size/items counts:
 
 ```sh
 $ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl --maxdepth 1
 $ pthon diskover.py -i diskover-indexname -a -d /rootpath/to/crawl/dir1 --reindexrecurs --lwalk &
 $ pthon diskover.py -i diskover-indexname -a -d /rootpath/to/crawl/dir2 --reindexrecurs --lwalk &
 ...
+$ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl --dircalcsonly --maxdcdepth 0
 ```
 
 Import Amazon S3 Inventory file(s) (gzipped csv) with:
