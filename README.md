@@ -125,16 +125,25 @@ Crawl tree using ls walk instead of scandir walk:
 $ python /path/to/diskover.py -d /rootpath/you/want/to/crawl -i diskover-indexname -a --lswalk
 ```
 
-Crawl down to maximum tree depth of 3 and only calculate dir size/items to level 3:
+Crawl down to maximum tree depth of 3 (does not work with --lswalk):
 
 ```sh
-$ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl -M 3 -c 3
+$ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl -M 3
 ```
 
 Only index files which are >90 days modified time and >1 KB filesize:
 
 ```sh
 $ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl -m 90 -s 1024
+```
+
+Create index with just level 1 directories and files, then run background crawls in parallel for each directory in rootdir and merge the data into same index:
+
+```sh
+$ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl --maxdepth 1
+$ pthon diskover.py -i diskover-indexname -a -d /rootpath/to/crawl/dir1 --reindexrecurs --lwalk &
+$ pthon diskover.py -i diskover-indexname -a -d /rootpath/to/crawl/dir2 --reindexrecurs --lwalk &
+...
 ```
 
 Import Amazon S3 Inventory file(s) (gzipped csv) with:
