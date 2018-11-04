@@ -33,6 +33,10 @@ import struct
 socket_tasks = {}
 # list of socket client
 clientlist = []
+# list to hold rq job results
+jobs = []
+
+emptydircount = 0
 
 
 def socket_thread_handler(threadnum, q, cliargs, logger):
@@ -119,11 +123,14 @@ def recv_one_message(sock):
     return recvall(sock, length)
 
 
-def socket_thread_handler_twc(threadnum, q, q_kill, rootdir, num_sep, level, batchsize, cliargs, logger, reindex_dict):
+def socket_thread_handler_twc(threadnum, q, q_kill, lock, rootdir, num_sep, level,
+                              batchsize, cliargs, logger, reindex_dict):
     """This is the socket thread handler tree walk client function.
     Stream of directory listings (pickle) from diskover treewalk
     client connections are enqueued to redis rq queue.
     """
+    global jobs
+    global emptydircount
 
     while True:
 
@@ -152,6 +159,9 @@ def socket_thread_handler_twc(threadnum, q, q_kill, rootdir, num_sep, level, bat
                 batch = []
                 for root, dirs, files in data_decoded:
                     if len(dirs) == 0 and len(files) == 0 and not cliargs['indexemptydirs']:
+                        lock.acquire(True)
+                        emptydircount += 1
+                        lock.release()
                         continue
                     # check if meta stat data has been embeded in the data from client
                     if type(root) is tuple:
@@ -159,10 +169,13 @@ def socket_thread_handler_twc(threadnum, q, q_kill, rootdir, num_sep, level, bat
                     else:
                         rootpath = root
                     if not dir_excluded(rootpath, config, cliargs['verbose']):
-                        batch.append((root, files))
+                        batch.append((root, dirs, files))
                         batch_len = len(batch)
                         if batch_len >= batchsize:
-                            q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,))
+                            job = q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,))
+                            lock.acquire(True)
+                            jobs.append(job)
+                            lock.release()
                             del batch[:]
                             if cliargs['adaptivebatch']:
                                 batchsize = adaptive_batch(q_crawl, cliargs, batchsize)
@@ -181,7 +194,10 @@ def socket_thread_handler_twc(threadnum, q, q_kill, rootdir, num_sep, level, bat
 
                 if len(batch) > 0:
                     # add any remaining in batch to queue
-                    q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,))
+                    job = q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,))
+                    lock.acquire(True)
+                    jobs.append(job)
+                    lock.release()
                     del batch[:]
 
             # close connection to client
@@ -254,6 +270,8 @@ def start_socket_server_twc(rootdir_path, num_sep, level, batchsize, cliargs, lo
     It opens a socket and waits for remote commands.
     """
     global clientlist
+    global jobs
+    global emptydircount
 
     # set thread/connection limit
     max_connections = config['listener_maxconnections']
@@ -261,6 +279,7 @@ def start_socket_server_twc(rootdir_path, num_sep, level, batchsize, cliargs, lo
     # Queue for socket threads
     q = Queue.Queue(maxsize=max_connections)
     q_kill = Queue.Queue()
+    lock = threading.Lock()
 
     try:
         # create TCP socket object
@@ -277,7 +296,7 @@ def start_socket_server_twc(rootdir_path, num_sep, level, batchsize, cliargs, lo
         # set up the threads and start them
         for i in range(max_connections):
             # create thread
-            t = threading.Thread(target=socket_thread_handler_twc, args=(i, q, q_kill, rootdir_path, num_sep,
+            t = threading.Thread(target=socket_thread_handler_twc, args=(i, q, q_kill, lock, rootdir_path, num_sep,
                                                                      level, batchsize, cliargs, logger, reindex_dict,))
             t.daemon = True
             t.start()
@@ -287,7 +306,7 @@ def start_socket_server_twc(rootdir_path, num_sep, level, batchsize, cliargs, lo
                 logger.info("Received signal to shutdown socket server")
                 q.join()
                 serversock.close()
-                return starttime
+                return starttime, jobs, emptydircount
             logger.info("Waiting for connection, listening on %s port %s TCP (ctrl-c to shutdown)"
                         % (str(host), str(port)))
             # establish connection

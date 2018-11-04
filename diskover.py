@@ -30,7 +30,7 @@ import sys
 import json
 
 
-version = '1.5.0-rc20'
+version = '1.5.0-rc21'
 __version__ = version
 
 IS_PY3 = sys.version_info >= (3, 0)
@@ -826,13 +826,14 @@ def index_delete_path(path, cliargs, logger, reindex_dict, recursive=False):
 
 
 def index_get_docs(cliargs, logger, doctype='directory', copytags=False, hotdirs=False,
-                   index=None, path=None, sort=False, maxdepth=None):
+                   index=None, path=None, sort=False, maxdepth=None, id_lists=False):
     """This is the es get docs function.
     It finds all docs (by doctype) in es and returns doclist
     which contains doc id, fullpath and mtime for all docs.
     If copytags is True will return tags from previous index.
     If path is specified will return just documents in and under directory path.
     If sort is True, will return paths in asc path order.
+    if id_lists is True, will return two lists, one with full paths and other with their id
     """
 
     if index is None:
@@ -848,6 +849,7 @@ def index_get_docs(cliargs, logger, doctype='directory', copytags=False, hotdirs
                     size=config['es_scrollsize'], body=data, request_timeout=config['es_timeout'])
 
     doclist = []
+    pathlist = []
     doccount = 0
     while res['hits']['hits'] and len(res['hits']['hits']) > 0:
         for hit in res['hits']['hits']:
@@ -857,6 +859,9 @@ def index_get_docs(cliargs, logger, doctype='directory', copytags=False, hotdirs
             elif hotdirs:
                 doclist.append((hit['_id'], fullpath, hit['_source']['filesize'], hit['_source']['items'],
                                 hit['_source']['items_files'], hit['_source']['items_subdirs']))
+            elif id_lists:
+                doclist.append(hit['_id'])
+                pathlist.append(fullpath)
             else:
                 # convert es time to unix time format
                 mtime = time.mktime(datetime.strptime(
@@ -870,7 +875,10 @@ def index_get_docs(cliargs, logger, doctype='directory', copytags=False, hotdirs
 
     logger.info('Found %s %s docs' % (str(doccount), doctype))
 
-    return doclist
+    if id_lists:
+        return doclist, pathlist
+    else:
+        return doclist
 
 
 def index_get_docs_generator(cliargs, logger, doctype='directory', copytags=False, hotdirs=False,
@@ -1374,7 +1382,7 @@ def calc_dir_sizes(cliargs, logger, path=None):
         sys.exit(0)
 
 
-def treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict, bar):
+def treewalk(top, num_sep, level, batchsize, cliargs, reindex_dict, bar):
     """This is the tree walk function.
     It walks the tree and adds tuple of directory and it's items
     to redis queue for rq worker bots to scrape meta and upload
@@ -1385,9 +1393,11 @@ def treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict, bar):
         from diskover_lswalk import lswalk as walk
     else:
         from scandir import walk
+    jobs = []
     batch = []
+    emptydircount = 0
 
-    for root, dirs, files in walk(path):
+    for root, dirs, files in walk(top):
         if not dir_excluded(root, config, cliargs['verbose']):
             # check for symlinks
             dirlist = []
@@ -1400,11 +1410,13 @@ def treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict, bar):
                     filelist.append(f)
             # check for emptry dirs
             if len(dirlist) == 0 and len(filelist) == 0 and not cliargs['indexemptydirs']:
+                emptydircount += 1
                 continue
-            batch.append((root, filelist))
+            batch.append((root, dirlist, filelist))
             batch_len = len(batch)
             if batch_len >= batchsize:
-                q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,))
+                job = q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,))
+                jobs.append(job)
                 del batch[:]
                 if cliargs['adaptivebatch']:
                     batchsize = adaptive_batch(q_crawl, cliargs, batchsize)
@@ -1431,7 +1443,8 @@ def treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict, bar):
                 bar.update(0)
 
     # add any remaining in batch to queue
-    q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,))
+    job = q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,))
+    jobs.append(job)
 
     # wait for queue to be empty and update progress bar
     while True:
@@ -1452,6 +1465,8 @@ def treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict, bar):
         if q_len == 0 and workers_busy == False:
             break
         time.sleep(.5)
+
+    return jobs, emptydircount
 
 
 def crawl_tree(path, cliargs, logger, reindex_dict):
@@ -1493,9 +1508,9 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
         # check for listenlwc socket cli flag to start socket server
         if cliargs['listentwc']:
             from diskover_socket_server import start_socket_server_twc
-            starttime = start_socket_server_twc(rootdir_path, num_sep, level, batchsize,
-                                                                   cliargs, logger, reindex_dict)
-            return starttime
+            starttime, jobs, emptydircount = start_socket_server_twc(rootdir_path, num_sep, level, batchsize,
+                                                                     cliargs, logger, reindex_dict)
+            return starttime, jobs, emptydircount
 
         starttime = time.time()
 
@@ -1510,11 +1525,11 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
         # qumulo api crawl
         if cliargs['qumulo']:
             from diskover_qumulo import qumulo_treewalk
-            qumulo_treewalk(path, qumulo_ip, qumulo_ses, q_crawl, num_sep, level, batchsize,
-                                            cliargs, reindex_dict, bar)
+            jobs, emptydircount = qumulo_treewalk(path, qumulo_ip, qumulo_ses, q_crawl, num_sep, level, batchsize,
+                                                  cliargs, reindex_dict, bar)
         # regular crawl using walk
         else:
-            treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict, bar)
+            jobs, emptydircount = treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict, bar)
 
         if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
             bar.update(0)
@@ -1522,7 +1537,7 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
 
         logger.info("Finished crawling!")
 
-        return starttime
+        return starttime, jobs, emptydircount
 
     except KeyboardInterrupt:
         print("Ctrl-c keyboard interrupt, shutting down...")
@@ -1662,6 +1677,77 @@ def tune_es_for_crawl(defaults=False):
                 pass
 
 
+def update_dir_sizes():
+    from diskover_bot_module import purge_dirsizes
+    dirsizes_by_worker = {}
+    dirsizes = {}
+
+    logger.info('Updating directory sizes...')
+
+    # get all the dirsizes back from the rq job results and store the last results for each path
+    for job in jobs:
+        while not job.result:
+            time.sleep(1)
+        worker_name, sizes = job.result
+        try:
+            dirsizes_by_worker[worker_name]
+        except KeyError:
+            dirsizes_by_worker[worker_name] = {}
+        for path, size in sizes.items():
+            dirsizes_by_worker[worker_name][path] = size
+
+    # sum all the worker path sizes
+    for worker_name, dirsize in dirsizes_by_worker.items():
+        for path, size in dirsize.items():
+            try:
+                dirsizes[path]
+            except KeyError:
+                dirsizes[path] = {'filesize': 0, 'items_files': 0, 'items_subdirs': 0, 'items': 0}
+            dirsizes[path]['filesize'] += size['filesize']
+            dirsizes[path]['items_files'] += size['items_files']
+            dirsizes[path]['items_subdirs'] += size['items_subdirs']
+            dirsizes[path]['items'] += size['items']
+
+    # update directory doc's filesize, items counts
+    es.indices.refresh(index=cliargs['index'])
+
+    # get all directory doc ids
+    ids, paths = index_get_docs(cliargs, logger, doctype='directory', id_lists=True)
+
+    bulkdocs = []
+    i = 0
+    with progressbar.ProgressBar(max_value=len(dirsizes)) as bar:
+        for path, size in dirsizes.items():
+            # subtract any empty dirs for rootdir doc
+            if path == rootdir_path:
+                size['items_subdirs'] = size['items_subdirs'] - emptydircount
+                size['items'] = size['items'] - emptydircount
+            # find location of path in paths list
+            x = paths.index(path)
+            # get doc id from ids list
+            docid = ids[x]
+            doc = {
+                '_op_type': 'update',
+                '_index': cliargs['index'],
+                '_type': 'directory',
+                '_id': docid,
+                'doc': {'filesize': size['filesize'], 'items_files': size['items_files'],
+                        'items_subdirs': size['items_subdirs'], 'items': size['items']}
+            }
+            bulkdocs.append(doc)
+            if len(bulkdocs) >= config['es_chunksize']:
+                index_bulk_add(es, bulkdocs, config, cliargs)
+                del bulkdocs[:]
+            i += 1
+            bar.update(i)
+        index_bulk_add(es, bulkdocs, config, cliargs)
+
+    # purge dirsizes from all workers
+    workers = SimpleWorker.all(connection=redis_conn)
+    for i in range(len(workers)):
+        q.enqueue(purge_dirsizes)
+
+
 def post_crawl_tasks():
     """This is the post crawl tasks function.
     It runs at the end of the crawl and does post tasks.
@@ -1674,12 +1760,14 @@ def post_crawl_tasks():
     if cliargs['reindex'] or cliargs['reindexrecurs'] or cliargs['crawlbot']:
         calc_dir_sizes(cliargs, logger, path=rootdir_path)
     else:
-        calc_dir_sizes(cliargs, logger)
+        #calc_dir_sizes(cliargs, logger)
+        update_dir_sizes()
 
     # add elapsed time crawl stat to es
     add_crawl_stats(es, cliargs['index'], rootdir_path, (time.time() - starttime), "finished_dircalc")
 
-    check_workers_running(logger)
+    if cliargs['reindex'] or cliargs['reindexrecurs'] or cliargs['crawlbot']:
+        check_workers_running(logger)
 
     # set Elasticsearch index settings back to default
     tune_es_for_crawl(defaults=True)
@@ -1963,7 +2051,7 @@ if __name__ == "__main__":
     pre_crawl_tasks()
 
     # start crawling
-    starttime = crawl_tree(rootdir_path, cliargs, logger, reindex_dict)
+    starttime, jobs, emptydircount = crawl_tree(rootdir_path, cliargs, logger, reindex_dict)
 
     post_crawl_tasks()
 

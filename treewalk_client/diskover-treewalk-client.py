@@ -23,7 +23,7 @@ try:
 except ImportError:
 	from queue import Queue
 
-version = '1.0.10'
+version = '1.0.11'
 __version__ = version
 
 
@@ -204,6 +204,7 @@ if __name__ == "__main__":
 				if len(packet) >= BATCH_SIZE:
 					q.put(pickle.dumps(packet))
 					del packet [:]
+			q.put(pickle.dumps(packet))
 
 		elif TREEWALK_METHOD == "metaspider":
 			# use threads to collect meta and send to diskover proxy rather than
@@ -245,6 +246,7 @@ if __name__ == "__main__":
 				if len(packet) >= BATCH_SIZE:
 					q.put(pickle.dumps(packet))
 					del packet[:]
+			q.put(pickle.dumps(packet))
 
 		elif TREEWALK_METHOD == "lsthreaded":
 			dirs = []
@@ -311,6 +313,7 @@ if __name__ == "__main__":
 					if os.path.basename(root) not in EXCLUDED_DIRS:
 						packet.append((root, dirs[:], nondirs[:]))
 					break
+			q.put(pickle.dumps(packet))
 
 		q.join()
 

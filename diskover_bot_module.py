@@ -40,6 +40,8 @@ gids = []
 owners = {}
 groups = {}
 
+dirsizes = {}
+
 
 def parse_cliargs_bot():
     """This is the parse CLI arguments function.
@@ -520,7 +522,7 @@ def get_file_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
 
         # check if file is in exluded_files list
         extension = os.path.splitext(filename)[1][1:].strip().lower()
-        if file_excluded(filename, extension, fullpath, cliargs['verbose']):
+        if file_excluded(filename, extension):
             return None
 
         if statsembeded:
@@ -805,6 +807,7 @@ def get_metadata(path, cliargs):
 
 
 def scrape_tree_meta(paths, cliargs, reindex_dict):
+    global dirsizes
     worker = get_worker_name()
     tree_dirs = []
     tree_files = []
@@ -818,7 +821,11 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
 
     for path in paths:
         starttime = time.time()
-        root, files = path
+        root, dirs, files = path
+        dirsizes[root] = {}
+        dirsize = 0
+        diritems_files = 0
+        diritems_subdirs = len(dirs)
 
         if qumulo:
             if root['path'] != '/':
@@ -873,6 +880,28 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
                                              reindex_dict, statsembeded=False)
                     if fmeta:
                         tree_files.append(fmeta)
+                        # add filesize to dirsize
+                        dirsize += fmeta['filesize']
+                        # add to diritems_files count
+                        diritems_files += 1
+
+            # update dirsizes
+            dirsizes[root]['filesize'] = dirsize
+            dirsizes[root]['items_files'] = diritems_files
+            dirsizes[root]['items_subdirs'] = diritems_subdirs
+            dirsizes[root]['items'] = diritems_files + diritems_subdirs + 1  # 1 for itself
+            # add directory size to all dir paths above
+            p = os.path.sep.join(root.split(os.path.sep)[:-1])
+            while len(p) >= len(cliargs['rootdir']):
+                try:
+                    dirsizes[p]
+                except KeyError:
+                    dirsizes[p] = {'filesize': 0, 'items_files': 0, 'items_subdirs': 0, 'items': 0}
+                dirsizes[p]['filesize'] += dirsize
+                dirsizes[p]['items_files'] += diritems_files
+                dirsizes[p]['items_subdirs'] += diritems_subdirs
+                dirsizes[p]['items'] += diritems_files + diritems_subdirs
+                p = os.path.sep.join(p.split(os.path.sep)[:-1])
 
             # update crawl time
             elapsed = time.time() - starttime
@@ -893,8 +922,10 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
     if len(tree_dirs) > 0 or len(tree_files) > 0:
         es_bulk_add(worker, tree_dirs, tree_files, cliargs, totalcrawltime)
 
+    return worker, dirsizes
 
-def file_excluded(filename, extension, path, verbose):
+
+def file_excluded(filename, extension):
     """Return True if path or ext in excluded_files set,
     False if not in the set"""
     # return if filename in included list (whitelist)
@@ -1074,3 +1105,8 @@ def calc_hot_dirs(dirlist, cliargs):
         doclist.append(d)
 
     index_bulk_add(es, doclist, config, cliargs)
+
+
+def purge_dirsizes():
+    global dirsizes
+    dirsizes = {}
