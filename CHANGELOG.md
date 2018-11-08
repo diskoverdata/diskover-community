@@ -9,6 +9,8 @@
 ### fixed
 - bug with tree walk client not sending last batch of dirs
 - bug with tree walk client and not remove trailing slashes from paths causing traceback in diskver.py when updating dir sizes at end of crawl
+- bug with tree walk client and using ls walk method, ls: invalid line width: f
+- bug with diskover and using --lswalk, ls: invalid line width: f
 
 ## [1.5.0-rc20] = 2018-11-03
 ### NOTE

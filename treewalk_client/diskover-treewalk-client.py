@@ -280,7 +280,7 @@ if __name__ == "__main__":
 
 		elif TREEWALK_METHOD == "ls":
 			import subprocess
-			lsCMD = ['ls', '-RFAwf', ROOTDIR_LOCAL]
+			lsCMD = ['ls', '-RFAf', ROOTDIR_LOCAL]
 			proc = subprocess.Popen(lsCMD, bufsize=SP_BUFFSIZE, stdout=subprocess.PIPE, close_fds=True)
 
 			dirs = []
