@@ -141,8 +141,8 @@ Create index with just level 1 directories and files, then run background crawls
 
 ```sh
 $ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl --maxdepth 1
-$ pthon diskover.py -i diskover-indexname -a -d /rootpath/to/crawl/dir1 --reindexrecurs --lwalk -q &
-$ pthon diskover.py -i diskover-indexname -a -d /rootpath/to/crawl/dir2 --reindexrecurs --lwalk -q &
+$ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl/dir1 --reindexrecurs --lswalk -q &
+$ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl/dir2 --reindexrecurs --lswalk -q &
 ...
 $ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl --dircalcsonly --maxdcdepth 0
 ```
