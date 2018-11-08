@@ -1,13 +1,14 @@
 # Diskover Change Log
 
-## [1.5.0-rc21] = 2018-11-04
+## [1.5.0-rc21] = 2018-11-08
 ### added
 - much faster dir size updates at end of crawl
-- tree walk client v1.0.11
+- tree walk client v1.0.12
 ### changed
 - dir size calculations are now done by diskover.py process and using size results returned from rq jobs, no longer enqueueing dir calc jobs to bots
 ### fixed
 - bug with tree walk client not sending last batch of dirs
+- bug with tree walk client and not remove trailing slashes from paths causing traceback in diskver.py when updating dir sizes at end of crawl
 
 ## [1.5.0-rc20] = 2018-11-03
 ### NOTE

@@ -23,7 +23,7 @@ try:
 except ImportError:
 	from queue import Queue
 
-version = '1.0.11'
+version = '1.0.12'
 __version__ = version
 
 
@@ -47,6 +47,11 @@ try:
 	TREEWALK_METHOD = sys.argv[5]
 	ROOTDIR_LOCAL = sys.argv[6]
 	ROOTDIR_REMOTE = sys.argv[7]
+	# remove any trailing slash from paths
+	if ROOTDIR_LOCAL != '/':
+		ROOTDIR_LOCAL = ROOTDIR_LOCAL.rstrip(os.path.sep)
+	if ROOTDIR_REMOTE != '/':
+		ROOTDIR_REMOTE = ROOTDIR_REMOTE.rstrip(os.path.sep)
 except IndexError:
 	print("Usage: " + sys.argv[0] + " <host> <port> <batch_size> <num_connections> <treewalk_method> <rootdir_local> <rootdir_remote>")
 	sys.exit(1)
