@@ -134,15 +134,3 @@ maxfilelag = 0.1
 ;api_user = admin
 ; Qumulo api password
 ;api_password = admin
-
-[netapp]
-; Path to Netapp sdk python modules
-;sdk_path = ./netapp-manageability-sdk-9.4/lib/python/NetApp
-; Netapp ONTAP filer
-;filer = 172.16.129.10
-; Netapp virtual server volume
-;vserver =
-; Netapp api user
-;api_user = admin
-; Netapp api password
-;api_password = admin
