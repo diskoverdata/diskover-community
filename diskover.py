@@ -302,14 +302,6 @@ def load_config():
     except ConfigParser.NoOptionError:
         configsettings['adaptivebatch_stepsize'] = 10
     try:
-        configsettings['botlogs'] = config.get('workerbot', 'botlogs')
-    except ConfigParser.NoOptionError:
-        configsettings['botlogs'] = "False"
-    try:
-        configsettings['botlogfiledir'] = config.get('workerbot', 'logfiledir')
-    except ConfigParser.NoOptionError:
-        configsettings['botlogfiledir'] = "/tmp"
-    try:
         configsettings['listener_host'] = \
             config.get('socketlistener', 'host')
     except ConfigParser.NoOptionError:
@@ -1391,6 +1383,9 @@ def treewalk(top, num_sep, level, batchsize, cliargs, reindex_dict, bar):
     It walks the tree and adds tuple of directory and it's items
     to redis queue for rq worker bots to scrape meta and upload
     to ES index after batch size (dir count) has been reached.
+    Each enqueued job gets stored in job proxy object and then gets
+    added to jobs list. Every few seconds the jobs in jobs list are checked
+    for returned values and gets stored in results list.
     """
     from diskover_bot_module import scrape_tree_meta
     if cliargs['lswalk']:
@@ -1398,6 +1393,7 @@ def treewalk(top, num_sep, level, batchsize, cliargs, reindex_dict, bar):
     else:
         from scandir import walk
     jobs = []
+    results = []
     batch = []
     emptydircount = 0
 
@@ -1438,6 +1434,12 @@ def treewalk(top, num_sep, level, batchsize, cliargs, reindex_dict, bar):
             del dirs[:]
             del files[:]
 
+        # check if any jobs have returned results and store in results list
+        for j in jobs:
+            if j.result:
+                results.append(j.result)
+                jobs.remove(j)
+
         # update progress bar
         if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
             try:
@@ -1471,7 +1473,13 @@ def treewalk(top, num_sep, level, batchsize, cliargs, reindex_dict, bar):
             break
         time.sleep(.5)
 
-    return jobs, emptydircount
+    # get jobs returned results and store in results list
+    for j in jobs:
+        while not j.result:
+            time.sleep(1)
+        results.append(j.result)
+
+    return results, emptydircount
 
 
 def crawl_tree(path, cliargs, logger, reindex_dict):
@@ -1530,11 +1538,11 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
         # qumulo api crawl
         if cliargs['qumulo']:
             from diskover_qumulo import qumulo_treewalk
-            jobs, emptydircount = qumulo_treewalk(path, qumulo_ip, qumulo_ses, q_crawl, num_sep, level, batchsize,
+            results, emptydircount = qumulo_treewalk(path, qumulo_ip, qumulo_ses, q_crawl, num_sep, level, batchsize,
                                                   cliargs, reindex_dict, bar)
         # regular crawl using walk
         else:
-            jobs, emptydircount = treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict, bar)
+            results, emptydircount = treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict, bar)
 
         if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
             bar.update(0)
@@ -1542,7 +1550,7 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
 
         logger.info("Finished crawling!")
 
-        return starttime, jobs, emptydircount
+        return starttime, results, emptydircount
 
     except KeyboardInterrupt:
         print("Ctrl-c keyboard interrupt, shutting down...")
@@ -1690,10 +1698,8 @@ def update_dir_sizes():
     logger.info('Updating directory sizes...')
 
     # get all the dirsizes back from the rq job results and store the last results for each path
-    for job in jobs:
-        while not job.result:
-            time.sleep(1)
-        worker_name, sizes = job.result
+    for r in results:
+        worker_name, sizes = r
         try:
             dirsizes_by_worker[worker_name]
         except KeyError:
@@ -2056,7 +2062,7 @@ if __name__ == "__main__":
     pre_crawl_tasks()
 
     # start crawling
-    starttime, jobs, emptydircount = crawl_tree(rootdir_path, cliargs, logger, reindex_dict)
+    starttime, results, emptydircount = crawl_tree(rootdir_path, cliargs, logger, reindex_dict)
 
     post_crawl_tasks()
 

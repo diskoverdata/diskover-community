@@ -137,6 +137,7 @@ def qumulo_api_walk(top, ip, ses):
 
 def qumulo_treewalk(path, ip, ses, q_crawl, num_sep, level, batchsize, cliargs, reindex_dict, bar):
     jobs = []
+    results = []
     batch = []
     emptydircount = 0
 
@@ -171,6 +172,12 @@ def qumulo_treewalk(path, ip, ses, q_crawl, num_sep, level, batchsize, cliargs, 
             del dirs[:]
             del files[:]
 
+        # check if any jobs have returned results and store in results list
+        for j in jobs:
+            if j.result:
+                results.append(j.result)
+                jobs.remove(j)
+
         # update progress bar
         if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
             try:
@@ -204,7 +211,13 @@ def qumulo_treewalk(path, ip, ses, q_crawl, num_sep, level, batchsize, cliargs, 
             break
         time.sleep(.5)
 
-    return jobs, emptydircount
+    # get jobs returned results and store in results list
+    for j in jobs:
+        while not j.result:
+            time.sleep(1)
+        results.append(j.result)
+
+    return results, emptydircount
 
 
 def qumulo_get_dir_meta(worker_name, path, cliargs, reindex_dict, redis_conn):
