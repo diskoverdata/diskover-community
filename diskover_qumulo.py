@@ -249,16 +249,7 @@ def qumulo_get_dir_meta(worker_name, path, cliargs, reindex_dict, redis_conn):
         owner = owners[uid]
     # not in cache
     else:
-        try:
-            owner = pwd.getpwuid(uid).pw_name.split('\\')
-            # remove domain before owner
-            if len(owner) == 2:
-                owner = owner[1]
-            else:
-                owner = owner[0]
-        # if we can't find the owner's user name, use the uid number
-        except (KeyError, TypeError):
-            owner = uid
+        owner = uid
         # store it in cache
         if not uid in uids:
             uids.append(uid)
@@ -271,16 +262,7 @@ def qumulo_get_dir_meta(worker_name, path, cliargs, reindex_dict, redis_conn):
         group = groups[gid]
     # not in cache
     else:
-        try:
-            group = grp.getgrgid(gid).gr_name.split('\\')
-            # remove domain before group
-            if len(group) == 2:
-                group = group[1]
-            else:
-                group = group[0]
-        # if we can't find the group name, use the gid number
-        except (KeyError, TypeError):
-            group = gid
+        group = gid
         # store in cache
         if not gid in gids:
             gids.append(gid)
@@ -390,16 +372,7 @@ def qumulo_get_file_meta(worker_name, path, cliargs, reindex_dict):
         owner = owners[uid]
     # not in cache
     else:
-        try:
-            owner = pwd.getpwuid(uid).pw_name.split('\\')
-            # remove domain before owner
-            if len(owner) == 2:
-                owner = owner[1]
-            else:
-                owner = owner[0]
-        # if we can't find the owner's user name, use the uid number
-        except (KeyError, TypeError):
-            owner = uid
+        owner = uid
         # store it in cache
         if not uid in uids:
             uids.append(uid)
@@ -412,16 +385,7 @@ def qumulo_get_file_meta(worker_name, path, cliargs, reindex_dict):
         group = groups[gid]
     # not in cache
     else:
-        try:
-            group = grp.getgrgid(gid).gr_name.split('\\')
-            # remove domain before group
-            if len(group) == 2:
-                group = group[1]
-            else:
-                group = group[0]
-        # if we can't find the group name, use the gid number
-        except (KeyError, TypeError):
-            group = gid
+        group = gid
         # store in cache
         if not gid in gids:
             gids.append(gid)
