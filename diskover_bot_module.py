@@ -885,12 +885,12 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
                     diritems_files += 1
 
             # update dirsizes
-            dirsizes[root]['filesize'] = dirsize
-            dirsizes[root]['items_files'] = diritems_files
-            dirsizes[root]['items_subdirs'] = diritems_subdirs
-            dirsizes[root]['items'] = diritems_files + diritems_subdirs + 1  # 1 for itself
+            dirsizes[root_path]['filesize'] = dirsize
+            dirsizes[root_path]['items_files'] = diritems_files
+            dirsizes[root_path]['items_subdirs'] = diritems_subdirs
+            dirsizes[root_path]['items'] = diritems_files + diritems_subdirs + 1  # 1 for itself
             # add directory size to all dir paths above
-            p = os.path.sep.join(root.split(os.path.sep)[:-1])
+            p = os.path.sep.join(root_path.split(os.path.sep)[:-1])
             while len(p) >= len(cliargs['rootdir']):
                 try:
                     dirsizes[p]
