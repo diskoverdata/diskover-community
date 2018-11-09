@@ -819,10 +819,18 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
     totalcrawltime = 0
     statsembeded = False
 
+    path_count = 0
     for path in paths:
+        path_count += 1
         starttime = time.time()
         root, dirs, files = path
-        dirsizes[root] = {}
+        if path_count == 1:
+            if type(root) is tuple:
+                statsembeded = True
+        if statsembeded:
+            dirsizes[root[0]] = {}
+        else:
+            dirsizes[root] = {}
         dirsize = 0
         diritems_files = 0
         diritems_subdirs = len(dirs)
@@ -835,10 +843,10 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
             dmeta = qumulo_get_dir_meta(worker, root, cliargs, reindex_dict, redis_conn)
         else:
             # check if stats embeded in data from diskover tree walk client
-            if type(root) is tuple:
-                statsembeded = True
-                root_path = root[0]
+            if statsembeded:
                 dmeta = get_dir_meta(worker, root, cliargs, reindex_dict, statsembeded=True)
+                root = root[0]
+                root_path = root
             else:
                 root_path = root
                 dmeta = get_dir_meta(worker, root_path, cliargs, reindex_dict, statsembeded=False)
@@ -865,25 +873,20 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
                 totalcrawltime += elapsed
         # get meta off disk since times different in Redis than on disk
         elif dmeta:
-            # check if meta for files embeded
-            if statsembeded:
-                for file in files:
+            for file in files:
+                if qumulo:
+                    fmeta = qumulo_get_file_meta(worker, file, cliargs, reindex_dict)
+                elif statsembeded:
                     fmeta = get_file_meta(worker, file, cliargs, reindex_dict, statsembeded=True)
-                    if fmeta:
-                        tree_files.append(fmeta)
-            else:
-                for file in files:
-                    if qumulo:
-                        fmeta = qumulo_get_file_meta(worker, file, cliargs, reindex_dict)
-                    else:
-                        fmeta = get_file_meta(worker, os.path.join(root_path, file), cliargs,
-                                             reindex_dict, statsembeded=False)
-                    if fmeta:
-                        tree_files.append(fmeta)
-                        # add filesize to dirsize
-                        dirsize += fmeta['filesize']
-                        # add to diritems_files count
-                        diritems_files += 1
+                else:
+                    fmeta = get_file_meta(worker, os.path.join(root_path, file), cliargs,
+                                         reindex_dict, statsembeded=False)
+                if fmeta:
+                    tree_files.append(fmeta)
+                    # add filesize to dirsize
+                    dirsize += fmeta['filesize']
+                    # add to diritems_files count
+                    diritems_files += 1
 
             # update dirsizes
             dirsizes[root]['filesize'] = dirsize

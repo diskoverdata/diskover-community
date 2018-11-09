@@ -3,7 +3,7 @@
 ## [1.5.0-rc21] = 2018-11-09
 ### added
 - much faster dir size updates at end of crawl
-- tree walk client v1.0.12
+- tree walk client v1.0.13 - added cli args, see -h for help
 - redis ttl (key/results expiry time) setting to diskover.cfg.sample, copy to your config file and set for your env
 ### changed
 - dir size calculations are now done by diskover.py process and using size results returned from rq jobs, no longer enqueueing dir calc jobs to bots
@@ -13,6 +13,7 @@
 - bug with tree walk client and not remove trailing slashes from paths causing traceback in diskver.py when updating dir sizes at end of crawl
 - bug with tree walk client and using ls walk method, ls: invalid line width: f
 - bug with diskover and using --lswalk, ls: invalid line width: f
+- bug with treewalk client and metaspider crawl method
 
 ## [1.5.0-rc20] = 2018-11-03
 ### NOTE
