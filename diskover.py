@@ -1683,6 +1683,7 @@ def tune_es_for_crawl(defaults=False):
 
 
 def update_dir_sizes():
+    from diskover_bot_module import purge_dirsizes
     dirsizes_by_worker = {}
     dirsizes = {}
 
@@ -1745,6 +1746,11 @@ def update_dir_sizes():
             i += 1
             bar.update(i)
         index_bulk_add(es, bulkdocs, config, cliargs)
+
+    # purge dirsizes from all workers
+    workers = SimpleWorker.all(connection=redis_conn)
+    for i in range(len(workers)):
+        q.enqueue(purge_dirsizes)
 
 
 def post_crawl_tasks():

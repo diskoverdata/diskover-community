@@ -7,7 +7,6 @@
 - redis ttl (key/results expiry time) setting to diskover.cfg.sample, copy to your config file and set for your env
 ### changed
 - dir size calculations are now done by diskover.py process and using size results returned from rq jobs, no longer enqueueing dir calc jobs to bots
-- bots now only store path sizes in memory for current job, results are returned to diskover.py at end of job
 ### fixed
 - bug with tree walk client not sending last batch of dirs
 - bug with tree walk client and not remove trailing slashes from paths causing traceback in diskver.py when updating dir sizes at end of crawl
