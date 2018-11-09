@@ -200,7 +200,10 @@ def socket_thread_handler_twc(threadnum, q, q_kill, lock, rootdir, num_sep, leve
                         if j.result:
                             lock.acquire(True)
                             results.append(j.result)
-                            jobs.remove(j)
+                            try:
+                                jobs.remove(j)
+                            except ValueError:
+                                pass
                             lock.release()
 
                 if len(batch) > 0:

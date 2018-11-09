@@ -1536,9 +1536,9 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
         # check for listenlwc socket cli flag to start socket server
         if cliargs['listentwc']:
             from diskover_socket_server import start_socket_server_twc
-            starttime, jobs, emptydircount = start_socket_server_twc(rootdir_path, num_sep, level, batchsize,
+            starttime, results, emptydircount = start_socket_server_twc(rootdir_path, num_sep, level, batchsize,
                                                                      cliargs, logger, reindex_dict)
-            return starttime, jobs, emptydircount
+            return starttime, results, emptydircount
 
         starttime = time.time()
 
@@ -1800,6 +1800,8 @@ def post_crawl_tasks():
 
 
 def pre_crawl_tasks():
+    from diskover_bot_module import purge_dirsizes
+
     # create Elasticsearch index
     index_create(cliargs['index'])
 
@@ -1820,6 +1822,11 @@ def pre_crawl_tasks():
             qumulo_add_diskspace(es, cliargs['index'], rootdir_path, qumulo_ip, qumulo_ses, logger)
         else:
             add_diskspace(cliargs['index'], logger, rootdir_path)
+
+    # purge dirsizes from all workers
+    workers = SimpleWorker.all(connection=redis_conn)
+    for i in range(len(workers)):
+        q.enqueue(purge_dirsizes)
 
 
 # load config file into config dictionary
