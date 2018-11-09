@@ -170,7 +170,7 @@ def socket_thread_handler_twc(threadnum, q, q_kill, lock, rootdir, num_sep, leve
                         rootpath = root[0]
                     else:
                         rootpath = root
-                    if not dir_excluded(rootpath, config, cliargs['verbose']):
+                    if not dir_excluded(rootpath, config, cliargs):
                         batch.append((root, dirs, files))
                         batch_len = len(batch)
                         if batch_len >= batchsize:

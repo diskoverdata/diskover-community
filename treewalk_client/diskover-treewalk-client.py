@@ -18,11 +18,11 @@ import socket
 import time
 import threading
 import struct
-import argparse
 try:
 	from Queue import Queue
 except ImportError:
 	from queue import Queue
+from optparse import OptionParser
 
 version = '1.0.13'
 __version__ = version
@@ -33,48 +33,43 @@ EXCLUDED_DIRS = ['.snapshot', '.zfs']
 # Subprocess buffer size for ls and lsthreaded treewalk method
 SP_BUFFSIZE = -1
 
-
-parser = argparse.ArgumentParser()
-parser.add_argument("-p", "--proxyhost", metavar="HOST", required=True,
+parser = OptionParser(version="diskover tree walk client v % s" % version)
+parser.add_option("-p", "--proxyhost", metavar="HOST",
 					help="Hostname or IP of diskover proxy socket server")
-parser.add_argument("-P", "--port", metavar="PORT", default=9998, type=int,
+parser.add_option("-P", "--port", metavar="PORT", default=9998, type=int,
 					help="Port for diskover proxy socket server (default: 9998)")
-parser.add_argument("-b", "--batchsize", metavar="BATCH_SIZE", default=50, type=int,
+parser.add_option("-b", "--batchsize", metavar="BATCH_SIZE", default=50, type=int,
 					help="Batchsize (num of directories) to send to diskover proxy (default: 50)")
-parser.add_argument("-n", "--numconn", metavar="NUM_CONNECTIONS", default=5, type=int,
+parser.add_option("-n", "--numconn", metavar="NUM_CONNECTIONS", default=5, type=int,
 					help="Number of tcp connections to use (default: 5)")
-parser.add_argument("-t", "--twmethod", metavar="TREEWALK_METHOD", default="scandir",
+parser.add_option("-t", "--twmethod", metavar="TREEWALK_METHOD", default="scandir",
 					help="Tree walk method to use. Options are: oswalk, scandir, ls, \
 						lsthreaded, metaspider (default: scandir)")
-parser.add_argument("-r", "--rootdirlocal", metavar="ROOTDIR_LOCAL", required=True,
+parser.add_option("-r", "--rootdirlocal", metavar="ROOTDIR_LOCAL",
 					help="Local path on storage to crawl from")
-parser.add_argument("-R", "--rootdirremote", metavar="ROOTDIR_REMOTE", required=True,
+parser.add_option("-R", "--rootdirremote", metavar="ROOTDIR_REMOTE",
 					help="Mount point directory for diskover and bots that is same location as rootdirlocal")
-parser.add_argument("--metaspiderthreads", metavar="NUM_SPIDERS", default=8, type=int,
+parser.add_option("--metaspiderthreads", metavar="NUM_SPIDERS", default=8, type=int,
 					help="Number of threads for metaspider treewalk method (default: 8)")
-parser.add_argument("--lsthreads", metavar="NUM_LS_THREADS", default=8, type=int,
+parser.add_option("--lsthreads", metavar="NUM_LS_THREADS", default=8, type=int,
 					help="Number of threads for lsthreaded treewalk method (default: 8)")
-parser.add_argument("-V", "--version", action="version",
-					version="diskover tree walk client v%s" % version,
-					help="Prints version and exits")
-args = parser.parse_args()
+(options, args) = parser.parse_args()
+options = vars(options)
 
-args = vars(args)
-
-HOST = args['proxyhost']
-PORT =  args['port']
-BATCH_SIZE = args['batchsize']
-NUM_CONNECTIONS = args['numconn']
-TREEWALK_METHOD = args['twmethod']
-ROOTDIR_LOCAL = args['rootdirlocal']
-ROOTDIR_REMOTE = args['rootdirremote']
+HOST = options['proxyhost']
+PORT =  options['port']
+BATCH_SIZE = options['batchsize']
+NUM_CONNECTIONS = options['numconn']
+TREEWALK_METHOD = options['twmethod']
+ROOTDIR_LOCAL = options['rootdirlocal']
+ROOTDIR_REMOTE = options['rootdirremote']
 # remove any trailing slash from paths
 if ROOTDIR_LOCAL != '/':
 	ROOTDIR_LOCAL = ROOTDIR_LOCAL.rstrip(os.path.sep)
 if ROOTDIR_REMOTE != '/':
 	ROOTDIR_REMOTE = ROOTDIR_REMOTE.rstrip(os.path.sep)
-NUM_SPIDERS = args['metaspiderthreads']
-NUM_LS_THREADS = args['lsthreads']
+NUM_SPIDERS = options['metaspiderthreads']
+NUM_LS_THREADS = options['lsthreads']
 
 
 q = Queue()
