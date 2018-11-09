@@ -44,7 +44,7 @@ parser.add_argument("-b", "--batchsize", metavar="BATCH_SIZE", default=50, type=
 parser.add_argument("-n", "--numconn", metavar="NUM_CONNECTIONS", default=5, type=int,
 					help="Number of tcp connections to use (default: 5)")
 parser.add_argument("-t", "--twmethod", metavar="TREEWALK_METHOD", default="scandir",
-					help="Tree walk method to use. Options are: oswalk, scandir, lswalk, \
+					help="Tree walk method to use. Options are: oswalk, scandir, ls, \
 						lsthreaded, metaspider (default: scandir)")
 parser.add_argument("-r", "--rootdirlocal", metavar="ROOTDIR_LOCAL", required=True,
 					help="Local path on storage to crawl from")
