@@ -85,13 +85,6 @@ maxsize = 500
 ; when adjusting batch size use this for +/- (increases when queue is 0, decreases when > 0)
 stepsize = 10
 
-[workerbot]
-; enable bot logs (True or False), bot logs will slow down crawl, use for debugging only
-botlogs = False
-; log file directory to store worker logs
-; log files are named diskover_bot_worker_<workername>_<time>_log
-logfiledir = /tmp
-
 [paths]
 ; used by diskover socket server
 ; path to diskover.py (default is ./diskover.py)
