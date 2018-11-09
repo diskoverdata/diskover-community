@@ -33,8 +33,9 @@ import struct
 socket_tasks = {}
 # list of socket client
 clientlist = []
-# list to hold rq job results
+# lists to hold rq jobs proxy objects and their results
 jobs = []
+results = []
 
 emptydircount = 0
 
@@ -130,6 +131,7 @@ def socket_thread_handler_twc(threadnum, q, q_kill, lock, rootdir, num_sep, leve
     client connections are enqueued to redis rq queue.
     """
     global jobs
+    global results
     global emptydircount
 
     while True:
@@ -191,6 +193,15 @@ def socket_thread_handler_twc(threadnum, q, q_kill, lock, rootdir, num_sep, leve
                     else:  # directory excluded
                         del dirs[:]
                         del files[:]
+
+                    # check if any jobs have returned results and store in results list
+                    jobs_temp = jobs[:]
+                    for j in jobs_temp:
+                        if j.result:
+                            lock.acquire(True)
+                            results.append(j.result)
+                            jobs.remove(j)
+                            lock.release()
 
                 if len(batch) > 0:
                     # add any remaining in batch to queue
@@ -271,6 +282,7 @@ def start_socket_server_twc(rootdir_path, num_sep, level, batchsize, cliargs, lo
     """
     global clientlist
     global jobs
+    global results
     global emptydircount
 
     # set thread/connection limit
@@ -306,7 +318,12 @@ def start_socket_server_twc(rootdir_path, num_sep, level, batchsize, cliargs, lo
                 logger.info("Received signal to shutdown socket server")
                 q.join()
                 serversock.close()
-                return starttime, jobs, emptydircount
+                # get jobs returned results and store in results list
+                for j in jobs:
+                    while not j.result:
+                        time.sleep(1)
+                    results.append(j.result)
+                return starttime, results, emptydircount
             logger.info("Waiting for connection, listening on %s port %s TCP (ctrl-c to shutdown)"
                         % (str(host), str(port)))
             # establish connection

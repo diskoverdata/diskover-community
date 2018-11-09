@@ -1435,7 +1435,8 @@ def treewalk(top, num_sep, level, batchsize, cliargs, reindex_dict, bar):
             del files[:]
 
         # check if any jobs have returned results and store in results list
-        for j in jobs:
+        jobs_temp = jobs[:]
+        for j in jobs_temp:
             if j.result:
                 results.append(j.result)
                 jobs.remove(j)
