@@ -40,8 +40,6 @@ gids = []
 owners = {}
 groups = {}
 
-dirsizes = {}
-
 
 def parse_cliargs_bot():
     """This is the parse CLI arguments function.
@@ -807,8 +805,8 @@ def get_metadata(path, cliargs):
 
 
 def scrape_tree_meta(paths, cliargs, reindex_dict):
-    global dirsizes
     worker = get_worker_name()
+    dirsizes = {}
     tree_dirs = []
     tree_files = []
     if cliargs['qumulo']:
@@ -1105,8 +1103,3 @@ def calc_hot_dirs(dirlist, cliargs):
         doclist.append(d)
 
     index_bulk_add(es, doclist, config, cliargs)
-
-
-def purge_dirsizes():
-    global dirsizes
-    dirsizes = {}

@@ -274,6 +274,10 @@ def load_config():
     except ConfigParser.NoOptionError:
         configsettings['redis_rq_timeout'] = 86400
     try:
+        configsettings['redis_ttl'] = int(config.get('redis', 'ttl'))
+    except ConfigParser.NoOptionError:
+        configsettings['redis_ttl'] = 500
+    try:
         configsettings['redis_queue'] = config.get('redis', 'queue')
     except ConfigParser.NoOptionError:
         configsettings['redis_queue'] = "diskover"
@@ -1330,7 +1334,7 @@ def calc_dir_sizes(cliargs, logger, path=None):
 
         if path:
             for dirlist in index_get_docs_generator(cliargs, logger, path=path):
-                q_calc.enqueue(calc_dir_size, args=(dirlist, cliargs,))
+                q_calc.enqueue(calc_dir_size, args=(dirlist, cliargs,), result_ttl=config['redis_ttl'])
                 jobcount += 1
                 # update progress bar
                 if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
@@ -1342,7 +1346,7 @@ def calc_dir_sizes(cliargs, logger, path=None):
                         bar.update(0)
         else:
             for dirlist in index_get_docs_generator(cliargs, logger, sort=True, maxdepth=maxdepth):
-                q_calc.enqueue(calc_dir_size, args=(dirlist, cliargs,))
+                q_calc.enqueue(calc_dir_size, args=(dirlist, cliargs,), result_ttl=config['redis_ttl'])
                 jobcount += 1
                 # update progress bar
                 if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
@@ -1415,7 +1419,8 @@ def treewalk(top, num_sep, level, batchsize, cliargs, reindex_dict, bar):
             batch.append((root, dirlist, filelist))
             batch_len = len(batch)
             if batch_len >= batchsize:
-                job = q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,))
+                job = q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,),
+                                      result_ttl=config['redis_ttl'])
                 jobs.append(job)
                 del batch[:]
                 if cliargs['adaptivebatch']:
@@ -1443,7 +1448,7 @@ def treewalk(top, num_sep, level, batchsize, cliargs, reindex_dict, bar):
                 bar.update(0)
 
     # add any remaining in batch to queue
-    job = q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,))
+    job = q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,), result_ttl=config['redis_ttl'])
     jobs.append(job)
 
     # wait for queue to be empty and update progress bar
@@ -1563,13 +1568,13 @@ def hotdirs():
     for d in dirlist:
         dirbatch.append(d)
         if len(dirbatch) >= batchsize:
-            q.enqueue(calc_hot_dirs, args=(dirbatch, cliargs,))
+            q.enqueue(calc_hot_dirs, args=(dirbatch, cliargs,), result_ttl=config['redis_ttl'])
             del dirbatch[:]
             if cliargs['adaptivebatch']:
                 batchsize = adaptive_batch(q, cliargs, batchsize)
 
     # add any remaining in batch to queue
-    q.enqueue(calc_hot_dirs, args=(dirbatch, cliargs,))
+    q.enqueue(calc_hot_dirs, args=(dirbatch, cliargs,), result_ttl=config['redis_ttl'])
 
     if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
         bar = progress_bar('Checking')
@@ -1678,7 +1683,6 @@ def tune_es_for_crawl(defaults=False):
 
 
 def update_dir_sizes():
-    from diskover_bot_module import purge_dirsizes
     dirsizes_by_worker = {}
     dirsizes = {}
 
@@ -1741,11 +1745,6 @@ def update_dir_sizes():
             i += 1
             bar.update(i)
         index_bulk_add(es, bulkdocs, config, cliargs)
-
-    # purge dirsizes from all workers
-    workers = SimpleWorker.all(connection=redis_conn)
-    for i in range(len(workers)):
-        q.enqueue(purge_dirsizes)
 
 
 def post_crawl_tasks():
@@ -1916,11 +1915,11 @@ if __name__ == "__main__":
         # look in index2 for all directory docs with tags and add to queue
         dirlist = index_get_docs(cliargs, logger, doctype='directory', copytags=True, index=cliargs['copytags'][0])
         for path in dirlist:
-            q.enqueue(tag_copier, args=(path, cliargs,))
+            q.enqueue(tag_copier, args=(path, cliargs,), result_ttl=config['redis_ttl'])
         # look in index2 for all file docs with tags and add to queue
         filelist = index_get_docs(cliargs, logger, doctype='file', copytags=True, index=cliargs['copytags'][0])
         for path in filelist:
-            q.enqueue(tag_copier, args=(path, cliargs,))
+            q.enqueue(tag_copier, args=(path, cliargs,), result_ttl=config['redis_ttl'])
         if len(dirlist) == 0 and len(filelist) == 0:
             logger.info('No tags to copy')
         else:

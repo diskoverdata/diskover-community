@@ -69,6 +69,8 @@ dirtimesttl = 604800
 db = 0
 ; rq default time out in sec (default 86400)
 timeout = 86400
+; rq default ttl for key/results (default 500)
+ttl = 500
 ; rq queue names to use (default is diskover, diskover_crawl, diskover_calcdir)
 queue = diskover
 queuecrawl = diskover_crawl
@@ -131,4 +133,16 @@ maxfilelag = 0.1
 ; Qumulo api user
 ;api_user = admin
 ; Qumulo api password
+;api_password = admin
+
+[netapp]
+; Path to Netapp sdk python modules
+;sdk_path = ./netapp-manageability-sdk-9.4/lib/python/NetApp
+; Netapp ONTAP filer
+;filer = 172.16.129.10
+; Netapp virtual server volume
+;vserver =
+; Netapp api user
+;api_user = admin
+; Netapp api password
 ;api_password = admin

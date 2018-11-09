@@ -152,7 +152,8 @@ def qumulo_treewalk(path, ip, ses, q_crawl, num_sep, level, batchsize, cliargs, 
             batch.append((root, files))
             batch_len = len(batch)
             if batch_len >= batchsize:
-                job = q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,))
+                job = q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,),
+                                      result_ttl=config['redis_ttl'])
                 jobs.append(job)
                 del batch[:]
                 if cliargs['adaptivebatch']:
@@ -180,7 +181,7 @@ def qumulo_treewalk(path, ip, ses, q_crawl, num_sep, level, batchsize, cliargs, 
                 bar.update(0)
 
     # add any remaining in batch to queue
-    job = q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,))
+    job = q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,), result_ttl=config['redis_ttl'])
     jobs.append(job)
 
     # wait for queue to be empty and update progress bar

@@ -273,7 +273,7 @@ def dupes_finder(es, q, cliargs, logger):
 
     # add hash keys to Queue
     for bucket in res['aggregations']['dupe_filehash']['buckets']:
-        q.enqueue(dupes_process_hashkey, args=(bucket['key'], cliargs,))
+        q.enqueue(dupes_process_hashkey, args=(bucket['key'], cliargs,), result_ttl=config['redis_ttl'])
 
     logger.info('All file hashes have been enqueued')
 
