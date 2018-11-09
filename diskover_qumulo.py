@@ -243,7 +243,7 @@ def qumulo_get_dir_meta(worker_name, path, cliargs, reindex_dict, redis_conn):
     indextime_utc = datetime.utcnow().isoformat()
     # get user id of owner
     try:
-        uid = int(path['owner'])
+        uid = path['owner']
         # try to get owner user name
         # first check cache
         if uid in uids:
@@ -268,7 +268,7 @@ def qumulo_get_dir_meta(worker_name, path, cliargs, reindex_dict, redis_conn):
         owner = path['owner']
     # get group id
     try:
-        gid = int(path['group'])
+        gid = path['group']
         # try to get group name
         # first check cache
         if gid in gids:
@@ -389,7 +389,7 @@ def qumulo_get_file_meta(worker_name, path, cliargs, reindex_dict):
     # get absolute path of parent directory
     parentdir = os.path.abspath(os.path.join(path['path'], os.pardir))
     # get user id of owner
-    uid = int(path['owner'])
+    uid = path['owner']
     # try to get owner user name
     # first check cache
     if uid in uids:
@@ -411,7 +411,7 @@ def qumulo_get_file_meta(worker_name, path, cliargs, reindex_dict):
             uids.append(uid)
             owners[uid] = owner
     # get group id
-    gid = int(path['group'])
+    gid = path['group']
     # try to get group name
     # first check cache
     if gid in gids:
