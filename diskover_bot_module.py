@@ -824,32 +824,28 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
         path_count += 1
         starttime = time.time()
         root, dirs, files = path
-        if path_count == 1:
-            if type(root) is tuple:
-                statsembeded = True
-        if statsembeded:
-            dirsizes[root[0]] = {}
-        else:
-            dirsizes[root] = {}
         dirsize = 0
         diritems_files = 0
         diritems_subdirs = len(dirs)
-
+        if path_count == 1:
+            if type(root) is tuple:
+                statsembeded = True
         if qumulo:
             if root['path'] != '/':
                 root_path = root['path'].rstrip(os.path.sep)
             else:
                 root_path = root['path']
             dmeta = qumulo_get_dir_meta(worker, root, cliargs, reindex_dict, redis_conn)
+        # check if stats embeded in data from diskover tree walk client
+        elif statsembeded:
+            root_path = root[0]
+            dmeta = get_dir_meta(worker, root, cliargs, reindex_dict, statsembeded=True)
         else:
-            # check if stats embeded in data from diskover tree walk client
-            if statsembeded:
-                dmeta = get_dir_meta(worker, root, cliargs, reindex_dict, statsembeded=True)
-                root = root[0]
-                root_path = root
-            else:
-                root_path = root
-                dmeta = get_dir_meta(worker, root_path, cliargs, reindex_dict, statsembeded=False)
+            root_path = root
+            dmeta = get_dir_meta(worker, root_path, cliargs, reindex_dict, statsembeded=False)
+
+        dirsizes[root_path] = {}
+
         if dmeta == "sametimes":
             # fetch meta data for directory and all it's files (doc sources) from index2 since
             # directory times haven't changed
