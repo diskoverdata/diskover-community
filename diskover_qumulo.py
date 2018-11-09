@@ -354,7 +354,7 @@ def qumulo_get_file_meta(worker_name, path, cliargs, reindex_dict):
 
     # check if file is in exluded_files list
     extension = os.path.splitext(filename)[1][1:].strip().lower()
-    if file_excluded(filename, extension, path['path'], cliargs['verbose']):
+    if file_excluded(filename, extension):
         return None
 
     # get file size (bytes)
