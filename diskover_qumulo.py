@@ -150,7 +150,7 @@ def qumulo_treewalk(path, ip, ses, q_crawl, num_sep, level, batchsize, cliargs, 
         else:
             root_path = root['path']
         if not dir_excluded(root_path, config, cliargs['verbose']):
-            batch.append((root, files))
+            batch.append((root, dirs, files))
             batch_len = len(batch)
             if batch_len >= batchsize:
                 job = q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,),

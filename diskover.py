@@ -1050,6 +1050,20 @@ def dir_excluded(path, config, verbose):
         if verbose:
             logger.info('Skipping (excluded dir) %s', path)
         return True
+    # check if using lswalk and check entire path
+    if cliargs['lswalk']:
+        path_dirs = path.split(os.path.sep)
+        for d in path_dirs:
+            # skip any dirs which start with . (dot) and in excluded_dirs
+            if d.startswith('.') and u'.*' in config['excluded_dirs']:
+                if verbose:
+                    logger.info('Skipping (.* dir) %s', path)
+                return True
+            # skip any dirs in excluded_dirs
+            if d in config['excluded_dirs']:
+                if verbose:
+                    logger.info('Skipping (excluded dir) %s', path)
+                return True
     # skip any dirs that are found in reg exp checks including wildcard searches
     found_dir = False
     found_path = False

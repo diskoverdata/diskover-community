@@ -14,6 +14,8 @@
 - bug with tree walk client and using ls walk method, ls: invalid line width: f
 - bug with diskover and using --lswalk, ls: invalid line width: f
 - bug with treewalk client and metaspider crawl method
+- bug with lswalk and directory excludes
+- bug with qumulo tree walk
 
 ## [1.5.0-rc20] = 2018-11-03
 ### NOTE

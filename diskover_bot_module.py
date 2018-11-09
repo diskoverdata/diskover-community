@@ -1111,4 +1111,4 @@ def calc_hot_dirs(dirlist, cliargs):
 
 def purge_dirsizes():
     global dirsizes
-    dirsizes = {}
+    dirsizes.clear()
