@@ -1034,7 +1034,7 @@ def add_crawl_stats(es, index, path, crawltime, state):
     es.index(index=index, doc_type='crawlstat', body=data)
 
 
-def dir_excluded(path, config, verbose):
+def dir_excluded(path, config, cliargs):
     """Return True if path in excluded_dirs set,
     False if not in the list"""
     # return if directory in included list (whitelist)
@@ -1042,12 +1042,12 @@ def dir_excluded(path, config, verbose):
         return False
     # skip any dirs which start with . (dot) and in excluded_dirs
     if os.path.basename(path).startswith('.') and u'.*' in config['excluded_dirs']:
-        if verbose:
+        if cliargs['verbose']:
             logger.info('Skipping (.* dir) %s', path)
         return True
     # skip any dirs in excluded_dirs
     if os.path.basename(path) in config['excluded_dirs'] or path in config['excluded_dirs']:
-        if verbose:
+        if cliargs['verbose']:
             logger.info('Skipping (excluded dir) %s', path)
         return True
     # check if using lswalk and check entire path
@@ -1056,12 +1056,12 @@ def dir_excluded(path, config, verbose):
         for d in path_dirs:
             # skip any dirs which start with . (dot) and in excluded_dirs
             if d.startswith('.') and u'.*' in config['excluded_dirs']:
-                if verbose:
+                if cliargs['verbose']:
                     logger.info('Skipping (.* dir) %s', path)
                 return True
             # skip any dirs in excluded_dirs
             if d in config['excluded_dirs']:
-                if verbose:
+                if cliargs['verbose']:
                     logger.info('Skipping (excluded dir) %s', path)
                 return True
     # skip any dirs that are found in reg exp checks including wildcard searches
@@ -1103,7 +1103,7 @@ def dir_excluded(path, config, verbose):
                 break
 
     if found_dir or found_path:
-        if verbose:
+        if cliargs['verbose']:
             logger.info('Skipping (excluded dir) %s', path)
         return True
 
@@ -1412,7 +1412,7 @@ def treewalk(top, num_sep, level, batchsize, cliargs, reindex_dict, bar):
     emptydircount = 0
 
     for root, dirs, files in walk(top):
-        if not dir_excluded(root, config, cliargs['verbose']):
+        if not dir_excluded(root, config, cliargs):
             # check for symlinks
             dirlist = []
             filelist = []
@@ -2045,7 +2045,7 @@ if __name__ == "__main__":
     if rootdir_path != '/':
         rootdir_path = rootdir_path.rstrip(os.path.sep)
     # check exclude
-    if dir_excluded(rootdir_path, config, cliargs['verbose']):
+    if dir_excluded(rootdir_path, config, cliargs):
         logger.info("Directory in exclude list, exiting")
         sys.exit(0)
     cliargs['rootdir'] = rootdir_path

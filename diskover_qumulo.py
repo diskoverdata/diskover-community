@@ -149,7 +149,7 @@ def qumulo_treewalk(path, ip, ses, q_crawl, num_sep, level, batchsize, cliargs, 
             root_path = root['path'].rstrip(os.path.sep)
         else:
             root_path = root['path']
-        if not dir_excluded(root_path, config, cliargs['verbose']):
+        if not dir_excluded(root_path, config, cliargs):
             batch.append((root, dirs, files))
             batch_len = len(batch)
             if batch_len >= batchsize:
