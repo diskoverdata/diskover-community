@@ -79,6 +79,8 @@ NUM_LS_THREADS = options['lsthreads']
 q = Queue()
 connections = []
 
+totaldirs = 0
+
 
 def send_one_message(sock, data):
 	length = len(data)
@@ -236,11 +238,16 @@ if __name__ == "__main__":
 				if len(packet) >= BATCH_SIZE:
 					q.put(pickle.dumps(packet))
 					del packet [:]
+
 				dircount += 1
+				totaldirs += 1
 				if time.time() - timestamp >= 2:
-					print("walked %s directories in 2 seconds" % dircount)
+					elapsed = round(time.time() - timestamp, 3)
+					dirspersec = round(dircount / elapsed, 3)
+					print("walked %s directories in 2 seconds (%s dirs/sec)" % (dircount, dirspersec))
 					timestamp = time.time()
 					dircount = 0
+
 			q.put(pickle.dumps(packet))
 
 		elif TREEWALK_METHOD == "metaspider":
@@ -260,6 +267,8 @@ if __name__ == "__main__":
 				t.daemon = True
 				t.start()
 
+			timestamp = time.time()
+			dircount = 0
 			for root, dirs, files in walk(ROOTDIR_LOCAL):
 				if os.path.basename(root) in EXCLUDED_DIRS:
 					del dirs[:]
@@ -283,6 +292,16 @@ if __name__ == "__main__":
 				if len(packet) >= BATCH_SIZE:
 					q.put(pickle.dumps(packet))
 					del packet[:]
+
+				dircount += 1
+				totaldirs += 1
+				if time.time() - timestamp >= 2:
+					elapsed = round(time.time() - timestamp, 3)
+					dirspersec = round(dircount / elapsed, 3)
+					print("walked %s directories in 2 seconds (%s dirs/sec)" % (dircount, dirspersec))
+					timestamp = time.time()
+					dircount = 0
+
 			q.put(pickle.dumps(packet))
 
 		elif TREEWALK_METHOD == "lsthreaded":
@@ -318,6 +337,8 @@ if __name__ == "__main__":
 			dirs = []
 			nondirs = []
 			root = ROOTDIR_LOCAL.replace(ROOTDIR_LOCAL, ROOTDIR_REMOTE)
+			timestamp = time.time()
+			dircount = 0
 			while True:
 				line = proc.stdout.readline().decode('utf-8')
 				if line != '':
@@ -333,6 +354,14 @@ if __name__ == "__main__":
 						del dirs[:]
 						del nondirs[:]
 						root = newroot
+						dircount += 1
+						totaldirs += 1
+						if time.time() - timestamp >= 2:
+							elapsed = round(time.time() - timestamp, 3)
+							dirspersec = round(dircount / elapsed, 3)
+							print("walked %s directories in 2 seconds (%s dirs/sec)" % (dircount, dirspersec))
+							timestamp = time.time()
+							dircount = 0
 					else:
 						items = line.split('\n')
 						for entry in items:
@@ -354,22 +383,34 @@ if __name__ == "__main__":
 
 		q.join()
 
-		print("Finished tree walking, elapsed time %s sec" % (round(time.time() - starttime, 3)))
+		elapsed = round(time.time() - starttime, 3)
+		dirspersec = round(totaldirs / elapsed, 3)
+		print("Finished tree walking, elapsed time %s sec, dirs walked %s (%s dirs/sec)" %
+			  (elapsed, totaldirs, dirspersec))
 
 		for conn in connections:
 			print('closing connection', conn.getsockname())
 			conn.close()
 
-		time.sleep(2)
-		clientsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		clientsock.connect((HOST, PORT))
-		send_one_message(clientsock, b'SIGKILL')
-		clientsock.close()
-		time.sleep(2)
-		clientsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		clientsock.connect((HOST, PORT))
-		send_one_message(clientsock, b'')
-		clientsock.close()
+		# send kill signal to diskover proxy to trigger dir size updates
+		n = 1
+		while n <= 3:
+			try:
+				time.sleep(2)
+				clientsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+				clientsock.connect((HOST, PORT))
+				send_one_message(clientsock, b'SIGKILL')
+				clientsock.close()
+				time.sleep(2)
+				clientsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+				clientsock.connect((HOST, PORT))
+				send_one_message(clientsock, b'')
+				clientsock.close()
+			except socket.error:
+				print("diskover proxy received shutdown signal, exiting client")
+				sys.exit(0)
+			time.sleep(2)
+			n += 1
 
 	except KeyboardInterrupt:
 		print("Ctrl-c keyboard interrupt, exiting...")
