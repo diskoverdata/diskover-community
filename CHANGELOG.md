@@ -3,6 +3,7 @@
 ## [1.5.0-rc22] = 2018-11-11
 ### changed
 - tree walk client v1.0.14
+- removed lswalk from diskover and ls, lsthreaded from tree walk client
 ### fixed
 - memory issues with storing dir sizes and updating dir sizes at end of crawl
 - bugs with unicode when client running python2 and server running python3

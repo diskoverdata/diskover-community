@@ -166,35 +166,16 @@ def socket_thread_handler_twc(threadnum, q, q_kill, lock, rootdir, num_sep, leve
                         excdircount += 1
                         lock.release()
                         continue
-                    # check if meta stat data has been embeded in the data from client
-                    if type(root) is tuple:
-                        rootpath = root[0]
-                    else:
-                        rootpath = root
-                    if not dir_excluded(rootpath, config, cliargs):
-                        batch.append((root, dirs, files))
-                        batch_len = len(batch)
-                        if batch_len >= batchsize:
-                            job = q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,))
-                            lock.acquire(True)
-                            jobs.append(job)
-                            lock.release()
-                            del batch[:]
-                            if cliargs['adaptivebatch']:
-                                batchsize = adaptive_batch(q_crawl, cliargs, batchsize)
-
-                        # check if at maxdepth level and delete dirs/files lists to not
-                        # descend further down the tree
-                        if cliargs['maxdepth']:
-                            num_sep_this = rootpath.count(os.path.sep)
-                            if num_sep + level <= num_sep_this:
-                                del dirs[:]
-                                del files[:]
-
-                    else:  # directory excluded
-                        del dirs[:]
-                        del files[:]
-                        excdircount += 1
+                    batch.append((root, dirs, files))
+                    batch_len = len(batch)
+                    if batch_len >= batchsize:
+                        job = q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,))
+                        lock.acquire(True)
+                        jobs.append(job)
+                        lock.release()
+                        del batch[:]
+                        if cliargs['adaptivebatch']:
+                            batchsize = adaptive_batch(q_crawl, cliargs, batchsize)
 
                     # check if any jobs have returned results and store in dirsizes dict
                     jobs_temp = jobs[:]

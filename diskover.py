@@ -11,6 +11,7 @@ diskover is released under the Apache 2.0 license. See
 LICENSE for the full license text.
 """
 
+from scandir import walk
 from rq import SimpleWorker, Queue
 from datetime import datetime
 from random import randint
@@ -1050,20 +1051,6 @@ def dir_excluded(path, config, cliargs):
         if cliargs['verbose']:
             logger.info('Skipping (excluded dir) %s', path)
         return True
-    # check if using lswalk and check entire path
-    if cliargs['lswalk']:
-        path_dirs = path.split(os.path.sep)
-        for d in path_dirs:
-            # skip any dirs which start with . (dot) and in excluded_dirs
-            if d.startswith('.') and u'.*' in config['excluded_dirs']:
-                if cliargs['verbose']:
-                    logger.info('Skipping (.* dir) %s', path)
-                return True
-            # skip any dirs in excluded_dirs
-            if d in config['excluded_dirs']:
-                if cliargs['verbose']:
-                    logger.info('Skipping (excluded dir) %s', path)
-                return True
     # skip any dirs that are found in reg exp checks including wildcard searches
     found_dir = False
     found_path = False
@@ -1176,15 +1163,13 @@ def parse_cli_args(indexname):
                         help="Compare directory times with previous index to get metadata \
                             from index2 instead of off disk (requires cached dir times in Redis)")
     parser.add_argument("-M", "--maxdepth", type=int, default=None,
-                        help="Maximum directory depth to crawl (default: None), does not work with lswalk")
+                        help="Maximum directory depth to crawl (default: None)")
     parser.add_argument("-c", "--maxdcdepth", type=int, default=None,
                         help="Maximum directory depth to calculate directory sizes/items (default: None)")
     parser.add_argument("-b", "--batchsize", type=int, default=50,
                         help="Batch size (dir count) for sending to worker bots (default: 50)")
     parser.add_argument("-a", "--adaptivebatch", action="store_true",
                         help="Adaptive batch size for sending to worker bots (intelligent crawl)")
-    parser.add_argument("--lswalk", action="store_true",
-                        help="Use ls walk instead of scandir walk, does not work with maxdepth")
     parser.add_argument("-A", "--autotag", action="store_true",
                         help="Get bots to auto-tag files/dirs based on patterns in config")
     parser.add_argument("-O", "--optimizeindex", action="store_true",
@@ -1402,10 +1387,6 @@ def treewalk(top, num_sep, level, batchsize, cliargs, reindex_dict, bar):
     for returned values and gets put in dirsizes dict.
     """
     from diskover_bot_module import scrape_tree_meta
-    if cliargs['lswalk']:
-        from diskover_lswalk import lswalk as walk
-    else:
-        from scandir import walk
     jobs = []
     batch = []
     dirsizes = {}
@@ -1445,9 +1426,9 @@ def treewalk(top, num_sep, level, batchsize, cliargs, reindex_dict, bar):
                     del files[:]
 
         else:  # directory excluded
+            excdircount += 1
             del dirs[:]
             del files[:]
-            excdircount += 1
 
         # check if any jobs have returned results and add to dirsizes list
         jobs_temp = jobs[:]
