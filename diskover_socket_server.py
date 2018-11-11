@@ -35,9 +35,10 @@ socket_tasks = {}
 clientlist = []
 # lists to hold rq jobs proxy objects and their results
 jobs = []
-results = []
+# dict to hold dirsizes from rq job results
+dirsizes = {}
 
-emptydircount = 0
+excdircount = 0
 
 
 def socket_thread_handler(threadnum, q, cliargs, logger):
@@ -131,8 +132,8 @@ def socket_thread_handler_twc(threadnum, q, q_kill, lock, rootdir, num_sep, leve
     client connections are enqueued to redis rq queue.
     """
     global jobs
-    global results
-    global emptydircount
+    global dirsizes
+    global excdircount
 
     while True:
 
@@ -162,7 +163,7 @@ def socket_thread_handler_twc(threadnum, q, q_kill, lock, rootdir, num_sep, leve
                 for root, dirs, files in data_decoded:
                     if len(dirs) == 0 and len(files) == 0 and not cliargs['indexemptydirs']:
                         lock.acquire(True)
-                        emptydircount += 1
+                        excdircount += 1
                         lock.release()
                         continue
                     # check if meta stat data has been embeded in the data from client
@@ -193,13 +194,15 @@ def socket_thread_handler_twc(threadnum, q, q_kill, lock, rootdir, num_sep, leve
                     else:  # directory excluded
                         del dirs[:]
                         del files[:]
+                        excdircount += 1
 
-                    # check if any jobs have returned results and store in results list
+                    # check if any jobs have returned results and store in dirsizes dict
                     jobs_temp = jobs[:]
                     for j in jobs_temp:
                         if j.result:
                             lock.acquire(True)
-                            results.append(j.result)
+                            for path, size in j.result.items():
+                                dirsizes[path] = size
                             try:
                                 jobs.remove(j)
                             except ValueError:
@@ -285,8 +288,8 @@ def start_socket_server_twc(rootdir_path, num_sep, level, batchsize, cliargs, lo
     """
     global clientlist
     global jobs
-    global results
-    global emptydircount
+    global dirsizes
+    global excdircount
 
     # set thread/connection limit
     max_connections = config['listener_maxconnections']
@@ -321,12 +324,13 @@ def start_socket_server_twc(rootdir_path, num_sep, level, batchsize, cliargs, lo
                 logger.info("Received signal to shutdown socket server")
                 q.join()
                 serversock.close()
-                # get jobs returned results and store in results list
+                # get jobs returned results and store in dirsizes dict
                 for j in jobs:
                     while not j.result:
                         time.sleep(1)
-                    results.append(j.result)
-                return starttime, results, emptydircount
+                    for path, size in j.result.items():
+                        dirsizes[path] = size
+                return starttime, excdircount, dirsizes
             logger.info("Waiting for connection, listening on %s port %s TCP (ctrl-c to shutdown)"
                         % (str(host), str(port)))
             # establish connection

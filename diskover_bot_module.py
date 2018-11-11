@@ -40,8 +40,6 @@ gids = []
 owners = {}
 groups = {}
 
-dirsizes = {}
-
 
 def parse_cliargs_bot():
     """This is the parse CLI arguments function.
@@ -807,7 +805,7 @@ def get_metadata(path, cliargs):
 
 
 def scrape_tree_meta(paths, cliargs, reindex_dict):
-    global dirsizes
+    dirsizes = {}
     worker = get_worker_name()
     tree_dirs = []
     tree_files = []
@@ -889,18 +887,6 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
             dirsizes[root_path]['items_files'] = diritems_files
             dirsizes[root_path]['items_subdirs'] = diritems_subdirs
             dirsizes[root_path]['items'] = diritems_files + diritems_subdirs + 1  # 1 for itself
-            # add directory size to all dir paths above
-            p = os.path.sep.join(root_path.split(os.path.sep)[:-1])
-            while len(p) >= len(cliargs['rootdir']):
-                try:
-                    dirsizes[p]
-                except KeyError:
-                    dirsizes[p] = {'filesize': 0, 'items_files': 0, 'items_subdirs': 0, 'items': 0}
-                dirsizes[p]['filesize'] += dirsize
-                dirsizes[p]['items_files'] += diritems_files
-                dirsizes[p]['items_subdirs'] += diritems_subdirs
-                dirsizes[p]['items'] += diritems_files + diritems_subdirs
-                p = os.path.sep.join(p.split(os.path.sep)[:-1])
 
             # update crawl time
             elapsed = time.time() - starttime
@@ -921,7 +907,7 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
     if len(tree_dirs) > 0 or len(tree_files) > 0:
         es_bulk_add(worker, tree_dirs, tree_files, cliargs, totalcrawltime)
 
-    return worker, dirsizes
+    return dirsizes
 
 
 def file_excluded(filename, extension):
@@ -1103,8 +1089,3 @@ def calc_hot_dirs(dirlist, cliargs):
         doclist.append(d)
 
     index_bulk_add(es, doclist, config, cliargs)
-
-
-def purge_dirsizes():
-    global dirsizes
-    dirsizes.clear()

@@ -137,13 +137,13 @@ def qumulo_api_walk(top, ip, ses):
 
 def qumulo_treewalk(path, ip, ses, q_crawl, num_sep, level, batchsize, cliargs, reindex_dict, bar):
     jobs = []
-    results = []
+    dirsizes = {}
     batch = []
-    emptydircount = 0
+    excdircount = 0
 
     for root, dirs, files in qumulo_api_walk(path, ip, ses):
         if len(dirs) == 0 and len(files) == 0 and not cliargs['indexemptydirs']:
-            emptydircount += 1
+            excdircount += 1
             continue
         if root['path'] != '/':
             root_path = root['path'].rstrip(os.path.sep)
@@ -171,11 +171,14 @@ def qumulo_treewalk(path, ip, ses, q_crawl, num_sep, level, batchsize, cliargs, 
         else:  # directory excluded
             del dirs[:]
             del files[:]
+            excdircount += 1
 
-        # check if any jobs have returned results and store in results list
-        for j in jobs:
+        # check if any jobs have returned results and store in dirsizes dict
+        jobs_temp = jobs[:]
+        for j in jobs_temp:
             if j.result:
-                results.append(j.result)
+                for path, size in j.result.items():
+                    dirsizes[path] = size
                 jobs.remove(j)
 
         # update progress bar
@@ -211,13 +214,16 @@ def qumulo_treewalk(path, ip, ses, q_crawl, num_sep, level, batchsize, cliargs, 
             break
         time.sleep(.5)
 
-    # get jobs returned results and store in results list
-    for j in jobs:
+    # get jobs returned results and store in dirsizes dict
+    jobs_temp = jobs[:]
+    for j in jobs_temp:
         while not j.result:
             time.sleep(1)
-        results.append(j.result)
+        for path, size in j.result.items():
+            dirsizes[path] = size
+        jobs.remove(j)
 
-    return results, emptydircount
+    return excdircount, dirsizes
 
 
 def qumulo_get_dir_meta(worker_name, path, cliargs, reindex_dict, redis_conn):

@@ -24,14 +24,18 @@ except ImportError:
 	from queue import Queue
 from optparse import OptionParser
 
-version = '1.0.13'
-__version__ = version
 
+version = '1.0.14'
+__version__ = version
 
 EXCLUDED_DIRS = ['.snapshot', '.zfs']
 
 # Subprocess buffer size for ls and lsthreaded treewalk method
 SP_BUFFSIZE = -1
+
+IS_PY3 = sys.version_info >= (3, 0)
+if IS_PY3:
+	unicode = str
 
 parser = OptionParser(version="diskover tree walk client v % s" % version)
 parser.add_option("-p", "--proxyhost", metavar="HOST",
@@ -61,8 +65,8 @@ PORT =  options['port']
 BATCH_SIZE = options['batchsize']
 NUM_CONNECTIONS = options['numconn']
 TREEWALK_METHOD = options['twmethod']
-ROOTDIR_LOCAL = options['rootdirlocal']
-ROOTDIR_REMOTE = options['rootdirremote']
+ROOTDIR_LOCAL = unicode(options['rootdirlocal'])
+ROOTDIR_REMOTE = unicode(options['rootdirremote'])
 # remove any trailing slash from paths
 if ROOTDIR_LOCAL != '/':
 	ROOTDIR_LOCAL = ROOTDIR_LOCAL.rstrip(os.path.sep)
@@ -78,8 +82,13 @@ connections = []
 
 def send_one_message(sock, data):
 	length = len(data)
-	sock.sendall(struct.pack('!I', length))
-	sock.sendall(data)
+	try:
+		sock.sendall(struct.pack('!I', length))
+		sock.sendall(data)
+	except socket.error as e:
+		print("Exception connecting to diskover socket server caused by %s, trying again..." % e)
+		time.sleep(2)
+		send_one_message(sock, data)
 
 
 def socket_worker(conn):
@@ -206,6 +215,8 @@ if __name__ == "__main__":
 					sys.exit(1)
 			else:
 				from os import walk
+			timestamp = time.time()
+			dircount = 0
 			for root, dirs, files in walk(ROOTDIR_LOCAL):
 				root = root.replace(ROOTDIR_LOCAL, ROOTDIR_REMOTE)
 				if os.path.basename(root) in EXCLUDED_DIRS:
@@ -225,6 +236,11 @@ if __name__ == "__main__":
 				if len(packet) >= BATCH_SIZE:
 					q.put(pickle.dumps(packet))
 					del packet [:]
+				dircount += 1
+				if time.time() - timestamp >= 2:
+					print("walked %s directories in 2 seconds" % dircount)
+					timestamp = time.time()
+					dircount = 0
 			q.put(pickle.dumps(packet))
 
 		elif TREEWALK_METHOD == "metaspider":

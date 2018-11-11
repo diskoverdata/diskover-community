@@ -1,6 +1,13 @@
 # Diskover Change Log
 
-## [1.5.0-rc21] = 2018-11-09
+## [1.5.0-rc22] = 2018-11-11
+### changed
+- tree walk client v1.0.14
+### fixed
+- memory issues with storing dir sizes and updating dir sizes at end of crawl
+- bugs with unicode when client running python2 and server running python3
+
+## [1.5.0-rc21] = 2018-11-10
 ### added
 - much faster dir size updates at end of crawl
 - tree walk client v1.0.13 - added cli args, see -h for help

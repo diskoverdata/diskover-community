@@ -30,7 +30,7 @@ import sys
 import json
 
 
-version = '1.5.0-rc21'
+version = '1.5.0-rc22'
 __version__ = version
 
 IS_PY3 = sys.version_info >= (3, 0)
@@ -1398,8 +1398,8 @@ def treewalk(top, num_sep, level, batchsize, cliargs, reindex_dict, bar):
     to redis queue for rq worker bots to scrape meta and upload
     to ES index after batch size (dir count) has been reached.
     Each enqueued job gets stored in job proxy object and then gets
-    added to jobs list. Every few seconds the jobs in jobs list are checked
-    for returned values and gets stored in results list.
+    added to jobs list. Jobs in jobs list are checked
+    for returned values and gets put in dirsizes dict.
     """
     from diskover_bot_module import scrape_tree_meta
     if cliargs['lswalk']:
@@ -1407,9 +1407,9 @@ def treewalk(top, num_sep, level, batchsize, cliargs, reindex_dict, bar):
     else:
         from scandir import walk
     jobs = []
-    results = []
     batch = []
-    emptydircount = 0
+    dirsizes = {}
+    excdircount = 0
 
     for root, dirs, files in walk(top):
         if not dir_excluded(root, config, cliargs):
@@ -1424,7 +1424,7 @@ def treewalk(top, num_sep, level, batchsize, cliargs, reindex_dict, bar):
                     filelist.append(f)
             # check for emptry dirs
             if len(dirlist) == 0 and len(filelist) == 0 and not cliargs['indexemptydirs']:
-                emptydircount += 1
+                excdircount += 1
                 continue
             batch.append((root, dirlist, filelist))
             batch_len = len(batch)
@@ -1447,12 +1447,14 @@ def treewalk(top, num_sep, level, batchsize, cliargs, reindex_dict, bar):
         else:  # directory excluded
             del dirs[:]
             del files[:]
+            excdircount += 1
 
-        # check if any jobs have returned results and store in results list
+        # check if any jobs have returned results and add to dirsizes list
         jobs_temp = jobs[:]
         for j in jobs_temp:
             if j.result:
-                results.append(j.result)
+                for path, size in j.result.items():
+                    dirsizes[path] = size
                 jobs.remove(j)
 
         # update progress bar
@@ -1488,13 +1490,16 @@ def treewalk(top, num_sep, level, batchsize, cliargs, reindex_dict, bar):
             break
         time.sleep(.5)
 
-    # get jobs returned results and store in results list
-    for j in jobs:
+    # get jobs returned results and put in dirsizes dict
+    jobs_temp = jobs[:]
+    for j in jobs_temp:
         while not j.result:
             time.sleep(1)
-        results.append(j.result)
+        for path, size in j.result.items():
+            dirsizes[path] = size
+        jobs.remove(j)
 
-    return results, emptydircount
+    return excdircount, dirsizes
 
 
 def crawl_tree(path, cliargs, logger, reindex_dict):
@@ -1536,9 +1541,9 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
         # check for listenlwc socket cli flag to start socket server
         if cliargs['listentwc']:
             from diskover_socket_server import start_socket_server_twc
-            starttime, results, emptydircount = start_socket_server_twc(rootdir_path, num_sep, level, batchsize,
-                                                                     cliargs, logger, reindex_dict)
-            return starttime, results, emptydircount
+            starttime, excdircount, dirsizes = start_socket_server_twc(rootdir_path, num_sep, level, batchsize,
+                                                                         cliargs, logger, reindex_dict)
+            return starttime, excdircount, dirsizes
 
         starttime = time.time()
 
@@ -1553,11 +1558,11 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
         # qumulo api crawl
         if cliargs['qumulo']:
             from diskover_qumulo import qumulo_treewalk
-            results, emptydircount = qumulo_treewalk(path, qumulo_ip, qumulo_ses, q_crawl, num_sep, level, batchsize,
+            excdircount, dirsizes = qumulo_treewalk(path, qumulo_ip, qumulo_ses, q_crawl, num_sep, level, batchsize,
                                                   cliargs, reindex_dict, bar)
         # regular crawl using walk
         else:
-            results, emptydircount = treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict, bar)
+            excdircount, dirsizes = treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict, bar)
 
         if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
             bar.update(0)
@@ -1565,7 +1570,7 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
 
         logger.info("Finished crawling!")
 
-        return starttime, results, emptydircount
+        return starttime, excdircount, dirsizes
 
     except KeyboardInterrupt:
         print("Ctrl-c keyboard interrupt, shutting down...")
@@ -1705,34 +1710,22 @@ def tune_es_for_crawl(defaults=False):
                 pass
 
 
-def update_dir_sizes():
-    from diskover_bot_module import purge_dirsizes
-    dirsizes_by_worker = {}
-    dirsizes = {}
-
+def update_dir_sizes(excdircount, dirsizes):
     logger.info('Updating directory sizes...')
 
-    # get all the dirsizes back from the rq job results and store the last results for each path
-    for r in results:
-        worker_name, sizes = r
-        try:
-            dirsizes_by_worker[worker_name]
-        except KeyError:
-            dirsizes_by_worker[worker_name] = {}
-        for path, size in sizes.items():
-            dirsizes_by_worker[worker_name][path] = size
-
     # sum all the worker path sizes
-    for worker_name, dirsize in dirsizes_by_worker.items():
-        for path, size in dirsize.items():
+    for path, size in sorted(dirsizes.items()):
+        # add directory size to all dir paths above
+        p = os.path.sep.join(path.split(os.path.sep)[:-1])
+        while len(p) >= len(rootdir_path):
             try:
-                dirsizes[path]
+                dirsizes[p]['filesize'] += size['filesize']
+                dirsizes[p]['items_files'] += size['items_files']
+                dirsizes[p]['items_subdirs'] += size['items_subdirs']
+                dirsizes[p]['items'] += size['items_files'] + size['items_subdirs']
             except KeyError:
-                dirsizes[path] = {'filesize': 0, 'items_files': 0, 'items_subdirs': 0, 'items': 0}
-            dirsizes[path]['filesize'] += size['filesize']
-            dirsizes[path]['items_files'] += size['items_files']
-            dirsizes[path]['items_subdirs'] += size['items_subdirs']
-            dirsizes[path]['items'] += size['items']
+                pass
+            p = os.path.sep.join(p.split(os.path.sep)[:-1])
 
     # update directory doc's filesize, items counts
     es.indices.refresh(index=cliargs['index'])
@@ -1743,11 +1736,11 @@ def update_dir_sizes():
     bulkdocs = []
     i = 0
     with progressbar.ProgressBar(max_value=len(dirsizes)) as bar:
-        for path, size in dirsizes.items():
+        for path, size in sorted(dirsizes.items()):
             # subtract any empty dirs for rootdir doc
             if path == rootdir_path:
-                size['items_subdirs'] = size['items_subdirs'] - emptydircount
-                size['items'] = size['items'] - emptydircount
+                size['items_subdirs'] = size['items_subdirs'] - excdircount
+                size['items'] = size['items'] - excdircount
             # find location of path in paths list
             x = paths.index(path)
             # get doc id from ids list
@@ -1768,13 +1761,8 @@ def update_dir_sizes():
             bar.update(i)
         index_bulk_add(es, bulkdocs, config, cliargs)
 
-    # purge dirsizes from all workers
-    workers = SimpleWorker.all(connection=redis_conn)
-    for i in range(len(workers)):
-        q.enqueue(purge_dirsizes)
 
-
-def post_crawl_tasks():
+def post_crawl_tasks(excdircount, dirsizes):
     """This is the post crawl tasks function.
     It runs at the end of the crawl and does post tasks.
     """
@@ -1787,7 +1775,7 @@ def post_crawl_tasks():
         calc_dir_sizes(cliargs, logger, path=rootdir_path)
     else:
         #calc_dir_sizes(cliargs, logger)
-        update_dir_sizes()
+        update_dir_sizes(excdircount, dirsizes)
 
     # add elapsed time crawl stat to es
     add_crawl_stats(es, cliargs['index'], rootdir_path, (time.time() - starttime), "finished_dircalc")
@@ -1800,8 +1788,6 @@ def post_crawl_tasks():
 
 
 def pre_crawl_tasks():
-    from diskover_bot_module import purge_dirsizes
-
     # create Elasticsearch index
     index_create(cliargs['index'])
 
@@ -1822,11 +1808,6 @@ def pre_crawl_tasks():
             qumulo_add_diskspace(es, cliargs['index'], rootdir_path, qumulo_ip, qumulo_ses, logger)
         else:
             add_diskspace(cliargs['index'], logger, rootdir_path)
-
-    # purge dirsizes from all workers
-    workers = SimpleWorker.all(connection=redis_conn)
-    for i in range(len(workers)):
-        q.enqueue(purge_dirsizes)
 
 
 # load config file into config dictionary
@@ -2084,8 +2065,8 @@ if __name__ == "__main__":
     pre_crawl_tasks()
 
     # start crawling
-    starttime, results, emptydircount = crawl_tree(rootdir_path, cliargs, logger, reindex_dict)
+    starttime, excdircount, dirsizes = crawl_tree(rootdir_path, cliargs, logger, reindex_dict)
 
-    post_crawl_tasks()
+    post_crawl_tasks(excdircount, dirsizes)
 
     logger.info('All DONE! Sayonara!')
