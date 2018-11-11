@@ -119,13 +119,7 @@ $ python /path/to/diskover.py -d /rootpath/you/want/to/crawl -i diskover-indexna
 
 **Defaults for crawl with no flags is to index from . (current directory) and files >0 Bytes and 0 days modified time. Empty files and directores are skipped (unless you use -s 0 and -e flags). Symlinks are not followed and skipped. Use -h to see cli options.**
 
-Crawl tree using ls walk instead of scandir walk:
-
-```sh
-$ python /path/to/diskover.py -d /rootpath/you/want/to/crawl -i diskover-indexname -a --lswalk
-```
-
-Crawl down to maximum tree depth of 3 (does not work with --lswalk):
+Crawl down to maximum tree depth of 3:
 
 ```sh
 $ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl -M 3
@@ -141,8 +135,8 @@ Create index with just level 1 directories and files, then run background crawls
 
 ```sh
 $ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl --maxdepth 1
-$ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl/dir1 --reindexrecurs --lswalk -q &
-$ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl/dir2 --reindexrecurs --lswalk -q &
+$ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl/dir1 --reindexrecurs -q &
+$ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl/dir2 --reindexrecurs -q &
 ...
 $ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl --dircalcsonly --maxdcdepth 0
 ```
