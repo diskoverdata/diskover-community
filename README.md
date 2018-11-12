@@ -158,11 +158,10 @@ Becoming a Patron gets you access to the OVA files running the latest version of
 
 You can set up diskover and diskover-web in docker, there are a few choices for easily running diskover in docker using pre-built images/compose files.
 
+[linuxserver.io](https://linuxserver.io) Docker hub image:
+https://hub.docker.com/r/linuxserver/diskover/
+
 [diskover-web](https://github.com/shirosaidev/diskover-web) has Dockerfile with instructions for docker-compose.
-
-[linuxserver.io](https://linuxserver.io) Docker hub images:
-
-coming soon... to help with testing head over to [linuxserver.io Discord](https://discord.gg/YWrKVTn) and direct message @shirosai.
 
 ## User Guide
 
