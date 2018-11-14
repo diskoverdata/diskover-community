@@ -112,10 +112,13 @@ def spider_worker():
 
 def subdirs(path):
 	dirs = []
+	nondirs = []
 	for entry in scandir(path):
 		if entry.is_dir(follow_symlinks=False):
 			dirs.append(entry.name)
-	yield path
+		elif entry.is_file(follow_symlinks=False):
+			nondirs.append(entry.name)
+	yield path, dirs, nondirs
 	for name in dirs:
 		new_path = os.path.join(path, name)
 		if not os.path.islink(new_path):
@@ -125,15 +128,9 @@ def subdirs(path):
 
 def scandir_worker():
 	global packet_scandir
-	dirs = []
-	nondirs = []
 	while True:
-		root = q_dir.get()
-		for entry in scandir(root):
-			if entry.is_dir(follow_symlinks=False):
-				dirs.append(entry.name)
-			if entry.is_file(follow_symlinks=False):
-				nondirs.append(entry.name)
+		item = q_dir.get()
+		root, dirs, nondirs = item
 		if os.path.basename(root) in EXCLUDED_DIRS:
 			del dirs[:]
 			del nondirs[:]
@@ -144,15 +141,14 @@ def scandir_worker():
 			q.put(pickle.dumps(packet_scandir))
 			del packet_scandir[:]
 		lock.release()
-		del dirs[:]
-		del nondirs[:]
 		q_dir.task_done()
 
 
 def ls_dir_gen(top):
 	from subprocess import Popen, PIPE
 	buffsize = -1
-
+	dirs = []
+	nondirs = []
 	root = top
 
 	lsCMD = ['ls', '-RFAf', root]
@@ -161,13 +157,29 @@ def ls_dir_gen(top):
 	while True:
 		line = proc.stdout.readline().decode('utf-8')
 		if line == '':
-			yield root
+			yield root, dirs, nondirs
 			break
 		line = line.rstrip()
 		if line.startswith('/') and line.endswith(':'):
 			newroot = line.rstrip(':')
-			yield root
+			yield root, dirs[:], nondirs[:]
+			del dirs[:]
+			del nondirs[:]
 			root = newroot
+		else:
+			items = line.split('\n')
+			for entry in items:
+				entry = entry.lstrip(' ')
+				if entry == '':
+					continue
+				if entry.endswith('/'):
+					if entry != './' and entry != '../':
+						dirs.append(entry.rstrip('/'))
+				else:
+					if entry.endswith('@'):
+						# skip symlink
+						continue
+					nondirs.append(entry.rstrip('*'))
 
 
 if __name__ == "__main__":
@@ -280,8 +292,8 @@ if __name__ == "__main__":
 			if USE_LS:
 				subdirs = ls_dir_gen
 
-			for root in subdirs(ROOTDIR_LOCAL):
-				q_dir.put(root)
+			for root, dirs, files in subdirs(ROOTDIR_LOCAL):
+				q_dir.put((root, dirs, files))
 				dircount += 1
 				totaldirs += 1
 				if time.time() - timestamp >= 2:
