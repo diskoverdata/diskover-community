@@ -11,7 +11,7 @@ diskover is released under the Apache 2.0 license. See
 LICENSE for the full license text.
 """
 
-from diskover import dir_excluded, q_crawl, adaptive_batch, config, get_time
+from diskover import q_crawl, adaptive_batch, config, get_time
 from diskover_bot_module import scrape_tree_meta
 import socket
 import subprocess
@@ -24,7 +24,6 @@ import uuid
 import json
 import time
 import sys
-import os
 import pickle
 import struct
 

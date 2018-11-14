@@ -842,7 +842,9 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
             root_path = root
             dmeta = get_dir_meta(worker, root_path, cliargs, reindex_dict, statsembeded=False)
 
-        dirsizes[root_path] = {}
+        # shorter relative path for dirsizes dict (reduce memory)
+        root_path_rel = root_path.replace(cliargs['rootdir'], ".")
+        dirsizes[root_path_rel] = {}
 
         if dmeta == "sametimes":
             # fetch meta data for directory and all it's files (doc sources) from index2 since
@@ -883,10 +885,7 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
                     diritems_files += 1
 
             # update dirsizes
-            dirsizes[root_path]['filesize'] = dirsize
-            dirsizes[root_path]['items_files'] = diritems_files
-            dirsizes[root_path]['items_subdirs'] = diritems_subdirs
-            dirsizes[root_path]['items'] = diritems_files + diritems_subdirs + 1  # 1 for itself
+            dirsizes[root_path_rel] = [dirsize, diritems_files, diritems_subdirs]
 
             # update crawl time
             elapsed = time.time() - starttime

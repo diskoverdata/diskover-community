@@ -1,5 +1,11 @@
 # Diskover Change Log
 
+## [1.5.0-rc23] = 2018-11-14
+### changed
+- optimized memory usage for storing dir sizes
+- tree walk client v1.0.15
+- added pscandir (parallel scandir) tree walk method to client, see -h for new cli options in client
+
 ## [1.5.0-rc22] = 2018-11-11
 ### changed
 - tree walk client v1.0.14

@@ -31,7 +31,7 @@ import sys
 import json
 
 
-version = '1.5.0-rc22'
+version = '1.5.0-rc23'
 __version__ = version
 
 IS_PY3 = sys.version_info >= (3, 0)
@@ -851,6 +851,7 @@ def index_get_docs(cliargs, logger, doctype='directory', copytags=False, hotdirs
     while res['hits']['hits'] and len(res['hits']['hits']) > 0:
         for hit in res['hits']['hits']:
             fullpath = os.path.abspath(os.path.join(hit['_source']['path_parent'], hit['_source']['filename']))
+            rel_path = fullpath.replace(rootdir_path, ".")
             if copytags:
                 doclist.append((fullpath, hit['_source']['tag'], hit['_source']['tag_custom'], doctype))
             elif hotdirs:
@@ -858,7 +859,7 @@ def index_get_docs(cliargs, logger, doctype='directory', copytags=False, hotdirs
                                 hit['_source']['items_files'], hit['_source']['items_subdirs']))
             elif id_lists:
                 doclist.append(hit['_id'])
-                pathlist.append(fullpath)
+                pathlist.append(rel_path)
             else:
                 # convert es time to unix time format
                 mtime = time.mktime(datetime.strptime(
@@ -1698,12 +1699,11 @@ def update_dir_sizes(excdircount, dirsizes):
     for path, size in sorted(dirsizes.items()):
         # add directory size to all dir paths above
         p = os.path.sep.join(path.split(os.path.sep)[:-1])
-        while len(p) >= len(rootdir_path):
+        while len(p) > 0:
             try:
-                dirsizes[p]['filesize'] += size['filesize']
-                dirsizes[p]['items_files'] += size['items_files']
-                dirsizes[p]['items_subdirs'] += size['items_subdirs']
-                dirsizes[p]['items'] += size['items_files'] + size['items_subdirs']
+                dirsizes[p][0] += size[0]
+                dirsizes[p][1] += size[1]
+                dirsizes[p][2] += size[2]
             except KeyError:
                 pass
             p = os.path.sep.join(p.split(os.path.sep)[:-1])
@@ -1719,9 +1719,8 @@ def update_dir_sizes(excdircount, dirsizes):
     with progressbar.ProgressBar(max_value=len(dirsizes)) as bar:
         for path, size in sorted(dirsizes.items()):
             # subtract any empty dirs for rootdir doc
-            if path == rootdir_path:
-                size['items_subdirs'] = size['items_subdirs'] - excdircount
-                size['items'] = size['items'] - excdircount
+            if path == ".":
+                size[2] = size[2] - excdircount
             # find location of path in paths list
             x = paths.index(path)
             # get doc id from ids list
@@ -1731,8 +1730,8 @@ def update_dir_sizes(excdircount, dirsizes):
                 '_index': cliargs['index'],
                 '_type': 'directory',
                 '_id': docid,
-                'doc': {'filesize': size['filesize'], 'items_files': size['items_files'],
-                        'items_subdirs': size['items_subdirs'], 'items': size['items']}
+                'doc': {'filesize': size[0], 'items_files': size[1],
+                        'items_subdirs': size[2], 'items': size[1]+size[2]+1}
             }
             bulkdocs.append(doc)
             if len(bulkdocs) >= config['es_chunksize']:

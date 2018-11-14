@@ -16,8 +16,8 @@ import sys
 import pickle
 import socket
 import time
-import threading
 import struct
+from threading import Thread, Lock
 try:
 	from Queue import Queue
 except ImportError:
@@ -25,12 +25,9 @@ except ImportError:
 from optparse import OptionParser
 
 
-version = '1.0.14'
+version = '1.0.15'
 __version__ = version
 
-
-# Subprocess buffer size for ls and lsthreaded treewalk method
-SP_BUFFSIZE = -1
 
 IS_PY3 = sys.version_info >= (3, 0)
 if IS_PY3:
@@ -46,11 +43,15 @@ parser.add_option("-b", "--batchsize", metavar="BATCH_SIZE", default=50, type=in
 parser.add_option("-n", "--numconn", metavar="NUM_CONNECTIONS", default=5, type=int,
 					help="Number of tcp connections to use (default: 5)")
 parser.add_option("-t", "--twmethod", metavar="TREEWALK_METHOD", default="scandir",
-					help="Tree walk method to use. Options are: oswalk, scandir, metaspider (default: scandir)")
+					help="Tree walk method to use. Options are: oswalk, scandir, pscandir, metaspider (default: scandir)")
 parser.add_option("-r", "--rootdirlocal", metavar="ROOTDIR_LOCAL",
 					help="Local path on storage to crawl from")
 parser.add_option("-R", "--rootdirremote", metavar="ROOTDIR_REMOTE",
 					help="Mount point directory for diskover and bots that is same location as rootdirlocal")
+parser.add_option("-T", "--pscandirthreads", metavar="NUM_SCANDIR_THREADS", default=8, type=int,
+					help="Number of threads for pscandir treewalk method (default: 8)")
+parser.add_option("-l", "--ls", metavar="LS_DIR_GEN", action="store_true",
+					help="Use ls subprocess to get directories for pscandir")
 parser.add_option("-s", "--metaspiderthreads", metavar="NUM_SPIDERS", default=8, type=int,
 					help="Number of threads for metaspider treewalk method (default: 8)")
 parser.add_option("-e", "--excludeddir", metavar="EXCLUDED_DIR", default=['.snapshot','.zfs'], action="append",
@@ -63,6 +64,7 @@ PORT =  options['port']
 BATCH_SIZE = options['batchsize']
 NUM_CONNECTIONS = options['numconn']
 TREEWALK_METHOD = options['twmethod']
+USE_LS = options['ls']
 ROOTDIR_LOCAL = unicode(options['rootdirlocal'])
 ROOTDIR_REMOTE = unicode(options['rootdirremote'])
 # remove any trailing slash from paths
@@ -71,10 +73,13 @@ if ROOTDIR_LOCAL != '/':
 if ROOTDIR_REMOTE != '/':
 	ROOTDIR_REMOTE = ROOTDIR_REMOTE.rstrip(os.path.sep)
 NUM_SPIDERS = options['metaspiderthreads']
+NUM_SCANDIR_THREADS = options['pscandirthreads']
 EXCLUDED_DIRS = options['excludeddir']
 
 q = Queue()
+lock = Lock()
 connections = []
+packet_scandir = []
 
 totaldirs = 0
 
@@ -105,6 +110,66 @@ def spider_worker():
 		q_spider.task_done()
 
 
+def subdirs(path):
+	dirs = []
+	for entry in scandir(path):
+		if entry.is_dir(follow_symlinks=False):
+			dirs.append(entry.name)
+	yield path
+	for name in dirs:
+		new_path = os.path.join(path, name)
+		if not os.path.islink(new_path):
+			for entry in subdirs(new_path):
+				yield entry
+
+
+def scandir_worker():
+	global packet_scandir
+	dirs = []
+	nondirs = []
+	while True:
+		root = q_dir.get()
+		for entry in scandir(root):
+			if entry.is_dir(follow_symlinks=False):
+				dirs.append(entry.name)
+			if entry.is_file(follow_symlinks=False):
+				nondirs.append(entry.name)
+		if os.path.basename(root) in EXCLUDED_DIRS:
+			del dirs[:]
+			del nondirs[:]
+		root = root.replace(ROOTDIR_LOCAL, ROOTDIR_REMOTE)
+		lock.acquire(True)
+		packet_scandir.append((root, dirs[:], nondirs[:]))
+		if len(packet_scandir) >= BATCH_SIZE:
+			q.put(pickle.dumps(packet_scandir))
+			del packet_scandir[:]
+		lock.release()
+		del dirs[:]
+		del nondirs[:]
+		q_dir.task_done()
+
+
+def ls_dir_gen(top):
+	from subprocess import Popen, PIPE
+	buffsize = -1
+
+	root = top
+
+	lsCMD = ['ls', '-RFAf', root]
+	proc = Popen(lsCMD, bufsize=buffsize, stdout=PIPE, close_fds=True)
+
+	while True:
+		line = proc.stdout.readline().decode('utf-8')
+		if line == '':
+			yield root
+			break
+		line = line.rstrip()
+		if line.startswith('/') and line.endswith(':'):
+			newroot = line.rstrip(':')
+			yield root
+			root = newroot
+
+
 if __name__ == "__main__":
 
 	try:
@@ -127,8 +192,8 @@ if __name__ == "__main__":
 
 		print(banner)
 
-		if TREEWALK_METHOD != "oswalk" and TREEWALK_METHOD != "scandir" and TREEWALK_METHOD != "metaspider":
-			print("Unknown treewalk method, methods are oswalk, scandir, metaspider")
+		if TREEWALK_METHOD not in ["oswalk", "scandir", "pscandir", "metaspider"]:
+			print("Unknown treewalk method, methods are oswalk, scandir, pscandir, metaspider")
 			sys.exit(1)
 
 		starttime = time.time()
@@ -143,14 +208,14 @@ if __name__ == "__main__":
 				sys.exit(1)
 			connections.append(clientsock)
 			print("thread %s connected to socket server %s" % (i, clientsock.getsockname()))
-			t = threading.Thread(target=socket_worker, args=(clientsock,))
+			t = Thread(target=socket_worker, args=(clientsock,))
 			t.daemon = True
 			t.start()
 
 		print("Starting tree walk... (ctrl-c to stop)")
 
 		packet = []
-		if TREEWALK_METHOD == "oswalk" or TREEWALK_METHOD == "scandir":
+		if TREEWALK_METHOD in ["oswalk", "scandir"]:
 			if TREEWALK_METHOD == "scandir":
 				try:
 					from scandir import walk
@@ -194,6 +259,42 @@ if __name__ == "__main__":
 
 			q.put(pickle.dumps(packet))
 
+		elif TREEWALK_METHOD == "pscandir":
+			# parallel scandir
+			try:
+				from scandir import scandir
+			except ImportError:
+				print("scandir python module not found")
+				sys.exit(1)
+
+			q_dir = Queue()
+
+			for i in range(NUM_SCANDIR_THREADS):
+				t = Thread(target=scandir_worker)
+				t.daemon = True
+				t.start()
+
+			timestamp = time.time()
+			dircount = 0
+
+			if USE_LS:
+				subdirs = ls_dir_gen
+
+			for root in subdirs(ROOTDIR_LOCAL):
+				q_dir.put(root)
+				dircount += 1
+				totaldirs += 1
+				if time.time() - timestamp >= 2:
+					elapsed = round(time.time() - timestamp, 3)
+					dirspersec = round(dircount / elapsed, 3)
+					print("walked %s directories in 2 seconds (%s dirs/sec)" % (dircount, dirspersec))
+					timestamp = time.time()
+					dircount = 0
+
+			q_dir.join()
+
+			q.put(pickle.dumps(packet_scandir))
+
 		elif TREEWALK_METHOD == "metaspider":
 			# use threads to collect meta and send to diskover proxy rather than
 			# the bots scraping the meta
@@ -207,7 +308,7 @@ if __name__ == "__main__":
 			q_spider_meta = Queue()
 
 			for i in range(NUM_SPIDERS):
-				t = threading.Thread(target=spider_worker)
+				t = Thread(target=spider_worker)
 				t.daemon = True
 				t.start()
 
