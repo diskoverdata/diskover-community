@@ -1428,7 +1428,7 @@ def treewalk(top, num_sep, level, batchsize, cliargs, reindex_dict):
     dircount = 0
 
     # set up threads for tree walk
-    for i in range(cpu_count()):
+    for i in range(cpu_count()*2):
         t = Thread(target=scandirwalk_worker)
         t.daemon = True
         t.start()
@@ -1800,7 +1800,7 @@ def update_dir_sizes():
         bar = None
 
     # create threads to calc dir sizes
-    for i in range(cpu_count()):
+    for i in range(cpu_count()*2):
         t = Thread(target=dirsize_update_worker, args=(pathid_dict,))
         t.daemon = True
         t.start()
