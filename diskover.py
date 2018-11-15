@@ -1388,15 +1388,19 @@ def scandirwalk_worker():
         dirs = []
         nondirs = []
         path = q_paths.get()
-        for entry in scandir(path):
-            if entry.is_dir(follow_symlinks=False):
-                dirs.append(entry.name)
-            elif entry.is_file(follow_symlinks=False):
-                nondirs.append(entry.name)
-        q_paths_results.put((path, dirs, nondirs))
-        for name in dirs:
-            new_path = os.path.join(path, name)
-            q_paths.put(new_path)
+        try:
+            for entry in scandir(path):
+                if entry.is_dir(follow_symlinks=False):
+                    dirs.append(entry.name)
+                elif entry.is_file(follow_symlinks=False):
+                    nondirs.append(entry.name)
+            q_paths_results.put((path, dirs, nondirs))
+            for name in dirs:
+                new_path = os.path.join(path, name)
+                q_paths.put(new_path)
+        except (PermissionError, OSError) as e:
+            logger.warning(e)
+            pass
         q_paths.task_done()
 
 
