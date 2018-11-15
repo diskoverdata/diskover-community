@@ -1,9 +1,10 @@
 # Diskover Change Log
 
-## [1.5.0-rc23] = 2018-11-15
+## [1.5.0-rc23] = 2018-11-16
 ### added
 - threaded tree walk
 - dirs/sec to crawl progress bar
+- updatedirsizes action to socket server for diskover-web
 ### changed
 - optimized memory usage for storing dir sizes
 - tree walk client v1.0.16

@@ -400,6 +400,20 @@ def run_command(threadnum, command_dict, clientsock, cliargs, logger):
                 cmd = [pythonpath, diskoverpath, '-b', batchsize,
                     '-i', index, '-d', path, '-r', '-q']
 
+        elif action == 'updatedirsizes':
+            try:
+                recursive = command_dict['recursive']
+            except KeyError:
+                recursive = 'false'
+                pass
+            if recursive == 'true':
+                cmd = [pythonpath, diskoverpath, '-b', batchsize,
+                       '-i', index, '--dircalcsonly', '-q']
+            else:
+                path = command_dict['path']
+                cmd = [pythonpath, diskoverpath, '-b', batchsize,
+                       '-i', index, '-d', path, '--dircalcsonly', '--maxdcdepth', '0', '-q']
+
         elif action == 'kill':
             taskid = command_dict['taskid']
             logger.info("[thread-%s]: Kill task message received! (taskid:%s)",
