@@ -1402,12 +1402,15 @@ def scandirwalk_worker():
 
 def scandirwalk(path):
     q_paths.put(path)
-    while q_paths.qsize() > 0 or q_paths_results.qsize() > 0:
+    while True:
         entry = q_paths_results.get()
         root, dirs, nondirs = entry
         yield root, dirs, nondirs
         q_paths_results.task_done()
-    q_paths_results.join()
+        if q_paths_results.qsize() == 0 and q_paths.qsize() == 0:
+            time.sleep(.5)
+            if q_paths_results.qsize() == 0 and q_paths.qsize() == 0:
+                break
 
 
 def treewalk(top, num_sep, level, batchsize, cliargs, reindex_dict):
