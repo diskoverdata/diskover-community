@@ -11,7 +11,7 @@ diskover is released under the Apache 2.0 license. See
 LICENSE for the full license text.
 """
 
-from scandir import walk
+from scandir import scandir
 from rq import SimpleWorker, Queue
 from datetime import datetime
 from random import randint
@@ -1383,6 +1383,21 @@ def calc_dir_sizes(cliargs, logger, path=None):
         sys.exit(0)
 
 
+def scandirwalk(path):
+    dirs = []
+    nondirs = []
+    for entry in scandir(path):
+        if entry.is_dir(follow_symlinks=False):
+            dirs.append(entry.name)
+        elif entry.is_file(follow_symlinks=False):
+            nondirs.append(entry.name)
+    yield path, dirs, nondirs
+    for name in dirs:
+        new_path = os.path.join(path, name)
+        for entry in scandirwalk(new_path):
+            yield entry
+
+
 def treewalk(top, num_sep, level, batchsize, cliargs, reindex_dict, bar):
     """This is the tree walk function.
     It walks the tree and adds tuple of directory and it's items
@@ -1397,23 +1412,15 @@ def treewalk(top, num_sep, level, batchsize, cliargs, reindex_dict, bar):
     batch = []
     dirsizes = {}
     excdircount = 0
+    timestamp = time.time()
 
-    for root, dirs, files in walk(top):
+    for root, dirs, files in scandirwalk(top):
         if not dir_excluded(root, config, cliargs):
-            # check for symlinks
-            dirlist = []
-            filelist = []
-            for d in dirs:
-                if not os.path.islink(os.path.join(root, d)):
-                    dirlist.append(d)
-            for f in files:
-                if not os.path.islink(os.path.join(root, f)):
-                    filelist.append(f)
             # check for emptry dirs
-            if len(dirlist) == 0 and len(filelist) == 0 and not cliargs['indexemptydirs']:
+            if len(dirs) == 0 and len(files) == 0 and not cliargs['indexemptydirs']:
                 excdircount += 1
                 continue
-            batch.append((root, dirlist, filelist))
+            batch.append((root, dirs, files))
             batch_len = len(batch)
             if batch_len >= batchsize:
                 job = q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,),
@@ -1437,12 +1444,14 @@ def treewalk(top, num_sep, level, batchsize, cliargs, reindex_dict, bar):
             del files[:]
 
         # check if any jobs have returned results and add to dirsizes list
-        jobs_temp = jobs[:]
-        for j in jobs_temp:
-            if j.result:
-                for path, size in j.result.items():
-                    dirsizes[path] = size
-                jobs.remove(j)
+        if time.time() - timestamp >= 2:
+            jobs_temp = jobs[:]
+            for j in jobs_temp:
+                if j.result:
+                    for path, size in j.result.items():
+                        dirsizes[path] = size
+                    jobs.remove(j)
+            timestamp = time.time()
 
         # update progress bar
         if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:

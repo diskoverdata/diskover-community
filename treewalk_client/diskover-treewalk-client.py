@@ -25,7 +25,7 @@ except ImportError:
 from optparse import OptionParser
 
 
-version = '1.0.15'
+version = '1.0.16'
 __version__ = version
 
 
@@ -121,9 +121,8 @@ def subdirs(path):
 	yield path, dirs, nondirs
 	for name in dirs:
 		new_path = os.path.join(path, name)
-		if not os.path.islink(new_path):
-			for entry in subdirs(new_path):
-				yield entry
+		for entry in subdirs(new_path):
+			yield entry
 
 
 def scandir_worker():

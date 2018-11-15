@@ -3,8 +3,9 @@
 ## [1.5.0-rc23] = 2018-11-15
 ### changed
 - optimized memory usage for storing dir sizes
-- tree walk client v1.0.15
+- tree walk client v1.0.16
 - added pscandir (parallel scandir) tree walk method to client, see -h for new cli options in client
+- replaced scandir walk with scandir and faster custom scandirwalk function
 ### fixed
 - slow dir size updates at end of crawl when calculating millions of paths
 - dir size updates progress bar showing when using -q or --verbose
