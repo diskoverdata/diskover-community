@@ -19,6 +19,12 @@ try:
     import configparser as ConfigParser
 except ImportError:
     import ConfigParser
+from multiprocessing import cpu_count
+from threading import Thread, Lock
+try:
+    from queue import Queue as PyQueue
+except ImportError:
+    from Queue import Queue as PyQueue
 import progressbar
 import argparse
 import logging
@@ -823,14 +829,14 @@ def index_delete_path(path, cliargs, logger, reindex_dict, recursive=False):
 
 
 def index_get_docs(cliargs, logger, doctype='directory', copytags=False, hotdirs=False,
-                   index=None, path=None, sort=False, maxdepth=None, id_lists=False):
+                   index=None, path=None, sort=False, maxdepth=None, pathid=False):
     """This is the es get docs function.
     It finds all docs (by doctype) in es and returns doclist
     which contains doc id, fullpath and mtime for all docs.
     If copytags is True will return tags from previous index.
     If path is specified will return just documents in and under directory path.
     If sort is True, will return paths in asc path order.
-    if id_lists is True, will return two lists, one with full paths and other with their id
+    if pathid is True, will return dict with path and their id.
     """
 
     if index is None:
@@ -846,7 +852,7 @@ def index_get_docs(cliargs, logger, doctype='directory', copytags=False, hotdirs
                     size=config['es_scrollsize'], body=data, request_timeout=config['es_timeout'])
 
     doclist = []
-    pathlist = []
+    pathdict = {}
     doccount = 0
     while res['hits']['hits'] and len(res['hits']['hits']) > 0:
         for hit in res['hits']['hits']:
@@ -857,9 +863,8 @@ def index_get_docs(cliargs, logger, doctype='directory', copytags=False, hotdirs
             elif hotdirs:
                 doclist.append((hit['_id'], fullpath, hit['_source']['filesize'], hit['_source']['items'],
                                 hit['_source']['items_files'], hit['_source']['items_subdirs']))
-            elif id_lists:
-                doclist.append(hit['_id'])
-                pathlist.append(rel_path)
+            elif pathid:
+                pathdict[rel_path] = hit['_id']
             else:
                 # convert es time to unix time format
                 mtime = time.mktime(datetime.strptime(
@@ -873,8 +878,8 @@ def index_get_docs(cliargs, logger, doctype='directory', copytags=False, hotdirs
 
     logger.info('Found %s %s docs' % (str(doccount), doctype))
 
-    if id_lists:
-        return doclist, pathlist
+    if pathid:
+        return pathdict
     else:
         return doclist
 
@@ -1692,8 +1697,39 @@ def tune_es_for_crawl(defaults=False):
                 pass
 
 
-def update_dir_sizes(excdircount, dirsizes):
-    logger.info('Updating directory sizes...')
+def dirsize_update_worker(pathid_dict):
+    bulkdocs = []
+
+    while True:
+        if q_dirsizes.empty():
+            index_bulk_add(es, bulkdocs, config, cliargs)
+        item = q_dirsizes.get()
+        path, size = item
+
+        # subtract any empty dirs for rootdir doc
+        if path == ".":
+            size[2] = size[2] - excdircount
+
+        # get doc id from ids list
+        docid = pathid_dict[path]
+        doc = {
+            '_op_type': 'update',
+            '_index': cliargs['index'],
+            '_type': 'directory',
+            '_id': docid,
+            'doc': {'filesize': size[0], 'items_files': size[1],
+                    'items_subdirs': size[2], 'items': size[1]+size[2]+1}
+        }
+        bulkdocs.append(doc)
+        if len(bulkdocs) >= config['es_chunksize']:
+            index_bulk_add(es, bulkdocs, config, cliargs)
+            del bulkdocs[:]
+
+        q_dirsizes.task_done()
+
+
+def update_dir_sizes():
+    logger.info('Calculating tree size...')
 
     # sum all the worker path sizes
     for path, size in sorted(dirsizes.items()):
@@ -1712,37 +1748,40 @@ def update_dir_sizes(excdircount, dirsizes):
     es.indices.refresh(index=cliargs['index'])
 
     # get all directory doc ids
-    ids, paths = index_get_docs(cliargs, logger, doctype='directory', id_lists=True)
+    pathid_dict = index_get_docs(cliargs, logger, doctype='directory', pathid=True)
 
-    bulkdocs = []
-    i = 0
-    with progressbar.ProgressBar(max_value=len(dirsizes)) as bar:
-        for path, size in sorted(dirsizes.items()):
-            # subtract any empty dirs for rootdir doc
-            if path == ".":
-                size[2] = size[2] - excdircount
-            # find location of path in paths list
-            x = paths.index(path)
-            # get doc id from ids list
-            docid = ids[x]
-            doc = {
-                '_op_type': 'update',
-                '_index': cliargs['index'],
-                '_type': 'directory',
-                '_id': docid,
-                'doc': {'filesize': size[0], 'items_files': size[1],
-                        'items_subdirs': size[2], 'items': size[1]+size[2]+1}
-            }
-            bulkdocs.append(doc)
-            if len(bulkdocs) >= config['es_chunksize']:
-                index_bulk_add(es, bulkdocs, config, cliargs)
-                del bulkdocs[:]
-            i += 1
+    logger.info('Updating directory sizes...')
+
+    len_dirsizes = len(dirsizes)
+    if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+        bar = progressbar.ProgressBar(max_value=len_dirsizes)
+        bar.start()
+    else:
+        bar = None
+
+    # create threads to calc dir sizes
+    for i in range(cpu_count() * 2):
+        t = Thread(target=dirsize_update_worker, args=(pathid_dict,))
+        t.daemon = True
+        t.start()
+
+    # enqueue paths
+    for path, size in sorted(dirsizes.items()):
+        q_dirsizes.put((path, size))
+
+    if bar:
+        i = 0
+        while i < len_dirsizes:
+            i = len_dirsizes - q_dirsizes.qsize()
             bar.update(i)
-        index_bulk_add(es, bulkdocs, config, cliargs)
+
+    q_dirsizes.join()
+
+    if bar:
+        bar.finish()
 
 
-def post_crawl_tasks(excdircount, dirsizes):
+def post_crawl_tasks():
     """This is the post crawl tasks function.
     It runs at the end of the crawl and does post tasks.
     """
@@ -1755,7 +1794,7 @@ def post_crawl_tasks(excdircount, dirsizes):
         calc_dir_sizes(cliargs, logger, path=rootdir_path)
     else:
         #calc_dir_sizes(cliargs, logger)
-        update_dir_sizes(excdircount, dirsizes)
+        update_dir_sizes()
 
     # add elapsed time crawl stat to es
     add_crawl_stats(es, cliargs['index'], rootdir_path, (time.time() - starttime), "finished_dircalc")
@@ -1819,6 +1858,10 @@ listen = [config['redis_queue'], config['redis_queue_crawl'], config['redis_queu
 q = Queue(listen[0], connection=redis_conn, default_timeout=config['redis_rq_timeout'])
 q_crawl = Queue(listen[1], connection=redis_conn, default_timeout=config['redis_rq_timeout'])
 q_calc = Queue(listen[2], connection=redis_conn, default_timeout=config['redis_rq_timeout'])
+
+# queue for dir size updates
+q_dirsizes = PyQueue()
+lock = Lock()
 
 
 if __name__ == "__main__":
@@ -2047,6 +2090,6 @@ if __name__ == "__main__":
     # start crawling
     starttime, excdircount, dirsizes = crawl_tree(rootdir_path, cliargs, logger, reindex_dict)
 
-    post_crawl_tasks(excdircount, dirsizes)
+    post_crawl_tasks()
 
     logger.info('All DONE! Sayonara!')
