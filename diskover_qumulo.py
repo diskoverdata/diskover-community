@@ -26,9 +26,8 @@ import ujson
 from datetime import datetime
 import time
 import hashlib
-import pwd
-import grp
 import base64
+import progressbar
 
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -135,12 +134,25 @@ def qumulo_api_walk(top, ip, ses):
             yield entry
 
 
-def qumulo_treewalk(path, ip, ses, q_crawl, num_sep, level, batchsize, cliargs, reindex_dict, bar):
+def qumulo_treewalk(path, ip, ses, q_crawl, num_sep, level, batchsize, cliargs, reindex_dict):
     jobs = []
     dirsizes = {}
     batch = []
     excdircount = 0
+    timestamp = time.time()
+    dircount = 0
 
+    # set up progress bar
+    if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+        widgets = [progressbar.AnimatedMarker(), ' Crawling (Queue: ', progressbar.Counter(),
+                   progressbar.FormatLabel(''), ') ', progressbar.Timer()]
+
+        bar = progressbar.ProgressBar(widgets=widgets, max_value=progressbar.UnknownLength)
+        bar.start()
+    else:
+        bar = None
+
+    bartimestamp = time.time()
     for root, dirs, files in qumulo_api_walk(path, ip, ses):
         if len(dirs) == 0 and len(files) == 0 and not cliargs['indexemptydirs']:
             excdircount += 1
@@ -174,16 +186,24 @@ def qumulo_treewalk(path, ip, ses, q_crawl, num_sep, level, batchsize, cliargs, 
             excdircount += 1
 
         # check if any jobs have returned results and store in dirsizes dict
-        jobs_temp = jobs[:]
-        for j in jobs_temp:
-            if j.result:
-                for path, size in j.result.items():
-                    dirsizes[path] = size
-                jobs.remove(j)
+        if time.time() - timestamp >= 2:
+            jobs_temp = jobs[:]
+            for j in jobs_temp:
+                if j.result:
+                    for path, size in j.result.items():
+                        dirsizes[path] = size
+                    jobs.remove(j)
+            timestamp = time.time()
 
         # update progress bar
         if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
             try:
+                if time.time() - bartimestamp >= 2:
+                    elapsed = round(time.time() - bartimestamp, 3)
+                    dirspersec = round(dircount / elapsed, 3)
+                    widgets[4] = progressbar.FormatLabel(', ' + str(dirspersec) + ' dirs/sec) ')
+                    bartimestamp = time.time()
+                    dircount = 0
                 bar.update(len(q_crawl))
             except ZeroDivisionError:
                 bar.update(0)
@@ -222,6 +242,10 @@ def qumulo_treewalk(path, ip, ses, q_crawl, num_sep, level, batchsize, cliargs, 
         for path, size in j.result.items():
             dirsizes[path] = size
         jobs.remove(j)
+
+    if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+        bar.update(0)
+        bar.finish()
 
     return excdircount, dirsizes
 

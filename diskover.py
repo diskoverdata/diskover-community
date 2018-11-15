@@ -1277,7 +1277,7 @@ def log_setup(cliargs):
 
 
 def progress_bar(event):
-    if event == 'Crawling' or event == 'Checking' or event == 'Calculating':
+    if event == 'Checking' or event == 'Calculating':
         widgets = [progressbar.AnimatedMarker(), ' ', event + ' (Queue: ', progressbar.Counter(), ') ', progressbar.Timer()]
         bar = progressbar.ProgressBar(widgets=widgets, max_value=progressbar.UnknownLength)
     else:
@@ -1383,22 +1383,34 @@ def calc_dir_sizes(cliargs, logger, path=None):
         sys.exit(0)
 
 
+def scandirwalk_worker():
+    while True:
+        dirs = []
+        nondirs = []
+        path = q_paths.get()
+        for entry in scandir(path):
+            if entry.is_dir(follow_symlinks=False):
+                dirs.append(entry.name)
+            elif entry.is_file(follow_symlinks=False):
+                nondirs.append(entry.name)
+        q_paths_results.put((path, dirs, nondirs))
+        for name in dirs:
+            new_path = os.path.join(path, name)
+            q_paths.put(new_path)
+        q_paths.task_done()
+
+
 def scandirwalk(path):
-    dirs = []
-    nondirs = []
-    for entry in scandir(path):
-        if entry.is_dir(follow_symlinks=False):
-            dirs.append(entry.name)
-        elif entry.is_file(follow_symlinks=False):
-            nondirs.append(entry.name)
-    yield path, dirs, nondirs
-    for name in dirs:
-        new_path = os.path.join(path, name)
-        for entry in scandirwalk(new_path):
-            yield entry
+    q_paths.put(path)
+    while q_paths.qsize() > 0 or q_paths_results.qsize() > 0:
+        entry = q_paths_results.get()
+        root, dirs, nondirs = entry
+        yield root, dirs, nondirs
+        q_paths_results.task_done()
+    q_paths_results.join()
 
 
-def treewalk(top, num_sep, level, batchsize, cliargs, reindex_dict, bar):
+def treewalk(top, num_sep, level, batchsize, cliargs, reindex_dict):
     """This is the tree walk function.
     It walks the tree and adds tuple of directory and it's items
     to redis queue for rq worker bots to scrape meta and upload
@@ -1413,8 +1425,27 @@ def treewalk(top, num_sep, level, batchsize, cliargs, reindex_dict, bar):
     dirsizes = {}
     excdircount = 0
     timestamp = time.time()
+    dircount = 0
 
+    # set up threads for tree walk
+    for i in range(cpu_count()):
+        t = Thread(target=scandirwalk_worker)
+        t.daemon = True
+        t.start()
+
+    # set up progress bar
+    if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+        widgets = [progressbar.AnimatedMarker(), ' Crawling (Queue: ', progressbar.Counter(),
+                   progressbar.FormatLabel(''), ') ', progressbar.Timer()]
+
+        bar = progressbar.ProgressBar(widgets=widgets, max_value=progressbar.UnknownLength)
+        bar.start()
+    else:
+        bar = None
+
+    bartimestamp = time.time()
     for root, dirs, files in scandirwalk(top):
+        dircount += 1
         if not dir_excluded(root, config, cliargs):
             # check for emptry dirs
             if len(dirs) == 0 and len(files) == 0 and not cliargs['indexemptydirs']:
@@ -1456,6 +1487,12 @@ def treewalk(top, num_sep, level, batchsize, cliargs, reindex_dict, bar):
         # update progress bar
         if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
             try:
+                if time.time() - bartimestamp >= 2:
+                    elapsed = round(time.time() - bartimestamp, 3)
+                    dirspersec = round(dircount / elapsed, 3)
+                    widgets[4] = progressbar.FormatLabel(', ' + str(dirspersec) + ' dirs/sec) ')
+                    bartimestamp = time.time()
+                    dircount = 0
                 bar.update(len(q_crawl))
             except ZeroDivisionError:
                 bar.update(0)
@@ -1494,6 +1531,10 @@ def treewalk(top, num_sep, level, batchsize, cliargs, reindex_dict, bar):
         for path, size in j.result.items():
             dirsizes[path] = size
         jobs.remove(j)
+
+    if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+        bar.update(0)
+        bar.finish()
 
     return excdircount, dirsizes
 
@@ -1545,24 +1586,14 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
 
         logger.info("Starting crawl (maxdepth %s)" % cliargs['maxdepth'])
 
-        if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
-            bar = progress_bar('Crawling')
-            bar.start()
-        else:
-            bar = None
-
         # qumulo api crawl
         if cliargs['qumulo']:
             from diskover_qumulo import qumulo_treewalk
             excdircount, dirsizes = qumulo_treewalk(path, qumulo_ip, qumulo_ses, q_crawl, num_sep, level, batchsize,
-                                                  cliargs, reindex_dict, bar)
+                                                  cliargs, reindex_dict)
         # regular crawl using walk
         else:
-            excdircount, dirsizes = treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict, bar)
-
-        if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
-            bar.update(0)
-            bar.finish()
+            excdircount, dirsizes = treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict)
 
         logger.info("Finished crawling!")
 
@@ -1769,7 +1800,7 @@ def update_dir_sizes():
         bar = None
 
     # create threads to calc dir sizes
-    for i in range(cpu_count() * 2):
+    for i in range(cpu_count()):
         t = Thread(target=dirsize_update_worker, args=(pathid_dict,))
         t.daemon = True
         t.start()
@@ -1870,6 +1901,9 @@ q_calc = Queue(listen[2], connection=redis_conn, default_timeout=config['redis_r
 
 # queue for dir size updates
 q_dirsizes = PyQueue()
+# queue for paths
+q_paths = PyQueue()
+q_paths_results = PyQueue()
 lock = Lock()
 
 

@@ -1,6 +1,9 @@
 # Diskover Change Log
 
 ## [1.5.0-rc23] = 2018-11-15
+### added
+- threaded tree walk
+- dirs/sec to crawl progress bar
 ### changed
 - optimized memory usage for storing dir sizes
 - tree walk client v1.0.16
