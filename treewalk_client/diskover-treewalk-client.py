@@ -156,7 +156,8 @@ def ls_dir_gen(top):
 	while True:
 		try:
 			line = proc.stdout.readline().decode('utf-8', errors='ignore')
-		except UnicodeDecodeError:
+		except UnicodeDecodeError as e:
+			print(e)
 			continue
 		if line == '':
 			yield root, dirs, nondirs
