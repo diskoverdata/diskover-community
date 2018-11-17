@@ -155,7 +155,7 @@ def ls_dir_gen(top):
 
 	while True:
 		try:
-			line = proc.stdout.readline().decode('utf-8', errors='ignore')
+			line = proc.stdout.readline().decode('utf-8', 'ignore')
 		except UnicodeDecodeError as e:
 			print(e)
 			continue
