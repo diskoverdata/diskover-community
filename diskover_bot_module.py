@@ -805,7 +805,6 @@ def get_metadata(path, cliargs):
 
 
 def scrape_tree_meta(paths, cliargs, reindex_dict):
-    dirsizes = {}
     worker = get_worker_name()
     tree_dirs = []
     tree_files = []
@@ -821,10 +820,7 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
     for path in paths:
         path_count += 1
         starttime = time.time()
-        root, dirs, files = path
-        dirsize = 0
-        diritems_files = 0
-        diritems_subdirs = len(dirs)
+        root, files = path
         if path_count == 1:
             if type(root) is tuple:
                 statsembeded = True
@@ -841,10 +837,6 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
         else:
             root_path = root
             dmeta = get_dir_meta(worker, root_path, cliargs, reindex_dict, statsembeded=False)
-
-        # shorter relative path for dirsizes dict (reduce memory)
-        root_path_rel = root_path.replace(cliargs['rootdir'], ".")
-        dirsizes[root_path_rel] = {}
 
         if dmeta == "sametimes":
             # fetch meta data for directory and all it's files (doc sources) from index2 since
@@ -879,13 +871,6 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
                                          reindex_dict, statsembeded=False)
                 if fmeta:
                     tree_files.append(fmeta)
-                    # add filesize to dirsize
-                    dirsize += fmeta['filesize']
-                    # add to diritems_files count
-                    diritems_files += 1
-
-            # update dirsizes
-            dirsizes[root_path_rel] = [dirsize, diritems_files, diritems_subdirs]
 
             # update crawl time
             elapsed = time.time() - starttime
@@ -905,8 +890,6 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
     # bulk add to es
     if len(tree_dirs) > 0 or len(tree_files) > 0:
         es_bulk_add(worker, tree_dirs, tree_files, cliargs, totalcrawltime)
-
-    return dirsizes
 
 
 def file_excluded(filename, extension):

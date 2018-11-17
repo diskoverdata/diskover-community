@@ -32,12 +32,6 @@ import struct
 socket_tasks = {}
 # list of socket client
 clientlist = []
-# lists to hold rq jobs proxy objects and their results
-jobs = []
-# dict to hold dirsizes from rq job results
-dirsizes = {}
-
-excdircount = 0
 
 
 def socket_thread_handler(threadnum, q, cliargs, logger):
@@ -130,9 +124,6 @@ def socket_thread_handler_twc(threadnum, q, q_kill, lock, rootdir, num_sep, leve
     Stream of directory listings (pickle) from diskover treewalk
     client connections are enqueued to redis rq queue.
     """
-    global jobs
-    global dirsizes
-    global excdircount
 
     while True:
 
@@ -161,40 +152,18 @@ def socket_thread_handler_twc(threadnum, q, q_kill, lock, rootdir, num_sep, leve
                 batch = []
                 for root, dirs, files in data_decoded:
                     if len(dirs) == 0 and len(files) == 0 and not cliargs['indexemptydirs']:
-                        lock.acquire(True)
-                        excdircount += 1
-                        lock.release()
                         continue
-                    batch.append((root, dirs, files))
+                    batch.append((root, files))
                     batch_len = len(batch)
                     if batch_len >= batchsize:
-                        job = q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,))
-                        lock.acquire(True)
-                        jobs.append(job)
-                        lock.release()
+                        q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,))
                         del batch[:]
                         if cliargs['adaptivebatch']:
                             batchsize = adaptive_batch(q_crawl, cliargs, batchsize)
 
-                    # check if any jobs have returned results and store in dirsizes dict
-                    jobs_temp = jobs[:]
-                    for j in jobs_temp:
-                        if j.result:
-                            lock.acquire(True)
-                            for path, size in j.result.items():
-                                dirsizes[path] = size
-                            try:
-                                jobs.remove(j)
-                            except ValueError:
-                                pass
-                            lock.release()
-
                 if len(batch) > 0:
                     # add any remaining in batch to queue
-                    job = q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,))
-                    lock.acquire(True)
-                    jobs.append(job)
-                    lock.release()
+                    q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,))
                     del batch[:]
 
             # close connection to client
@@ -267,9 +236,6 @@ def start_socket_server_twc(rootdir_path, num_sep, level, batchsize, cliargs, lo
     It opens a socket and waits for remote commands.
     """
     global clientlist
-    global jobs
-    global dirsizes
-    global excdircount
 
     # set thread/connection limit
     max_connections = config['listener_maxconnections']
@@ -304,13 +270,7 @@ def start_socket_server_twc(rootdir_path, num_sep, level, batchsize, cliargs, lo
                 logger.info("Received signal to shutdown socket server")
                 q.join()
                 serversock.close()
-                # get jobs returned results and store in dirsizes dict
-                for j in jobs:
-                    while not j.result:
-                        time.sleep(1)
-                    for path, size in j.result.items():
-                        dirsizes[path] = size
-                return starttime, excdircount, dirsizes
+                return starttime
             logger.info("Waiting for connection, listening on %s port %s TCP (ctrl-c to shutdown)"
                         % (str(host), str(port)))
             # establish connection

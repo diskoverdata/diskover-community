@@ -135,11 +135,7 @@ def qumulo_api_walk(top, ip, ses):
 
 
 def qumulo_treewalk(path, ip, ses, q_crawl, num_sep, level, batchsize, cliargs, reindex_dict):
-    jobs = []
-    dirsizes = {}
     batch = []
-    excdircount = 0
-    timestamp = time.time()
     dircount = 0
 
     # set up progress bar
@@ -155,19 +151,17 @@ def qumulo_treewalk(path, ip, ses, q_crawl, num_sep, level, batchsize, cliargs, 
     bartimestamp = time.time()
     for root, dirs, files in qumulo_api_walk(path, ip, ses):
         if len(dirs) == 0 and len(files) == 0 and not cliargs['indexemptydirs']:
-            excdircount += 1
             continue
         if root['path'] != '/':
             root_path = root['path'].rstrip(os.path.sep)
         else:
             root_path = root['path']
         if not dir_excluded(root_path, config, cliargs):
-            batch.append((root, dirs, files))
+            batch.append((root, files))
             batch_len = len(batch)
             if batch_len >= batchsize:
-                job = q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,),
+                q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,),
                                       result_ttl=config['redis_ttl'])
-                jobs.append(job)
                 del batch[:]
                 if cliargs['adaptivebatch']:
                     batchsize = adaptive_batch(q_crawl, cliargs, batchsize)
@@ -183,17 +177,6 @@ def qumulo_treewalk(path, ip, ses, q_crawl, num_sep, level, batchsize, cliargs, 
         else:  # directory excluded
             del dirs[:]
             del files[:]
-            excdircount += 1
-
-        # check if any jobs have returned results and store in dirsizes dict
-        if time.time() - timestamp >= 2:
-            jobs_temp = jobs[:]
-            for j in jobs_temp:
-                if j.result:
-                    for path, size in j.result.items():
-                        dirsizes[path] = size
-                    jobs.remove(j)
-            timestamp = time.time()
 
         # update progress bar
         if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
@@ -211,8 +194,7 @@ def qumulo_treewalk(path, ip, ses, q_crawl, num_sep, level, batchsize, cliargs, 
                 bar.update(0)
 
     # add any remaining in batch to queue
-    job = q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,), result_ttl=config['redis_ttl'])
-    jobs.append(job)
+    q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,), result_ttl=config['redis_ttl'])
 
     # wait for queue to be empty and update progress bar
     while True:
@@ -234,20 +216,9 @@ def qumulo_treewalk(path, ip, ses, q_crawl, num_sep, level, batchsize, cliargs, 
             break
         time.sleep(.5)
 
-    # get jobs returned results and store in dirsizes dict
-    jobs_temp = jobs[:]
-    for j in jobs_temp:
-        while not j.result:
-            time.sleep(1)
-        for path, size in j.result.items():
-            dirsizes[path] = size
-        jobs.remove(j)
-
     if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
         bar.update(0)
         bar.finish()
-
-    return excdircount, dirsizes
 
 
 def qumulo_get_dir_meta(worker_name, path, cliargs, reindex_dict, redis_conn):

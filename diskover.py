@@ -1422,16 +1422,9 @@ def treewalk(top, num_sep, level, batchsize, cliargs, reindex_dict):
     It walks the tree and adds tuple of directory and it's items
     to redis queue for rq worker bots to scrape meta and upload
     to ES index after batch size (dir count) has been reached.
-    Each enqueued job gets stored in job proxy object and then gets
-    added to jobs list. Jobs in jobs list are checked
-    for returned values and gets put in dirsizes dict.
     """
     from diskover_bot_module import scrape_tree_meta
-    jobs = []
     batch = []
-    dirsizes = {}
-    excdircount = 0
-    timestamp = time.time()
     dircount = 0
 
     # set up threads for tree walk
@@ -1456,14 +1449,12 @@ def treewalk(top, num_sep, level, batchsize, cliargs, reindex_dict):
         if not dir_excluded(root, config, cliargs):
             # check for emptry dirs
             if len(dirs) == 0 and len(files) == 0 and not cliargs['indexemptydirs']:
-                excdircount += 1
                 continue
-            batch.append((root, dirs, files))
+            batch.append((root, files))
             batch_len = len(batch)
             if batch_len >= batchsize:
-                job = q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,),
+                q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,),
                                       result_ttl=config['redis_ttl'])
-                jobs.append(job)
                 del batch[:]
                 if cliargs['adaptivebatch']:
                     batchsize = adaptive_batch(q_crawl, cliargs, batchsize)
@@ -1477,19 +1468,8 @@ def treewalk(top, num_sep, level, batchsize, cliargs, reindex_dict):
                     del files[:]
 
         else:  # directory excluded
-            excdircount += 1
             del dirs[:]
             del files[:]
-
-        # check if any jobs have returned results and add to dirsizes list
-        if time.time() - timestamp >= 2:
-            jobs_temp = jobs[:]
-            for j in jobs_temp:
-                if j.result:
-                    for path, size in j.result.items():
-                        dirsizes[path] = size
-                    jobs.remove(j)
-            timestamp = time.time()
 
         # update progress bar
         if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
@@ -1507,8 +1487,7 @@ def treewalk(top, num_sep, level, batchsize, cliargs, reindex_dict):
                 bar.update(0)
 
     # add any remaining in batch to queue
-    job = q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,), result_ttl=config['redis_ttl'])
-    jobs.append(job)
+    q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,), result_ttl=config['redis_ttl'])
 
     # wait for queue to be empty and update progress bar
     while True:
@@ -1530,20 +1509,9 @@ def treewalk(top, num_sep, level, batchsize, cliargs, reindex_dict):
             break
         time.sleep(.5)
 
-    # get jobs returned results and put in dirsizes dict
-    jobs_temp = jobs[:]
-    for j in jobs_temp:
-        while not j.result:
-            time.sleep(1)
-        for path, size in j.result.items():
-            dirsizes[path] = size
-        jobs.remove(j)
-
     if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
         bar.update(0)
         bar.finish()
-
-    return excdircount, dirsizes
 
 
 def crawl_tree(path, cliargs, logger, reindex_dict):
@@ -1585,9 +1553,8 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
         # check for listenlwc socket cli flag to start socket server
         if cliargs['listentwc']:
             from diskover_socket_server import start_socket_server_twc
-            starttime, excdircount, dirsizes = start_socket_server_twc(rootdir_path, num_sep, level, batchsize,
-                                                                         cliargs, logger, reindex_dict)
-            return starttime, excdircount, dirsizes
+            starttime = start_socket_server_twc(rootdir_path, num_sep, level, batchsize, cliargs, logger, reindex_dict)
+            return starttime
 
         starttime = time.time()
 
@@ -1596,15 +1563,14 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
         # qumulo api crawl
         if cliargs['qumulo']:
             from diskover_qumulo import qumulo_treewalk
-            excdircount, dirsizes = qumulo_treewalk(path, qumulo_ip, qumulo_ses, q_crawl, num_sep, level, batchsize,
-                                                  cliargs, reindex_dict)
-        # regular crawl using walk
+            qumulo_treewalk(path, qumulo_ip, qumulo_ses, q_crawl, num_sep, level, batchsize, cliargs, reindex_dict)
+        # regular crawl using scandir
         else:
-            excdircount, dirsizes = treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict)
+            treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict)
 
         logger.info("Finished crawling!")
 
-        return starttime, excdircount, dirsizes
+        return starttime
 
     except KeyboardInterrupt:
         print("Ctrl-c keyboard interrupt, shutting down...")
@@ -1744,90 +1710,6 @@ def tune_es_for_crawl(defaults=False):
                 pass
 
 
-def dirsize_update_worker(pathid_dict):
-    bulkdocs = []
-
-    while True:
-        if q_dirsizes.empty():
-            index_bulk_add(es, bulkdocs, config, cliargs)
-        item = q_dirsizes.get()
-        path, size = item
-
-        # subtract any empty dirs for rootdir doc
-        if path == ".":
-            size[2] = size[2] - excdircount
-
-        # get doc id from ids list
-        docid = pathid_dict[path]
-        doc = {
-            '_op_type': 'update',
-            '_index': cliargs['index'],
-            '_type': 'directory',
-            '_id': docid,
-            'doc': {'filesize': size[0], 'items_files': size[1],
-                    'items_subdirs': size[2], 'items': size[1]+size[2]+1}
-        }
-        bulkdocs.append(doc)
-        if len(bulkdocs) >= config['es_chunksize']:
-            index_bulk_add(es, bulkdocs, config, cliargs)
-            del bulkdocs[:]
-
-        q_dirsizes.task_done()
-
-
-def update_dir_sizes():
-    logger.info('Calculating tree size...')
-
-    # sum all the worker path sizes
-    for path, size in sorted(dirsizes.items()):
-        # add directory size to all dir paths above
-        p = os.path.sep.join(path.split(os.path.sep)[:-1])
-        while len(p) > 0:
-            try:
-                dirsizes[p][0] += size[0]
-                dirsizes[p][1] += size[1]
-                dirsizes[p][2] += size[2]
-            except KeyError:
-                pass
-            p = os.path.sep.join(p.split(os.path.sep)[:-1])
-
-    # update directory doc's filesize, items counts
-    es.indices.refresh(index=cliargs['index'])
-
-    # get all directory doc ids
-    pathid_dict = index_get_docs(cliargs, logger, doctype='directory', pathid=True)
-
-    logger.info('Updating directory sizes...')
-
-    len_dirsizes = len(dirsizes)
-    if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
-        bar = progressbar.ProgressBar(max_value=len_dirsizes)
-        bar.start()
-    else:
-        bar = None
-
-    # create threads to calc dir sizes
-    for i in range(cpu_count()*2):
-        t = Thread(target=dirsize_update_worker, args=(pathid_dict,))
-        t.daemon = True
-        t.start()
-
-    # enqueue paths
-    for path, size in sorted(dirsizes.items()):
-        q_dirsizes.put((path, size))
-
-    if bar:
-        i = 0
-        while i < len_dirsizes:
-            i = len_dirsizes - q_dirsizes.qsize()
-            bar.update(i)
-
-    q_dirsizes.join()
-
-    if bar:
-        bar.finish()
-
-
 def post_crawl_tasks():
     """This is the post crawl tasks function.
     It runs at the end of the crawl and does post tasks.
@@ -1840,8 +1722,7 @@ def post_crawl_tasks():
     if cliargs['reindex'] or cliargs['reindexrecurs'] or cliargs['crawlbot']:
         calc_dir_sizes(cliargs, logger, path=rootdir_path)
     else:
-        #calc_dir_sizes(cliargs, logger)
-        update_dir_sizes()
+        calc_dir_sizes(cliargs, logger)
 
     # add elapsed time crawl stat to es
     add_crawl_stats(es, cliargs['index'], rootdir_path, (time.time() - starttime), "finished_dircalc")
@@ -1906,8 +1787,6 @@ q = Queue(listen[0], connection=redis_conn, default_timeout=config['redis_rq_tim
 q_crawl = Queue(listen[1], connection=redis_conn, default_timeout=config['redis_rq_timeout'])
 q_calc = Queue(listen[2], connection=redis_conn, default_timeout=config['redis_rq_timeout'])
 
-# queue for dir size updates
-q_dirsizes = PyQueue()
 # queue for paths
 q_paths = PyQueue()
 q_paths_results = PyQueue()
@@ -2138,7 +2017,7 @@ if __name__ == "__main__":
     pre_crawl_tasks()
 
     # start crawling
-    starttime, excdircount, dirsizes = crawl_tree(rootdir_path, cliargs, logger, reindex_dict)
+    starttime = crawl_tree(rootdir_path, cliargs, logger, reindex_dict)
 
     post_crawl_tasks()
 
