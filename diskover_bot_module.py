@@ -17,11 +17,18 @@ import argparse
 import os
 import hashlib
 import socket
-import pwd
-import grp
 import time
 import re
 import base64
+import platform
+
+try:
+    import pwd
+    import grp
+#except ImportError:
+#    import win32api
+#    import win32con
+#    import win32security
 
 import diskover_connections
 
@@ -402,16 +409,18 @@ def get_dir_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
             owner = owners[uid]
         # not in cache
         else:
-            try:
-                owner = pwd.getpwuid(uid).pw_name.split('\\')
-                # remove domain before owner
-                if len(owner) == 2:
-                    owner = owner[1]
-                else:
-                    owner = owner[0]
             # if we can't find the owner's user name, use the uid number
-            except KeyError:
-                owner = uid
+            owner = uid
+            if not platform.system() == 'Windows':
+                try:
+                    owner = pwd.getpwuid(uid).pw_name.split('\\')
+                    # remove domain before owner
+                    if len(owner) == 2:
+                        owner = owner[1]
+                    else:
+                        owner = owner[0]
+                except KeyError:
+                    owner = uid
             # store it in cache
             if not uid in uids:
                 uids.append(uid)
@@ -423,16 +432,18 @@ def get_dir_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
             group = groups[gid]
         # not in cache
         else:
-            try:
-                group = grp.getgrgid(gid).gr_name.split('\\')
-                # remove domain before group
-                if len(group) == 2:
-                    group = group[1]
-                else:
-                    group = group[0]
             # if we can't find the group name, use the gid number
-            except KeyError:
-                group = gid
+            group = gid
+            if not platform.system() == 'Windows':
+                try:
+                    group = grp.getgrgid(gid).gr_name.split('\\')
+                    # remove domain before group
+                    if len(group) == 2:
+                        group = group[1]
+                    else:
+                        group = group[0]
+                except KeyError:
+                    group = gid
             # store in cache
             if not gid in gids:
                 gids.append(gid)
@@ -552,16 +563,18 @@ def get_file_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
             owner = owners[uid]
         # not in cache
         else:
-            try:
-                owner = pwd.getpwuid(uid).pw_name.split('\\')
-                # remove domain before owner
-                if len(owner) == 2:
-                    owner = owner[1]
-                else:
-                    owner = owner[0]
             # if we can't find the owner's user name, use the uid number
-            except KeyError:
-                owner = uid
+            owner = uid
+            if not platform.system() == 'Windows':
+                try:
+                    owner = pwd.getpwuid(uid).pw_name.split('\\')
+                    # remove domain before owner
+                    if len(owner) == 2:
+                        owner = owner[1]
+                    else:
+                        owner = owner[0]
+                except KeyError:
+                    owner = uid
             # store it in cache
             if not uid in uids:
                 uids.append(uid)
@@ -573,16 +586,18 @@ def get_file_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
             group = groups[gid]
         # not in cache
         else:
-            try:
-                group = grp.getgrgid(gid).gr_name.split('\\')
-                # remove domain before group
-                if len(group) == 2:
-                    group = group[1]
-                else:
-                    group = group[0]
             # if we can't find the group name, use the gid number
-            except KeyError:
-                group = gid
+            group = gid
+            if not platform.system() == 'Windows':
+                try:
+                    group = grp.getgrgid(gid).gr_name.split('\\')
+                    # remove domain before group
+                    if len(group) == 2:
+                        group = group[1]
+                    else:
+                        group = group[0]
+                except KeyError:
+                    group = gid
             # store in cache
             if not gid in gids:
                 gids.append(gid)

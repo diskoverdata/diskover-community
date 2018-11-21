@@ -26,8 +26,10 @@ try:
 except ImportError:
     from Queue import Queue as PyQueue
 import progressbar
+import platform
 import argparse
 import logging
+import ctypes
 import imp
 import time
 import math
@@ -1005,14 +1007,30 @@ def add_diskspace(index, logger, path):
     It adds total, used, free and available
     disk space for a path to es.
     """
-    statvfs = os.statvfs(path)
-    # Size of filesystem in bytes
-    total = statvfs.f_frsize * statvfs.f_blocks
-    # Actual number of free bytes
-    free = statvfs.f_frsize * statvfs.f_bfree
-    # Number of free bytes that ordinary users are allowed
-    # to use (excl. reserved space)
-    available = statvfs.f_frsize * statvfs.f_bavail
+    if platform.system() == 'Windows':
+        _, total, free = ctypes.c_ulonglong(), ctypes.c_ulonglong(), \
+                           ctypes.c_ulonglong()
+        if sys.version_info >= (3,) or isinstance(path, unicode):
+            fun = ctypes.windll.kernel32.GetDiskFreeSpaceExW
+        else:
+            fun = ctypes.windll.kernel32.GetDiskFreeSpaceExA
+        ret = fun(path, ctypes.byref(_), ctypes.byref(total), ctypes.byref(free))
+        if ret == 0:
+            raise ctypes.WinError()
+        total = total.value
+        free = free.value
+        available = free
+
+    else:
+        statvfs = os.statvfs(path)
+        # Size of filesystem in bytes
+        total = statvfs.f_frsize * statvfs.f_blocks
+        # Actual number of free bytes
+        free = statvfs.f_frsize * statvfs.f_bfree
+        # Number of free bytes that ordinary users are allowed
+        # to use (excl. reserved space)
+        available = statvfs.f_frsize * statvfs.f_bavail
+
     used = total - free
     indextime_utc = datetime.utcnow().isoformat()
     data = {
@@ -1979,7 +1997,7 @@ if __name__ == "__main__":
         sys.exit(0)
     else:
         # warn if not running as root
-        if os.geteuid():
+        if not platform.system() == 'Windows' and os.geteuid():
             logger.warning('Not running as root, you may not be able to crawl all files')
         if not os.path.exists(cliargs['rootdir']) or not \
                 os.path.isdir(cliargs['rootdir']):
