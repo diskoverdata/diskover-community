@@ -1449,10 +1449,10 @@ def treewalk(top, num_sep, level, batchsize, cliargs, reindex_dict):
     for root, dirs, files in scandirwalk(top):
         dircount += 1
         totaldirs += 1
+        # check for emptry dirs
+        if len(dirs) == 0 and len(files) == 0 and not cliargs['indexemptydirs']:
+            continue
         if not dir_excluded(root, config, cliargs):
-            # check for emptry dirs
-            if len(dirs) == 0 and len(files) == 0 and not cliargs['indexemptydirs']:
-                continue
             batch.append((root, files))
             batch_len = len(batch)
             if batch_len >= batchsize:
@@ -1572,7 +1572,7 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
         # qumulo api crawl
         if cliargs['qumulo']:
             from diskover_qumulo import qumulo_treewalk
-            qumulo_treewalk(path, qumulo_ip, qumulo_ses, q_crawl, num_sep, level, batchsize, cliargs, reindex_dict)
+            qumulo_treewalk(path, qumulo_ip, qumulo_ses, q_crawl, num_sep, level, batchsize, cliargs, logger, reindex_dict)
         # regular crawl using scandir
         else:
             treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict)

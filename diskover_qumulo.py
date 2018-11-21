@@ -18,6 +18,12 @@ except ImportError:
 from diskover import config, dir_excluded, plugins, adaptive_batch, redis_conn
 from diskover_bot_module import scrape_tree_meta, auto_tag, uids, owners, gids, groups, file_excluded
 from rq import SimpleWorker
+from threading import Thread, Lock
+from multiprocessing import cpu_count
+try:
+    from queue import Queue as PyQueue
+except ImportError:
+    from Queue import Queue as PyQueue
 import os
 import random
 import requests
@@ -120,23 +126,50 @@ def qumulo_api_listdir(top, ip, ses):
     return dirs, nondirs
 
 
-def qumulo_api_walk(top, ip, ses):
-    dirs, nondirs = qumulo_api_listdir(top, ip, ses)
+def qumulo_api_walk(path, ip, ses, q_paths, q_paths_results):
+    q_paths.put(path)
+    while True:
+        entry = q_paths_results.get()
+        root, dirs, nondirs = entry
+        yield root, dirs, nondirs
+        q_paths_results.task_done()
+        if q_paths_results.qsize() == 0 and q_paths.qsize() == 0:
+            time.sleep(.5)
+            if q_paths_results.qsize() == 0 and q_paths.qsize() == 0:
+                break
 
-    root = qumulo_get_file_attr(top, ip, ses)
 
-    # Yield before recursion
-    yield root, dirs, nondirs
+def apiwalk_worker(ip, ses, q_paths, q_paths_results, lock):
+    while True:
+        path = q_paths.get()
+        dirs, nondirs = qumulo_api_listdir(path, ip, ses)
 
-    # Recurse into sub-directories
-    for d_path in dirs:
-        for entry in qumulo_api_walk(d_path, ip, ses):
-            yield entry
+        root = qumulo_get_file_attr(path, ip, ses)
+
+        q_paths_results.put((root, dirs, nondirs))
+
+        for new_path in dirs:
+            q_paths.put(new_path)
+
+        q_paths.task_done()
 
 
-def qumulo_treewalk(path, ip, ses, q_crawl, num_sep, level, batchsize, cliargs, reindex_dict):
+def qumulo_treewalk(path, ip, ses, q_crawl, num_sep, level, batchsize, cliargs, logger, reindex_dict):
     batch = []
     dircount = 0
+    totaldirs = 0
+    starttime = time.time()
+
+    # queue for paths
+    q_paths = PyQueue()
+    q_paths_results = PyQueue()
+    lock = Lock()
+
+    # set up threads for tree walk
+    for i in range(cpu_count() * 2):
+        t = Thread(target=apiwalk_worker, args=(ip, ses, q_paths, q_paths_results, lock,))
+        t.daemon = True
+        t.start()
 
     # set up progress bar
     if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
@@ -149,7 +182,9 @@ def qumulo_treewalk(path, ip, ses, q_crawl, num_sep, level, batchsize, cliargs, 
         bar = None
 
     bartimestamp = time.time()
-    for root, dirs, files in qumulo_api_walk(path, ip, ses):
+    for root, dirs, files in qumulo_api_walk(path, ip, ses, q_paths, q_paths_results):
+        dircount += 1
+        totaldirs += 1
         if len(dirs) == 0 and len(files) == 0 and not cliargs['indexemptydirs']:
             continue
         if root['path'] != '/':
@@ -219,6 +254,12 @@ def qumulo_treewalk(path, ip, ses, q_crawl, num_sep, level, batchsize, cliargs, 
     if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
         bar.update(0)
         bar.finish()
+
+    elapsed = round(time.time() - starttime, 3)
+    dirspersec = round(totaldirs / elapsed, 3)
+
+    logger.info("Finished crawling, elapsed time %s sec, dirs walked %s (%s dirs/sec)" %
+                (elapsed, totaldirs, dirspersec))
 
 
 def qumulo_get_dir_meta(worker_name, path, cliargs, reindex_dict, redis_conn):
