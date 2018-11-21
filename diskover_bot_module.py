@@ -694,7 +694,6 @@ def calc_dir_size(dirlist, cliargs):
         else:
             data = {
                 "size": 0,
-                "_source": ['inode', 'filesize'],
                 "query": {
                     "query_string": {
                         'query': 'path_parent: ' + newpath + ' OR path_parent: ' + newpathwildcard,
@@ -721,6 +720,28 @@ def calc_dir_size(dirlist, cliargs):
         totalsize += res['aggregations']['total_size']['value']
 
         # directory doc search (subdirs)
+
+        # check if / (root) path
+        if newpath == '\/':
+            data = {
+                "size": 0,
+                "query": {
+                    "query_string": {
+                        "query": "path_parent: " + newpath + "*",
+                        "analyze_wildcard": "true"
+                    }
+                }
+            }
+        else:
+            data = {
+                "size": 0,
+                "query": {
+                    "query_string": {
+                        'query': 'path_parent: ' + newpath + ' OR path_parent: ' + newpathwildcard,
+                        'analyze_wildcard': 'true'
+                    }
+                }
+            }
 
         # search ES and start scroll
         res = es.search(index=cliargs['index'], doc_type='directory', body=data,

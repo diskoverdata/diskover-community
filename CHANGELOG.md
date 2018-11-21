@@ -1,13 +1,14 @@
 # Diskover Change Log
 
-## [1.5.0-rc23] = 2018-11-17
+## [1.5.0-rc23] = 2018-11-21
 ### added
 - threaded tree walk
 - dirs/sec to crawl progress bar
 - updatedirsizes action to socket server for diskover-web
+- reduced time to do dir size calcs
 ### changed
 - rolled back to rc20 way of calculating dir sizes at end of crawl
-- tree walk client v1.0.16
+- tree walk client v1.0.17
 - added pscandir (parallel scandir) tree walk method to client, see -h for new cli options in client
 - replaced scandir walk with scandir and faster custom scandirwalk function
 ### fixed

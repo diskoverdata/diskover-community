@@ -25,7 +25,7 @@ except ImportError:
 from optparse import OptionParser
 
 
-version = '1.0.16'
+version = '1.0.17'
 __version__ = version
 
 
@@ -308,7 +308,9 @@ if __name__ == "__main__":
 
 			q_dir.join()
 
+			lock.acquire(True)
 			q.put(pickle.dumps(packet_scandir))
+			lock.release()
 
 		elif TREEWALK_METHOD == "metaspider":
 			# use threads to collect meta and send to diskover proxy rather than
@@ -379,9 +381,9 @@ if __name__ == "__main__":
 			conn.close()
 
 		# send kill signal to diskover proxy to trigger dir size updates
-		n = 1
-		while n <= 3:
+		while True:
 			try:
+				print("sending shutdown signal to diskover proxy to start dir calcs...")
 				time.sleep(2)
 				clientsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 				clientsock.connect((HOST, PORT))
@@ -396,7 +398,6 @@ if __name__ == "__main__":
 				print("diskover proxy received shutdown signal, exiting client")
 				sys.exit(0)
 			time.sleep(2)
-			n += 1
 
 	except KeyboardInterrupt:
 		print("Ctrl-c keyboard interrupt, exiting...")

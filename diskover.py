@@ -1426,6 +1426,8 @@ def treewalk(top, num_sep, level, batchsize, cliargs, reindex_dict):
     from diskover_bot_module import scrape_tree_meta
     batch = []
     dircount = 0
+    totaldirs = 0
+    starttime = time.time()
 
     # set up threads for tree walk
     for i in range(cpu_count()*2):
@@ -1446,6 +1448,7 @@ def treewalk(top, num_sep, level, batchsize, cliargs, reindex_dict):
     bartimestamp = time.time()
     for root, dirs, files in scandirwalk(top):
         dircount += 1
+        totaldirs += 1
         if not dir_excluded(root, config, cliargs):
             # check for emptry dirs
             if len(dirs) == 0 and len(files) == 0 and not cliargs['indexemptydirs']:
@@ -1513,6 +1516,12 @@ def treewalk(top, num_sep, level, batchsize, cliargs, reindex_dict):
         bar.update(0)
         bar.finish()
 
+    elapsed = round(time.time() - starttime, 3)
+    dirspersec = round(totaldirs / elapsed, 3)
+
+    logger.info("Finished crawling, elapsed time %s sec, dirs walked %s (%s dirs/sec)" %
+                (elapsed, totaldirs, dirspersec))
+
 
 def crawl_tree(path, cliargs, logger, reindex_dict):
     """This is the crawl tree function.
@@ -1567,8 +1576,6 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
         # regular crawl using scandir
         else:
             treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict)
-
-        logger.info("Finished crawling!")
 
         return starttime
 
