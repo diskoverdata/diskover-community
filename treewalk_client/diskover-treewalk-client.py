@@ -154,11 +154,7 @@ def ls_dir_gen(top):
 	proc = Popen(lsCMD, bufsize=buffsize, stdout=PIPE, close_fds=True)
 
 	while True:
-		try:
-			line = proc.stdout.readline().decode('utf-8', 'ignore')
-		except UnicodeDecodeError as e:
-			print(e)
-			continue
+		line = proc.stdout.readline().decode('utf-8', 'ignore')
 		if line == '':
 			yield root, dirs, nondirs
 			break
