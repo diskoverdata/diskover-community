@@ -279,7 +279,7 @@ def load_config():
     try:
         configsettings['redis_rq_timeout'] = int(config.get('redis', 'timeout'))
     except ConfigParser.NoOptionError:
-        configsettings['redis_rq_timeout'] = 86400
+        configsettings['redis_rq_timeout'] = 180
     try:
         configsettings['redis_ttl'] = int(config.get('redis', 'ttl'))
     except ConfigParser.NoOptionError:

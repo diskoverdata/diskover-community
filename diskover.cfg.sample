@@ -67,8 +67,8 @@ cachedirtimes = False
 dirtimesttl = 604800
 ; database to use (default is 0)
 db = 0
-; rq default time out in sec (default 86400)
-timeout = 86400
+; rq job default time out in sec (default 180)
+timeout = 3600
 ; rq default ttl for key/results (default 500)
 ttl = 500
 ; rq queue names to use (default is diskover, diskover_crawl, diskover_calcdir)
