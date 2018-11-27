@@ -1336,7 +1336,7 @@ def calc_dir_sizes(cliargs, logger, path=None):
                 q_calc.enqueue(calc_dir_size, args=(dirlist, cliargs,), result_ttl=config['redis_ttl'])
                 jobcount += 1
                 # update progress bar
-                if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+                if bar:
                     try:
                         bar.update(len(q_calc))
                     except ZeroDivisionError:
@@ -1348,7 +1348,7 @@ def calc_dir_sizes(cliargs, logger, path=None):
                 q_calc.enqueue(calc_dir_size, args=(dirlist, cliargs,), result_ttl=config['redis_ttl'])
                 jobcount += 1
                 # update progress bar
-                if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+                if bar:
                     try:
                         bar.update(len(q_calc))
                     except ZeroDivisionError:
@@ -1357,13 +1357,11 @@ def calc_dir_sizes(cliargs, logger, path=None):
                         bar.update(0)
 
         # set up progress bar with time remaining
-        if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+        if bar:
             bar.finish()
             bar_max_val = len(q_calc)
             bar = progressbar.ProgressBar(max_value=bar_max_val)
             bar.start()
-        else:
-            bar = None
 
         # wait for queue to be empty and update progress bar
         while True:
@@ -1374,7 +1372,7 @@ def calc_dir_sizes(cliargs, logger, path=None):
                     workers_busy = True
                     break
             q_len = len(q_calc)
-            if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+            if bar:
                 try:
                     bar.update(bar_max_val - q_len)
                 except ZeroDivisionError:
@@ -1385,7 +1383,7 @@ def calc_dir_sizes(cliargs, logger, path=None):
                 break
             time.sleep(.5)
 
-        if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+        if bar:
             bar.finish()
         logger.info('Finished calculating directory sizes')
 

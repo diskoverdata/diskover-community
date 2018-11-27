@@ -213,7 +213,7 @@ def qumulo_treewalk(path, ip, ses, q_crawl, num_sep, level, batchsize, cliargs, 
             del files[:]
 
         # update progress bar
-        if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+        if bar:
             try:
                 if time.time() - bartimestamp >= 2:
                     elapsed = round(time.time() - bartimestamp, 3)
@@ -230,6 +230,15 @@ def qumulo_treewalk(path, ip, ses, q_crawl, num_sep, level, batchsize, cliargs, 
     # add any remaining in batch to queue
     q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,), result_ttl=config['redis_ttl'])
 
+    # set up progress bar with time remaining
+    if bar:
+        bar.finish()
+        bar_max_val = len(q_crawl)
+        bar = progressbar.ProgressBar(max_value=bar_max_val)
+        bar.start()
+    else:
+        bar = None
+
     # wait for queue to be empty and update progress bar
     while True:
         workers_busy = False
@@ -239,9 +248,9 @@ def qumulo_treewalk(path, ip, ses, q_crawl, num_sep, level, batchsize, cliargs, 
                 workers_busy = True
                 break
         q_len = len(q_crawl)
-        if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+        if bar:
             try:
-                bar.update(q_len)
+                bar.update(bar_max_val - q_len)
             except ZeroDivisionError:
                 bar.update(0)
             except ValueError:
@@ -250,8 +259,7 @@ def qumulo_treewalk(path, ip, ses, q_crawl, num_sep, level, batchsize, cliargs, 
             break
         time.sleep(.5)
 
-    if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
-        bar.update(0)
+    if bar:
         bar.finish()
 
     elapsed = round(time.time() - starttime, 3)
