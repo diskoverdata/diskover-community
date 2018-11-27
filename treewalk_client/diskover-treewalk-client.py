@@ -17,15 +17,17 @@ import pickle
 import socket
 import time
 import struct
+import warnings
 from threading import Thread, Lock
 try:
 	from Queue import Queue
 except ImportError:
 	from queue import Queue
 from optparse import OptionParser
+from multiprocessing import cpu_count
 
 
-version = '1.0.17'
+version = '1.0.18'
 __version__ = version
 
 
@@ -48,16 +50,19 @@ parser.add_option("-r", "--rootdirlocal", metavar="ROOTDIR_LOCAL",
 					help="Local path on storage to crawl from")
 parser.add_option("-R", "--rootdirremote", metavar="ROOTDIR_REMOTE",
 					help="Mount point directory for diskover and bots that is same location as rootdirlocal")
-parser.add_option("-T", "--pscandirthreads", metavar="NUM_SCANDIR_THREADS", default=8, type=int,
-					help="Number of threads for pscandir treewalk method (default: 8)")
+parser.add_option("-T", "--pscandirthreads", metavar="NUM_SCANDIR_THREADS", default=cpu_count()*2, type=int,
+					help="Number of threads for pscandir treewalk method (default: cpu core count x 2)")
 parser.add_option("-l", "--ls", metavar="LS_DIR_GEN", action="store_true",
 					help="Use ls subprocess to get directories for pscandir")
-parser.add_option("-s", "--metaspiderthreads", metavar="NUM_SPIDERS", default=8, type=int,
-					help="Number of threads for metaspider treewalk method (default: 8)")
+parser.add_option("-s", "--metaspiderthreads", metavar="NUM_SPIDERS", default=cpu_count()*2, type=int,
+					help="Number of threads for metaspider treewalk method (default: cpu core count x 2)")
 parser.add_option("-e", "--excludeddir", metavar="EXCLUDED_DIR", default=['.snapshot','.zfs'], action="append",
 					help="Additional directory to exclude (default: .snapshot .zfs)")
 (options, args) = parser.parse_args()
 options = vars(options)
+
+if not options['proxyhost'] or not options['rootdirlocal'] or not options['rootdirremote']:
+	parser.error("missing required options, use -h for help")
 
 HOST = options['proxyhost']
 PORT =  options['port']
@@ -125,22 +130,38 @@ def subdirs(path):
 			yield entry
 
 
-def scandir_worker():
-	global packet_scandir
+def scandirwalk_worker():
 	while True:
-		item = q_dir.get()
-		root, dirs, nondirs = item
-		if os.path.basename(root) in EXCLUDED_DIRS:
-			del dirs[:]
-			del nondirs[:]
-		root = root.replace(ROOTDIR_LOCAL, ROOTDIR_REMOTE)
-		lock.acquire(True)
-		packet_scandir.append((root, dirs[:], nondirs[:]))
-		if len(packet_scandir) >= BATCH_SIZE:
-			q.put(pickle.dumps(packet_scandir))
-			del packet_scandir[:]
-		lock.release()
-		q_dir.task_done()
+		dirs = []
+		nondirs = []
+		path = q_paths.get()
+		try:
+			for entry in scandir(path):
+				if entry.is_dir(follow_symlinks=False):
+					dirs.append(entry.name)
+				elif entry.is_file(follow_symlinks=False):
+					nondirs.append(entry.name)
+			q_paths_results.put((path, dirs, nondirs))
+			for name in dirs:
+				new_path = os.path.join(path, name)
+				q_paths.put(new_path)
+		except (PermissionError, OSError) as e:
+			warnings.warn(e)
+			pass
+		q_paths.task_done()
+
+
+def scandirwalk(path):
+	q_paths.put(path)
+	while True:
+		entry = q_paths_results.get()
+		root, dirs, nondirs = entry
+		yield root, dirs, nondirs
+		q_paths_results.task_done()
+		if q_paths_results.qsize() == 0 and q_paths.qsize() == 0:
+			time.sleep(.5)
+			if q_paths_results.qsize() == 0 and q_paths.qsize() == 0:
+				break
 
 
 def ls_dir_gen(top):
@@ -259,7 +280,7 @@ if __name__ == "__main__":
 				packet.append((root, dirlist, filelist))
 				if len(packet) >= BATCH_SIZE:
 					q.put(pickle.dumps(packet))
-					del packet [:]
+					del packet[:]
 
 				if time.time() - timestamp >= 2:
 					elapsed = round(time.time() - timestamp, 3)
@@ -278,10 +299,11 @@ if __name__ == "__main__":
 				print("scandir python module not found")
 				sys.exit(1)
 
-			q_dir = Queue()
+			q_paths = Queue()
+			q_paths_results = Queue()
 
 			for i in range(NUM_SCANDIR_THREADS):
-				t = Thread(target=scandir_worker)
+				t = Thread(target=scandirwalk_worker)
 				t.daemon = True
 				t.start()
 
@@ -289,12 +311,23 @@ if __name__ == "__main__":
 			dircount = 0
 
 			if USE_LS:
-				subdirs = ls_dir_gen
+				scandirwalk = ls_dir_gen
 
-			for root, dirs, files in subdirs(ROOTDIR_LOCAL):
-				q_dir.put((root, dirs, files))
+			for root, dirs, files in scandirwalk(ROOTDIR_LOCAL):
 				dircount += 1
 				totaldirs += 1
+				if os.path.basename(root) in EXCLUDED_DIRS:
+					del dirs[:]
+					del files[:]
+					root = root.replace(ROOTDIR_LOCAL, ROOTDIR_REMOTE)
+					packet.append((root, dirs, files))
+					continue
+				root = root.replace(ROOTDIR_LOCAL, ROOTDIR_REMOTE)
+				packet.append((root, dirs, files))
+				if len(packet) >= BATCH_SIZE:
+					q.put(pickle.dumps(packet))
+					del packet[:]
+
 				if time.time() - timestamp >= 2:
 					elapsed = round(time.time() - timestamp, 3)
 					dirspersec = round(dircount / elapsed, 3)
@@ -302,11 +335,7 @@ if __name__ == "__main__":
 					timestamp = time.time()
 					dircount = 0
 
-			q_dir.join()
-
-			lock.acquire(True)
-			q.put(pickle.dumps(packet_scandir))
-			lock.release()
+			q.put(pickle.dumps(packet))
 
 		elif TREEWALK_METHOD == "metaspider":
 			# use threads to collect meta and send to diskover proxy rather than

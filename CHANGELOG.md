@@ -1,18 +1,20 @@
 # Diskover Change Log
 
-## [1.5.0-rc23] = 2018-11-26
+## [1.5.0-rc23] = 2018-11-27
 ### added
 - threaded tree walk
 - dirs/sec to crawl progress bar
 - updatedirsizes action to socket server for diskover-web
 - reduced time to do dir size calcs
 - multithreading for qumulo api crawl
+- -T --walkthreads to diskover.py cli options for setting num of threads for tree walk (default is cpu cores x 2)
 ### changed
 - rolled back to rc20 way of calculating dir sizes at end of crawl
-- tree walk client v1.0.17
+- tree walk client v1.0.18
 - added pscandir (parallel scandir) tree walk method to client, see -h for new cli options in client
 - replaced scandir walk with scandir and faster custom scandirwalk function
 - redis timeout in diskover.cfg.sample to 3600 sec (rq job timeout), default is 180 sec for rq
+- improved scandir.py in treewalk_client, better isilon hacks for faster performance using ctypes
 ### fixed
 - issues with dir size calcs
 

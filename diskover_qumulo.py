@@ -19,7 +19,6 @@ from diskover import config, dir_excluded, plugins, adaptive_batch, redis_conn
 from diskover_bot_module import scrape_tree_meta, auto_tag, uids, owners, gids, groups, file_excluded
 from rq import SimpleWorker
 from threading import Thread, Lock
-from multiprocessing import cpu_count
 try:
     from queue import Queue as PyQueue
 except ImportError:
@@ -166,7 +165,7 @@ def qumulo_treewalk(path, ip, ses, q_crawl, num_sep, level, batchsize, cliargs, 
     lock = Lock()
 
     # set up threads for tree walk
-    for i in range(cpu_count() * 2):
+    for i in range(cliargs['walkthreads']):
         t = Thread(target=apiwalk_worker, args=(ip, ses, q_paths, q_paths_results, lock,))
         t.daemon = True
         t.start()

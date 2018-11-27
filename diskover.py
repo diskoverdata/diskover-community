@@ -1176,6 +1176,8 @@ def parse_cli_args(indexname):
                         help="Batch size (dir count) for sending to worker bots (default: 50)")
     parser.add_argument("-a", "--adaptivebatch", action="store_true",
                         help="Adaptive batch size for sending to worker bots (intelligent crawl)")
+    parser.add_argument("-T", "--walkthreads", type=int, default=cpu_count()*2,
+                        help="Number of threads for treewalk (default: cpu core count x 2)")
     parser.add_argument("-A", "--autotag", action="store_true",
                         help="Get bots to auto-tag files/dirs based on patterns in config")
     parser.add_argument("-O", "--optimizeindex", action="store_true",
@@ -1430,7 +1432,7 @@ def treewalk(top, num_sep, level, batchsize, cliargs, reindex_dict):
     starttime = time.time()
 
     # set up threads for tree walk
-    for i in range(cpu_count()*2):
+    for i in range(cliargs['walkthreads']):
         t = Thread(target=scandirwalk_worker)
         t.daemon = True
         t.start()

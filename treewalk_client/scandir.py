@@ -25,10 +25,6 @@ from stat import S_IFDIR, S_IFLNK, S_IFREG
 import collections
 import sys
 
-# diskover patch for isilon
-_scandir = None
-ctypes = None
-"""
 try:
     import _scandir
 except ImportError:
@@ -43,7 +39,6 @@ if _scandir is None and ctypes is None:
     import warnings
     warnings.warn("scandir can't find the compiled _scandir C module "
                   "or ctypes, using slow generic fallback")
-"""
 
 __version__ = '1.9.0'
 __all__ = ['scandir', 'walk']
@@ -425,6 +420,15 @@ elif sys.platform.startswith(('linux', 'darwin', 'sunos5')) or 'bsd' in sys.plat
                     ('d_off', ctypes.c_long),
                     ('d_reclen', ctypes.c_ushort),
                     ('d_type', ctypes.c_byte),
+                    ('d_name', ctypes.c_char * 256),
+                )
+            elif 'freebsd' in sys.platform:  # isilon hack
+                _fields_ = (
+                    ('d_ino', ctypes.c_uint32),
+                    ('d_reclen', ctypes.c_uint16),
+                    ('d_type', ctypes.c_uint8),
+                    ('d_namlen', ctypes.c_uint8),
+                    ('__d_padding', ctypes.c_uint32 * 3),
                     ('d_name', ctypes.c_char * 256),
                 )
             elif 'openbsd' in sys.platform:
