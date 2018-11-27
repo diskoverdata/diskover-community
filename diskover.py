@@ -1356,6 +1356,15 @@ def calc_dir_sizes(cliargs, logger, path=None):
                     except ValueError:
                         bar.update(0)
 
+        # set up progress bar with time remaining
+        if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+            bar.finish()
+            bar_max_val = len(q_calc)
+            bar = progressbar.ProgressBar(max_value=bar_max_val)
+            bar.start()
+        else:
+            bar = None
+
         # wait for queue to be empty and update progress bar
         while True:
             workers_busy = False
@@ -1367,7 +1376,7 @@ def calc_dir_sizes(cliargs, logger, path=None):
             q_len = len(q_calc)
             if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
                 try:
-                    bar.update(q_len)
+                    bar.update(bar_max_val - q_len)
                 except ZeroDivisionError:
                     bar.update(0)
                 except ValueError:
@@ -1494,6 +1503,15 @@ def treewalk(top, num_sep, level, batchsize, cliargs, reindex_dict):
     # add any remaining in batch to queue
     q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,), result_ttl=config['redis_ttl'])
 
+    # set up progress bar with time remaining
+    if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+        bar.finish()
+        bar_max_val = len(q_crawl)
+        bar = progressbar.ProgressBar(max_value=bar_max_val)
+        bar.start()
+    else:
+        bar = None
+
     # wait for queue to be empty and update progress bar
     while True:
         workers_busy = False
@@ -1505,7 +1523,7 @@ def treewalk(top, num_sep, level, batchsize, cliargs, reindex_dict):
         q_len = len(q_crawl)
         if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
             try:
-                bar.update(q_len)
+                bar.update(bar_max_val - q_len)
             except ZeroDivisionError:
                 bar.update(0)
             except ValueError:

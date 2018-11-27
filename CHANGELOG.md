@@ -8,6 +8,7 @@
 - reduced time to do dir size calcs
 - multithreading for qumulo api crawl
 - -T --walkthreads to diskover.py cli options for setting num of threads for tree walk (default is cpu cores x 2)
+- additional progress bars indicating ETA for crawling and dir size calcs, loaded after tree walk complete and all dir batches enqueued and after all dir size batches enqueued
 ### changed
 - rolled back to rc20 way of calculating dir sizes at end of crawl
 - tree walk client v1.0.18
