@@ -142,10 +142,7 @@ def scandirwalk_worker():
 				elif entry.is_file(follow_symlinks=False):
 					nondirs.append(entry.name)
 			q_paths_results.put((path, dirs, nondirs))
-			for name in dirs:
-				new_path = os.path.join(path, name)
-				q_paths.put(new_path)
-		except (PermissionError, OSError) as e:
+		except (OSError, IOError) as e:
 			warnings.warn(e)
 			pass
 		q_paths.task_done()
@@ -156,7 +153,12 @@ def scandirwalk(path):
 	while True:
 		entry = q_paths_results.get()
 		root, dirs, nondirs = entry
+		# yield before recursion
 		yield root, dirs, nondirs
+		# recurse into subdirectories
+		for name in dirs:
+			new_path = os.path.join(root, name)
+			q_paths.put(new_path)
 		q_paths_results.task_done()
 		if q_paths_results.qsize() == 0 and q_paths.qsize() == 0:
 			time.sleep(.5)
@@ -261,11 +263,10 @@ if __name__ == "__main__":
 			for root, dirs, files in walk(ROOTDIR_LOCAL):
 				dircount += 1
 				totaldirs += 1
+				# check if directory excluded and delete subdirs and files to not recurse down tree
 				if os.path.basename(root) in EXCLUDED_DIRS:
 					del dirs[:]
 					del files[:]
-					root = root.replace(ROOTDIR_LOCAL, ROOTDIR_REMOTE)
-					packet.append((root, dirs, files))
 					continue
 				# check for symlinks
 				dirlist = []
@@ -316,11 +317,10 @@ if __name__ == "__main__":
 			for root, dirs, files in scandirwalk(ROOTDIR_LOCAL):
 				dircount += 1
 				totaldirs += 1
+				# check if directory excluded and delete subdirs and files to not recurse down tree
 				if os.path.basename(root) in EXCLUDED_DIRS:
 					del dirs[:]
 					del files[:]
-					root = root.replace(ROOTDIR_LOCAL, ROOTDIR_REMOTE)
-					packet.append((root, dirs, files))
 					continue
 				root = root.replace(ROOTDIR_LOCAL, ROOTDIR_REMOTE)
 				packet.append((root, dirs, files))
@@ -362,9 +362,6 @@ if __name__ == "__main__":
 				if os.path.basename(root) in EXCLUDED_DIRS:
 					del dirs[:]
 					del files[:]
-					mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime = os.lstat(root)
-					root = root.replace(ROOTDIR_LOCAL, ROOTDIR_REMOTE)
-					packet.append(((root, (mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime)), dirs, files))
 					continue
 				for f in files:
 					q_spider.put(os.path.join(root, f))

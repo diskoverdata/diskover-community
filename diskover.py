@@ -1404,10 +1404,7 @@ def scandirwalk_worker():
                 elif entry.is_file(follow_symlinks=False):
                     nondirs.append(entry.name)
             q_paths_results.put((path, dirs, nondirs))
-            for name in dirs:
-                new_path = os.path.join(path, name)
-                q_paths.put(new_path)
-        except (PermissionError, OSError) as e:
+        except (OSError, IOError) as e:
             logger.warning(e)
             pass
         q_paths.task_done()
@@ -1418,7 +1415,12 @@ def scandirwalk(path):
     while True:
         entry = q_paths_results.get()
         root, dirs, nondirs = entry
+        # yield before recursion
         yield root, dirs, nondirs
+        # recurse into subdirectories
+        for name in dirs:
+            new_path = os.path.join(root, name)
+            q_paths.put(new_path)
         q_paths_results.task_done()
         if q_paths_results.qsize() == 0 and q_paths.qsize() == 0:
             time.sleep(.5)

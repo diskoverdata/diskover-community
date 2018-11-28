@@ -1,6 +1,6 @@
 # Diskover Change Log
 
-## [1.5.0-rc23] = 2018-11-27
+## [1.5.0-rc23] = 2018-11-28
 ### added
 - threaded tree walk
 - dirs/sec to crawl progress bar
@@ -18,6 +18,7 @@
 - improved scandir.py in treewalk_client, better isilon hacks for faster performance using ctypes
 ### fixed
 - issues with dir size calcs
+- bug with directories getting walked which are excluded in normal crawl and tree walk client (affected earlier rc23 builds)
 
 ## [1.5.0-rc22] = 2018-11-11
 ### changed

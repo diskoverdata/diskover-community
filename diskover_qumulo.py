@@ -130,7 +130,12 @@ def qumulo_api_walk(path, ip, ses, q_paths, q_paths_results):
     while True:
         entry = q_paths_results.get()
         root, dirs, nondirs = entry
+        # yield before recursion
         yield root, dirs, nondirs
+        # recurse into subdirectories
+        for name in dirs:
+            new_path = os.path.join(root, name)
+            q_paths.put(new_path)
         q_paths_results.task_done()
         if q_paths_results.qsize() == 0 and q_paths.qsize() == 0:
             time.sleep(.5)
@@ -146,9 +151,6 @@ def apiwalk_worker(ip, ses, q_paths, q_paths_results, lock):
         root = qumulo_get_file_attr(path, ip, ses)
 
         q_paths_results.put((root, dirs, nondirs))
-
-        for new_path in dirs:
-            q_paths.put(new_path)
 
         q_paths.task_done()
 
