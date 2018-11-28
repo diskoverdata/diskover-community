@@ -16,6 +16,7 @@
 - replaced scandir walk with scandir and faster custom scandirwalk function
 - redis timeout in diskover.cfg.sample to 3600 sec (rq job timeout), default is 180 sec for rq
 - improved scandir.py in treewalk_client, better isilon hacks for faster performance using ctypes
+- removed --ls from tree walk client
 ### fixed
 - issues with dir size calcs
 - bug with directories getting walked which are excluded in normal crawl and tree walk client (affected earlier rc23 builds)

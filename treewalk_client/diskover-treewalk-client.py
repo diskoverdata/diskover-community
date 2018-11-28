@@ -52,8 +52,6 @@ parser.add_option("-R", "--rootdirremote", metavar="ROOTDIR_REMOTE",
 					help="Mount point directory for diskover and bots that is same location as rootdirlocal")
 parser.add_option("-T", "--pscandirthreads", metavar="NUM_SCANDIR_THREADS", default=cpu_count()*2, type=int,
 					help="Number of threads for pscandir treewalk method (default: cpu core count x 2)")
-parser.add_option("-l", "--ls", metavar="LS_DIR_GEN", action="store_true",
-					help="Use ls subprocess to get directories for pscandir")
 parser.add_option("-s", "--metaspiderthreads", metavar="NUM_SPIDERS", default=cpu_count()*2, type=int,
 					help="Number of threads for metaspider treewalk method (default: cpu core count x 2)")
 parser.add_option("-e", "--excludeddir", metavar="EXCLUDED_DIR", default=['.snapshot','.zfs'], action="append",
@@ -69,7 +67,6 @@ PORT =  options['port']
 BATCH_SIZE = options['batchsize']
 NUM_CONNECTIONS = options['numconn']
 TREEWALK_METHOD = options['twmethod']
-USE_LS = options['ls']
 ROOTDIR_LOCAL = unicode(options['rootdirlocal'])
 ROOTDIR_REMOTE = unicode(options['rootdirremote'])
 # remove any trailing slash from paths
@@ -164,44 +161,6 @@ def scandirwalk(path):
 			time.sleep(.5)
 			if q_paths_results.qsize() == 0 and q_paths.qsize() == 0:
 				break
-
-
-def ls_dir_gen(top):
-	from subprocess import Popen, PIPE
-	buffsize = -1
-	dirs = []
-	nondirs = []
-	root = top
-
-	lsCMD = ['ls', '-RFAf', root]
-	proc = Popen(lsCMD, bufsize=buffsize, stdout=PIPE, close_fds=True)
-
-	while True:
-		line = proc.stdout.readline().decode('utf-8', 'ignore')
-		if line == '':
-			yield root, dirs, nondirs
-			break
-		line = line.rstrip()
-		if line.startswith('/') and line.endswith(':'):
-			newroot = line.rstrip(':')
-			yield root, dirs[:], nondirs[:]
-			del dirs[:]
-			del nondirs[:]
-			root = newroot
-		else:
-			items = line.split('\n')
-			for entry in items:
-				entry = entry.lstrip(' ')
-				if entry == '':
-					continue
-				if entry.endswith('/'):
-					if entry != './' and entry != '../':
-						dirs.append(entry.rstrip('/'))
-				else:
-					if entry.endswith('@'):
-						# skip symlink
-						continue
-					nondirs.append(entry.rstrip('*'))
 
 
 if __name__ == "__main__":
@@ -310,9 +269,6 @@ if __name__ == "__main__":
 
 			timestamp = time.time()
 			dircount = 0
-
-			if USE_LS:
-				scandirwalk = ls_dir_gen
 
 			for root, dirs, files in scandirwalk(ROOTDIR_LOCAL):
 				dircount += 1
