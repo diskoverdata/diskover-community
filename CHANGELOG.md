@@ -20,6 +20,7 @@
 ### fixed
 - issues with dir size calcs
 - bug with directories getting walked which are excluded in normal crawl and tree walk client (affected earlier rc23 builds)
+- mem issues with long running crawls
 
 ## [1.5.0-rc22] = 2018-11-11
 ### changed

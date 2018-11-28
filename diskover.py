@@ -1393,9 +1393,9 @@ def calc_dir_sizes(cliargs, logger, path=None):
 
 
 def scandirwalk_worker():
+    dirs = []
+    nondirs = []
     while True:
-        dirs = []
-        nondirs = []
         path = q_paths.get()
         try:
             for entry in scandir(path):
@@ -1403,10 +1403,12 @@ def scandirwalk_worker():
                     dirs.append(entry.name)
                 elif entry.is_file(follow_symlinks=False):
                     nondirs.append(entry.name)
-            q_paths_results.put((path, dirs, nondirs))
+            q_paths_results.put((path, dirs[:], nondirs[:]))
         except (OSError, IOError) as e:
             logger.warning(e)
             pass
+        del dirs[:]
+        del nondirs[:]
         q_paths.task_done()
 
 

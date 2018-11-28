@@ -112,25 +112,10 @@ def spider_worker():
 		q_spider.task_done()
 
 
-def subdirs(path):
+def scandirwalk_worker():
 	dirs = []
 	nondirs = []
-	for entry in scandir(path):
-		if entry.is_dir(follow_symlinks=False):
-			dirs.append(entry.name)
-		elif entry.is_file(follow_symlinks=False):
-			nondirs.append(entry.name)
-	yield path, dirs, nondirs
-	for name in dirs:
-		new_path = os.path.join(path, name)
-		for entry in subdirs(new_path):
-			yield entry
-
-
-def scandirwalk_worker():
 	while True:
-		dirs = []
-		nondirs = []
 		path = q_paths.get()
 		try:
 			for entry in scandir(path):
@@ -138,10 +123,12 @@ def scandirwalk_worker():
 					dirs.append(entry.name)
 				elif entry.is_file(follow_symlinks=False):
 					nondirs.append(entry.name)
-			q_paths_results.put((path, dirs, nondirs))
+			q_paths_results.put((path, dirs[:], nondirs[:]))
 		except (OSError, IOError) as e:
 			warnings.warn(e)
 			pass
+		del dirs[:]
+		del nondirs[:]
 		q_paths.task_done()
 
 
@@ -219,6 +206,8 @@ if __name__ == "__main__":
 				from os import walk
 			timestamp = time.time()
 			dircount = 0
+			dirlist = []
+			filelist = []
 			for root, dirs, files in walk(ROOTDIR_LOCAL):
 				dircount += 1
 				totaldirs += 1
@@ -228,8 +217,6 @@ if __name__ == "__main__":
 					del files[:]
 					continue
 				# check for symlinks
-				dirlist = []
-				filelist = []
 				for d in dirs:
 					if not os.path.islink(os.path.join(root, d)):
 						dirlist.append(d)
@@ -237,7 +224,7 @@ if __name__ == "__main__":
 					if not os.path.islink(os.path.join(root, f)):
 						filelist.append(f)
 				root = root.replace(ROOTDIR_LOCAL, ROOTDIR_REMOTE)
-				packet.append((root, dirlist, filelist))
+				packet.append((root, dirlist[:], filelist[:]))
 				if len(packet) >= BATCH_SIZE:
 					q.put(pickle.dumps(packet))
 					del packet[:]
@@ -248,6 +235,9 @@ if __name__ == "__main__":
 					print("walked %s directories in 2 seconds (%s dirs/sec)" % (dircount, dirspersec))
 					timestamp = time.time()
 					dircount = 0
+
+				del dirlist[:]
+				del filelist[:]
 
 			q.put(pickle.dumps(packet))
 
@@ -279,7 +269,7 @@ if __name__ == "__main__":
 					del files[:]
 					continue
 				root = root.replace(ROOTDIR_LOCAL, ROOTDIR_REMOTE)
-				packet.append((root, dirs, files))
+				packet.append((root, dirs[:], files[:]))
 				if len(packet) >= BATCH_SIZE:
 					q.put(pickle.dumps(packet))
 					del packet[:]
@@ -312,6 +302,7 @@ if __name__ == "__main__":
 
 			timestamp = time.time()
 			dircount = 0
+			filemeta = []
 			for root, dirs, files in walk(ROOTDIR_LOCAL):
 				dircount += 1
 				totaldirs += 1
@@ -323,7 +314,6 @@ if __name__ == "__main__":
 					q_spider.put(os.path.join(root, f))
 				q_spider.join()
 
-				filemeta = []
 				while q_spider_meta.qsize() > 0:
 					item = q_spider_meta.get()
 					filemeta.append(item)
@@ -333,7 +323,7 @@ if __name__ == "__main__":
 
 				root = root.replace(ROOTDIR_LOCAL, ROOTDIR_REMOTE)
 
-				packet.append(((root, (mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime)), dirs, filemeta))
+				packet.append(((root, (mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime)), dirs[:], filemeta[:]))
 				if len(packet) >= BATCH_SIZE:
 					q.put(pickle.dumps(packet))
 					del packet[:]
@@ -344,6 +334,8 @@ if __name__ == "__main__":
 					print("walked %s directories in 2 seconds (%s dirs/sec)" % (dircount, dirspersec))
 					timestamp = time.time()
 					dircount = 0
+
+				del filemeta[:]
 
 			q.put(pickle.dumps(packet))
 
