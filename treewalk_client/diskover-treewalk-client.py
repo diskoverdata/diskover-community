@@ -17,8 +17,7 @@ import pickle
 import socket
 import time
 import struct
-import warnings
-from threading import Thread, Lock
+from threading import Thread
 try:
 	from Queue import Queue
 except ImportError:
@@ -79,9 +78,7 @@ NUM_SCANDIR_THREADS = options['pscandirthreads']
 EXCLUDED_DIRS = options['excludeddir']
 
 q = Queue()
-lock = Lock()
 connections = []
-packet_scandir = []
 
 totaldirs = 0
 
@@ -125,7 +122,10 @@ def scandirwalk_worker():
 					nondirs.append(entry.name)
 			q_paths_results.put((path, dirs[:], nondirs[:]))
 		except (OSError, IOError) as e:
-			warnings.warn(e)
+			print("OS/IO Exception caused by: %s" % e)
+			pass
+		except Exception as e:
+			print("Exception caused by: %s" % e)
 			pass
 		del dirs[:]
 		del nondirs[:]

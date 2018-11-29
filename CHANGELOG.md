@@ -1,6 +1,6 @@
 # Diskover Change Log
 
-## [1.5.0-rc23] = 2018-11-28
+## [1.5.0-rc23] = 2018-11-29
 ### added
 - threaded tree walk
 - dirs/sec to crawl progress bar
@@ -21,6 +21,7 @@
 - issues with dir size calcs
 - bug with directories getting walked which are excluded in normal crawl and tree walk client (affected earlier rc23 builds)
 - mem issues with long running crawls
+- bug when running diskover tree walk client with Python 2 and any os/io error with scandir caused client to crash
 
 ## [1.5.0-rc22] = 2018-11-11
 ### changed

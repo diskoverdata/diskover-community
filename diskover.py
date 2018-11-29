@@ -1405,7 +1405,10 @@ def scandirwalk_worker():
                     nondirs.append(entry.name)
             q_paths_results.put((path, dirs[:], nondirs[:]))
         except (OSError, IOError) as e:
-            logger.warning(e)
+            logger.warning("OS/IO Exception caused by: %s" % e)
+            pass
+        except Exception as e:
+            logger.warning("Exception caused by: %s" % e)
             pass
         del dirs[:]
         del nondirs[:]
