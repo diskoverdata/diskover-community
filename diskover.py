@@ -37,7 +37,7 @@ import sys
 import json
 
 
-version = '1.5.0-rc23'
+version = '1.5.0-rc24'
 __version__ = version
 
 IS_PY3 = sys.version_info >= (3, 0)
@@ -141,7 +141,7 @@ def load_config():
         pass
     # Check for config file
     if not os.path.isfile(configfile):
-        print('Config file %s not found', configfile)
+        print('Config file %s not found' % configfile)
         sys.exit(1)
     config.read(configfile)
     try:
