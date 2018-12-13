@@ -1,5 +1,11 @@
 # Diskover Change Log
 
+## [1.5.0-rc25] = 2018-12-13
+### changed
+- inode field es mapping for file and directory doc types to double, prev was long
+### fixed
+- bug with indexing file systems with inode int values larger than es long number type
+
 ## [1.5.0-rc24] = 2018-11-29
 ### changed
 - increased rc version number

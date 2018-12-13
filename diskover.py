@@ -37,7 +37,7 @@ import sys
 import json
 
 
-version = '1.5.0-rc24'
+version = '1.5.0-rc25'
 __version__ = version
 
 IS_PY3 = sys.version_info >= (3, 0)
@@ -565,7 +565,7 @@ def index_create(indexname):
                             "type": "integer"
                         },
                         "inode": {
-                            "type": "long"
+                            "type": "double"
                         },
                         "tag": {
                             "type": "keyword"
@@ -629,7 +629,7 @@ def index_create(indexname):
                             "type": "integer"
                         },
                         "inode": {
-                            "type": "long"
+                            "type": "double"
                         },
                         "filehash": {
                             "type": "keyword"
