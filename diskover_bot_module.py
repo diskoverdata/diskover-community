@@ -373,10 +373,12 @@ def get_dir_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
             dirpath = path[0]
             # get directory meta embeded in path
             mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime = metadata
+            ino = str(ino)
         else:
             dirpath = path
             # get directory meta using lstat
             mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime = os.lstat(dirpath)
+            ino = str(ino)
 
         # convert times to utc for es
         mtime_utc = datetime.utcfromtimestamp(mtime).isoformat()
@@ -526,9 +528,11 @@ def get_file_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
         if statsembeded:
             # get embeded stats from path
             mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime = metadata
+            ino = str(ino)
         else:
             # use lstat to get meta and not follow sym links
             mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime = os.lstat(fullpath)
+            ino = str(ino)
 
         # Skip files smaller than minsize cli flag
         if size < cliargs['minsize']:

@@ -333,7 +333,7 @@ def qumulo_get_dir_meta(worker_name, path, cliargs, reindex_dict, redis_conn):
         "creation_time": creation_time_utc,
         "last_change": ctime_utc,
         "hardlinks": path['num_links'],
-        "inode": path['id'],
+        "inode": str(path['id']),
         "owner": owner,
         "group": group,
         "tag": "",
@@ -454,7 +454,7 @@ def qumulo_get_file_meta(worker_name, path, cliargs, reindex_dict):
         "creation_time": creation_time_utc,
         "last_change": ctime_utc,
         "hardlinks": path['num_links'],
-        "inode": path['id'],
+        "inode": str(path['id']),
         "filehash": filehash,
         "tag": "",
         "tag_custom": "",
@@ -621,7 +621,7 @@ def get_qumulo_mappings(config):
                         "type": "integer"
                     },
                     "inode": {
-                        "type": "float"
+                        "type": "keyword"
                     },
                     "tag": {
                         "type": "keyword"
@@ -682,7 +682,7 @@ def get_qumulo_mappings(config):
                         "type": "integer"
                     },
                     "inode": {
-                        "type": "float"
+                        "type": "keyword"
                     },
                     "filehash": {
                         "type": "keyword"
