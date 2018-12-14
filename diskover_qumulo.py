@@ -621,7 +621,7 @@ def get_qumulo_mappings(config):
                         "type": "integer"
                     },
                     "inode": {
-                        "type": "double"
+                        "type": "float"
                     },
                     "tag": {
                         "type": "keyword"
@@ -682,7 +682,7 @@ def get_qumulo_mappings(config):
                         "type": "integer"
                     },
                     "inode": {
-                        "type": "double"
+                        "type": "float"
                     },
                     "filehash": {
                         "type": "keyword"
