@@ -18,6 +18,17 @@ files = .*,Thumbs.db,.DS_Store,._.DS_Store,.localized,desktop.ini
 ;files = [{"name": [], "name_exclude": [], "ext": ["tmp*", "TMP*", "temp*", "TEMP*", "cache*", "CACHE*"], "path": ["*/Application Support/*", "*/Containers/*"], "path_exclude": [], "mtime": 90, "atime": 0, "ctime": 90, "tag": "delete", "tag_custom": "autotag"}]
 ;dirs = [{"name": ["*tmp*", "*TMP*", "*temp*", "*TEMP*", "*Temp*", "*cache*", "*CACHE*", "*Cache*"], "name_exclude": ["*templates*", "*Templates*"], "path": ["*/Application Support/*", "*/Containers/*"], "path_exclude": [], "mtime": 90, "atime": 0, "ctime": 90, "tag": "delete", "tag_custom": "autotag"}]
 
+[storagecost]
+; storage cost per GB (default is 0.03 cents per GB)
+costpergb = 0.03
+; use decimal base 10 (1000) or binary base 2 (1024) for GB size (default is 2, set to 2 or 10)
+base = 2
+; pattern dictionaries for diskover bots to use when determing cost per GB (overrides above)
+;paths = [{"path": ["*/fastdiskpath1/*", "*/Fastdiskpath2/*"], "path_exclude": [], "costpergb": 0.05}, {"path": ["*/slowdiskpath1/*", "*/Slowdiskpath2/*"], "path_exclude": [], "costpergb": 0.02}]
+;dates = [{"mtime": 180, "atime": 0, "ctime": 180, "costpergb": 0.02}]
+; deciding factor if a match is in both paths and dates, can be path or date
+;priority = path
+
 [elasticsearch]
 ; uncomment the below three lines if you are using AWS ES
 ;aws = False

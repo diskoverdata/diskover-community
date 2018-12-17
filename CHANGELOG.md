@@ -1,8 +1,16 @@
 # Diskover Change Log
 
-## [1.5.0-rc25] = 2018-12-14
+## [1.5.0-rc25] = 2018-12-17
+### added
+- costpergb field to es mapping for storing file and directory costs
+- storagecost section in diskover.cfg.sample, copy to your config and edit for you env
+- -G --costpergb cli arg for storing cost per gb in file and directory docs
+- -S --sizeondisk cli arg for setting file's size on disk (disk usage size from blockcount x blocksize) instead of filesize from stat
+- -B --blocksize cli option for setting block size for --sizeondisk (default is 512 bytes)
+- tree walk client v1.0.19
 ### changed
 - inode field es mapping for file and directory doc types to keyword (string), prev was long
+- removed -S flag for --crawlbot
 ### fixed
 - bug with indexing file systems with inode values larger than es long number type
 

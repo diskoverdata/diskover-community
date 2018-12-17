@@ -185,6 +185,34 @@ def load_config():
     except ConfigParser.NoOptionError:
         configsettings['autotag_dirs'] = []
     try:
+        configsettings['costpergb'] = float(config.get('storagecost', 'costpergb'))
+    except ConfigParser.NoOptionError:
+        configsettings['costpergb'] = 0.03
+    try:
+        configsettings['costpergb_base'] = int(config.get('storagecost', 'base'))
+    except ConfigParser.NoOptionError:
+        configsettings['costpergb_base'] = 2
+    try:
+        s = config.get('storagecost', 'paths')
+        scp = json.loads(s)
+        configsettings['costpergb_paths'] = scp
+    except ValueError as e:
+        raise ValueError("Error in config storagecost paths: %s" % e)
+    except ConfigParser.NoOptionError:
+        configsettings['costpergb_paths'] = []
+    try:
+        d = config.get('storagecost', 'dates')
+        scd = json.loads(d)
+        configsettings['costpergb_dates'] = scd
+    except ValueError as e:
+        raise ValueError("Error in config storagecost dates: %s" % e)
+    except ConfigParser.NoOptionError:
+        configsettings['costpergb_dates'] = []
+    try:
+        configsettings['costpergb_priority'] = config.get('storagecost', 'priority')
+    except ConfigParser.NoOptionError:
+        configsettings['costpergb_priority'] = "path"
+    try:
         configsettings['aws'] = config.get('elasticsearch', 'aws')
     except ConfigParser.NoOptionError:
         configsettings['aws'] = "False"
@@ -588,6 +616,10 @@ def index_create(indexname):
                         "change_percent_items_subdirs": {
                             "type": "float"
                         },
+                        "costpergb": {
+                            "type": "scaled_float",
+                            "scaling_factor": 100
+                        },
                         "worker_name": {
                             "type": "keyword"
                         },
@@ -642,6 +674,10 @@ def index_create(indexname):
                         },
                         "dupe_md5": {
                             "type": "keyword"
+                        },
+                        "costpergb": {
+                            "type": "scaled_float",
+                            "scaling_factor": 100
                         },
                         "worker_name": {
                             "type": "keyword"
@@ -915,10 +951,13 @@ def index_get_docs_generator(cliargs, logger, doctype='directory', copytags=Fals
                                 hit['_source']['items_files'], hit['_source']['items_subdirs']))
             else:
                 # convert es time to unix time format
-                mtime = time.mktime(datetime.strptime(
-                    hit['_source']['last_modified'],
+                mtime = time.mktime(datetime.strptime(hit['_source']['last_modified'],
                     '%Y-%m-%dT%H:%M:%S').timetuple())
-                doclist.append((hit['_id'], fullpath, mtime, doctype))
+                atime = time.mktime(datetime.strptime(hit['_source']['last_access'],
+                    '%Y-%m-%dT%H:%M:%S').timetuple())
+                ctime = time.mktime(datetime.strptime(hit['_source']['last_change'],
+                    '%Y-%m-%dT%H:%M:%S').timetuple())
+                doclist.append((hit['_id'], fullpath, mtime, atime, ctime, doctype))
             doccount += 1
         # yield results before loop
         yield doclist
@@ -956,7 +995,7 @@ def _index_get_docs_data(index, copytags, hotdirs, doctype, path, maxdepth, sort
             if maxdepth is None:
                 logger.info('Searching for all %s docs in %s...', doctype, index)
                 data = {
-                    '_source': ['path_parent', 'filename', 'last_modified'],
+                    '_source': ['path_parent', 'filename', 'last_modified', 'last_access', 'last_change'],
                     'query': {
                         'match_all': {}
                     }
@@ -968,7 +1007,7 @@ def _index_get_docs_data(index, copytags, hotdirs, doctype, path, maxdepth, sort
                 regexp = '(/[^/]+){1,' + str(n) + '}|/?'
                 logger.info('Searching for all %s docs in %s (maxdepth %s)...', doctype, index, maxdepth)
                 data = {
-                    '_source': ['path_parent', 'filename', 'last_modified'],
+                    '_source': ['path_parent', 'filename', 'last_modified', 'last_access', 'last_change'],
                     'query': {
                         'regexp': {'path_parent': regexp}
                     }
@@ -983,7 +1022,7 @@ def _index_get_docs_data(index, copytags, hotdirs, doctype, path, maxdepth, sort
                 newpathwildcard = newpath + '\/*'
             logger.info('Searching for all %s docs in %s for path %s...', doctype, index, path)
             data = {
-                '_source': ['path_parent', 'filename', 'last_modified'],
+                '_source': ['path_parent', 'filename', 'last_modified', 'last_access', 'last_change'],
                 'query': {
                     'query_string': {
                         'query': '(path_parent: ' + newpath + ') OR '
@@ -1180,6 +1219,12 @@ def parse_cli_args(indexname):
                         help="Number of threads for treewalk (default: cpu core count x 2)")
     parser.add_argument("-A", "--autotag", action="store_true",
                         help="Get bots to auto-tag files/dirs based on patterns in config")
+    parser.add_argument("-G", "--costpergb", action="store_true",
+                        help="Store cost per GB in files/dirs based on cost and patterns in config")
+    parser.add_argument("-S", "--sizeondisk", action="store_true",
+                        help="Store size on disk (disk usage size) using block count x blocksize instead of file size")
+    parser.add_argument("-B", "--blocksize", type=int, metavar='BLOCKSIZE', default=512,
+                        help="Blocksize (in bytes) used for --sizeondisk (default: 512)")
     parser.add_argument("-O", "--optimizeindex", action="store_true",
                         help="Optimize index at end of crawl (reduce size)")
     parser.add_argument("-r", "--reindex", action="store_true",
@@ -1197,7 +1242,7 @@ def parse_cli_args(indexname):
                         help="Start tcp socket server and listen for remote commands")
     parser.add_argument("-L", "--listentwc", action="store_true",
                         help="Start tcp socket server and listen for messages from diskover treewalk client")
-    parser.add_argument("-B", "--crawlbot", action="store_true",
+    parser.add_argument("--crawlbot", action="store_true",
                         help="Starts up crawl bot continuous scanner to scan for dir changes in index")
     parser.add_argument("--qumulo", action="store_true",
                         help="Qumulo storage type, use Qumulo api instead of scandir")
@@ -1559,6 +1604,12 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
 
         if cliargs['autotag']:
             logger.info("Worker bots set to auto-tag (-A)")
+
+        if cliargs['sizeondisk']:
+            logger.info("Storing on disk size instead of file size using a blocksize of %s (-S)" % cliargs['blocksize'])
+
+        if cliargs['costpergb']:
+            logger.info("Storing cost per GB (-G)")
 
         if cliargs['adaptivebatch']:
             batchsize = ab_start
@@ -2005,7 +2056,7 @@ if __name__ == "__main__":
     else:
         # warn if not running as root
         if os.geteuid():
-            logger.warning('Not running as root, you may not be able to crawl all files')
+            logger.warning('Not running as root, permissions might block crawling some files')
         if not os.path.exists(cliargs['rootdir']) or not \
                 os.path.isdir(cliargs['rootdir']):
             logger.error("Rootdir path not found or not a directory, exiting")

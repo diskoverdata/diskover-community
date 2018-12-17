@@ -208,7 +208,7 @@ def auto_tag(metadict, type, mtime, atime, ctime):
             except KeyError:
                 pass
 
-            timepass = auto_tag_time_check(pattern, mtime, atime, ctime)
+            timepass = time_check(pattern, mtime, atime, ctime)
             if extpass and namepass and pathpass and timepass:
                 metadict['tag'] = pattern['tag']
                 metadict['tag_custom'] = pattern['tag_custom']
@@ -320,21 +320,24 @@ def auto_tag(metadict, type, mtime, atime, ctime):
             except KeyError:
                 pass
 
-            timepass = auto_tag_time_check(pattern, mtime, atime, ctime)
+            timepass = time_check(pattern, mtime, atime, ctime)
             if extpass and namepass and pathpass and timepass:
                 metadict['tag'] = pattern['tag']
                 metadict['tag_custom'] = pattern['tag_custom']
                 return metadict
 
 
-def auto_tag_time_check(pattern, mtime, atime, ctime):
+def time_check(pattern, mtime, atime, ctime):
+    """This is the time check function.
+    It is used by the auto_tag and cost_per_gb
+    functions.
+    """
     timepass = True
     try:
         if pattern['mtime'] > 0 and mtime:
             # Convert time in days to seconds
             time_sec = pattern['mtime'] * 86400
             file_mtime_sec = time.time() - mtime
-            # Only tag files modified at least x days ago
             if file_mtime_sec < time_sec:
                 timepass = False
     except KeyError:
@@ -357,6 +360,113 @@ def auto_tag_time_check(pattern, mtime, atime, ctime):
         pass
 
     return timepass
+
+
+def cost_per_gb(metadict, mtime, atime, ctime):
+    """This is the cost per gb function.
+    It checks diskover config for any cost per gb patterns
+    and updates the meta dict for file or directory
+    to include the cost per gb.
+    """
+
+    # by default set the costpergb to be cost per gb value from config
+    costpergb = config['costpergb']
+    # determine if we are using base2 or base10 file sizes
+    base = config['costpergb_base']
+    if base == 10:
+        basen = 1000
+    else:
+        basen = 1024
+    try:  # file
+        size_gb = metadict['filesize']/basen/basen/basen
+        metadict['costpergb'] = round(costpergb * size_gb, 2)
+    except KeyError:  # directory
+        size_gb = metadict['doc']['filesize']/basen/basen/basen
+        metadict['doc']['costpergb'] = round(costpergb * size_gb, 2)
+
+    # if pattern lists are empty, return just cost per gb
+    if not config['costpergb_paths'] and not config['costpergb_dates']:
+        return metadict
+
+    pathpass = True
+    timepass = True
+    costpergb_path = 0
+    costpergb_time = 0
+
+    for pattern in config['costpergb_paths']:
+        try:
+            for path in pattern['path_exclude']:
+                if path.startswith('*') and path.endswith('*'):
+                    path = path.replace('*', '')
+                    if re.search(path, metadict['path_parent']):
+                        return metadict
+                elif path.startswith('*'):
+                    path = path + '$'
+                    if re.search(path, metadict['path_parent']):
+                        return metadict
+                elif path.endswith('*'):
+                    path = '^' + path
+                    if re.search(path, metadict['path_parent']):
+                        return metadict
+                else:
+                    if path == metadict['path_parent']:
+                        return metadict
+        except KeyError:
+            pass
+
+        try:
+            for path in pattern['path']:
+                if path.startswith('*') and path.endswith('*'):
+                    path = path.replace('*', '')
+                    if re.search(path, metadict['path_parent']):
+                        pathpass = True
+                        costpergb_path = pattern['costpergb']
+                        break
+                    else:
+                        pathpass = False
+                elif path.startswith('*'):
+                    path = path + '$'
+                    if re.search(path, metadict['path_parent']):
+                        pathpass = True
+                        costpergb_path = pattern['costpergb']
+                        break
+                    else:
+                        pathpass = False
+                elif path.endswith('*'):
+                    path = '^' + path
+                    if re.search(path, metadict['path_parent']):
+                        pathpass = True
+                        costpergb_path = pattern['costpergb']
+                        break
+                    else:
+                        pathpass = False
+                else:
+                    if path == metadict['path_parent']:
+                        pathpass = True
+                        costpergb_path = pattern['costpergb']
+                        break
+                    else:
+                        pathpass = False
+        except KeyError:
+            pass
+
+    for pattern in config['costpergb_dates']:
+        timepass = time_check(pattern, mtime, atime, ctime)
+        if timepass:
+            costpergb_time = pattern['costpergb']
+            break
+
+    if pathpass and timepass:
+        if config['costpergb_priority'] == 'path':
+            metadict['costpergb'] = round(costpergb_path * size_gb, 2)
+        else:
+            metadict['costpergb'] = round(costpergb_time * size_gb, 2)
+    elif pathpass:
+        metadict['costpergb'] = round(costpergb_path * size_gb, 2)
+    elif timepass:
+        metadict['costpergb'] = round(costpergb_time * size_gb, 2)
+
+    return metadict
 
 
 def get_dir_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
@@ -464,6 +574,7 @@ def get_dir_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
             "change_percent_items": "",
             "change_percent_items_files": "",
             "change_percent_items_subdirs": "",
+            "costpergb": "",
             "worker_name": worker_name,
             "indexing_date": indextime_utc,
             "_type": "directory"
@@ -481,7 +592,7 @@ def get_dir_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
 
         # add any autotags to dirmeta_dict
         if cliargs['autotag'] and len(config['autotag_dirs']) > 0:
-            auto_tag(dirmeta_dict, 'directory', mtime, atime, ctime)
+            dirmeta_dict = auto_tag(dirmeta_dict, 'directory', mtime, atime, ctime)
 
         # search for and copy over any existing tags from reindex_dict
         for sublist in reindex_dict['directory']:
@@ -490,9 +601,7 @@ def get_dir_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
                 dirmeta_dict['tag_custom'] = sublist[2]
                 break
 
-    except (IOError, OSError) as e:
-        return False
-    except FileNotFoundError as e:
+    except (IOError, OSError):
         return False
 
     # cache directory times in Redis, encode path (key) using base64
@@ -527,12 +636,18 @@ def get_file_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
 
         if statsembeded:
             # get embeded stats from path
-            mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime = metadata
+            mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime, blocks = metadata
             ino = str(ino)
         else:
             # use lstat to get meta and not follow sym links
-            mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime = os.lstat(fullpath)
+            s = os.lstat(fullpath)
+            mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime = s
             ino = str(ino)
+            blocks = s.st_blocks
+        
+        # Are we storing file size or on disk size
+        if cliargs['sizeondisk']:
+            size = blocks * cliargs['blocksize']
 
         # Skip files smaller than minsize cli flag
         if size < cliargs['minsize']:
@@ -636,7 +751,11 @@ def get_file_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
 
         # add any autotags to filemeta_dict
         if cliargs['autotag'] and len(config['autotag_files']) > 0:
-            auto_tag(filemeta_dict, 'file', mtime, atime, ctime)
+            filemeta_dict = auto_tag(filemeta_dict, 'file', mtime, atime, ctime)
+
+        # add cost per gb to filemeta_dict
+        if cliargs['costpergb']:
+            filemeta_dict = cost_per_gb(filemeta_dict, mtime, atime, ctime)
 
         # search for and copy over any existing tags from reindex_dict
         for sublist in reindex_dict['file']:
@@ -645,10 +764,7 @@ def get_file_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
                 filemeta_dict['tag_custom'] = sublist[2]
                 break
 
-    except (IOError, OSError) as e:
-        return False
-
-    except FileNotFoundError as e:
+    except (IOError, OSError):
         return False
 
     return filemeta_dict
@@ -767,6 +883,9 @@ def calc_dir_size(dirlist, cliargs):
                     'items_files': totalitems_files,
                     'items_subdirs': totalitems_subdirs}
         }
+        # add total cost per gb to doc
+        if cliargs['costpergb']:
+            d = cost_per_gb(d, path[2], path[3], path[4])
         doclist.append(d)
 
     index_bulk_add(es, doclist, config, cliargs)

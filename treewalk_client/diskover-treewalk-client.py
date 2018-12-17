@@ -26,7 +26,7 @@ from optparse import OptionParser
 from multiprocessing import cpu_count
 
 
-version = '1.0.18'
+version = '1.0.19'
 __version__ = version
 
 
@@ -104,8 +104,10 @@ def socket_worker(conn):
 def spider_worker():
 	while True:
 		item = q_spider.get()
-		mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime = os.lstat(item)
-		q_spider_meta.put((item, (mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime)))
+		s = os.lstat(item)
+		mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime = s
+		blocks = s.st_blocks
+		q_spider_meta.put((item, (mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime, blocks)))
 		q_spider.task_done()
 
 
