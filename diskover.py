@@ -201,13 +201,13 @@ def load_config():
     except ConfigParser.NoOptionError:
         configsettings['costpergb_paths'] = []
     try:
-        d = config.get('storagecost', 'dates')
-        scd = json.loads(d)
-        configsettings['costpergb_dates'] = scd
+        s = config.get('storagecost', 'times')
+        sct = json.loads(s)
+        configsettings['costpergb_times'] = sct
     except ValueError as e:
-        raise ValueError("Error in config storagecost dates: %s" % e)
+        raise ValueError("Error in config storagecost times: %s" % e)
     except ConfigParser.NoOptionError:
-        configsettings['costpergb_dates'] = []
+        configsettings['costpergb_times'] = []
     try:
         configsettings['costpergb_priority'] = config.get('storagecost', 'priority')
     except ConfigParser.NoOptionError:

@@ -25,8 +25,8 @@ costpergb = 0.03
 base = 2
 ; pattern dictionaries for diskover bots to use when determing cost per GB (overrides above)
 ;paths = [{"path": ["*/fastdiskpath1/*", "*/Fastdiskpath2/*"], "path_exclude": [], "costpergb": 0.05}, {"path": ["*/slowdiskpath1/*", "*/Slowdiskpath2/*"], "path_exclude": [], "costpergb": 0.02}]
-;dates = [{"mtime": 180, "atime": 0, "ctime": 180, "costpergb": 0.02}]
-; deciding factor if a match is in both paths and dates, can be path or date
+;times = [{"mtime": 180, "atime": 0, "ctime": 180, "costpergb": 0.02}]
+; deciding factor if a match is in both paths and times, can be path or time
 ;priority = path
 
 [elasticsearch]

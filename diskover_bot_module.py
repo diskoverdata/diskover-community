@@ -385,7 +385,7 @@ def cost_per_gb(metadict, mtime, atime, ctime):
         metadict['doc']['costpergb'] = round(costpergb * size_gb, 2)
 
     # if pattern lists are empty, return just cost per gb
-    if not config['costpergb_paths'] and not config['costpergb_dates']:
+    if not config['costpergb_paths'] and not config['costpergb_times']:
         return metadict
 
     pathpass = True
@@ -450,7 +450,7 @@ def cost_per_gb(metadict, mtime, atime, ctime):
         except KeyError:
             pass
 
-    for pattern in config['costpergb_dates']:
+    for pattern in config['costpergb_times']:
         timepass = time_check(pattern, mtime, atime, ctime)
         if timepass:
             costpergb_time = pattern['costpergb']
