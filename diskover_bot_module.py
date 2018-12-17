@@ -74,137 +74,98 @@ def auto_tag(metadict, type, mtime, atime, ctime):
         for pattern in config['autotag_files']:
             try:
                 for name in pattern['name_exclude']:
+                    if name == metadict['filename']:
+                        return metadict
+
                     if name.startswith('*') and name.endswith('*'):
                         name = name.replace('*', '')
-                        if re.search(name, metadict['filename']):
-                            return metadict
                     elif name.startswith('*'):
                         name = name + '$'
-                        if re.search(name, metadict['filename']):
-                            return metadict
                     elif name.endswith('*'):
                         name = '^' + name
-                        if re.search(name, metadict['filename']):
-                            return metadict
-                    else:
-                        if name == metadict['filename']:
-                            return metadict
+
+                    if re.search(name, metadict['filename']):
+                        return metadict
             except KeyError:
                 pass
 
             try:
                 for path in pattern['path_exclude']:
+                    if path == metadict['path_parent']:
+                        return metadict
+
                     if path.startswith('*') and path.endswith('*'):
                         path = path.replace('*', '')
-                        if re.search(path, metadict['path_parent']):
-                            return metadict
                     elif path.startswith('*'):
                         path = path + '$'
-                        if re.search(path, metadict['path_parent']):
-                            return metadict
                     elif path.endswith('*'):
                         path = '^' + path
-                        if re.search(path, metadict['path_parent']):
-                            return metadict
-                    else:
-                        if path == metadict['path_parent']:
-                            return metadict
+
+                    if re.search(path, metadict['path_parent']):
+                        return metadict
             except KeyError:
                 pass
 
             try:
                 for ext in pattern['ext']:
+                    if ext == metadict['extension']:
+                        extpass = True
+                        break
+
                     if ext.startswith('*') and ext.endswith('*'):
                         ext = ext.replace('*', '')
-                        if re.search(ext, metadict['extension']):
-                            extpass = True
-                            break
-                        else:
-                            extpass = False
                     elif ext.startswith('*'):
                         ext = ext + '$'
-                        if re.search(ext, metadict['extension']):
-                            extpass = True
-                            break
-                        else:
-                            extpass = False
                     elif ext.endswith('*'):
                         ext = '^' + ext
-                        if re.search(ext, metadict['extension']):
-                            extpass = True
-                            break
-                        else:
-                            extpass = False
+
+                    if re.search(ext, metadict['extension']):
+                        extpass = True
+                        break
                     else:
-                        if ext == metadict['extension']:
-                            extpass = True
-                            break
-                        else:
-                            extpass = False
+                        extpass = False
             except KeyError:
                 pass
 
             try:
                 for name in pattern['name']:
+                    if name == metadict['filename']:
+                        namepass = True
+                        break
+
                     if name.startswith('*') and name.endswith('*'):
                         name = name.replace('*', '')
-                        if re.search(name, metadict['filename']):
-                            namepass = True
-                            break
-                        else:
-                            namepass = False
                     elif name.startswith('*'):
                         name = name + '$'
-                        if re.search(name, metadict['filename']):
-                            namepass = True
-                            break
-                        else:
-                            namepass = False
                     elif name.endswith('*'):
                         name = '^' + name
-                        if re.search(name, metadict['filename']):
-                            namepass = True
-                            break
-                        else:
-                            namepass = False
+
+                    if re.search(name, metadict['filename']):
+                        namepass = True
+                        break
                     else:
-                        if name == metadict['filename']:
-                            namepass = True
-                            break
-                        else:
-                            namepass = False
+                        namepass = False
             except KeyError:
                 pass
 
             try:
                 for path in pattern['path']:
+                    if path == metadict['path_parent']:
+                        pathpass = True
+                        break
+
                     if path.startswith('*') and path.endswith('*'):
                         path = path.replace('*', '')
-                        if re.search(path, metadict['path_parent']):
-                            pathpass = True
-                            break
-                        else:
-                            pathpass = False
                     elif path.startswith('*'):
                         path = path + '$'
-                        if re.search(path, metadict['path_parent']):
-                            pathpass = True
-                            break
-                        else:
-                            pathpass = False
                     elif path.endswith('*'):
                         path = '^' + path
-                        if re.search(path, metadict['path_parent']):
-                            pathpass = True
-                            break
-                        else:
-                            pathpass = False
+
+                    if re.search(path, metadict['path_parent']):
+                        pathpass = True
+                        break
                     else:
-                        if path == metadict['path_parent']:
-                            pathpass = True
-                            break
-                        else:
-                            pathpass = False
+                        pathpass = False
             except KeyError:
                 pass
 
@@ -218,105 +179,77 @@ def auto_tag(metadict, type, mtime, atime, ctime):
         for pattern in config['autotag_dirs']:
             try:
                 for name in pattern['name_exclude']:
+                    if name == metadict['filename']:
+                        return metadict
+
                     if name.startswith('*') and name.endswith('*'):
                         name = name.replace('*', '')
-                        if re.search(name, metadict['filename']):
-                            return metadict
                     elif name.startswith('*'):
                         name = name + '$'
-                        if re.search(name, metadict['filename']):
-                            return metadict
                     elif name.endswith('*'):
                         name = '^' + name
-                        if re.search(name, metadict['filename']):
-                            return metadict
-                    else:
-                        if name == metadict['filename']:
-                            return metadict
+
+                    if re.search(name, metadict['filename']):
+                        return metadict
             except KeyError:
                 pass
 
             try:
                 for path in pattern['path_exclude']:
+                    if path == metadict['path_parent']:
+                        return metadict
+
                     if path.startswith('*') and path.endswith('*'):
                         path = path.replace('*', '')
-                        if re.search(path, metadict['path_parent']):
-                            return metadict
                     elif path.startswith('*'):
                         path = path + '$'
-                        if re.search(path, metadict['path_parent']):
-                            return metadict
                     elif path.endswith('*'):
                         path = '^' + path
-                        if re.search(path, metadict['path_parent']):
-                            return metadict
-                    else:
-                        if path == metadict['path_parent']:
-                            return metadict
+                    
+                    if re.search(path, metadict['path_parent']):
+                        return metadict
             except KeyError:
                 pass
 
             try:
                 for name in pattern['name']:
+                    if name == metadict['filename']:
+                        namepass = True
+                        break
+
                     if name.startswith('*') and name.endswith('*'):
                         name = name.replace('*', '')
-                        if re.search(name, metadict['filename']):
-                            namepass = True
-                            break
-                        else:
-                            namepass = False
                     elif name.startswith('*'):
                         name = name + '$'
-                        if re.search(name, metadict['filename']):
-                            namepass = True
-                            break
-                        else:
-                            namepass = False
                     elif name.endswith('*'):
                         name = '^' + name
-                        if re.search(name, metadict['filename']):
-                            namepass = True
-                            break
-                        else:
-                            namepass = False
+
+                    if re.search(name, metadict['filename']):
+                        namepass = True
+                        break
                     else:
-                        if name == metadict['filename']:
-                            namepass = True
-                            break
-                        else:
-                            namepass = False
+                        namepass = False
             except KeyError:
                 pass
 
             try:
                 for path in pattern['path']:
+                    if path == metadict['path_parent']:
+                        pathpass = True
+                        break
+
                     if path.startswith('*') and path.endswith('*'):
                         path = path.replace('*', '')
-                        if re.search(path, metadict['path_parent']):
-                            pathpass = True
-                            break
-                        else:
-                            pathpass = False
                     elif path.startswith('*'):
                         path = path + '$'
-                        if re.search(path, metadict['path_parent']):
-                            pathpass = True
-                            break
-                        else:
-                            pathpass = False
                     elif path.endswith('*'):
                         path = '^' + path
-                        if re.search(path, metadict['path_parent']):
-                            pathpass = True
-                            break
-                        else:
-                            pathpass = False
+
+                    if re.search(path, metadict['path_parent']):
+                        pathpass = True
+                        break
                     else:
-                        if path == metadict['path_parent']:
-                            pathpass = True
-                            break
-                        else:
-                            pathpass = False
+                        pathpass = False
             except KeyError:
                 pass
 
@@ -326,6 +259,8 @@ def auto_tag(metadict, type, mtime, atime, ctime):
                 metadict['tag_custom'] = pattern['tag_custom']
                 return metadict
 
+    return metadict
+
 
 def time_check(pattern, mtime, atime, ctime):
     """This is the time check function.
@@ -333,36 +268,24 @@ def time_check(pattern, mtime, atime, ctime):
     functions.
     """
     timepass = True
-    try:
-        if pattern['mtime'] > 0 and mtime:
-            # Convert time in days to seconds
-            time_sec = pattern['mtime'] * 86400
-            file_mtime_sec = time.time() - mtime
-            if file_mtime_sec < time_sec:
-                timepass = False
-    except KeyError:
-        pass
-    try:
-        if pattern['atime'] > 0 and atime:
-            time_sec = pattern['atime'] * 86400
-            file_atime_sec = time.time() - atime
-            if file_atime_sec < time_sec:
-                timepass = False
-    except KeyError:
-        pass
-    try:
-        if pattern['ctime'] > 0 and ctime:
-            time_sec = pattern['ctime'] * 86400
-            file_ctime_sec = time.time() - ctime
-            if file_ctime_sec < time_sec:
-                timepass = False
-    except KeyError:
-        pass
+
+    d = {'mtime': mtime, 'atime': atime, 'ctime': ctime}
+    for key, value in d.items():
+        try:
+            if pattern[key] > 0 and value:
+                # Convert time in days to seconds
+                time_sec = pattern[key] * 86400
+                file_time_sec = time.time() - value
+                if file_time_sec < time_sec:
+                    timepass = False
+                    break
+        except KeyError:
+            pass
 
     return timepass
 
 
-def cost_per_gb(metadict, mtime, atime, ctime):
+def cost_per_gb(metadict, fullpath, mtime, atime, ctime, doctype):
     """This is the cost per gb function.
     It checks diskover config for any cost per gb patterns
     and updates the meta dict for file or directory
@@ -377,10 +300,11 @@ def cost_per_gb(metadict, mtime, atime, ctime):
         basen = 1000
     else:
         basen = 1024
-    try:  # file
+
+    if doctype == 'file':
         size_gb = metadict['filesize']/basen/basen/basen
         metadict['costpergb'] = round(costpergb * size_gb, 2)
-    except KeyError:  # directory
+    else:  # directory 
         size_gb = metadict['doc']['filesize']/basen/basen/basen
         metadict['doc']['costpergb'] = round(costpergb * size_gb, 2)
 
@@ -388,65 +312,54 @@ def cost_per_gb(metadict, mtime, atime, ctime):
     if not config['costpergb_paths'] and not config['costpergb_times']:
         return metadict
 
-    pathpass = True
-    timepass = True
+    pathpass = False
+    timepass = False
     costpergb_path = 0
     costpergb_time = 0
 
+    filename = os.path.basename(fullpath)
+    parentdir = os.path.abspath(os.path.join(fullpath, os.pardir))
+
     for pattern in config['costpergb_paths']:
+        if pathpass:
+            break
         try:
             for path in pattern['path_exclude']:
+                if path == parentdir or path == filename:
+                    return metadict
+
                 if path.startswith('*') and path.endswith('*'):
                     path = path.replace('*', '')
-                    if re.search(path, metadict['path_parent']):
-                        return metadict
                 elif path.startswith('*'):
                     path = path + '$'
-                    if re.search(path, metadict['path_parent']):
-                        return metadict
                 elif path.endswith('*'):
                     path = '^' + path
-                    if re.search(path, metadict['path_parent']):
-                        return metadict
-                else:
-                    if path == metadict['path_parent']:
-                        return metadict
+            
+                if re.search(path, parentdir) or re.search(path, filename):
+                    return metadict
         except KeyError:
             pass
 
         try:
             for path in pattern['path']:
+                if path == parentdir or path == filename:
+                    pathpass = True
+                    costpergb_path = pattern['costpergb']
+                    break
+                    
                 if path.startswith('*') and path.endswith('*'):
                     path = path.replace('*', '')
-                    if re.search(path, metadict['path_parent']):
-                        pathpass = True
-                        costpergb_path = pattern['costpergb']
-                        break
-                    else:
-                        pathpass = False
                 elif path.startswith('*'):
                     path = path + '$'
-                    if re.search(path, metadict['path_parent']):
-                        pathpass = True
-                        costpergb_path = pattern['costpergb']
-                        break
-                    else:
-                        pathpass = False
                 elif path.endswith('*'):
                     path = '^' + path
-                    if re.search(path, metadict['path_parent']):
-                        pathpass = True
-                        costpergb_path = pattern['costpergb']
-                        break
-                    else:
-                        pathpass = False
+
+                if re.search(path, parentdir) or re.search(path, filename):
+                    pathpass = True
+                    costpergb_path = pattern['costpergb']
+                    break
                 else:
-                    if path == metadict['path_parent']:
-                        pathpass = True
-                        costpergb_path = pattern['costpergb']
-                        break
-                    else:
-                        pathpass = False
+                    pathpass = False
         except KeyError:
             pass
 
@@ -458,13 +371,25 @@ def cost_per_gb(metadict, mtime, atime, ctime):
 
     if pathpass and timepass:
         if config['costpergb_priority'] == 'path':
+            if doctype == 'file':
+                metadict['costpergb'] = round(costpergb_path * size_gb, 2)
+            else:
+                metadict['doc']['costpergb'] = round(costpergb_path * size_gb, 2)
+        else:
+            if doctype == 'file':
+                metadict['costpergb'] = round(costpergb_time * size_gb, 2)
+            else:
+                metadict['doc']['costpergb'] = round(costpergb_time * size_gb, 2)
+    elif pathpass:
+        if doctype == 'file':
             metadict['costpergb'] = round(costpergb_path * size_gb, 2)
         else:
-            metadict['costpergb'] = round(costpergb_time * size_gb, 2)
-    elif pathpass:
-        metadict['costpergb'] = round(costpergb_path * size_gb, 2)
+            metadict['doc']['costpergb'] = round(costpergb_path * size_gb, 2)
     elif timepass:
-        metadict['costpergb'] = round(costpergb_time * size_gb, 2)
+        if doctype == 'file':
+            metadict['costpergb'] = round(costpergb_time * size_gb, 2)
+        else:
+            metadict['doc']['costpergb'] = round(costpergb_time * size_gb, 2)
 
     return metadict
 
@@ -755,7 +680,7 @@ def get_file_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
 
         # add cost per gb to filemeta_dict
         if cliargs['costpergb']:
-            filemeta_dict = cost_per_gb(filemeta_dict, mtime, atime, ctime)
+            filemeta_dict = cost_per_gb(filemeta_dict, fullpath, mtime, atime, ctime, 'file')
 
         # search for and copy over any existing tags from reindex_dict
         for sublist in reindex_dict['file']:
@@ -885,7 +810,7 @@ def calc_dir_size(dirlist, cliargs):
         }
         # add total cost per gb to doc
         if cliargs['costpergb']:
-            d = cost_per_gb(d, path[2], path[3], path[4])
+            d = cost_per_gb(d, path[1], path[2], path[3], path[4], 'directory')
         doclist.append(d)
 
     index_bulk_add(es, doclist, config, cliargs)
