@@ -11,12 +11,18 @@ diskover is released under the Apache 2.0 license. See
 LICENSE for the full license text.
 """
 
-from diskover import get_time, crawl_tree, calc_dir_sizes, config, index_delete_path, index_get_docs, add_diskspace
+from diskover import get_time, crawl_tree, calc_dir_sizes, config, \
+    index_delete_path, index_get_docs, add_diskspace, tune_es_for_crawl
 from random import randint
 import time
 import sys
 import os
 import threading
+from threading import Lock
+
+
+dirlist = []
+lock = Lock()
 
 def bot_thread(threadnum, cliargs, logger, rootdir_path, reindex_dict):
     """This is the bot thread function.
@@ -55,9 +61,9 @@ def bot_thread(threadnum, cliargs, logger, rootdir_path, reindex_dict):
         # check directory's mtime on disk
         try:
             mtime_now_utc = time.mktime(time.gmtime(os.lstat(path).st_mtime))
-        except (IOError, OSError):
+        except (IOError, OSError) as e:
             if cliargs['verbose']:
-                logger.info('Error crawling directory %s' % path)
+                logger.warning('Error crawling directory %s caused by %s' % (path, e))
             continue
         if (mtime_now_utc == mtime_utc):
             if cliargs['verbose']:
@@ -65,13 +71,17 @@ def bot_thread(threadnum, cliargs, logger, rootdir_path, reindex_dict):
         else:
             c += 1
             logger.info('*** Mtime changed! Reindexing: %s' % path)
+            # remove from dirlist
+            lock.acquire(True)
+            del dirlist[li]
+            lock.release()
             # delete existing path docs (non-recursive)
             reindex_dict = index_delete_path(path, cliargs, logger, reindex_dict)
             # start crawling
             crawl_tree(path, cliargs, logger, reindex_dict)
             # calculate directory size for path
             calc_dir_sizes(cliargs, logger, path=path)
-        time.sleep(config['botsleep'])
+        time.sleep(config['crawlbot_botsleep'])
         n += 1
 
 
@@ -85,12 +95,12 @@ def start_crawlbot_scanner(cliargs, logger, rootdir_path, botdirlist, reindex_di
 
     logger.info('diskover crawl bot continuous scanner starting up')
     logger.info('Randomly scanning for changes every %s sec using %s threads',
-                config['botsleep'], config['botthreads'])
+                config['crawlbot_botsleep'], config['crawlbot_botthreads'])
     logger.info('*** Press Ctrl-c to shutdown ***')
 
     threadlist = []
     try:
-        for i in range(config['botthreads']):
+        for i in range(config['crawlbot_botthreads']):
             thread = threading.Thread(target=bot_thread,
                                       args=(i, cliargs, logger, rootdir_path, reindex_dict,))
             thread.daemon = True
@@ -101,18 +111,20 @@ def start_crawlbot_scanner(cliargs, logger, rootdir_path, botdirlist, reindex_di
         # start infinite loop and randomly pick directories from dirlist
         # in future will create better algorithm for this
         while True:
-            # every 1 hour get a new dirlist to pick up any new directories which have been added
-            # every 1 hour update disk space info in es index
-            # every 1 hour calculate directory sizes
-            time.sleep(3600)
+            # every x seconds get a new dirlist to pick up any new directories which have been added
+            # every x seconds update disk space info in es index
+            # every x seconds calculate directory sizes
+            time.sleep(config['crawlbot_dirlisttime'])
             t = time.time()
             elapsed = get_time(t - starttime)
             logger.info(
                 '*** crawlbot: getting new dirlist from ES, crawlbot has been running for %s', elapsed)
+            lock.acquire(True)
             dirlist = index_get_docs(cliargs, logger, doctype='directory')
+            lock.release()
             # add disk space info to es index
             add_diskspace(cliargs['index'], logger, rootdir_path)
-            # calculate directory sizes and items
+            # calculate director sizes and items
             calc_dir_sizes(cliargs, logger)
 
     except KeyboardInterrupt:

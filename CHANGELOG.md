@@ -10,12 +10,14 @@
 - tree walk client v1.0.19
 - ownersgroups section in diskover.cfg.sample for adjusting how owner (user) and group fields are stored for file and directory docs, copy to your config and edit for you env
 - function get_owner_group_names to diskover_bot_module.py for handling uid/gid -> name lookups and cacheing
+- dirlisttime setting in crawlbot section in diskover.cfg.sample, copy to your config and edit for you env
 ### changed
 - inode field es mapping for file and directory doc types to keyword (string), prev was long
 - removed -S flag for --crawlbot
 - set fixed version numbers to python dependencies for pip in requirements.txt, check you are using those versions using pip, newer versions may cause issues
 ### fixed
 - bug with indexing file systems with inode values larger than es long number type
+- bugs with --crawlbot crawlbot continuous scanner
 
 ## [1.5.0-rc24] = 2018-11-29
 ### changed

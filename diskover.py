@@ -353,78 +353,67 @@ def load_config():
     except ConfigParser.NoOptionError:
         configsettings['adaptivebatch_stepsize'] = 10
     try:
-        configsettings['listener_host'] = \
-            config.get('socketlistener', 'host')
+        configsettings['listener_host'] = config.get('socketlistener', 'host')
     except ConfigParser.NoOptionError:
         configsettings['listener_host'] = "localhost"
     try:
-        configsettings['listener_port'] = \
-            int(config.get('socketlistener', 'port'))
+        configsettings['listener_port'] = int(config.get('socketlistener', 'port'))
     except ConfigParser.NoOptionError:
         configsettings['listener_port'] = 9999
     try:
-        configsettings['listener_maxconnections'] = \
-            int(config.get('socketlistener', 'maxconnections'))
+        configsettings['listener_maxconnections'] = int(config.get('socketlistener', 'maxconnections'))
     except ConfigParser.NoOptionError:
         configsettings['listener_maxconnections'] = 5
     try:
-        configsettings['listener_twcport'] = \
-            int(config.get('socketlistener', 'twcport'))
+        configsettings['listener_twcport'] = int(config.get('socketlistener', 'twcport'))
     except ConfigParser.NoOptionError:
         configsettings['listener_twcport'] = 9998
     try:
-        configsettings['diskover_path'] = \
-            config.get('paths', 'diskoverpath')
+        configsettings['diskover_path'] = config.get('paths', 'diskoverpath')
     except ConfigParser.NoOptionError:
         configsettings['diskover_path'] = "./diskover.py"
     try:
-        configsettings['python_path'] = \
-            config.get('paths', 'pythonpath')
+        configsettings['python_path'] = config.get('paths', 'pythonpath')
     except ConfigParser.NoOptionError:
         configsettings['python_path'] = "python"
     try:
-        configsettings['md5_readsize'] = \
-            int(config.get('dupescheck', 'readsize'))
+        configsettings['md5_readsize'] = int(config.get('dupescheck', 'readsize'))
     except ConfigParser.NoOptionError:
         configsettings['md5_readsize'] = 65536
     try:
-        configsettings['dupes_maxsize'] = \
-            int(config.get('dupescheck', 'maxsize'))
+        configsettings['dupes_maxsize'] = int(config.get('dupescheck', 'maxsize'))
     except ConfigParser.NoOptionError:
         configsettings['dupes_maxsize'] = 1073741824
     try:
-        configsettings['dupes_checkbytes'] = \
-            int(config.get('dupescheck', 'checkbytes'))
+        configsettings['dupes_checkbytes'] = int(config.get('dupescheck', 'checkbytes'))
     except ConfigParser.NoOptionError:
         configsettings['dupes_checkbytes'] = 64
     try:
-        configsettings['botsleep'] = \
-            float(config.get('crawlbot', 'sleeptime'))
+        configsettings['crawlbot_botsleep'] = float(config.get('crawlbot', 'sleeptime'))
     except ConfigParser.NoOptionError:
-        configsettings['botsleep'] = 0.1
+        configsettings['crawlbot_botsleep'] = 0.1
     try:
-        configsettings['botthreads'] = \
-            int(config.get('crawlbot', 'botthreads'))
+        configsettings['crawlbot_botthreads'] = int(config.get('crawlbot', 'botthreads'))
     except ConfigParser.NoOptionError:
-        configsettings['botthreads'] = 8
+        configsettings['crawlbot_botthreads'] = 8
     try:
-        configsettings['gource_maxfilelag'] = \
-            float(config.get('gource', 'maxfilelag'))
+        configsettings['crawlbot_dirlisttime'] = int(config.get('crawlbot', 'dirlisttime'))
+    except ConfigParser.NoOptionError:
+        configsettings['crawlbot_dirlisttime'] = 3600
+    try:
+        configsettings['gource_maxfilelag'] = float(config.get('gource', 'maxfilelag'))
     except ConfigParser.NoOptionError:
         configsettings['gource_maxfilelag'] = 5
     try:
-        configsettings['qumulo_host'] = \
-            config.get('qumulo', 'cluster')
+        configsettings['qumulo_host'] = config.get('qumulo', 'cluster')
     except ConfigParser.NoOptionError:
         configsettings['qumulo_host'] = ""
     try:
-        configsettings['qumulo_api_user'] = \
-            config.get('qumulo', 'api_user')
+        configsettings['qumulo_api_user'] = config.get('qumulo', 'api_user')
     except ConfigParser.NoOptionError:
         configsettings['qumulo_api_user'] = ""
     try:
-        configsettings['qumulo_api_password'] = \
-            config.get('qumulo', 'api_password')
+        configsettings['qumulo_api_password'] = config.get('qumulo', 'api_password')
     except ConfigParser.NoOptionError:
         configsettings['qumulo_api_password'] = ""
 
@@ -894,7 +883,7 @@ def index_get_docs(cliargs, logger, doctype='directory', copytags=False, hotdirs
     if index is None:
         index = cliargs['index']
 
-    data = _index_get_docs_data(index, copytags, hotdirs, doctype, path, maxdepth, sort)
+    data = _index_get_docs_data(index, copytags, hotdirs, doctype, path, maxdepth, sort, logger)
 
     # refresh index
     es.indices.refresh(index)
@@ -946,7 +935,7 @@ def index_get_docs_generator(cliargs, logger, doctype='directory', copytags=Fals
     if index is None:
         index = cliargs['index']
 
-    data = _index_get_docs_data(index, copytags, hotdirs, doctype, path, maxdepth, sort)
+    data = _index_get_docs_data(index, copytags, hotdirs, doctype, path, maxdepth, sort, logger)
 
     # refresh index
     es.indices.refresh(index)
@@ -987,7 +976,7 @@ def index_get_docs_generator(cliargs, logger, doctype='directory', copytags=Fals
     yield doclist
 
 
-def _index_get_docs_data(index, copytags, hotdirs, doctype, path, maxdepth, sort):
+def _index_get_docs_data(index, copytags, hotdirs, doctype, path, maxdepth, sort, logger):
     if copytags:
         logger.info('Searching for all %s docs with tags in %s...', doctype, index)
         data = {
@@ -1494,7 +1483,7 @@ def scandirwalk(path):
                 break
 
 
-def treewalk(top, num_sep, level, batchsize, cliargs, reindex_dict):
+def treewalk(top, num_sep, level, batchsize, cliargs, logger, reindex_dict):
     """This is the tree walk function.
     It walks the tree and adds tuple of directory and it's items
     to redis queue for rq worker bots to scrape meta and upload
@@ -1667,7 +1656,7 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
             qumulo_treewalk(path, qumulo_ip, qumulo_ses, q_crawl, num_sep, level, batchsize, cliargs, logger, reindex_dict)
         # regular crawl using scandir
         else:
-            treewalk(path, num_sep, level, batchsize, cliargs, reindex_dict)
+            treewalk(path, num_sep, level, batchsize, cliargs, logger, reindex_dict)
 
         return starttime
 

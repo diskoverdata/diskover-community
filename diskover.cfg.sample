@@ -139,6 +139,8 @@ checkbytes = 64
 sleeptime = 0.1
 ; number of threads for checking directories, setting this to num of cores x2 is a good starting point
 threads = 8
+; how often in seconds to get new directory list with updated times from ES (default 3600)
+dirlisttime = 3600
 
 [gource]
 ; should be set to same in diskover-gource.sh
