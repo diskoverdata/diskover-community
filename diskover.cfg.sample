@@ -13,6 +13,19 @@ files = .*,Thumbs.db,.DS_Store,._.DS_Store,.localized,desktop.ini
 ; files you want to include (whitelist), case-sensitive
 ;files =
 
+[ownersgroups]
+; control how owner (username) and group fields are stored for file and directory docs
+; store uid and gid's instead of trying to get owner and group names (default is False)
+;uidgidonly = False
+; owner/group names contain domain name set to True (default is False)
+;domain = False
+; character separator used on cifs/nfs mounts to separte user/group and domain name, usually \\ or @
+;domainsep = \\
+; if domain name comes first before character separator, set this to True, otherwise False (default is True)
+;domainfirst = True
+; when indexing owner and group fields, keep the domain name (default is False)
+;keepdomain = False
+
 [autotag]
 ; pattern dictionaries for diskover bots to use when auto-tagging, values are case-sensitive, can include wildcard for ext, name or path (tmp* or TMP* or *tmp or *TMP* etc)
 ;files = [{"name": [], "name_exclude": [], "ext": ["tmp*", "TMP*", "temp*", "TEMP*", "cache*", "CACHE*"], "path": ["*/Application Support/*", "*/Containers/*"], "path_exclude": [], "mtime": 90, "atime": 0, "ctime": 90, "tag": "delete", "tag_custom": "autotag"}]

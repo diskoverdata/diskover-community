@@ -169,6 +169,22 @@ def load_config():
     except ConfigParser.NoOptionError:
         configsettings['included_files'] = set([])
     try:
+        configsettings['ownersgroups_uidgidonly'] = config.get('ownersgroups', 'uidgidonly').lower()
+    except ConfigParser.NoOptionError:
+        configsettings['ownersgroups_uidgidonly'] = "false"
+    try:
+        configsettings['ownersgroups_domain'] = config.get('ownersgroups', 'domain').lower()
+    except ConfigParser.NoOptionError:
+        configsettings['ownersgroups_domain'] = "false"
+    try:
+        configsettings['ownersgroups_domainsep'] = config.get('ownersgroups', 'domainsep')
+    except ConfigParser.NoOptionError:
+        configsettings['ownersgroups_domainsep'] = "\\"
+    try:
+        configsettings['ownersgroups_keepdomain'] = config.get('ownersgroups', 'keepdomain').lower()
+    except ConfigParser.NoOptionError:
+        configsettings['ownersgroups_keepdomain'] = "false"
+    try:
         t = config.get('autotag', 'files')
         atf = json.loads(t)
         configsettings['autotag_files'] = atf
@@ -213,9 +229,9 @@ def load_config():
     except ConfigParser.NoOptionError:
         configsettings['costpergb_priority'] = "path"
     try:
-        configsettings['aws'] = config.get('elasticsearch', 'aws')
+        configsettings['aws'] = config.get('elasticsearch', 'aws').lower()
     except ConfigParser.NoOptionError:
-        configsettings['aws'] = "False"
+        configsettings['aws'] = "false"
     try:
         configsettings['es_host'] = config.get('elasticsearch', 'host')
     except ConfigParser.NoOptionError:
@@ -249,9 +265,9 @@ def load_config():
     except ConfigParser.NoOptionError:
         configsettings['es_max_retries'] = 0
     try:
-        configsettings['es_wait_status_yellow'] = config.get('elasticsearch', 'wait')
+        configsettings['es_wait_status_yellow'] = config.get('elasticsearch', 'wait').lower()
     except ConfigParser.NoOptionError:
-        configsettings['es_wait_status_yellow'] = "False"
+        configsettings['es_wait_status_yellow'] = "false"
     try:
         configsettings['es_chunksize'] = int(config.get('elasticsearch', 'chunksize'))
     except ConfigParser.NoOptionError:
@@ -269,9 +285,9 @@ def load_config():
     except ConfigParser.NoOptionError:
         configsettings['index_refresh'] = "1s"
     try:
-        configsettings['disable_replicas'] = config.get('elasticsearch', 'disablereplicas')
+        configsettings['disable_replicas'] = config.get('elasticsearch', 'disablereplicas').lower()
     except ConfigParser.NoOptionError:
-        configsettings['disable_replicas'] = "False"
+        configsettings['disable_replicas'] = "false"
     try:
         configsettings['index_translog_size'] = config.get('elasticsearch', 'translogsize')
     except ConfigParser.NoOptionError:
@@ -293,9 +309,9 @@ def load_config():
     except ConfigParser.NoOptionError:
         configsettings['redis_password'] = ""
     try:
-        configsettings['redis_cachedirtimes'] = config.get('redis', 'cachedirtimes')
+        configsettings['redis_cachedirtimes'] = config.get('redis', 'cachedirtimes').lower()
     except ConfigParser.NoOptionError:
-        configsettings['redis_cachedirtimes'] = "False"
+        configsettings['redis_cachedirtimes'] = "false"
     try:
         configsettings['redis_dirtimesttl'] = int(config.get('redis', 'dirtimesttl'))
     except ConfigParser.NoOptionError:
@@ -707,7 +723,7 @@ def index_bulk_add(es, doclist, config, cliargs):
     if len(doclist) == 0:
         return
 
-    if config['es_wait_status_yellow'] == "True" or config['es_wait_status_yellow'] == "true":
+    if config['es_wait_status_yellow'] == "true":
         # wait for es health to be at least yellow
         es.cluster.health(wait_for_status='yellow',
                           request_timeout=config['es_timeout'])
@@ -1752,7 +1768,7 @@ def tune_es_for_crawl(defaults=False):
     It optimizes ES for crawling based on config settings and after crawl is over
     sets back to defaults.
     """
-    if config['disable_replicas'] == 'True' or config['disable_replicas'] == 'true':
+    if config['disable_replicas'] == 'true':
         replicas = 0
     else:
         replicas = config['index_replicas']

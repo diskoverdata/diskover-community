@@ -32,7 +32,7 @@ def connect_to_elasticsearch():
     global es_conn
 
     # Check if we are using AWS es
-    if config['aws'] == "True" or config['aws'] == "true":
+    if config['aws'] == "true":
         es_conn = Elasticsearch(
             hosts=[{'host': config['es_host'], 'port': config['es_port']}],
             use_ssl=True, verify_certs=True,

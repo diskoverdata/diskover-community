@@ -394,6 +394,78 @@ def cost_per_gb(metadict, fullpath, mtime, atime, ctime, doctype):
     return metadict
 
 
+def get_owner_group_names(uid, gid):
+    """This is the get owner group name function.
+    It tries to get owner and group names and deals
+    with uid/gid -> name cacheing.
+    Returns owner and group.
+    """
+
+    # try to get owner user name
+    # first check cache
+    if uid in uids:
+        owner = owners[uid]
+    # not in cache
+    else:
+        # check if we should just get uid or try to get owner name
+        if config['ownersgroups_uidgidonly'] == "true":
+            owner = uid
+        else:
+            try:
+                # check if domain in name
+                if config['ownersgroups_domain'] == "true":
+                    # check if we should remove the domain from owner
+                    if config['ownersgroups_keepdomain'] == "true":
+                        owner = pwd.getpwuid(uid).pw_name
+                    else:
+                        if config['ownersgroups_domainfirst'] == "true":
+                            owner = pwd.getpwuid(uid).pw_name.split(config['ownersgroups_domainsep'])[1]
+                        else:
+                            owner = pwd.getpwuid(uid).pw_name.split(config['ownersgroups_domainsep'])[0]
+                else:
+                    owner = pwd.getpwuid(uid).pw_name
+            # if we can't find the owner's user name, use the uid number
+            except KeyError:
+                owner = uid
+        # store it in cache
+        if not uid in uids:
+            uids.append(uid)
+            owners[uid] = owner
+
+    # try to get group name
+    # first check cache
+    if gid in gids:
+        group = groups[gid]
+    # not in cache
+    else:
+        # check if we should just get gid or try to get group name
+        if config['ownersgroups_uidgidonly'] == "true":
+            group = gid
+        else:
+            try:
+                # check if domain in name
+                if config['ownersgroups_domain'] == "true":
+                    # check if we should remove the domain from group
+                    if config['ownersgroups_keepdomain'] == "true":
+                        group = grp.getgrgid(gid).gr_name
+                    else:
+                        if config['ownersgroups_domainfirst'] == "true":
+                            group = grp.getgrgid(gid).gr_name.split(config['ownersgroups_domainsep'])[1]
+                        else:
+                            group = grp.getgrgid(gid).gr_name.split(config['ownersgroups_domainsep'])[0]
+                else:
+                    group = grp.getgrgid(gid).gr_name
+            # if we can't find the group's name, use the gid number
+            except KeyError:
+                group = gid
+        # store in cache
+        if not gid in gids:
+            gids.append(gid)
+            groups[gid] = group
+
+    return owner, group
+
+
 def get_dir_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
     """This is the get directory meta data function.
     It gets directory metadata and returns dir meta dict.
@@ -433,47 +505,8 @@ def get_dir_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
         # get time now in utc
         indextime_utc = datetime.utcnow().isoformat()
 
-        # try to get owner user name
-        # first check cache
-        if uid in uids:
-            owner = owners[uid]
-        # not in cache
-        else:
-            try:
-                owner = pwd.getpwuid(uid).pw_name.split('\\')
-                # remove domain before owner
-                if len(owner) == 2:
-                    owner = owner[1]
-                else:
-                    owner = owner[0]
-            # if we can't find the owner's user name, use the uid number
-            except KeyError:
-                owner = uid
-            # store it in cache
-            if not uid in uids:
-                uids.append(uid)
-                owners[uid] = owner
-
-        # try to get group name
-        # first check cache
-        if gid in gids:
-            group = groups[gid]
-        # not in cache
-        else:
-            try:
-                group = grp.getgrgid(gid).gr_name.split('\\')
-                # remove domain before group
-                if len(group) == 2:
-                    group = group[1]
-                else:
-                    group = group[0]
-            # if we can't find the group name, use the gid number
-            except KeyError:
-                group = gid
-            # store in cache
-            if not gid in gids:
-                gids.append(gid)
-                groups[gid] = group
+        # get owner and group names
+        owner, group = get_owner_group_names(uid, gid)
 
         filename = os.path.basename(dirpath)
         parentdir = os.path.abspath(os.path.join(dirpath, os.pardir))
@@ -530,7 +563,7 @@ def get_dir_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
         return False
 
     # cache directory times in Redis, encode path (key) using base64
-    if config['redis_cachedirtimes'] == 'True' or config['redis_cachedirtimes'] == 'true':
+    if config['redis_cachedirtimes'] == 'true':
         redis_conn.set(base64.encodestring(dirpath.encode('utf-8', errors='ignore')), mtime + ctime,
                        ex=config['redis_dirtimesttl'])
 
@@ -590,47 +623,8 @@ def get_file_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
         atime_utc = datetime.utcfromtimestamp(atime).isoformat()
         ctime_utc = datetime.utcfromtimestamp(ctime).isoformat()
 
-        # try to get owner user name
-        # first check cache
-        if uid in uids:
-            owner = owners[uid]
-        # not in cache
-        else:
-            try:
-                owner = pwd.getpwuid(uid).pw_name.split('\\')
-                # remove domain before owner
-                if len(owner) == 2:
-                    owner = owner[1]
-                else:
-                    owner = owner[0]
-            # if we can't find the owner's user name, use the uid number
-            except KeyError:
-                owner = uid
-            # store it in cache
-            if not uid in uids:
-                uids.append(uid)
-                owners[uid] = owner
-
-        # try to get group name
-        # first check cache
-        if gid in gids:
-            group = groups[gid]
-        # not in cache
-        else:
-            try:
-                group = grp.getgrgid(gid).gr_name.split('\\')
-                # remove domain before group
-                if len(group) == 2:
-                    group = group[1]
-                else:
-                    group = group[0]
-            # if we can't find the group name, use the gid number
-            except KeyError:
-                group = gid
-            # store in cache
-            if not gid in gids:
-                gids.append(gid)
-                groups[gid] = group
+        # get owner and group names
+        owner, group = get_owner_group_names(uid, gid)
 
         # create md5 hash of file using metadata filesize and mtime
         filestring = str(size) + str(mtime)
