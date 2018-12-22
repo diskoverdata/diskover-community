@@ -1448,12 +1448,14 @@ def scandirwalk_worker():
     while True:
         path = q_paths.get()
         try:
+            q_paths_in_progress.put(path)
             for entry in scandir(path):
                 if entry.is_dir(follow_symlinks=False):
                     dirs.append(entry.name)
                 elif entry.is_file(follow_symlinks=False):
                     nondirs.append(entry.name)
             q_paths_results.put((path, dirs[:], nondirs[:]))
+            q_paths_in_progress.get()
         except (OSError, IOError) as e:
             logger.warning("OS/IO Exception caused by: %s" % e)
             pass
@@ -1479,7 +1481,7 @@ def scandirwalk(path):
         q_paths_results.task_done()
         if q_paths_results.qsize() == 0 and q_paths.qsize() == 0:
             time.sleep(.5)
-            if q_paths_results.qsize() == 0 and q_paths.qsize() == 0:
+            if q_paths_results.qsize() == 0 and q_paths.qsize() == 0 and q_paths_in_progress.qsize() == 0:
                 break
 
 
@@ -1878,6 +1880,7 @@ q_calc = Queue(listen[2], connection=redis_conn, default_timeout=config['redis_r
 # queue for paths
 q_paths = PyQueue()
 q_paths_results = PyQueue()
+q_paths_in_progress = PyQueue()
 lock = Lock()
 
 
