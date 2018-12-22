@@ -1,6 +1,6 @@
 # Diskover Change Log
 
-## [1.5.0-rc25] = 2018-12-21
+## [1.5.0-rc25] = 2018-12-22
 ### added
 - costpergb field to es mapping for storing file and directory costs
 - storagecost section in diskover.cfg.sample, copy to your config and edit for you env
@@ -18,6 +18,7 @@
 ### fixed
 - bug with indexing file systems with inode values larger than es long number type
 - bugs with --crawlbot crawlbot continuous scanner
+- bug with a very high number of files in a single directory causing walk worker threads to exit prematurely causing not everything to get indexed (pr from seanbales)
 
 ## [1.5.0-rc24] = 2018-11-29
 ### changed
