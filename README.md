@@ -57,6 +57,8 @@ If you are a fan of the project or you are using diskover and it's helping you s
 * `Elasticsearch 5` (local or [AWS ES Service](https://aws.amazon.com/elasticsearch-service/), tested on Elasticsearch 5.6.9) Elasticsearch 6 is not supported yet.
 * `Redis` (tested on 4.0.8)
 
+** See requirements.txt for specific python module version numbers since newer versions can break diskover **
+
 ### Optional Installs
 
 * [diskover-web](https://github.com/shirosaidev/diskover-web) (diskover's web file manager and analytics app)
