@@ -158,16 +158,11 @@ def load_config():
             configsettings['excluded_files'] = set(files)
         except ConfigParser.NoOptionError:
             configsettings['excluded_files'] = set([])
-        except (ConfigParser.NoSectionError):
-            logger.warn('Missing excludes section from diskover.cfg, check diskover.cfg.sample. Using defaults.')
         try:
             d = config.get('includes', 'dirs')
             dirs = d.split(',')
             configsettings['included_dirs'] = set(dirs)
         except (ConfigParser.NoOptionError):
-            configsettings['included_dirs'] = set([])
-        except (ConfigParser.NoSectionError):
-            logger.warn('Missing includes section from diskover.cfg, check diskover.cfg.sample. Using defaults.')
             configsettings['included_dirs'] = set([])
         try:
             f = config.get('includes', 'files')
@@ -175,20 +170,14 @@ def load_config():
             configsettings['included_files'] = set(files)
         except ConfigParser.NoOptionError:
             configsettings['included_files'] = set([])
-        except (ConfigParser.NoSectionError):
-            logger.warn('Missing includes section from diskover.cfg, check diskover.cfg.sample. Using defaults.')
         try:
             configsettings['ownersgroups_uidgidonly'] = config.get('ownersgroups', 'uidgidonly').lower()
         except ConfigParser.NoOptionError:
             configsettings['ownersgroups_uidgidonly'] = "false"
-        except (ConfigParser.NoSectionError):
-            logger.warn('Missing ownersgroups section from diskover.cfg, check diskover.cfg.sample. Using defaults.')
         try:
             configsettings['ownersgroups_domain'] = config.get('ownersgroups', 'domain').lower()
         except ConfigParser.NoOptionError:
             configsettings['ownersgroups_domain'] = "false"
-        except (ConfigParser.NoSectionError):
-            logger.warn('Missing ownersgroups section from diskover.cfg, check diskover.cfg.sample. Using defaults.')
         try:
             configsettings['ownersgroups_domainsep'] = config.get('ownersgroups', 'domainsep')
         except ConfigParser.NoOptionError:
