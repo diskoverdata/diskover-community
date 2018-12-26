@@ -193,8 +193,6 @@ def load_config():
             configsettings['ownersgroups_domainsep'] = config.get('ownersgroups', 'domainsep')
         except ConfigParser.NoOptionError:
             configsettings['ownersgroups_domainsep'] = "\\"
-        except (ConfigParser.NoSectionError):
-            logger.warn('Missing ownersgroups section from diskover.cfg, check diskover.cfg.sample. Using defaults.')
         try:
             configsettings['ownersgroups_keepdomain'] = config.get('ownersgroups', 'keepdomain').lower()
         except ConfigParser.NoOptionError:
