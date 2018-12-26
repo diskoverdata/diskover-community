@@ -141,281 +141,299 @@ def load_config():
         pass
     # Check for config file
     if not os.path.isfile(configfile):
-        print('Config file %s not found' % configfile)
+        print('Config file %s not found, exiting.' % configfile)
         sys.exit(1)
     config.read(configfile)
+    # Check if any sections missing from config and exit if there is
     try:
-        d = config.get('excludes', 'dirs')
-        dirs = d.split(',')
-        configsettings['excluded_dirs'] = set(dirs)
-    except ConfigParser.NoOptionError:
-        configsettings['excluded_dirs'] = set([])
-    try:
-        f = config.get('excludes', 'files')
-        files = f.split(',')
-        configsettings['excluded_files'] = set(files)
-    except ConfigParser.NoOptionError:
-        configsettings['excluded_files'] = set([])
-    try:
-        d = config.get('includes', 'dirs')
-        dirs = d.split(',')
-        configsettings['included_dirs'] = set(dirs)
-    except ConfigParser.NoOptionError:
-        configsettings['included_dirs'] = set([])
-    try:
-        f = config.get('includes', 'files')
-        files = f.split(',')
-        configsettings['included_files'] = set(files)
-    except ConfigParser.NoOptionError:
-        configsettings['included_files'] = set([])
-    try:
-        configsettings['ownersgroups_uidgidonly'] = config.get('ownersgroups', 'uidgidonly').lower()
-    except ConfigParser.NoOptionError:
-        configsettings['ownersgroups_uidgidonly'] = "false"
-    try:
-        configsettings['ownersgroups_domain'] = config.get('ownersgroups', 'domain').lower()
-    except ConfigParser.NoOptionError:
-        configsettings['ownersgroups_domain'] = "false"
-    try:
-        configsettings['ownersgroups_domainsep'] = config.get('ownersgroups', 'domainsep')
-    except ConfigParser.NoOptionError:
-        configsettings['ownersgroups_domainsep'] = "\\"
-    try:
-        configsettings['ownersgroups_keepdomain'] = config.get('ownersgroups', 'keepdomain').lower()
-    except ConfigParser.NoOptionError:
-        configsettings['ownersgroups_keepdomain'] = "false"
-    try:
-        t = config.get('autotag', 'files')
-        atf = json.loads(t)
-        configsettings['autotag_files'] = atf
-    except ValueError as e:
-        raise ValueError("Error in config autotag files: %s" % e)
-    except ConfigParser.NoOptionError:
-        configsettings['autotag_files'] = []
-    try:
-        t = config.get('autotag', 'dirs')
-        atd = json.loads(t)
-        configsettings['autotag_dirs'] = atd
-    except ValueError as e:
-        raise ValueError("Error in config autotag dirs: %s" % e)
-    except ConfigParser.NoOptionError:
-        configsettings['autotag_dirs'] = []
-    try:
-        configsettings['costpergb'] = float(config.get('storagecost', 'costpergb'))
-    except ConfigParser.NoOptionError:
-        configsettings['costpergb'] = 0.03
-    try:
-        configsettings['costpergb_base'] = int(config.get('storagecost', 'base'))
-    except ConfigParser.NoOptionError:
-        configsettings['costpergb_base'] = 2
-    try:
-        s = config.get('storagecost', 'paths')
-        scp = json.loads(s)
-        configsettings['costpergb_paths'] = scp
-    except ValueError as e:
-        raise ValueError("Error in config storagecost paths: %s" % e)
-    except ConfigParser.NoOptionError:
-        configsettings['costpergb_paths'] = []
-    try:
-        s = config.get('storagecost', 'times')
-        sct = json.loads(s)
-        configsettings['costpergb_times'] = sct
-    except ValueError as e:
-        raise ValueError("Error in config storagecost times: %s" % e)
-    except ConfigParser.NoOptionError:
-        configsettings['costpergb_times'] = []
-    try:
-        configsettings['costpergb_priority'] = config.get('storagecost', 'priority')
-    except ConfigParser.NoOptionError:
-        configsettings['costpergb_priority'] = "path"
-    try:
-        configsettings['aws'] = config.get('elasticsearch', 'aws').lower()
-    except ConfigParser.NoOptionError:
-        configsettings['aws'] = "false"
-    try:
-        configsettings['es_host'] = config.get('elasticsearch', 'host')
-    except ConfigParser.NoOptionError:
-        configsettings['es_host'] = "localhost"
-    try:
-        configsettings['es_port'] = int(config.get('elasticsearch', 'port'))
-    except ConfigParser.NoOptionError:
-        configsettings['es_port'] = 9200
-    try:
-        configsettings['es_user'] = config.get('elasticsearch', 'user')
-    except ConfigParser.NoOptionError:
-        configsettings['es_user'] = ""
-    try:
-        configsettings['es_password'] = config.get('elasticsearch', 'password')
-    except ConfigParser.NoOptionError:
-        configsettings['es_password'] = ""
-    try:
-        configsettings['index'] = config.get('elasticsearch', 'indexname')
-    except ConfigParser.NoOptionError:
-        configsettings['index'] = ""
-    try:
-        configsettings['es_timeout'] = int(config.get('elasticsearch', 'timeout'))
-    except ConfigParser.NoOptionError:
-        configsettings['es_timeout'] = 10
-    try:
-        configsettings['es_maxsize'] = int(config.get('elasticsearch', 'maxsize'))
-    except ConfigParser.NoOptionError:
-        configsettings['es_maxsize'] = 10
-    try:
-        configsettings['es_max_retries'] = int(config.get('elasticsearch', 'maxretries'))
-    except ConfigParser.NoOptionError:
-        configsettings['es_max_retries'] = 0
-    try:
-        configsettings['es_wait_status_yellow'] = config.get('elasticsearch', 'wait').lower()
-    except ConfigParser.NoOptionError:
-        configsettings['es_wait_status_yellow'] = "false"
-    try:
-        configsettings['es_chunksize'] = int(config.get('elasticsearch', 'chunksize'))
-    except ConfigParser.NoOptionError:
-        configsettings['es_chunksize'] = 500
-    try:
-        configsettings['index_shards'] = int(config.get('elasticsearch', 'shards'))
-    except ConfigParser.NoOptionError:
-        configsettings['index_shards'] = 5
-    try:
-        configsettings['index_replicas'] = int(config.get('elasticsearch', 'replicas'))
-    except ConfigParser.NoOptionError:
-        configsettings['index_replicas'] = 1
-    try:
-        configsettings['index_refresh'] = config.get('elasticsearch', 'indexrefresh')
-    except ConfigParser.NoOptionError:
-        configsettings['index_refresh'] = "1s"
-    try:
-        configsettings['disable_replicas'] = config.get('elasticsearch', 'disablereplicas').lower()
-    except ConfigParser.NoOptionError:
-        configsettings['disable_replicas'] = "false"
-    try:
-        configsettings['index_translog_size'] = config.get('elasticsearch', 'translogsize')
-    except ConfigParser.NoOptionError:
-        configsettings['index_translog_size'] = "512mb"
-    try:
-        configsettings['es_scrollsize'] = int(config.get('elasticsearch', 'scrollsize'))
-    except ConfigParser.NoOptionError:
-        configsettings['es_scrollsize'] = 100
-    try:
-        configsettings['redis_host'] = config.get('redis', 'host')
-    except ConfigParser.NoOptionError:
-        configsettings['redis_host'] = "localhost"
-    try:
-        configsettings['redis_port'] = int(config.get('redis', 'port'))
-    except ConfigParser.NoOptionError:
-        configsettings['redis_port'] = 6379
-    try:
-        configsettings['redis_password'] = config.get('redis', 'password')
-    except ConfigParser.NoOptionError:
-        configsettings['redis_password'] = ""
-    try:
-        configsettings['redis_cachedirtimes'] = config.get('redis', 'cachedirtimes').lower()
-    except ConfigParser.NoOptionError:
-        configsettings['redis_cachedirtimes'] = "false"
-    try:
-        configsettings['redis_dirtimesttl'] = int(config.get('redis', 'dirtimesttl'))
-    except ConfigParser.NoOptionError:
-        configsettings['redis_dirtimesttl'] = 604800
-    try:
-        configsettings['redis_db'] = int(config.get('redis', 'db'))
-    except ConfigParser.NoOptionError:
-        configsettings['redis_db'] = 0
-    try:
-        configsettings['redis_rq_timeout'] = int(config.get('redis', 'timeout'))
-    except ConfigParser.NoOptionError:
-        configsettings['redis_rq_timeout'] = 180
-    try:
-        configsettings['redis_ttl'] = int(config.get('redis', 'ttl'))
-    except ConfigParser.NoOptionError:
-        configsettings['redis_ttl'] = 500
-    try:
-        configsettings['redis_queue'] = config.get('redis', 'queue')
-    except ConfigParser.NoOptionError:
-        configsettings['redis_queue'] = "diskover"
-    try:
-        configsettings['redis_queue_crawl'] = config.get('redis', 'queuecrawl')
-    except ConfigParser.NoOptionError:
-        configsettings['redis_queue_crawl'] = "diskover_crawl"
-    try:
-        configsettings['redis_queue_calcdir'] = config.get('redis', 'queuecalcdir')
-    except ConfigParser.NoOptionError:
-        configsettings['redis_queue_calcdir'] = "diskover_calcdir"
-    try:
-        configsettings['adaptivebatch_startsize'] = int(config.get('adaptivebatch', 'startsize'))
-    except ConfigParser.NoOptionError:
-        configsettings['adaptivebatch_startsize'] = 50
-    try:
-        configsettings['adaptivebatch_maxsize'] = int(config.get('adaptivebatch', 'maxsize'))
-    except ConfigParser.NoOptionError:
-        configsettings['autobatch_maxsize'] = 500
-    try:
-        configsettings['adaptivebatch_stepsize'] = int(config.get('adaptivebatch', 'stepsize'))
-    except ConfigParser.NoOptionError:
-        configsettings['adaptivebatch_stepsize'] = 10
-    try:
-        configsettings['listener_host'] = config.get('socketlistener', 'host')
-    except ConfigParser.NoOptionError:
-        configsettings['listener_host'] = "localhost"
-    try:
-        configsettings['listener_port'] = int(config.get('socketlistener', 'port'))
-    except ConfigParser.NoOptionError:
-        configsettings['listener_port'] = 9999
-    try:
-        configsettings['listener_maxconnections'] = int(config.get('socketlistener', 'maxconnections'))
-    except ConfigParser.NoOptionError:
-        configsettings['listener_maxconnections'] = 5
-    try:
-        configsettings['listener_twcport'] = int(config.get('socketlistener', 'twcport'))
-    except ConfigParser.NoOptionError:
-        configsettings['listener_twcport'] = 9998
-    try:
-        configsettings['diskover_path'] = config.get('paths', 'diskoverpath')
-    except ConfigParser.NoOptionError:
-        configsettings['diskover_path'] = "./diskover.py"
-    try:
-        configsettings['python_path'] = config.get('paths', 'pythonpath')
-    except ConfigParser.NoOptionError:
-        configsettings['python_path'] = "python"
-    try:
-        configsettings['md5_readsize'] = int(config.get('dupescheck', 'readsize'))
-    except ConfigParser.NoOptionError:
-        configsettings['md5_readsize'] = 65536
-    try:
-        configsettings['dupes_maxsize'] = int(config.get('dupescheck', 'maxsize'))
-    except ConfigParser.NoOptionError:
-        configsettings['dupes_maxsize'] = 1073741824
-    try:
-        configsettings['dupes_checkbytes'] = int(config.get('dupescheck', 'checkbytes'))
-    except ConfigParser.NoOptionError:
-        configsettings['dupes_checkbytes'] = 64
-    try:
-        configsettings['crawlbot_botsleep'] = float(config.get('crawlbot', 'sleeptime'))
-    except ConfigParser.NoOptionError:
-        configsettings['crawlbot_botsleep'] = 0.1
-    try:
-        configsettings['crawlbot_botthreads'] = int(config.get('crawlbot', 'botthreads'))
-    except ConfigParser.NoOptionError:
-        configsettings['crawlbot_botthreads'] = 8
-    try:
-        configsettings['crawlbot_dirlisttime'] = int(config.get('crawlbot', 'dirlisttime'))
-    except ConfigParser.NoOptionError:
-        configsettings['crawlbot_dirlisttime'] = 3600
-    try:
-        configsettings['gource_maxfilelag'] = float(config.get('gource', 'maxfilelag'))
-    except ConfigParser.NoOptionError:
-        configsettings['gource_maxfilelag'] = 5
-    try:
-        configsettings['qumulo_host'] = config.get('qumulo', 'cluster')
-    except ConfigParser.NoOptionError:
-        configsettings['qumulo_host'] = ""
-    try:
-        configsettings['qumulo_api_user'] = config.get('qumulo', 'api_user')
-    except ConfigParser.NoOptionError:
-        configsettings['qumulo_api_user'] = ""
-    try:
-        configsettings['qumulo_api_password'] = config.get('qumulo', 'api_password')
-    except ConfigParser.NoOptionError:
-        configsettings['qumulo_api_password'] = ""
+        try:
+            d = config.get('excludes', 'dirs')
+            dirs = d.split(',')
+            configsettings['excluded_dirs'] = set(dirs)
+        except ConfigParser.NoOptionError:
+            configsettings['excluded_dirs'] = set([])
+        try:
+            f = config.get('excludes', 'files')
+            files = f.split(',')
+            configsettings['excluded_files'] = set(files)
+        except ConfigParser.NoOptionError:
+            configsettings['excluded_files'] = set([])
+        except (ConfigParser.NoSectionError):
+            logger.warn('Missing excludes section from diskover.cfg, check diskover.cfg.sample. Using defaults.')
+        try:
+            d = config.get('includes', 'dirs')
+            dirs = d.split(',')
+            configsettings['included_dirs'] = set(dirs)
+        except (ConfigParser.NoOptionError):
+            configsettings['included_dirs'] = set([])
+        except (ConfigParser.NoSectionError):
+            logger.warn('Missing includes section from diskover.cfg, check diskover.cfg.sample. Using defaults.')
+            configsettings['included_dirs'] = set([])
+        try:
+            f = config.get('includes', 'files')
+            files = f.split(',')
+            configsettings['included_files'] = set(files)
+        except ConfigParser.NoOptionError:
+            configsettings['included_files'] = set([])
+        except (ConfigParser.NoSectionError):
+            logger.warn('Missing includes section from diskover.cfg, check diskover.cfg.sample. Using defaults.')
+        try:
+            configsettings['ownersgroups_uidgidonly'] = config.get('ownersgroups', 'uidgidonly').lower()
+        except ConfigParser.NoOptionError:
+            configsettings['ownersgroups_uidgidonly'] = "false"
+        except (ConfigParser.NoSectionError):
+            logger.warn('Missing ownersgroups section from diskover.cfg, check diskover.cfg.sample. Using defaults.')
+        try:
+            configsettings['ownersgroups_domain'] = config.get('ownersgroups', 'domain').lower()
+        except ConfigParser.NoOptionError:
+            configsettings['ownersgroups_domain'] = "false"
+        except (ConfigParser.NoSectionError):
+            logger.warn('Missing ownersgroups section from diskover.cfg, check diskover.cfg.sample. Using defaults.')
+        try:
+            configsettings['ownersgroups_domainsep'] = config.get('ownersgroups', 'domainsep')
+        except ConfigParser.NoOptionError:
+            configsettings['ownersgroups_domainsep'] = "\\"
+        except (ConfigParser.NoSectionError):
+            logger.warn('Missing ownersgroups section from diskover.cfg, check diskover.cfg.sample. Using defaults.')
+        try:
+            configsettings['ownersgroups_keepdomain'] = config.get('ownersgroups', 'keepdomain').lower()
+        except ConfigParser.NoOptionError:
+            configsettings['ownersgroups_keepdomain'] = "false"
+        try:
+            t = config.get('autotag', 'files')
+            atf = json.loads(t)
+            configsettings['autotag_files'] = atf
+        except ValueError as e:
+            raise ValueError("Error in config autotag files: %s" % e)
+        except ConfigParser.NoOptionError:
+            configsettings['autotag_files'] = []
+        try:
+            t = config.get('autotag', 'dirs')
+            atd = json.loads(t)
+            configsettings['autotag_dirs'] = atd
+        except ValueError as e:
+            raise ValueError("Error in config autotag dirs: %s" % e)
+        except ConfigParser.NoOptionError:
+            configsettings['autotag_dirs'] = []
+        try:
+            configsettings['costpergb'] = float(config.get('storagecost', 'costpergb'))
+        except ConfigParser.NoOptionError:
+            configsettings['costpergb'] = 0.03
+        try:
+            configsettings['costpergb_base'] = int(config.get('storagecost', 'base'))
+        except ConfigParser.NoOptionError:
+            configsettings['costpergb_base'] = 2
+        try:
+            s = config.get('storagecost', 'paths')
+            scp = json.loads(s)
+            configsettings['costpergb_paths'] = scp
+        except ValueError as e:
+            raise ValueError("Error in config storagecost paths: %s" % e)
+        except ConfigParser.NoOptionError:
+            configsettings['costpergb_paths'] = []
+        try:
+            s = config.get('storagecost', 'times')
+            sct = json.loads(s)
+            configsettings['costpergb_times'] = sct
+        except ValueError as e:
+            raise ValueError("Error in config storagecost times: %s" % e)
+        except ConfigParser.NoOptionError:
+            configsettings['costpergb_times'] = []
+        try:
+            configsettings['costpergb_priority'] = config.get('storagecost', 'priority')
+        except ConfigParser.NoOptionError:
+            configsettings['costpergb_priority'] = "path"
+        try:
+            configsettings['aws'] = config.get('elasticsearch', 'aws').lower()
+        except ConfigParser.NoOptionError:
+            configsettings['aws'] = "false"
+        try:
+            configsettings['es_host'] = config.get('elasticsearch', 'host')
+        except ConfigParser.NoOptionError:
+            configsettings['es_host'] = "localhost"
+        try:
+            configsettings['es_port'] = int(config.get('elasticsearch', 'port'))
+        except ConfigParser.NoOptionError:
+            configsettings['es_port'] = 9200
+        try:
+            configsettings['es_user'] = config.get('elasticsearch', 'user')
+        except ConfigParser.NoOptionError:
+            configsettings['es_user'] = ""
+        try:
+            configsettings['es_password'] = config.get('elasticsearch', 'password')
+        except ConfigParser.NoOptionError:
+            configsettings['es_password'] = ""
+        try:
+            configsettings['index'] = config.get('elasticsearch', 'indexname')
+        except ConfigParser.NoOptionError:
+            configsettings['index'] = ""
+        try:
+            configsettings['es_timeout'] = int(config.get('elasticsearch', 'timeout'))
+        except ConfigParser.NoOptionError:
+            configsettings['es_timeout'] = 10
+        try:
+            configsettings['es_maxsize'] = int(config.get('elasticsearch', 'maxsize'))
+        except ConfigParser.NoOptionError:
+            configsettings['es_maxsize'] = 10
+        try:
+            configsettings['es_max_retries'] = int(config.get('elasticsearch', 'maxretries'))
+        except ConfigParser.NoOptionError:
+            configsettings['es_max_retries'] = 0
+        try:
+            configsettings['es_wait_status_yellow'] = config.get('elasticsearch', 'wait').lower()
+        except ConfigParser.NoOptionError:
+            configsettings['es_wait_status_yellow'] = "false"
+        try:
+            configsettings['es_chunksize'] = int(config.get('elasticsearch', 'chunksize'))
+        except ConfigParser.NoOptionError:
+            configsettings['es_chunksize'] = 500
+        try:
+            configsettings['index_shards'] = int(config.get('elasticsearch', 'shards'))
+        except ConfigParser.NoOptionError:
+            configsettings['index_shards'] = 5
+        try:
+            configsettings['index_replicas'] = int(config.get('elasticsearch', 'replicas'))
+        except ConfigParser.NoOptionError:
+            configsettings['index_replicas'] = 1
+        try:
+            configsettings['index_refresh'] = config.get('elasticsearch', 'indexrefresh')
+        except ConfigParser.NoOptionError:
+            configsettings['index_refresh'] = "1s"
+        try:
+            configsettings['disable_replicas'] = config.get('elasticsearch', 'disablereplicas').lower()
+        except ConfigParser.NoOptionError:
+            configsettings['disable_replicas'] = "false"
+        try:
+            configsettings['index_translog_size'] = config.get('elasticsearch', 'translogsize')
+        except ConfigParser.NoOptionError:
+            configsettings['index_translog_size'] = "512mb"
+        try:
+            configsettings['es_scrollsize'] = int(config.get('elasticsearch', 'scrollsize'))
+        except ConfigParser.NoOptionError:
+            configsettings['es_scrollsize'] = 100
+        try:
+            configsettings['redis_host'] = config.get('redis', 'host')
+        except ConfigParser.NoOptionError:
+            configsettings['redis_host'] = "localhost"
+        try:
+            configsettings['redis_port'] = int(config.get('redis', 'port'))
+        except ConfigParser.NoOptionError:
+            configsettings['redis_port'] = 6379
+        try:
+            configsettings['redis_password'] = config.get('redis', 'password')
+        except ConfigParser.NoOptionError:
+            configsettings['redis_password'] = ""
+        try:
+            configsettings['redis_cachedirtimes'] = config.get('redis', 'cachedirtimes').lower()
+        except ConfigParser.NoOptionError:
+            configsettings['redis_cachedirtimes'] = "false"
+        try:
+            configsettings['redis_dirtimesttl'] = int(config.get('redis', 'dirtimesttl'))
+        except ConfigParser.NoOptionError:
+            configsettings['redis_dirtimesttl'] = 604800
+        try:
+            configsettings['redis_db'] = int(config.get('redis', 'db'))
+        except ConfigParser.NoOptionError:
+            configsettings['redis_db'] = 0
+        try:
+            configsettings['redis_rq_timeout'] = int(config.get('redis', 'timeout'))
+        except ConfigParser.NoOptionError:
+            configsettings['redis_rq_timeout'] = 180
+        try:
+            configsettings['redis_ttl'] = int(config.get('redis', 'ttl'))
+        except ConfigParser.NoOptionError:
+            configsettings['redis_ttl'] = 500
+        try:
+            configsettings['redis_queue'] = config.get('redis', 'queue')
+        except ConfigParser.NoOptionError:
+            configsettings['redis_queue'] = "diskover"
+        try:
+            configsettings['redis_queue_crawl'] = config.get('redis', 'queuecrawl')
+        except ConfigParser.NoOptionError:
+            configsettings['redis_queue_crawl'] = "diskover_crawl"
+        try:
+            configsettings['redis_queue_calcdir'] = config.get('redis', 'queuecalcdir')
+        except ConfigParser.NoOptionError:
+            configsettings['redis_queue_calcdir'] = "diskover_calcdir"
+        try:
+            configsettings['adaptivebatch_startsize'] = int(config.get('adaptivebatch', 'startsize'))
+        except ConfigParser.NoOptionError:
+            configsettings['adaptivebatch_startsize'] = 50
+        try:
+            configsettings['adaptivebatch_maxsize'] = int(config.get('adaptivebatch', 'maxsize'))
+        except ConfigParser.NoOptionError:
+            configsettings['autobatch_maxsize'] = 500
+        try:
+            configsettings['adaptivebatch_stepsize'] = int(config.get('adaptivebatch', 'stepsize'))
+        except ConfigParser.NoOptionError:
+            configsettings['adaptivebatch_stepsize'] = 10
+        try:
+            configsettings['listener_host'] = config.get('socketlistener', 'host')
+        except ConfigParser.NoOptionError:
+            configsettings['listener_host'] = "localhost"
+        try:
+            configsettings['listener_port'] = int(config.get('socketlistener', 'port'))
+        except ConfigParser.NoOptionError:
+            configsettings['listener_port'] = 9999
+        try:
+            configsettings['listener_maxconnections'] = int(config.get('socketlistener', 'maxconnections'))
+        except ConfigParser.NoOptionError:
+            configsettings['listener_maxconnections'] = 5
+        try:
+            configsettings['listener_twcport'] = int(config.get('socketlistener', 'twcport'))
+        except ConfigParser.NoOptionError:
+            configsettings['listener_twcport'] = 9998
+        try:
+            configsettings['diskover_path'] = config.get('paths', 'diskoverpath')
+        except ConfigParser.NoOptionError:
+            configsettings['diskover_path'] = "./diskover.py"
+        try:
+            configsettings['python_path'] = config.get('paths', 'pythonpath')
+        except ConfigParser.NoOptionError:
+            configsettings['python_path'] = "python"
+        try:
+            configsettings['md5_readsize'] = int(config.get('dupescheck', 'readsize'))
+        except ConfigParser.NoOptionError:
+            configsettings['md5_readsize'] = 65536
+        try:
+            configsettings['dupes_maxsize'] = int(config.get('dupescheck', 'maxsize'))
+        except ConfigParser.NoOptionError:
+            configsettings['dupes_maxsize'] = 1073741824
+        try:
+            configsettings['dupes_checkbytes'] = int(config.get('dupescheck', 'checkbytes'))
+        except ConfigParser.NoOptionError:
+            configsettings['dupes_checkbytes'] = 64
+        try:
+            configsettings['crawlbot_botsleep'] = float(config.get('crawlbot', 'sleeptime'))
+        except ConfigParser.NoOptionError:
+            configsettings['crawlbot_botsleep'] = 0.1
+        try:
+            configsettings['crawlbot_botthreads'] = int(config.get('crawlbot', 'botthreads'))
+        except ConfigParser.NoOptionError:
+            configsettings['crawlbot_botthreads'] = 8
+        try:
+            configsettings['crawlbot_dirlisttime'] = int(config.get('crawlbot', 'dirlisttime'))
+        except ConfigParser.NoOptionError:
+            configsettings['crawlbot_dirlisttime'] = 3600
+        try:
+            configsettings['gource_maxfilelag'] = float(config.get('gource', 'maxfilelag'))
+        except ConfigParser.NoOptionError:
+            configsettings['gource_maxfilelag'] = 5
+        try:
+            configsettings['qumulo_host'] = config.get('qumulo', 'cluster')
+        except ConfigParser.NoOptionError:
+            configsettings['qumulo_host'] = ""
+        try:
+            configsettings['qumulo_api_user'] = config.get('qumulo', 'api_user')
+        except ConfigParser.NoOptionError:
+            configsettings['qumulo_api_user'] = ""
+        try:
+            configsettings['qumulo_api_password'] = config.get('qumulo', 'api_password')
+        except ConfigParser.NoOptionError:
+            configsettings['qumulo_api_password'] = ""
+    except ConfigParser.NoSectionError:
+        print('Missing section from diskover.cfg, check diskover.cfg.sample and copy over, exiting.')
+        sys.exit(1)
 
     return configsettings, configfile
 
