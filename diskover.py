@@ -1455,13 +1455,14 @@ def scandirwalk_worker():
                 elif entry.is_file(follow_symlinks=False):
                     nondirs.append(entry.name)
             q_paths_results.put((path, dirs[:], nondirs[:]))
-            q_paths_in_progress.get()
         except (OSError, IOError) as e:
             logger.warning("OS/IO Exception caused by: %s" % e)
             pass
         except Exception as e:
             logger.warning("Exception caused by: %s" % e)
             pass
+        finally:
+            q_paths_in_progress.get()
         del dirs[:]
         del nondirs[:]
         q_paths.task_done()
@@ -1517,7 +1518,7 @@ def treewalk(top, num_sep, level, batchsize, cliargs, logger, reindex_dict):
     for root, dirs, files in scandirwalk(top):
         dircount += 1
         totaldirs += 1
-        # check for emptry dirs
+        # check for empty dirs
         if len(dirs) == 0 and len(files) == 0 and not cliargs['indexemptydirs']:
             continue
         if not dir_excluded(root, config, cliargs):

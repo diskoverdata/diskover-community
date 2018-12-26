@@ -1,6 +1,6 @@
 # Diskover Change Log
 
-## [1.5.0-rc25] = 2018-12-22
+## [1.5.0-rc25] = 2018-12-26
 ### added
 - costpergb field to es mapping for storing file and directory costs
 - storagecost section in diskover.cfg.sample, copy to your config and edit for you env
