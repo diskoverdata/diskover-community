@@ -431,8 +431,8 @@ def load_config():
             configsettings['qumulo_api_password'] = config.get('qumulo', 'api_password')
         except ConfigParser.NoOptionError:
             configsettings['qumulo_api_password'] = ""
-    except ConfigParser.NoSectionError:
-        print('Missing section from diskover.cfg, check diskover.cfg.sample and copy over, exiting.')
+    except ConfigParser.NoSectionError as e:
+        print('Missing section from diskover.cfg, check diskover.cfg.sample and copy over, exiting. (%s)' % e)
         sys.exit(1)
 
     return configsettings, configfile
