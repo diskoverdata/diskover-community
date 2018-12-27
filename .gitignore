@@ -103,3 +103,4 @@ ENV/
 _config.yml
 /docs
 docs/
+_pages/
