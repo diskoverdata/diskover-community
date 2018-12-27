@@ -108,6 +108,8 @@ startsize = 50
 maxsize = 500
 ; when adjusting batch size use this for +/- (increases when queue is 0, decreases when > 0)
 stepsize = 10
+; max number of files in batch, above is ignored if file limit reached (default 50000)
+maxfiles = 50000
 
 [paths]
 ; used by diskover socket server

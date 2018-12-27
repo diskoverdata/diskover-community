@@ -13,6 +13,7 @@ LICENSE for the full license text.
 
 from diskover import config, escape_chars, index_bulk_add, plugins
 from datetime import datetime
+from scandir import scandir
 import argparse
 import os
 import hashlib
@@ -883,7 +884,11 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
     for path in paths:
         path_count += 1
         starttime = time.time()
-        root, files = path
+        if not cliargs['dirsonly']:
+            root, files = path
+        else:
+            root = path
+            files = []
         if path_count == 1:
             if type(root) is tuple:
                 statsembeded = True
@@ -924,6 +929,11 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
                 totalcrawltime += elapsed
         # get meta off disk since times different in Redis than on disk
         elif dmeta:
+            # no files in batch, get them with scandir
+            if cliargs['dirsonly']:
+                for entry in scandir(root):
+                    if entry.is_file(follow_symlinks=False):
+                        files.append(entry.name)
             for file in files:
                 if qumulo:
                     fmeta = qumulo_get_file_meta(worker, file, cliargs, reindex_dict)

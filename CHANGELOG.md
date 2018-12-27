@@ -1,5 +1,12 @@
 # Diskover Change Log
 
+## [1.5.0-rc26] = 2018-12-27
+### added
+- --dirsonly cli arg to not include files in batch sent to bots, only send dirs, bots scan for files
+- maxfiles config setting in adaptivebatch in diskover.cfg.sample for max number of files in batch, copy from diskover.cfg.sample
+### fixed
+- issue where an io/os error such as permission denied caused the tree walk to not finish
+
 ## [1.5.0-rc25] = 2018-12-26
 ### added
 - costpergb field to es mapping for storing file and directory costs

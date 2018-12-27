@@ -37,7 +37,7 @@ import sys
 import json
 
 
-version = '1.5.0-rc25'
+version = '1.5.0-rc26'
 __version__ = version
 
 IS_PY3 = sys.version_info >= (3, 0)
@@ -354,6 +354,10 @@ def load_config():
             configsettings['adaptivebatch_stepsize'] = int(config.get('adaptivebatch', 'stepsize'))
         except ConfigParser.NoOptionError:
             configsettings['adaptivebatch_stepsize'] = 10
+        try:
+            configsettings['adaptivebatch_maxfiles'] = int(config.get('adaptivebatch', 'maxfiles'))
+        except ConfigParser.NoOptionError:
+            configsettings['adaptivebatch_maxfiles'] = 50000
         try:
             configsettings['listener_host'] = config.get('socketlistener', 'host')
         except ConfigParser.NoOptionError:
@@ -1252,6 +1256,8 @@ def parse_cli_args(indexname):
                         help="Start tcp socket server and listen for remote commands")
     parser.add_argument("-L", "--listentwc", action="store_true",
                         help="Start tcp socket server and listen for messages from diskover treewalk client")
+    parser.add_argument("--dirsonly", action="store_true",
+                        help="Don't include files in batch sent to bots, only send dirs, bots scan for files")
     parser.add_argument("--crawlbot", action="store_true",
                         help="Starts up crawl bot continuous scanner to scan for dir changes in index")
     parser.add_argument("--qumulo", action="store_true",
@@ -1501,6 +1507,7 @@ def treewalk(top, num_sep, level, batchsize, cliargs, logger, reindex_dict):
     batch = []
     dircount = 0
     totaldirs = 0
+    totalfiles = 0
     starttime = time.time()
 
     # set up threads for tree walk
@@ -1524,17 +1531,26 @@ def treewalk(top, num_sep, level, batchsize, cliargs, logger, reindex_dict):
         dircount += 1
         totaldirs += 1
         # check for empty dirs
-        if len(dirs) == 0 and len(files) == 0 and not cliargs['indexemptydirs']:
+        dircount = len(dirs)
+        filecount = len(files)
+        totalfiles += filecount
+        if dircount == 0 and filecount == 0 and not cliargs['indexemptydirs']:
             continue
         if not dir_excluded(root, config, cliargs):
-            batch.append((root, files))
+            if cliargs['dirsonly']:
+                batch.append(root)
+            else:
+                batch.append((root, files))
             batch_len = len(batch)
-            if batch_len >= batchsize:
+            if batch_len >= batchsize or (cliargs['adaptivebatch'] and totalfiles >= config['adaptivebatch_maxfiles']):
                 q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,),
                                       result_ttl=config['redis_ttl'])
                 del batch[:]
+                totalfiles = 0
                 if cliargs['adaptivebatch']:
                     batchsize = adaptive_batch(q_crawl, cliargs, batchsize)
+                    if cliargs['debug'] or cliargs['verbose']:
+                        logger.info("batchsize: %s" % batchsize)
 
             # check if at maxdepth level and delete dirs/files lists to not
             # descend further down the tree
