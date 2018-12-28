@@ -4,9 +4,12 @@
 ### added
 - --dirsonly cli arg to not include files in batch sent to bots, only send dirs, bots scan for files
 - maxfiles config setting in adaptivebatch in diskover.cfg.sample for max number of files in batch, copy from diskover.cfg.sample
-- redis socket options such as socket timeout, retry, keepalive, etc to diskover.cfg.sample redis section, copy to your diskover.cfg and edit for your env
+- redis socket timeout setting to diskover.cfg.sample redis section, copy to your diskover.cfg and edit for your env
+- -n --noreconnect cli arg to diskover_worker_bot.py to not reconnect on redis timeout (default is to reconnect)
+- -l --loglevel cli arg to diskover_worker_bot.py to set logging level
 ### changed
 - better handling of checking if worker bots are idle and queues empty in diskover.py
+- set socket keep alive and retry on timeout to True for redis connections
 ### fixed
 - issue where an io/os error such as permission denied caused the tree walk to not finish
 - occasional issue where bots/queues incorreclty tested to be idle and empty

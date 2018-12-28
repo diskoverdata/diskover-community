@@ -99,11 +99,11 @@ ttl = 500
 queue = diskover
 queuecrawl = diskover_crawl
 queuecalcdir = diskover_calcdir
-; redis connection socket settings
-retryontimeout = True
-socketkeepalive = True
+; redis connection socket timeouts
 socketconnecttimeout = 10
 sockettimeout = 60
+; rq worker ttl timeout heartbeat in seconds (default 420)
+workerttl = 840
 
 [adaptivebatch]
 ; adaptive batch settings when using -a (intelligent crawling)

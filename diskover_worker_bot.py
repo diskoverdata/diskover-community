@@ -11,8 +11,10 @@ diskover is released under the Apache 2.0 license. See
 LICENSE for the full license text.
 """
 
-from diskover import listen, version
+from diskover import listen, version, config
 from rq import SimpleWorker, Connection
+from redis import exceptions
+from datetime import datetime
 
 from diskover_bot_module import parse_cliargs_bot
 
@@ -21,6 +23,24 @@ import diskover_connections
 # create Reddis connection
 diskover_connections.connect_to_redis()
 from diskover_connections import redis_conn
+
+
+def main():
+    try:
+        with Connection(redis_conn):
+            w = SimpleWorker(listen, default_worker_ttl=config['redis_worker_ttl'])
+            if cliargs_bot['burst']:
+                w.work(burst=True, logging_level=cliargs_bot['loglevel'])
+            else:
+                w.work(logging_level=cliargs_bot['loglevel'])
+    except exceptions.TimeoutError:
+        if not cliargs_bot['noreconnect']:
+            print("%s *** Redis timeout, reconnecting..." % datetime.now().strftime('%H:%M:%S'))
+            main()
+        else:
+            print("%s *** Redis timeout, exiting (-n)..." % datetime.now().strftime('%H:%M:%S'))
+            w.handle_warm_shutdown_request()
+            pass
 
 
 if __name__ == "__main__":
@@ -39,9 +59,4 @@ if __name__ == "__main__":
     
     \033[0m""" % (version))
 
-    with Connection(redis_conn):
-        w = SimpleWorker(listen)
-        if cliargs_bot['burst']:
-            w.work(burst=True)
-        else:
-            w.work()
+    main()

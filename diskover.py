@@ -343,14 +343,6 @@ def load_config():
         except ConfigParser.NoOptionError:
             configsettings['redis_queue_calcdir'] = "diskover_calcdir"
         try:
-            configsettings['redis_retry_on_timeout'] = config.get('redis', 'retryontimeout').lower()
-        except ConfigParser.NoOptionError:
-            configsettings['redis_retry_on_timeout'] = "true"
-        try:
-            configsettings['redis_socket_keepalive'] = config.get('redis', 'socketkeepalive').lower()
-        except ConfigParser.NoOptionError:
-            configsettings['redis_socket_keepalive'] = "true"
-        try:
             configsettings['redis_socket_connect_timeout'] = int(config.get('redis', 'socketconnecttimeout'))
         except ConfigParser.NoOptionError:
             configsettings['redis_socket_connect_timeout'] = 10
@@ -358,6 +350,10 @@ def load_config():
             configsettings['redis_socket_timeout'] = int(config.get('redis', 'sockettimeout'))
         except ConfigParser.NoOptionError:
             configsettings['redis_socket_timeout'] = 60
+        try:
+            configsettings['redis_worker_ttl'] = int(config.get('redis', 'workerttl'))
+        except ConfigParser.NoOptionError:
+            configsettings['redis_worker_ttl'] = 420
         try:
             configsettings['adaptivebatch_startsize'] = int(config.get('adaptivebatch', 'startsize'))
         except ConfigParser.NoOptionError:
