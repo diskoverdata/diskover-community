@@ -1,12 +1,13 @@
 # Diskover Change Log
 
-## [1.5.0-rc26] = 2018-12-28
+## [1.5.0-rc26] = 2018-12-29
 ### added
 - --dirsonly cli arg to not include files in batch sent to bots, only send dirs, bots scan for files
 - maxfiles config setting in adaptivebatch in diskover.cfg.sample for max number of files in batch, copy from diskover.cfg.sample
 - redis socket timeout setting to diskover.cfg.sample redis section, copy to your diskover.cfg and edit for your env
 - -n --noreconnect cli arg to diskover_worker_bot.py to not reconnect on redis timeout (default is to reconnect)
 - -l --loglevel cli arg to diskover_worker_bot.py to set logging level
+- v1.0.20 tree walk client - added in ls, lsthreaded tree walk methods, pscandir pathches
 ### changed
 - better handling of checking if worker bots are idle and queues empty in diskover.py
 - set socket keep alive and retry on timeout to True for redis connections
