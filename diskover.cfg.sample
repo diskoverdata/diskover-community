@@ -102,8 +102,8 @@ queuecalcdir = diskover_calcdir
 ; redis connection socket timeouts
 socketconnecttimeout = 30
 sockettimeout = 300
-; rq worker ttl timeout heartbeat in seconds (default 420)
-workerttl = 840
+; rq worker ttl heartbeat (in seconds) sent to prevent timeout (default 420)
+workerttl = 180
 
 [adaptivebatch]
 ; adaptive batch settings when using -a (intelligent crawling)
