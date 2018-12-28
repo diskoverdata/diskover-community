@@ -39,7 +39,6 @@ def main():
             main()
         else:
             print("%s *** Redis timeout, exiting (-n)..." % datetime.now().strftime('%H:%M:%S'))
-            w.handle_warm_shutdown_request()
             pass
 
 
