@@ -343,6 +343,22 @@ def load_config():
         except ConfigParser.NoOptionError:
             configsettings['redis_queue_calcdir'] = "diskover_calcdir"
         try:
+            configsettings['redis_retry_on_timeout'] = config.get('redis', 'retryontimeout').lower()
+        except ConfigParser.NoOptionError:
+            configsettings['redis_retry_on_timeout'] = "true"
+        try:
+            configsettings['redis_socket_keepalive'] = config.get('redis', 'socketkeepalive').lower()
+        except ConfigParser.NoOptionError:
+            configsettings['redis_socket_keepalive'] = "true"
+        try:
+            configsettings['redis_socket_connect_timeout'] = int(config.get('redis', 'socketconnecttimeout'))
+        except ConfigParser.NoOptionError:
+            configsettings['redis_socket_connect_timeout'] = 10
+        try:
+            configsettings['redis_socket_timeout'] = int(config.get('redis', 'sockettimeout'))
+        except ConfigParser.NoOptionError:
+            configsettings['redis_socket_timeout'] = 60
+        try:
             configsettings['adaptivebatch_startsize'] = int(config.get('adaptivebatch', 'startsize'))
         except ConfigParser.NoOptionError:
             configsettings['adaptivebatch_startsize'] = 50
@@ -1403,9 +1419,7 @@ def calc_dir_sizes(cliargs, logger, path=None):
                 if bar:
                     try:
                         bar.update(len(q_calc))
-                    except ZeroDivisionError:
-                        bar.update(0)
-                    except ValueError:
+                    except (ZeroDivisionError, ValueError):
                         bar.update(0)
         else:
             for dirlist in index_get_docs_generator(cliargs, logger, sort=True, maxdepth=maxdepth):
@@ -1415,9 +1429,7 @@ def calc_dir_sizes(cliargs, logger, path=None):
                 if bar:
                     try:
                         bar.update(len(q_calc))
-                    except ZeroDivisionError:
-                        bar.update(0)
-                    except ValueError:
+                    except (ZeroDivisionError, ValueError):
                         bar.update(0)
 
         # set up progress bar with time remaining

@@ -4,6 +4,7 @@
 ### added
 - --dirsonly cli arg to not include files in batch sent to bots, only send dirs, bots scan for files
 - maxfiles config setting in adaptivebatch in diskover.cfg.sample for max number of files in batch, copy from diskover.cfg.sample
+- redis socket options such as socket timeout, retry, keepalive, etc to diskover.cfg.sample redis section, copy to your diskover.cfg and edit for your env
 ### changed
 - better handling of checking if worker bots are idle and queues empty in diskover.py
 ### fixed
