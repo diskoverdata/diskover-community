@@ -1374,7 +1374,10 @@ def calc_dir_sizes(cliargs, logger, path=None):
     jobcount = 0
 
     try:
-        check_workers_running(logger)
+        # wait for worker bots to be idle and all queues are empty
+        logger.info('Waiting for diskover worker bots to be done with any jobs in rq...')
+        while worker_bots_busy([q, q_crawl, q_calc]):
+            time.sleep(1)
 
         if cliargs['adaptivebatch']:
             batchsize = ab_start
@@ -1424,28 +1427,19 @@ def calc_dir_sizes(cliargs, logger, path=None):
             bar = progressbar.ProgressBar(max_value=bar_max_val)
             bar.start()
 
-        # wait for queue to be empty and update progress bar
-        while True:
-            workers_busy = False
-            workers = SimpleWorker.all(connection=redis_conn)
-            for worker in workers:
-                if worker._state == "busy":
-                    workers_busy = True
-                    break
-            q_len = len(q_calc)
+        # update progress bar until all worker bots are idle and q_calc queue is empty
+        while worker_bots_busy([q_calc]):
             if bar:
+                q_len = len(q_calc)
                 try:
                     bar.update(bar_max_val - q_len)
-                except ZeroDivisionError:
+                except (ZeroDivisionError, ValueError):
                     bar.update(0)
-                except ValueError:
-                    bar.update(0)
-            if q_len == 0 and workers_busy == False:
-                break
-            time.sleep(.5)
+            time.sleep(1)
 
         if bar:
             bar.finish()
+
         logger.info('Finished calculating directory sizes')
 
     except KeyboardInterrupt:
@@ -1565,7 +1559,7 @@ def treewalk(top, num_sep, level, batchsize, cliargs, logger, reindex_dict):
             del files[:]
 
         # update progress bar
-        if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+        if bar:
             try:
                 if time.time() - bartimestamp >= 2:
                     elapsed = round(time.time() - bartimestamp, 3)
@@ -1574,45 +1568,30 @@ def treewalk(top, num_sep, level, batchsize, cliargs, logger, reindex_dict):
                     bartimestamp = time.time()
                     dircount = 0
                 bar.update(len(q_crawl))
-            except ZeroDivisionError:
-                bar.update(0)
-            except ValueError:
+            except (ZeroDivisionError, ValueError):
                 bar.update(0)
 
     # add any remaining in batch to queue
     q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,), result_ttl=config['redis_ttl'])
 
     # set up progress bar with time remaining
-    if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+    if bar:
         bar.finish()
         bar_max_val = len(q_crawl)
         bar = progressbar.ProgressBar(max_value=bar_max_val)
         bar.start()
-    else:
-        bar = None
 
-    # wait for queue to be empty and update progress bar
-    while True:
-        workers_busy = False
-        workers = SimpleWorker.all(connection=redis_conn)
-        for worker in workers:
-            if worker._state == "busy":
-                workers_busy = True
-                break
-        q_len = len(q_crawl)
-        if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+    # update progress bar until bots are idle and queue is empty
+    while worker_bots_busy([q_crawl]):
+        if bar:
+            q_len = len(q_crawl)
             try:
                 bar.update(bar_max_val - q_len)
-            except ZeroDivisionError:
+            except (ZeroDivisionError, ValueError):
                 bar.update(0)
-            except ValueError:
-                bar.update(0)
-        if q_len == 0 and workers_busy == False:
-            break
-        time.sleep(.5)
+        time.sleep(1)
 
-    if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
-        bar.update(0)
+    if bar:
         bar.finish()
 
     elapsed = round(time.time() - starttime, 3)
@@ -1722,33 +1701,43 @@ def hotdirs():
     else:
         bar = None
 
-    # wait for queue to be empty and update progress bar
-    time.sleep(1)
-    while True:
-        workers_busy = False
-        workers = SimpleWorker.all(connection=redis_conn)
-        for worker in workers:
-            if worker._state == "busy":
-                workers_busy = True
-                break
-        q_len = len(q)
-        if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+    # update progress bar until all bots are idle and q queue is empty
+    while worker_bots_busy([q]):
+        if bar:
+            q_len = len(q)
             try:
-                bar.update(q_len)
-            except ZeroDivisionError:
+                bar.update(bar_max_val - q_len)
+            except (ZeroDivisionError, ValueError):
                 bar.update(0)
-            except ValueError:
-                bar.update(0)
-        if q_len == 0 and workers_busy == False:
-            break
-        time.sleep(.5)
+        time.sleep(1)
 
-    if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+    if bar:
         bar.finish()
+
+
+def worker_bots_busy(queues):
+    """This is the worker bots busy function.
+    It returns True when bots are busy and queues have jobs,
+    else returns False when bots are all idle and queues are empty.
+    """
+    workers_busy = False
+    workers = SimpleWorker.all(connection=redis_conn)
+    for worker in workers:
+        if worker._state == "busy":
+            workers_busy = True
+            break
+    q_len = 0
+    for qname in queues:
+        q_len += len(qname)
+    if q_len == 0 and workers_busy == False:
+        return False
+    else:
+        return True
 
 
 def wait_for_worker_bots(logger):
     """This is the wait for worker bots function.
+    It loops waiting for worker bots to start.
     """
     workers = SimpleWorker.all(connection=redis_conn)
     while len(workers) == 0:
@@ -1756,24 +1745,6 @@ def wait_for_worker_bots(logger):
         time.sleep(2)
         workers = SimpleWorker.all(connection=redis_conn)
     logger.info('Found %s diskover RQ worker bots', len(workers))
-
-
-def check_workers_running(logger):
-    """This is the check worker bots are running function.
-    """
-    logger.info('Waiting for diskover worker bots to be done with any jobs in rq...')
-    busyworkers = []
-    while True:
-        workers = SimpleWorker.all(connection=redis_conn)
-        for worker in workers:
-            if worker._state == "busy":
-                busyworkers.append(worker._name)
-        q_len = len(q) + len(q_crawl) + len(q_calc)
-        if len(busyworkers) == 0 and q_len == 0:
-            break
-        del busyworkers[:]
-        time.sleep(1)
-    time.sleep(2)
 
 
 def tune_es_for_crawl(defaults=False):
@@ -1840,7 +1811,10 @@ def post_crawl_tasks():
     add_crawl_stats(es, cliargs['index'], rootdir_path, (time.time() - starttime), "finished_dircalc")
 
     if cliargs['reindex'] or cliargs['reindexrecurs'] or cliargs['crawlbot']:
-        check_workers_running(logger)
+        # wait for worker bots to be idle and all queues are empty
+        logger.info('Waiting for diskover worker bots to be done with any jobs in rq...')
+        while worker_bots_busy([q, q_crawl, q_calc]):
+            time.sleep(1)
 
     # set Elasticsearch index settings back to default
     tune_es_for_crawl(defaults=True)
@@ -2073,7 +2047,10 @@ if __name__ == "__main__":
 
         add_crawl_stats(es, cliargs['index'], rootdir_path, (time.time() - starttime), "finished_dircalc")
 
-        check_workers_running(logger)
+        # wait for worker bots to be idle and all queues are empty
+        logger.info('Waiting for diskover worker bots to be done with any jobs in rq...')
+        while worker_bots_busy([q, q_crawl, q_calc]):
+            time.sleep(1)
 
         # set Elasticsearch index settings back to default
         tune_es_for_crawl(defaults=True)

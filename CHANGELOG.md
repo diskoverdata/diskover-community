@@ -1,11 +1,14 @@
 # Diskover Change Log
 
-## [1.5.0-rc26] = 2018-12-27
+## [1.5.0-rc26] = 2018-12-28
 ### added
 - --dirsonly cli arg to not include files in batch sent to bots, only send dirs, bots scan for files
 - maxfiles config setting in adaptivebatch in diskover.cfg.sample for max number of files in batch, copy from diskover.cfg.sample
+### changed
+- better handling of checking if worker bots are idle and queues empty in diskover.py
 ### fixed
 - issue where an io/os error such as permission denied caused the tree walk to not finish
+- occasional issue where bots/queues incorreclty tested to be idle and empty
 
 ## [1.5.0-rc25] = 2018-12-26
 ### added
