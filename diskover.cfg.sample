@@ -100,8 +100,8 @@ queue = diskover
 queuecrawl = diskover_crawl
 queuecalcdir = diskover_calcdir
 ; redis connection socket timeouts
-socketconnecttimeout = 10
-sockettimeout = 60
+socketconnecttimeout = 30
+sockettimeout = 300
 ; rq worker ttl timeout heartbeat in seconds (default 420)
 workerttl = 840
 
