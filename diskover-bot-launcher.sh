@@ -17,17 +17,22 @@ PYTHON=python
 DISKOVERBOT=./diskover_worker_bot.py
 # path to killredisconn.py
 KILLREDISCONN=./killredisconn.py
-# number of bots to start (cores x 2 might be good start)
+# number of bots to start (cpu cores x 2 might be good start)
 WORKERBOTS=8
 # run bots in burst mode (quit when all jobs done)
 BURST=FALSE
+# log bot output to file, if blank redirect to null (no logging)
+BOTLOG=
+# run bots with verbose output (logging level)
+# logging level 0 = ERROR, 1 = WARNING, 2 = INFO, 3 = DEBUG
+LOGLEVEL=2
 # file to store bot pids
 BOTPIDS=/tmp/diskover_bot_pids
 
 ###########################################################
 
 
-VERSION="1.5"
+VERSION="1.6"
 
 function printhelp {
     echo "Usage: $(basename $0) [OPTION] [ROOTDIR]"
@@ -41,6 +46,7 @@ function printhelp {
     echo "  -r            restart all running bots"
     echo "  -R            remove any stuck/idle worker bot connections in Redis"
     echo "  -f            force remove all worker bot connections in Redis"
+    echo "  -l n          logging level 0 = ERROR, 1 = WARNING, 2 = INFO, 3 = DEBUG"
     echo "  -V            displays version and exits"
     echo "  -h            displays this help message and exits"
     echo
@@ -55,7 +61,7 @@ RESTARTBOTS=FALSE
 REMOVEBOTS=FALSE
 FORCEREMOVEBOTS=FALSE
 SHOWBOTS=FALSE
-while getopts :h?w:bskrRfV opt; do
+while getopts :h?w:bskrRfl:V opt; do
     case "$opt" in
     h) printhelp; exit 0;;
     w) WORKERBOTS=$OPTARG;;
@@ -65,6 +71,7 @@ while getopts :h?w:bskrRfV opt; do
     r) RESTARTBOTS=TRUE;;
     R) REMOVEBOTS=TRUE;;
     f) FORCEREMOVEBOTS=TRUE; REMOVEBOTS=TRUE;;
+    l) LOGLEVEL=$OPTARG;;
     V) echo "$0 v$VERSION"; exit 0;;
     ?) echo "Invalid option ${OPTARG}, use -h for help" >&2; exit 1;;
     esac
@@ -90,16 +97,32 @@ function startbots {
 	echo "Starting $WORKERBOTS worker bots in background..."
     ARGS=""
     if [ $BURST == TRUE ]; then
-        ARGS+="-b"
+        ARGS+="-b "
+    fi
+    if [ $LOGLEVEL == 0 ]; then
+        ARGS+="-l ERROR"
+    elif [ $LOGLEVEL == 1 ]; then
+        ARGS+="-l WARNING"
+    elif [ $LOGLEVEL == 2 ]; then
+        ARGS+="-l INFO"
+    elif [ $LOGLEVEL == 3 ]; then
+        ARGS+="-l DEBUG"
     fi
     for (( i = 1; i <= $WORKERBOTS; i++ )); do
-        $PYTHON $DISKOVERBOT $ARGS > /dev/null 2>&1 &
-        echo "$(hostname -s).$! (pid $!)"
+        if [ ! $BOTLOG ]; then
+            $PYTHON $DISKOVERBOT $ARGS > /dev/null 2>&1 &
+        else
+            $PYTHON $DISKOVERBOT $ARGS >> $BOTLOG.$i 2>&1 &
+        fi
+        echo "$(hostname -s).$! (pid $!) (botnum $i)"
         echo "$!" >> $BOTPIDS
     done
 
     echo "DONE!"
     echo "All worker bots have started"
+    if [ $BOTLOG ]; then
+        echo "Worker bot output is getting logged to $BOTLOG.botnum"
+    fi
     echo "Worker pids have been stored in $BOTPIDS, use -k flag to shutdown workers or -r to restart"
     echo "Exiting, sayonara!"
 }
