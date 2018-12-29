@@ -133,6 +133,12 @@ Only index files which are >90 days modified time and >1 KB filesize:
 $ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl -m 90 -s 1024
 ```
 
+Store cost per gb in es index from diskover.cfg settings and use size on disk (disk usage) instead of file size:
+
+```sh
+$ python diskover.py -i diskover-index -a -d /rootpath/to/crawl -G -S
+```
+
 Create index with just level 1 directories and files, then run background crawls in parallel for each directory in rootdir and merge the data into same index. After all crawls are finished, calculate rootdir doc's size/items counts:
 
 ```sh
@@ -146,7 +152,7 @@ $ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl --dircalcson
 Import Amazon S3 Inventory file(s) (gzipped csv) with:
 
 ```sh
-$ python /path/to/diskover.py -i diskover_s3-indexname --s3 /dir/inventoryfile1.csv.gz
+$ python diskover.py -i diskover_s3-indexname --s3 /dir/inventoryfile1.csv.gz
 ```
 
 ## TCP socket client for running tree walk directly on remote storage
