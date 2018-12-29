@@ -45,9 +45,9 @@ parser.add_option("-b", "--batchsize", metavar="BATCH_SIZE", default=50, type=in
 					help="Batchsize (num of directories) to send to diskover proxy (default: 50)")
 parser.add_option("-n", "--numconn", metavar="NUM_CONNECTIONS", default=5, type=int,
 					help="Number of tcp connections to use (default: 5)")
-parser.add_option("-t", "--twmethod", metavar="TREEWALK_METHOD", default="scandir",
+parser.add_option("-t", "--twmethod", metavar="TREEWALK_METHOD", default="pscandir",
 					help="Tree walk method to use. Options are: oswalk, scandir, pscandir, ls, \
-						lsthreaded, metaspider (default: scandir)")
+					lsthreaded, metaspider (default: pscandir)")
 parser.add_option("-r", "--rootdirlocal", metavar="ROOTDIR_LOCAL",
 					help="Local path on storage to crawl from")
 parser.add_option("-R", "--rootdirremote", metavar="ROOTDIR_REMOTE",

@@ -7,7 +7,7 @@
 - redis socket timeout setting to diskover.cfg.sample redis section, copy to your diskover.cfg and edit for your env
 - -n --noreconnect cli arg to diskover_worker_bot.py to not reconnect on redis timeout (default is to reconnect)
 - -l --loglevel cli arg to diskover_worker_bot.py to set logging level
-- v1.0.20 tree walk client - added in ls, lsthreaded tree walk methods, pscandir pathches
+- v1.0.20 tree walk client - added in ls, lsthreaded tree walk methods, pscandir pathches, pscandir (parallel scandir) is now the default tree walk method (prev was scandir)
 - v1.6 diskover-bot-launcher.sh - added logging level, log to file
 ### changed
 - better handling of checking if worker bots are idle and queues empty in diskover.py
