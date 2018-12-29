@@ -16,13 +16,13 @@ from rq import SimpleWorker, Connection
 from redis import exceptions
 from datetime import datetime
 
-from diskover_bot_module import parse_cliargs_bot
-
 import diskover_connections
 
 # create Reddis connection
 diskover_connections.connect_to_redis()
 from diskover_connections import redis_conn
+
+import diskover_bot_module
 
 
 def main():
@@ -44,7 +44,7 @@ def main():
 
 if __name__ == "__main__":
     # parse cli arguments into cliargs dictionary
-    cliargs_bot = vars(parse_cliargs_bot())
+    cliargs_bot = vars(diskover_bot_module.parse_cliargs_bot())
 
     print("""\033[31m
     

@@ -34,7 +34,6 @@ from diskover_connections import es_conn as es
 diskover_connections.connect_to_redis()
 from diskover_connections import redis_conn
 
-
 # cache uid/gid names
 uids = []
 gids = []
@@ -873,7 +872,7 @@ def get_metadata(path, cliargs):
 
 
 def scrape_tree_meta(paths, cliargs, reindex_dict):
-    worker = get_worker_name()
+    global worker
     tree_dirs = []
     tree_files = []
     if cliargs['qumulo']:
@@ -957,9 +956,7 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
 
         # check if doc count is more than es chunksize and bulk add to es
         if len(tree_dirs) + len(tree_files) >= config['es_chunksize']:
-            td = tree_dirs[:]
-            tf = tree_files[:]
-            es_bulk_add(worker, td, tf, cliargs, totalcrawltime)
+            es_bulk_add(worker, tree_dirs, tree_files, cliargs, totalcrawltime)
             del tree_dirs[:]
             del tree_files[:]
             totalcrawltime = 0
@@ -1148,3 +1145,6 @@ def calc_hot_dirs(dirlist, cliargs):
         doclist.append(d)
 
     index_bulk_add(es, doclist, config, cliargs)
+
+# global worker name
+worker = get_worker_name()

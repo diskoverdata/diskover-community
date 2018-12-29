@@ -730,18 +730,13 @@ def index_bulk_add(es, doclist, config, cliargs):
     It bulk adds/updates/removes using file/directory
     meta data lists from worker's crawl results.
     """
-    if len(doclist) == 0:
-        return
-
     if config['es_wait_status_yellow'] == "true":
         # wait for es health to be at least yellow
         es.cluster.health(wait_for_status='yellow',
                           request_timeout=config['es_timeout'])
-
     # bulk load data to Elasticsearch index
-    diskover_connections.helpers.bulk(es, doclist, index=cliargs['index'], chunk_size=config['es_chunksize'],
-                 request_timeout=config['es_timeout'])
-
+    diskover_connections.helpers.bulk(es, doclist, index=cliargs['index'],
+            chunk_size=config['es_chunksize'], request_timeout=config['es_timeout'])
 
 
 def index_delete_path(path, cliargs, logger, reindex_dict, recursive=False):
@@ -1532,11 +1527,11 @@ def treewalk(top, num_sep, level, batchsize, cliargs, logger, reindex_dict):
     for root, dirs, files in scandirwalk(top):
         dircount += 1
         totaldirs += 1
+        files_len = len(files)
+        dirs_len = len(dirs)
+        totalfiles += files_len
         # check for empty dirs
-        dircount = len(dirs)
-        filecount = len(files)
-        totalfiles += filecount
-        if dircount == 0 and filecount == 0 and not cliargs['indexemptydirs']:
+        if dirs_len == 0 and files_len == 0 and not cliargs['indexemptydirs']:
             continue
         if not dir_excluded(root, config, cliargs):
             if cliargs['dirsonly']:
@@ -1547,12 +1542,14 @@ def treewalk(top, num_sep, level, batchsize, cliargs, logger, reindex_dict):
             if batch_len >= batchsize or (cliargs['adaptivebatch'] and totalfiles >= config['adaptivebatch_maxfiles']):
                 q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,),
                                       result_ttl=config['redis_ttl'])
+                if cliargs['debug'] or cliargs['verbose']:
+                    logger.info("enqueued batchsize: %s (batchsize: %s)" % (batch_len, batchsize))
                 del batch[:]
                 totalfiles = 0
                 if cliargs['adaptivebatch']:
                     batchsize = adaptive_batch(q_crawl, cliargs, batchsize)
                     if cliargs['debug'] or cliargs['verbose']:
-                        logger.info("batchsize: %s" % batchsize)
+                        logger.info("batchsize set to: %s" % batchsize)
 
             # check if at maxdepth level and delete dirs/files lists to not
             # descend further down the tree
@@ -1570,8 +1567,8 @@ def treewalk(top, num_sep, level, batchsize, cliargs, logger, reindex_dict):
         if bar:
             try:
                 if time.time() - bartimestamp >= 2:
-                    elapsed = round(time.time() - bartimestamp, 3)
-                    dirspersec = round(dircount / elapsed, 3)
+                    elapsed = round(time.time() - bartimestamp, 1)
+                    dirspersec = round(dircount / elapsed, 1)
                     widgets[4] = progressbar.FormatLabel(', ' + str(dirspersec) + ' dirs/sec) ')
                     bartimestamp = time.time()
                     dircount = 0
@@ -1602,8 +1599,8 @@ def treewalk(top, num_sep, level, batchsize, cliargs, logger, reindex_dict):
     if bar:
         bar.finish()
 
-    elapsed = round(time.time() - starttime, 3)
-    dirspersec = round(totaldirs / elapsed, 3)
+    elapsed = round(time.time() - starttime, 1)
+    dirspersec = round(totaldirs / elapsed, 1)
 
     logger.info("Finished crawling, elapsed time %s sec, dirs walked %s (%s dirs/sec)" %
                 (elapsed, totaldirs, dirspersec))
