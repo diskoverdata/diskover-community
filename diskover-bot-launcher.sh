@@ -35,7 +35,7 @@ BOTPIDS=/tmp/diskover_bot_pids
 VERSION="1.6"
 
 function printhelp {
-    echo "Usage: $(basename $0) [OPTION] [ROOTDIR]"
+    echo "Usage: $(basename $0) [OPTION]"
     echo
     echo "Options:"
     echo
