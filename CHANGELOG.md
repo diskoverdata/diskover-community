@@ -1,5 +1,11 @@
 # Diskover Change Log
 
+## [1.5.0-rc27] = 2019-01-03
+### added
+- - v1.0.21 tree walk client - changed lsthreaded to pls (parallel ls), ls tree walk methods require GNU ls, set path using -g, improved directory excludes, see -e)
+### fixed
+- bug with tree walk client and directory excludes using ls or pls tree walk methods, requires GNU ls
+
 ## [1.5.0-rc26] = 2018-12-29
 ### added
 - --dirsonly cli arg to not include files in batch sent to bots, only send dirs, bots scan for files

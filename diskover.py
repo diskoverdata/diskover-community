@@ -37,7 +37,7 @@ import sys
 import json
 
 
-version = '1.5.0-rc26'
+version = '1.5.0-rc27'
 __version__ = version
 
 IS_PY3 = sys.version_info >= (3, 0)
@@ -964,7 +964,7 @@ def index_get_docs_generator(cliargs, logger, doctype='directory', copytags=Fals
     doccount = 0
     while res['hits']['hits'] and len(res['hits']['hits']) > 0:
         for hit in res['hits']['hits']:
-            fullpath = os.path.abspath(os.path.join(hit['_source']['path_parent'], hit['_source']['filename']))
+            fullpath = hit['_source']['path_parent'] + "/" + hit['_source']['filename']
             if copytags:
                 doclist.append((fullpath, hit['_source']['tag'], hit['_source']['tag_custom'], doctype))
             elif hotdirs:
@@ -1060,19 +1060,47 @@ def _index_get_docs_data(index, copytags, hotdirs, doctype, path, maxdepth, sort
     return data
 
 
+def replace_path(path):
+    """This is the replace path function.
+    It replaces paths and drive letters sent to bots.
+    """
+    frompath = cliargs['replacepath'][0]
+    topath = cliargs['replacepath'][1]
+    path = path.replace(frompath, topath)
+    # change any windows path separators (for bots running in linux)
+    path = path.replace('\\', '/')
+    return path
+
+
 def add_diskspace(index, logger, path):
     """This is the add disk space function.
     It adds total, used, free and available
     disk space for a path to es.
     """
-    statvfs = os.statvfs(path)
-    # Size of filesystem in bytes
-    total = statvfs.f_frsize * statvfs.f_blocks
-    # Actual number of free bytes
-    free = statvfs.f_frsize * statvfs.f_bfree
-    # Number of free bytes that ordinary users are allowed
-    # to use (excl. reserved space)
-    available = statvfs.f_frsize * statvfs.f_bavail
+    try:  # linux
+        statvfs = os.statvfs(path)
+        # Size of filesystem in bytes
+        total = statvfs.f_frsize * statvfs.f_blocks
+        # Actual number of free bytes
+        free = statvfs.f_frsize * statvfs.f_bfree
+        # Number of free bytes that ordinary users are allowed
+        # to use (excl. reserved space)
+        available = statvfs.f_frsize * statvfs.f_bavail
+    except AttributeError:  # windows
+        import ctypes
+        total_bytes = ctypes.c_ulonglong(0)
+        free_bytes = ctypes.c_ulonglong(0)
+        available_bytes = ctypes.c_ulonglong(0)
+        ctypes.windll.kernel32.GetDiskFreeSpaceExW(ctypes.c_wchar_p(path), 
+            ctypes.pointer(available_bytes),
+            ctypes.pointer(total_bytes),
+            ctypes.pointer(free_bytes))
+        total = total_bytes.value
+        free = free_bytes.value
+        available = available_bytes.value
+        if cliargs['replacepath']:
+            path = replace_path(path)
+
     used = total - free
     indextime_utc = datetime.utcnow().isoformat()
     data = {
@@ -1265,6 +1293,8 @@ def parse_cli_args(indexname):
                         help="Start tcp socket server and listen for messages from diskover treewalk client")
     parser.add_argument("--dirsonly", action="store_true",
                         help="Don't include files in batch sent to bots, only send dirs, bots scan for files")
+    parser.add_argument("--replacepath", nargs=2, metavar="PATH",
+                        help="Replace path, example: --replacepath Z:\\ /mnt/share/")
     parser.add_argument("--crawlbot", action="store_true",
                         help="Starts up crawl bot continuous scanner to scan for dir changes in index")
     parser.add_argument("--qumulo", action="store_true",
@@ -1533,6 +1563,9 @@ def treewalk(top, num_sep, level, batchsize, cliargs, logger, reindex_dict):
         # check for empty dirs
         if dirs_len == 0 and files_len == 0 and not cliargs['indexemptydirs']:
             continue
+        # replace path if cliarg
+        if cliargs['replacepath']:
+            root = replace_path(root)
         if not dir_excluded(root, config, cliargs):
             if cliargs['dirsonly']:
                 batch.append(root)
@@ -1567,8 +1600,8 @@ def treewalk(top, num_sep, level, batchsize, cliargs, logger, reindex_dict):
         if bar:
             try:
                 if time.time() - bartimestamp >= 2:
-                    elapsed = round(time.time() - bartimestamp, 1)
-                    dirspersec = round(dircount / elapsed, 1)
+                    elapsed = round(time.time() - bartimestamp, 3)
+                    dirspersec = round(dircount / elapsed, 3)
                     widgets[4] = progressbar.FormatLabel(', ' + str(dirspersec) + ' dirs/sec) ')
                     bartimestamp = time.time()
                     dircount = 0
@@ -1599,8 +1632,8 @@ def treewalk(top, num_sep, level, batchsize, cliargs, logger, reindex_dict):
     if bar:
         bar.finish()
 
-    elapsed = round(time.time() - starttime, 1)
-    dirspersec = round(totaldirs / elapsed, 1)
+    elapsed = round(time.time() - starttime, 3)
+    dirspersec = round(totaldirs / elapsed, 3)
 
     logger.info("Finished crawling, elapsed time %s sec, dirs walked %s (%s dirs/sec)" %
                 (elapsed, totaldirs, dirspersec))
@@ -2066,9 +2099,16 @@ if __name__ == "__main__":
         logger.info('Done importing S3 inventory files! Sayonara!')
         sys.exit(0)
     else:
-        # warn if not running as root
-        if os.geteuid():
-            logger.warning('Not running as root, permissions might block crawling some files')
+        # warn if not running as root (linux) or Administrator (windows)
+        try:
+            is_admin = os.geteuid() == 0
+            user = "root"
+        except AttributeError:  # windows
+            import ctypes
+            is_admin = ctypes.windll.shell32.IsUserAnAdmin() != 0
+            user = "Administrator"
+        if not is_admin:
+            logger.warning('Not running as %s, permissions might block crawling some files' % user)
         if not os.path.exists(cliargs['rootdir']) or not \
                 os.path.isdir(cliargs['rootdir']):
             logger.error("Rootdir path not found or not a directory, exiting")
