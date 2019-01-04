@@ -25,23 +25,6 @@ from diskover_connections import redis_conn
 import diskover_bot_module
 
 
-def main():
-    try:
-        with Connection(redis_conn):
-            w = SimpleWorker(listen, default_worker_ttl=config['redis_worker_ttl'])
-            if cliargs_bot['burst']:
-                w.work(burst=True, logging_level=cliargs_bot['loglevel'])
-            else:
-                w.work(logging_level=cliargs_bot['loglevel'])
-    except exceptions.TimeoutError:
-        if not cliargs_bot['noreconnect']:
-            print("%s *** Redis timeout, reconnecting..." % datetime.now().strftime('%H:%M:%S'))
-            main()
-        else:
-            print("%s *** Redis timeout, exiting (-n)..." % datetime.now().strftime('%H:%M:%S'))
-            pass
-
-
 if __name__ == "__main__":
     # parse cli arguments into cliargs dictionary
     cliargs_bot = vars(diskover_bot_module.parse_cliargs_bot())
@@ -58,4 +41,9 @@ if __name__ == "__main__":
     
     \033[0m""" % (version))
 
-    main()
+    with Connection(redis_conn):
+        w = SimpleWorker(listen, default_worker_ttl=config['redis_worker_ttl'])
+        if cliargs_bot['burst']:
+            w.work(burst=True, logging_level=cliargs_bot['loglevel'])
+        else:
+            w.work(logging_level=cliargs_bot['loglevel'])

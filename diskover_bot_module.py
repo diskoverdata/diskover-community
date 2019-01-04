@@ -51,8 +51,6 @@ def parse_cliargs_bot():
     parser = argparse.ArgumentParser()
     parser.add_argument("-b", "--burst", action="store_true",
                         help="Burst mode (worker will quit after all work is done)")
-    parser.add_argument("-n", "--noreconnect", action="store_true",
-                        help="Don't reconnect on Redis timeout (default is to reconnect)")
     parser.add_argument("-l", "--loglevel", default="INFO",
                         help="Set worker logging level to DEBUG, INFO, WARNING, ERROR (default is INFO)")
     args = parser.parse_args()

@@ -344,14 +344,6 @@ def load_config():
         except ConfigParser.NoOptionError:
             configsettings['redis_queue_calcdir'] = "diskover_calcdir"
         try:
-            configsettings['redis_socket_connect_timeout'] = int(config.get('redis', 'socketconnecttimeout'))
-        except ConfigParser.NoOptionError:
-            configsettings['redis_socket_connect_timeout'] = 10
-        try:
-            configsettings['redis_socket_timeout'] = int(config.get('redis', 'sockettimeout'))
-        except ConfigParser.NoOptionError:
-            configsettings['redis_socket_timeout'] = 60
-        try:
             configsettings['redis_worker_ttl'] = int(config.get('redis', 'workerttl'))
         except ConfigParser.NoOptionError:
             configsettings['redis_worker_ttl'] = 420
@@ -1247,7 +1239,7 @@ def parse_cli_args(indexname):
     parser.add_argument("-d", "--rootdir", metavar='ROOTDIR', default=".",
                         help="Directory to start crawling from (default: .)")
     parser.add_argument("-m", "--mtime", metavar='DAYS', default=0, type=int,
-                        help="Minimum (+num) / maximum (-num) days ago for modified time (default: 0)")
+                        help="Minimum (+num) / maximum (-num) days ago for file modified time (default: 0)")
     parser.add_argument("-s", "--minsize", metavar='BYTES', default=1, type=int,
                         help="Minimum file size in Bytes (default: 1 Bytes)")
     parser.add_argument("-e", "--indexemptydirs", action="store_true",

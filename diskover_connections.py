@@ -54,6 +54,4 @@ def connect_to_redis():
     global redis_conn
     redis_conn = Redis(host=config['redis_host'], port=config['redis_port'],
                        password=config['redis_password'], db=config['redis_db'],
-                       retry_on_timeout=True, socket_keepalive=True,
-                       socket_connect_timeout=config['redis_socket_connect_timeout'],
-                       socket_timeout=config['redis_socket_timeout'])
+                       retry_on_timeout=True, socket_keepalive=True)
