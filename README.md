@@ -130,7 +130,13 @@ $ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl -M 3
 Only index files which are >90 days modified time and >1 KB filesize:
 
 ```sh
-$ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl -m 90 -s 1024
+$ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl -m +90 -s 1024
+```
+
+Only index files which have been modified in the last 7 days including empty files and dirs:
+
+```sh
+$ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl -m -7 -s 0 -e
 ```
 
 Store cost per gb in es index from diskover.cfg settings and use size on disk (disk usage) instead of file size:
