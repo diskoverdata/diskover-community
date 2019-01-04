@@ -13,6 +13,7 @@ LICENSE for the full license text.
 
 from scandir import scandir
 from rq import SimpleWorker, Queue
+from rq.registry import StartedJobRegistry
 from datetime import datetime
 from random import randint
 try:
@@ -1765,9 +1766,13 @@ def worker_bots_busy(queues):
             workers_busy = True
             break
     q_len = 0
+    running_jobs = 0
     for qname in queues:
         q_len += len(qname)
-    if q_len == 0 and workers_busy == False:
+        r = StartedJobRegistry(queue=qname)
+        running_job_ids = r.get_job_ids()
+        running_jobs += len(running_job_ids)
+    if q_len == 0 and running_jobs == 0 and workers_busy == False:
         return False
     else:
         return True
