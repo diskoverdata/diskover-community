@@ -1,8 +1,12 @@
 # Diskover Change Log
 
-## [1.5.0-rc27] = 2019-01-03
+## [1.5.0-rc27] = 2019-01-04
 ### added
 - - v1.0.21 tree walk client - changed lsthreaded to pls (parallel ls), ls tree walk methods require GNU ls, set path using -g, improved directory excludes, see -e)
+- support for running diskover.py in Windows10 (cifs mapped drives) and sending to bots running in linux or linux subsystem for windows (bots do not work in Windows)
+- --replacepath cli arg to diskover.py for replacing paths sent to bots (windows/linux path translation)
+- warning message output for bots for any exceptions getting meta data for files/directories
+- multithreading to bot dir size calcs to help speed up dir size calc times
 ### fixed
 - bug with tree walk client and directory excludes using ls or pls tree walk methods, requires GNU ls
 

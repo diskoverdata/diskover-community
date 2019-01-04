@@ -11,9 +11,11 @@ diskover is released under the Apache 2.0 license. See
 LICENSE for the full license text.
 """
 
-from diskover import config, escape_chars, index_bulk_add, plugins
+from diskover import config, escape_chars, index_bulk_add, plugins, IS_PY3
 from datetime import datetime
 from scandir import scandir
+from threading import Thread
+from multiprocessing import cpu_count
 import argparse
 import os
 import hashlib
@@ -23,6 +25,7 @@ import grp
 import time
 import re
 import base64
+import warnings
 
 import diskover_connections
 
@@ -563,7 +566,11 @@ def get_dir_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
                 dirmeta_dict['tag_custom'] = sublist[2]
                 break
 
-    except (IOError, OSError):
+    except (OSError, IOError) as e:
+        warnings.warn("OS/IO Exception caused by: %s" % e)
+        return False
+    except Exception as e:
+        warnings.warn("Exception caused by: %s" % e)
         return False
 
     # cache directory times in Redis, encode path (key) using base64
@@ -687,7 +694,11 @@ def get_file_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
                 filemeta_dict['tag_custom'] = sublist[2]
                 break
 
-    except (IOError, OSError):
+    except (OSError, IOError) as e:
+        warnings.warn("OS/IO Exception caused by: %s" % e)
+        return False
+    except Exception as e:
+        warnings.warn("Exception caused by: %s" % e)
         return False
 
     return filemeta_dict
@@ -695,123 +706,146 @@ def get_file_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
 
 def calc_dir_size(dirlist, cliargs):
     """This is the calculate directory size worker function.
-    It gets a directory list from the Queue and searches ES for all files
-    in each directory (recursive) and sums their filesizes
-    to create a total filesize and item count for each dir.
-    Updates dir doc's filesize and items fields.
+    It gets a directory list from the Queue and splits the list
+    into n size chunks for each thread to process. Threads 
+    search ES for all files in each directory (recursive) and 
+    sums their filesizes to create a total filesize and item count 
+    for each dir, then pdates dir doc's filesize and items fields.
     """
 
-    doclist = []
-    for path in dirlist:
-        totalsize = 0
-        totalitems = 1  # 1 for itself
-        totalitems_files = 0
-        totalitems_subdirs = 0
-        # file doc search with aggregate for sum filesizes
-        # escape special characters
-        newpath = escape_chars(path[1])
-        # create wildcard string and check for / (root) path
-        if newpath == '\/':
-            newpathwildcard = '\/*'
-        else:
-            newpathwildcard = newpath + '\/*'
+    def chunks(l, n):
+        """Splits a list l into n pieces
+        """
+        n = max(1, n)
+        if IS_PY3:
+            xrange = range
+        return (l[i:i+n] for i in xrange(0, len(l), n))
 
-        # check if / (root) path
-        if newpath == '\/':
-            data = {
-                "size": 0,
-                "query": {
-                    "query_string": {
-                        "query": "path_parent: " + newpath + "*",
-                        "analyze_wildcard": "true"
-                    }
-                },
-                "aggs": {
-                    "total_size": {
-                        "sum": {
-                            "field": "filesize"
+
+    def calc_dir_size_thread(dirlist):
+        """Thread worker to help speed up calculating
+        directory items/sizes
+        """
+        doclist = []
+
+        for path in dirlist:
+            totalsize = 0
+            totalitems = 1  # 1 for itself
+            totalitems_files = 0
+            totalitems_subdirs = 0
+            # file doc search with aggregate for sum filesizes
+            # escape special characters
+            newpath = escape_chars(path[1])
+            # create wildcard string and check for / (root) path
+            if newpath == '\/':
+                newpathwildcard = '\/*'
+            else:
+                newpathwildcard = newpath + '\/*'
+
+            # check if / (root) path
+            if newpath == '\/':
+                data = {
+                    "size": 0,
+                    "query": {
+                        "query_string": {
+                            "query": "path_parent: " + newpath + "*",
+                            "analyze_wildcard": "true"
+                        }
+                    },
+                    "aggs": {
+                        "total_size": {
+                            "sum": {
+                                "field": "filesize"
+                            }
                         }
                     }
                 }
-            }
-        else:
-            data = {
-                "size": 0,
-                "query": {
-                    "query_string": {
-                        'query': 'path_parent: ' + newpath + ' OR path_parent: ' + newpathwildcard,
-                        'analyze_wildcard': 'true'
-                    }
-                },
-                "aggs": {
-                    "total_size": {
-                        "sum": {
-                            "field": "filesize"
+            else:
+                data = {
+                    "size": 0,
+                    "query": {
+                        "query_string": {
+                            'query': 'path_parent: ' + newpath + ' OR path_parent: ' + newpathwildcard,
+                            'analyze_wildcard': 'true'
+                        }
+                    },
+                    "aggs": {
+                        "total_size": {
+                            "sum": {
+                                "field": "filesize"
+                            }
                         }
                     }
                 }
-            }
 
-        # search ES and start scroll
-        res = es.search(index=cliargs['index'], doc_type='file', body=data,
-                        request_timeout=config['es_timeout'])
+            # search ES and start scroll
+            res = es.search(index=cliargs['index'], doc_type='file', body=data,
+                            request_timeout=config['es_timeout'])
 
-        # total items sum
-        totalitems_files += res['hits']['total']
+            # total items sum
+            totalitems_files += res['hits']['total']
 
-        # total file size sum
-        totalsize += res['aggregations']['total_size']['value']
+            # total file size sum
+            totalsize += res['aggregations']['total_size']['value']
 
-        # directory doc search (subdirs)
+            # directory doc search (subdirs)
 
-        # check if / (root) path
-        if newpath == '\/':
-            data = {
-                "size": 0,
-                "query": {
-                    "query_string": {
-                        "query": "path_parent: " + newpath + "*",
-                        "analyze_wildcard": "true"
+            # check if / (root) path
+            if newpath == '\/':
+                data = {
+                    "size": 0,
+                    "query": {
+                        "query_string": {
+                            "query": "path_parent: " + newpath + "*",
+                            "analyze_wildcard": "true"
+                        }
                     }
                 }
-            }
-        else:
-            data = {
-                "size": 0,
-                "query": {
-                    "query_string": {
-                        'query': 'path_parent: ' + newpath + ' OR path_parent: ' + newpathwildcard,
-                        'analyze_wildcard': 'true'
+            else:
+                data = {
+                    "size": 0,
+                    "query": {
+                        "query_string": {
+                            'query': 'path_parent: ' + newpath + ' OR path_parent: ' + newpathwildcard,
+                            'analyze_wildcard': 'true'
+                        }
                     }
                 }
+
+            # search ES and start scroll
+            res = es.search(index=cliargs['index'], doc_type='directory', body=data,
+                            request_timeout=config['es_timeout'])
+
+            # total items sum
+            totalitems_subdirs += res['hits']['total']
+
+            # total items
+            totalitems += totalitems_files + totalitems_subdirs
+
+            # update filesize and items fields for directory (path) doc
+            d = {
+                '_op_type': 'update',
+                '_index': cliargs['index'],
+                '_type': 'directory',
+                '_id': path[0],
+                'doc': {'filesize': totalsize, 'items': totalitems,
+                        'items_files': totalitems_files,
+                        'items_subdirs': totalitems_subdirs}
             }
+            # add total cost per gb to doc
+            if cliargs['costpergb']:
+                d = cost_per_gb(d, path[1], path[2], path[3], path[4], 'directory')
+            doclist.append(d)
 
-        # search ES and start scroll
-        res = es.search(index=cliargs['index'], doc_type='directory', body=data,
-                        request_timeout=config['es_timeout'])
+        index_bulk_add(es, doclist, config, cliargs)
 
-        # total items sum
-        totalitems_subdirs += res['hits']['total']
 
-        # total items
-        totalitems += totalitems_files + totalitems_subdirs
-
-        # update filesize and items fields for directory (path) doc
-        d = {
-            '_op_type': 'update',
-            '_index': cliargs['index'],
-            '_type': 'directory',
-            '_id': path[0],
-            'doc': {'filesize': totalsize, 'items': totalitems,
-                    'items_files': totalitems_files,
-                    'items_subdirs': totalitems_subdirs}
-        }
-        # add total cost per gb to doc
-        if cliargs['costpergb']:
-            d = cost_per_gb(d, path[1], path[2], path[3], path[4], 'directory')
-        doclist.append(d)
-
-    index_bulk_add(es, doclist, config, cliargs)
+    # split dirlist into n size chunks and start up threads to process
+    n = cpu_count()*2
+    for d in chunks(dirlist, n):
+        t = Thread(target=calc_dir_size_thread, args=(d,))
+        t.setDaemon = True
+        t.start()
 
 
 def es_bulk_add(worker_name, dirlist, filelist, cliargs, totalcrawltime=None):

@@ -2093,9 +2093,6 @@ if __name__ == "__main__":
         # set Elasticsearch index settings back to default
         tune_es_for_crawl(defaults=True)
 
-        # add elapsed time crawl stat to es
-        add_crawl_stats(es, cliargs['index'], rootdir_path, (time.time() - starttime), "finished")
-
         logger.info('Done importing S3 inventory files! Sayonara!')
         sys.exit(0)
     else:
