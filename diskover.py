@@ -977,8 +977,15 @@ def index_get_docs_generator(cliargs, logger, doctype='directory', copytags=Fals
         yield doclist
         del doclist[:]
         # use es scroll api
-        res = es.scroll(scroll_id=res['_scroll_id'], scroll='1m',
-                        request_timeout=config['es_timeout'])
+        while True:
+            try:
+                res = es.scroll(scroll_id=res['_scroll_id'], scroll='1m',
+                                request_timeout=config['es_timeout'])
+                break
+            except exceptions.TransportError:
+                logger.warning("ES transport exception, backing off and trying again...")
+                time.sleep(1)
+                continue
 
     logger.info('Found %s %s docs' % (str(doccount), doctype))
 

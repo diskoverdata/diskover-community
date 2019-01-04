@@ -845,7 +845,7 @@ def calc_dir_size(dirlist, cliargs):
 
 
     # split dirlist into n size chunks and start up threads to process
-    n = cpu_count()*2
+    n = cpu_count()
     for d in chunks(dirlist, n):
         t = Thread(target=calc_dir_size_thread, args=(d,))
         t.setDaemon = True
