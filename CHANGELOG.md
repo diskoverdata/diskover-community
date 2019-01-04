@@ -2,6 +2,7 @@
 
 ## [1.5.0-rc27] = 2019-01-04
 ### added
+- -m --mtime cli arg for diskover.py now allows for negative numbers to only index files modified in the last n days, example -m -30 would only index files that have been modified in last 30 days
 - - v1.0.21 tree walk client - changed lsthreaded to pls (parallel ls), ls tree walk methods require GNU ls, set path using -g, improved directory excludes, see -e)
 - support for running diskover.py in Windows10 (cifs mapped drives) and sending to bots running in linux or linux subsystem for windows (bots do not work in Windows)
 - --replacepath cli arg to diskover.py for replacing paths sent to bots (windows/linux path translation)

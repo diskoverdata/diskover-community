@@ -1247,7 +1247,7 @@ def parse_cli_args(indexname):
     parser.add_argument("-d", "--rootdir", metavar='ROOTDIR', default=".",
                         help="Directory to start crawling from (default: .)")
     parser.add_argument("-m", "--mtime", metavar='DAYS', default=0, type=int,
-                        help="Minimum days ago for modified time (default: 0)")
+                        help="Minimum (+num) / maximum (-num) days ago for modified time (default: 0)")
     parser.add_argument("-s", "--minsize", metavar='BYTES', default=1, type=int,
                         help="Minimum file size in Bytes (default: 1 Bytes)")
     parser.add_argument("-e", "--indexemptydirs", action="store_true",

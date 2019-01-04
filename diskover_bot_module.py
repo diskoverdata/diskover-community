@@ -625,9 +625,15 @@ def get_file_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
         # Convert time in days (mtime cli arg) to seconds
         time_sec = cliargs['mtime'] * 86400
         file_mtime_sec = time.time() - mtime
-        # Only process files modified at least x days ago
-        if file_mtime_sec < time_sec:
-            return None
+        
+        if time_sec < 0:
+            # Only process files modified less than x days ago
+            if file_mtime_sec > (time_sec * -1):
+                return None
+        else:
+            # Only process files modified at least x days ago
+            if file_mtime_sec < time_sec:
+                return None
 
         # convert times to utc for es
         mtime_utc = datetime.utcfromtimestamp(mtime).isoformat()
