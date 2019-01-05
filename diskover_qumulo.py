@@ -15,7 +15,7 @@ try:
     from qumulo.rest_client import RestClient
 except ImportError:
     raise ImportError("qumulo-api module not installed")
-from diskover import config, dir_excluded, plugins, adaptive_batch, redis_conn
+from diskover import config, dir_excluded, plugins, adaptive_batch, redis_conn, worker_bots_busy
 from diskover_bot_module import scrape_tree_meta, auto_tag, uids, owners, gids, groups, file_excluded
 from rq import SimpleWorker
 from threading import Thread, Lock
@@ -159,6 +159,7 @@ def qumulo_treewalk(path, ip, ses, q_crawl, num_sep, level, batchsize, cliargs, 
     batch = []
     dircount = 0
     totaldirs = 0
+    totalfiles = 0
     starttime = time.time()
 
     # queue for paths
@@ -186,21 +187,28 @@ def qumulo_treewalk(path, ip, ses, q_crawl, num_sep, level, batchsize, cliargs, 
     for root, dirs, files in qumulo_api_walk(path, ip, ses, q_paths, q_paths_results):
         dircount += 1
         totaldirs += 1
-        if len(dirs) == 0 and len(files) == 0 and not cliargs['indexemptydirs']:
+        files_len = len(files)
+        dirs_len = len(dirs)
+        totalfiles += files_len
+        if dirs_len == 0 and files_len == 0 and not cliargs['indexemptydirs']:
             continue
         if root['path'] != '/':
             root_path = root['path'].rstrip(os.path.sep)
         else:
             root_path = root['path']
         if not dir_excluded(root_path, config, cliargs):
-            batch.append((root, files))
+            batch.append((root, dirs, files))
             batch_len = len(batch)
-            if batch_len >= batchsize:
+            if batch_len >= batchsize or (cliargs['adaptivebatch'] and totalfiles >= config['adaptivebatch_maxfiles']):
                 q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,),
                                       result_ttl=config['redis_ttl'])
+                if cliargs['debug'] or cliargs['verbose']:
+                    logger.info("enqueued batchsize: %s (batchsize: %s)" % (batch_len, batchsize))
                 del batch[:]
                 if cliargs['adaptivebatch']:
                     batchsize = adaptive_batch(q_crawl, cliargs, batchsize)
+                    if cliargs['debug'] or cliargs['verbose']:
+                        logger.info("batchsize set to: %s" % batchsize)
 
             # check if at maxdepth level and delete dirs/files lists to not
             # descend further down the tree
@@ -224,9 +232,7 @@ def qumulo_treewalk(path, ip, ses, q_crawl, num_sep, level, batchsize, cliargs, 
                     bartimestamp = time.time()
                     dircount = 0
                 bar.update(len(q_crawl))
-            except ZeroDivisionError:
-                bar.update(0)
-            except ValueError:
+            except (ZeroDivisionError, ValueError):
                 bar.update(0)
 
     # add any remaining in batch to queue
@@ -241,25 +247,15 @@ def qumulo_treewalk(path, ip, ses, q_crawl, num_sep, level, batchsize, cliargs, 
     else:
         bar = None
 
-    # wait for queue to be empty and update progress bar
-    while True:
-        workers_busy = False
-        workers = SimpleWorker.all(connection=redis_conn)
-        for worker in workers:
-            if worker._state == "busy":
-                workers_busy = True
-                break
-        q_len = len(q_crawl)
+    # update progress bar until bots are idle and queue is empty
+    while worker_bots_busy([q_crawl]):
         if bar:
+            q_len = len(q_crawl)
             try:
                 bar.update(bar_max_val - q_len)
-            except ZeroDivisionError:
+            except (ZeroDivisionError, ValueError):
                 bar.update(0)
-            except ValueError:
-                bar.update(0)
-        if q_len == 0 and workers_busy == False:
-            break
-        time.sleep(.5)
+        time.sleep(1)
 
     if bar:
         bar.finish()

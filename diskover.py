@@ -1573,7 +1573,7 @@ def treewalk(top, num_sep, level, batchsize, cliargs, logger, reindex_dict):
             if cliargs['dirsonly']:
                 batch.append((root, dirs))
             else:
-                batch.append((root, files))
+                batch.append((root, dirs, files))
             batch_len = len(batch)
             if batch_len >= batchsize or (cliargs['adaptivebatch'] and totalfiles >= config['adaptivebatch_maxfiles']):
                 q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,),

@@ -926,7 +926,7 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
         path_count += 1
         starttime = time.time()
         if not cliargs['dirsonly']:
-            root, files = path
+            root, dirs, files = path
         else:
             root, dirs = path
             files = []
@@ -975,6 +975,7 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
                 for entry in scandir(root):
                     if entry.is_file(follow_symlinks=False) and not file_excluded(entry.name):
                         files.append(entry.name)
+            filecount = 0
             for file in files:
                 if qumulo:
                     fmeta = qumulo_get_file_meta(worker, file, cliargs, reindex_dict)
@@ -985,16 +986,15 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
                                          reindex_dict, statsembeded=False)
                 if fmeta:
                     tree_files.append(fmeta)
+                    filecount += 1
 
             # update crawl time=
             elapsed = time.time() - starttime
             dmeta['crawl_time'] = round(elapsed, 6)
             # check for empty dirs and dirsonly cli arg
-            if not cliargs['dirsonly']:
+            if cliargs['indexemptydirs']:
                 tree_dirs.append(dmeta)
-            elif cliargs['dirsonly'] and cliargs['indexemptydirs']:
-                tree_dirs.append(dmeta)
-            elif cliargs['dirsonly'] and not cliargs['indexemptydirs'] and (len(dirs) > 0 or len(files) > 0):
+            elif not cliargs['indexemptydirs'] and (len(dirs) > 0 or filecount > 0):
                 tree_dirs.append(dmeta)
             totalcrawltime += elapsed
 

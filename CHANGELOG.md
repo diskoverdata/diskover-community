@@ -17,6 +17,7 @@
 - bug with tree walk client and directory excludes using ls or pls tree walk methods, requires GNU ls
 - bug where dir calcs might start before bots are all finished doing very long crawl jobs and bot disapears from rq (patch from seanbales)
 - bug with tree walk client pls tree walk mode and not indexing files in rootdir
+- dirs which have no files/subdirs (from excludes) getting indexed
 
 ## [1.5.0-rc26] = 2018-12-29
 ### added
