@@ -504,7 +504,7 @@ if __name__ == "__main__":
 					nondirs.append(entry)
 			# enqueue rootdir items
 			root = ROOTDIR_LOCAL.replace(ROOTDIR_LOCAL, ROOTDIR_REMOTE)
-			q_ls.put(pickle.dumps([(root, dirs, nondirs)]))
+			q.put(pickle.dumps([(root, dirs, nondirs)]))
 			totaldirs += 1
 
 			while q_ls.qsize() > 0:
