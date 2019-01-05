@@ -500,7 +500,7 @@ if __name__ == "__main__":
 					dirs.append(entry)
 					# enqueue dir to ls worker thread queue
 					q_ls.put(fullpath)
-				elif os.path.isfile(entry):
+				elif os.path.isfile(fullpath):
 					nondirs.append(entry)
 			# enqueue rootdir items
 			root = ROOTDIR_LOCAL.replace(ROOTDIR_LOCAL, ROOTDIR_REMOTE)
