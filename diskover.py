@@ -1132,16 +1132,17 @@ def add_crawl_stats(es, index, path, crawltime, state):
 def dir_excluded(path, config, cliargs):
     """Return True if path in excluded_dirs set,
     False if not in the list"""
+    name = os.path.basename(path)
     # return if directory in included list (whitelist)
-    if os.path.basename(path) in config['included_dirs'] or path in config['included_dirs']:
+    if name in config['included_dirs'] or path in config['included_dirs']:
         return False
     # skip any dirs which start with . (dot) and in excluded_dirs
-    if os.path.basename(path).startswith('.') and u'.*' in config['excluded_dirs']:
+    if name.startswith('.') and u'.*' in config['excluded_dirs']:
         if cliargs['verbose']:
             logger.info('Skipping (.* dir) %s', path)
         return True
     # skip any dirs in excluded_dirs
-    if os.path.basename(path) in config['excluded_dirs'] or path in config['excluded_dirs']:
+    if name in config['excluded_dirs'] or path in config['excluded_dirs']:
         if cliargs['verbose']:
             logger.info('Skipping (excluded dir) %s', path)
         return True
@@ -1153,7 +1154,7 @@ def dir_excluded(path, config, cliargs):
             continue
         if d.startswith('*') and d.endswith('*'):
             d = d.replace('*', '')
-            if re.search(d, os.path.basename(path)):
+            if re.search(d, name):
                 found_dir = True
                 break
             elif re.search(d, path):
@@ -1161,7 +1162,7 @@ def dir_excluded(path, config, cliargs):
                 break
         elif d.startswith('*'):
             d = d + '$'
-            if re.search(d, os.path.basename(path)):
+            if re.search(d, name):
                 found_dir = True
                 break
             elif re.search(d, path):
@@ -1169,14 +1170,14 @@ def dir_excluded(path, config, cliargs):
                 break
         elif d.endswith('*'):
             d = '^' + d
-            if re.search(d, os.path.basename(path)):
+            if re.search(d, name):
                 found_dir = True
                 break
             elif re.search(d, path):
                 found_path = True
                 break
         else:
-            if d == os.path.basename(path):
+            if d == name:
                 found_dir = True
                 break
             elif d == path:

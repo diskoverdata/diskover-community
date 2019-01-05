@@ -232,56 +232,57 @@ def ls_worker():
 
 
 def dir_excluded(path):
-    """Return True if path in excluded_dirs list,
-    False if not in the list"""
-    # skip any dirs which start with . (dot) and in EXCLUDED_DIRS
-    if os.path.basename(path).startswith('.') and u'.*' in EXCLUDED_DIRS:
-        return True
-    # skip any dirs in EXCLUDED_DIRS
-    if os.path.basename(path) in EXCLUDED_DIRS or path in EXCLUDED_DIRS:
-        return True
-    # skip any dirs that are found in reg exp checks including wildcard searches
-    found_dir = False
-    found_path = False
-    for d in EXCLUDED_DIRS:
-        if d == '.*':
-            continue
-        if d.startswith('*') and d.endswith('*'):
-            d = d.replace('*', '')
-            if re.search(d, os.path.basename(path)):
-                found_dir = True
-                break
-            elif re.search(d, path):
-                found_path = True
-                break
-        elif d.startswith('*'):
-            d = d + '$'
-            if re.search(d, os.path.basename(path)):
-                found_dir = True
-                break
-            elif re.search(d, path):
-                found_path = True
-                break
-        elif d.endswith('*'):
-            d = '^' + d
-            if re.search(d, os.path.basename(path)):
-                found_dir = True
-                break
-            elif re.search(d, path):
-                found_path = True
-                break
-        else:
-            if d == os.path.basename(path):
-                found_dir = True
-                break
-            elif d == path:
-                found_path = True
-                break
+	"""Return True if path in excluded_dirs list,
+	False if not in the list"""
+	name = os.path.basename(path)
+	# skip any dirs which start with . (dot) and in EXCLUDED_DIRS
+	if name.startswith('.') and u'.*' in EXCLUDED_DIRS:
+		return True
+	# skip any dirs in EXCLUDED_DIRS
+	if name in EXCLUDED_DIRS or path in EXCLUDED_DIRS:
+		return True
+	# skip any dirs that are found in reg exp checks including wildcard searches
+	found_dir = False
+	found_path = False
+	for d in EXCLUDED_DIRS:
+		if d == '.*':
+			continue
+		if d.startswith('*') and d.endswith('*'):
+			d = d.replace('*', '')
+			if re.search(d, name):
+				found_dir = True
+				break
+			elif re.search(d, path):
+				found_path = True
+				break
+		elif d.startswith('*'):
+			d = d + '$'
+			if re.search(d, name):
+				found_dir = True
+				break
+			elif re.search(d, path):
+				found_path = True
+				break
+		elif d.endswith('*'):
+			d = '^' + d
+			if re.search(d, name):
+				found_dir = True
+				break
+			elif re.search(d, path):
+				found_path = True
+				break
+		else:
+			if d == name:
+				found_dir = True
+				break
+			elif d == path:
+				found_path = True
+				break
 
-    if found_dir or found_path:
-        return True
+	if found_dir or found_path:
+		return True
 
-    return False
+	return False
 
 
 if __name__ == "__main__":
@@ -502,7 +503,9 @@ if __name__ == "__main__":
 				elif os.path.isfile(entry):
 					nondirs.append(entry)
 			# enqueue rootdir items
-			q.put(pickle.dumps([(ROOTDIR_LOCAL, dirs, nondirs)]))
+			root = ROOTDIR_LOCAL.replace(ROOTDIR_LOCAL, ROOTDIR_REMOTE)
+			q_ls.put(pickle.dumps([(root, dirs, nondirs)]))
+			totaldirs += 1
 
 			while q_ls.qsize() > 0:
 				if time.time() - timestamp >= 2:
