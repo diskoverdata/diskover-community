@@ -12,6 +12,7 @@
 - improved detection if bots are still busy doing jobs (patch from seanbales)
 - removed redis socket timeout options from diskover.cfg.sample - causing issues with rq bots dissapearing 
 - removed -n --noreconnect cli arg for worker bot
+- improved performance of --dirsonly cli arg
 ### fixed
 - bug with tree walk client and directory excludes using ls or pls tree walk methods, requires GNU ls
 - bug where dir calcs might start before bots are all finished doing very long crawl jobs and bot disapears from rq (patch from seanbales)

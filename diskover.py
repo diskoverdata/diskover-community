@@ -1136,15 +1136,15 @@ def dir_excluded(path, config, cliargs):
     # return if directory in included list (whitelist)
     if name in config['included_dirs'] or path in config['included_dirs']:
         return False
-    # skip any dirs which start with . (dot) and in excluded_dirs
-    if name.startswith('.') and u'.*' in config['excluded_dirs']:
-        if cliargs['verbose']:
-            logger.info('Skipping (.* dir) %s', path)
-        return True
     # skip any dirs in excluded_dirs
     if name in config['excluded_dirs'] or path in config['excluded_dirs']:
         if cliargs['verbose']:
             logger.info('Skipping (excluded dir) %s', path)
+        return True
+    # skip any dirs which start with . (dot) and in excluded_dirs
+    if name.startswith('.') and u'.*' in config['excluded_dirs']:
+        if cliargs['verbose']:
+            logger.info('Skipping (.* dir) %s', path)
         return True
     # skip any dirs that are found in reg exp checks including wildcard searches
     found_dir = False
@@ -1491,8 +1491,9 @@ def scandirwalk_worker():
             for entry in scandir(path):
                 if entry.is_dir(follow_symlinks=False):
                     dirs.append(entry.name)
-                elif entry.is_file(follow_symlinks=False):
-                    nondirs.append(entry.name)
+                if not cliargs['dirsonly']:
+                    if entry.is_file(follow_symlinks=False):
+                        nondirs.append(entry.name)
             q_paths_results.put((path, dirs[:], nondirs[:]))
         except (OSError, IOError) as e:
             logger.warning("OS/IO Exception caused by: %s" % e)
@@ -1562,14 +1563,15 @@ def treewalk(top, num_sep, level, batchsize, cliargs, logger, reindex_dict):
         dirs_len = len(dirs)
         totalfiles += files_len
         # check for empty dirs
-        if dirs_len == 0 and files_len == 0 and not cliargs['indexemptydirs']:
-            continue
+        if not cliargs['indexemptydirs'] and not cliargs['dirsonly']:
+            if dirs_len == 0 and files_len == 0:
+                continue
         # replace path if cliarg
         if cliargs['replacepath']:
             root = replace_path(root)
         if not dir_excluded(root, config, cliargs):
             if cliargs['dirsonly']:
-                batch.append(root)
+                batch.append((root, dirs))
             else:
                 batch.append((root, files))
             batch_len = len(batch)

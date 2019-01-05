@@ -597,9 +597,9 @@ def get_file_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
         filename = os.path.basename(fullpath)
 
         # check if file is in exluded_files list
-        extension = os.path.splitext(filename)[1][1:].strip().lower()
-        if file_excluded(filename, extension):
+        if file_excluded(filename):
             return None
+        extension = os.path.splitext(filename)[1][1:].strip().lower()
 
         if statsembeded:
             # get embeded stats from path
@@ -928,7 +928,7 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
         if not cliargs['dirsonly']:
             root, files = path
         else:
-            root = path
+            root, dirs = path
             files = []
         if path_count == 1:
             if type(root) is tuple:
@@ -973,7 +973,7 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
             # no files in batch, get them with scandir
             if cliargs['dirsonly']:
                 for entry in scandir(root):
-                    if entry.is_file(follow_symlinks=False):
+                    if entry.is_file(follow_symlinks=False) and not file_excluded(entry.name):
                         files.append(entry.name)
             for file in files:
                 if qumulo:
@@ -986,10 +986,16 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
                 if fmeta:
                     tree_files.append(fmeta)
 
-            # update crawl time
+            # update crawl time=
             elapsed = time.time() - starttime
             dmeta['crawl_time'] = round(elapsed, 6)
-            tree_dirs.append(dmeta)
+            # check for empty dirs and dirsonly cli arg
+            if not cliargs['dirsonly']:
+                tree_dirs.append(dmeta)
+            elif cliargs['dirsonly'] and cliargs['indexemptydirs']:
+                tree_dirs.append(dmeta)
+            elif cliargs['dirsonly'] and not cliargs['indexemptydirs'] and (len(dirs) > 0 or len(files) > 0):
+                tree_dirs.append(dmeta)
             totalcrawltime += elapsed
 
         # check if doc count is more than es chunksize and bulk add to es
@@ -1004,19 +1010,20 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
         es_bulk_add(worker, tree_dirs, tree_files, cliargs, totalcrawltime)
 
 
-def file_excluded(filename, extension):
+def file_excluded(filename):
     """Return True if path or ext in excluded_files set,
     False if not in the set"""
     # return if filename in included list (whitelist)
     if filename in config['included_files']:
         return False
+    # check for filename in excluded_files set
+    if filename in config['excluded_files']:
+        return True
     # check for extension in and . (dot) files in excluded_files
+    extension = os.path.splitext(filename)[1][1:].strip().lower()
     if (not extension and 'NULLEXT' in config['excluded_files']) or \
                             '*.' + extension in config['excluded_files'] or \
             (filename.startswith('.') and u'.*' in config['excluded_files']):
-        return True
-    # check for filename in excluded_files set
-    if filename in config['excluded_files']:
         return True
     return False
 
