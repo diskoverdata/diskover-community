@@ -156,7 +156,7 @@ $ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl --dircalcson
 ```
 
 ## TCP socket client for running tree walk directly on remote storage
-diskover has a tcp socket client that can tree walk locally on storage and send data to diskover socket server which acts as a proxy for enqueuing to redis rq. [Read more](https://github.com/shirosaidev/diskover/wiki/Tree-walk-tcp-socket-client) about this on the wiki.
+diskover has a tcp socket client that can tree walk locally on storage and send data to diskover socket server which acts as a proxy for enqueuing to redis rq. [Read more](https://github.com/shirosaidev/diskover-treewalk-client/).
 
 ## OVA image file (for vmware, etc)
 
