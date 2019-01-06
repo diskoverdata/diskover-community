@@ -64,6 +64,15 @@ def get_worker_name():
     return '{0}.{1}'.format(socket.gethostname().partition('.')[0], os.getpid())
 
 
+def split_list(a, n):
+        """Generator that splits list a evenly into n pieces
+        """
+        if IS_PY3:
+            xrange = range
+        k, m = divmod(len(a), n)
+        return (a[i * k + min(i, m):(i + 1) * k + min(i + 1, m)] for i in xrange(n))
+        
+
 def auto_tag(metadict, type, mtime, atime, ctime):
     """This is the auto tag function.
     It checks diskover config for any auto tag patterns
@@ -717,15 +726,6 @@ def calc_dir_size(dirlist, cliargs):
     for each dir, then pdates dir doc's filesize and items fields.
     """
 
-    def chunks(l, n):
-        """Splits a list l into n pieces
-        """
-        n = max(1, n)
-        if IS_PY3:
-            xrange = range
-        return (l[i:i+n] for i in xrange(0, len(l), n))
-
-
     def calc_dir_size_thread(dirlist):
         """Thread worker to help speed up calculating
         directory items/sizes
@@ -843,11 +843,14 @@ def calc_dir_size(dirlist, cliargs):
 
         index_bulk_add(es, doclist, config, cliargs)
 
-
-    # split dirlist into n size chunks and start up threads to process
-    n = cpu_count()
-    for d in chunks(dirlist, n):
-        t = Thread(target=calc_dir_size_thread, args=(d,))
+    # split dirlist into even pieces for threads to process
+    n = 4
+    dirlist_pieces = []
+    for d in split_list(dirlist, n):
+        dirlist_pieces.append(d)
+    # start up threads for processing dirlists
+    for i in range(n):
+        t = Thread(target=calc_dir_size_thread, args=(dirlist_pieces[i],))
         t.setDaemon = True
         t.start()
 
