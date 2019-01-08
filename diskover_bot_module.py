@@ -494,12 +494,10 @@ def get_dir_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
             dirpath = path[0]
             # get directory meta embeded in path
             mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime = metadata
-            ino = str(ino)
         else:
             dirpath = path
             # get directory meta using lstat
             mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime = os.lstat(dirpath)
-            ino = str(ino)
 
         # convert times to utc for es
         mtime_utc = datetime.utcfromtimestamp(mtime).isoformat()
@@ -536,7 +534,7 @@ def get_dir_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
             "last_access": atime_utc,
             "last_change": ctime_utc,
             "hardlinks": nlink,
-            "inode": ino,
+            "inode": str(ino),
             "owner": owner,
             "group": group,
             "tag": "",
@@ -613,12 +611,10 @@ def get_file_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
         if statsembeded:
             # get embeded stats from path
             mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime, blocks = metadata
-            ino = str(ino)
         else:
             # use lstat to get meta and not follow sym links
             s = os.lstat(fullpath)
             mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime = s
-            ino = str(ino)
             blocks = s.st_blocks
         
         # Are we storing file size or on disk size
@@ -672,7 +668,7 @@ def get_file_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
             "last_access": atime_utc,
             "last_change": ctime_utc,
             "hardlinks": nlink,
-            "inode": ino,
+            "inode": str(ino),
             "filehash": filehash,
             "tag": "",
             "tag_custom": "",

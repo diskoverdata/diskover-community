@@ -612,7 +612,7 @@ def index_create(indexname):
                             "type": "integer"
                         },
                         "inode": {
-                            "type": "double"
+                            "type": "keyword"
                         },
                         "tag": {
                             "type": "keyword"
@@ -680,7 +680,7 @@ def index_create(indexname):
                             "type": "integer"
                         },
                         "inode": {
-                            "type": "double"
+                            "type": "keyword"
                         },
                         "filehash": {
                             "type": "keyword"
