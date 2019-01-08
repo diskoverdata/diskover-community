@@ -612,7 +612,7 @@ def index_create(indexname):
                             "type": "integer"
                         },
                         "inode": {
-                            "type": "float"
+                            "type": "double"
                         },
                         "tag": {
                             "type": "keyword"
@@ -680,7 +680,7 @@ def index_create(indexname):
                             "type": "integer"
                         },
                         "inode": {
-                            "type": "float"
+                            "type": "double"
                         },
                         "filehash": {
                             "type": "keyword"
@@ -1697,7 +1697,7 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
         # qumulo api crawl
         if cliargs['qumulo']:
             from diskover_qumulo import qumulo_treewalk
-            qumulo_treewalk(path, qumulo_ip, qumulo_ses, q_crawl, num_sep, level, batchsize, cliargs, logger, reindex_dict)
+            qumulo_treewalk(path, q_crawl, num_sep, level, batchsize, cliargs, logger, reindex_dict)
         # regular crawl using scandir
         else:
             treewalk(path, num_sep, level, batchsize, cliargs, logger, reindex_dict)
