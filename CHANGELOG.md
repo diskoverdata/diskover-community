@@ -1,6 +1,6 @@
 # Diskover Change Log
 
-## [1.5.0-rc27] = 2019-01-06
+## [1.5.0-rc27] = 2019-01-08
 ### added
 - -m --mtime cli arg for diskover.py now allows for negative numbers to only index files modified in the last n days, example -m -30 would only index files that have been modified in last 30 days
 - - v1.0.21 tree walk client - changed lsthreaded to pls (parallel ls), ls tree walk methods require GNU ls, set path using -g, improved directory excludes, see -e)
@@ -8,12 +8,13 @@
 - --replacepath cli arg to diskover.py for replacing paths sent to bots (windows/linux path translation)
 - warning message output for bots for any exceptions getting meta data for files/directories
 - multithreading to bot dir size calcs to help speed up dir size calc times
+- --twcport for changing port for tree walk client socket server from one set in config
 ### changed
 - improved detection if bots are still busy doing jobs (patch from seanbales)
 - removed redis socket timeout options from diskover.cfg.sample - causing issues with rq bots dissapearing 
 - removed -n --noreconnect cli arg for worker bot
 - improved performance of --dirsonly cli arg
-- changed inode mapping data type to double, prev was float to account for very large inode numbers
+- changed inode mapping data type to keyword, prev was float to account for very large inode numbers
 ### fixed
 - bug with tree walk client and directory excludes using ls or pls tree walk methods, requires GNU ls
 - bug where dir calcs might start before bots are all finished doing very long crawl jobs and bot disapears from rq (patch from seanbales)

@@ -1124,7 +1124,7 @@ def calc_hot_dirs(dirlist, cliargs):
         }
 
         # search ES
-        res = es.search(index=cliargs['hotdirs'][0], doc_type='directory', body=data,
+        res = es.search(index=cliargs['hotdirs'], doc_type='directory', body=data,
                         request_timeout=config['es_timeout'])
 
         # calculate change percent

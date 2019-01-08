@@ -1283,15 +1283,17 @@ def parse_cli_args(indexname):
                         help="Reindex directory and all subdirs (recursive), data is added to existing index")
     parser.add_argument("-D", "--finddupes", action="store_true",
                         help="Find duplicate files in existing index and update their dupe_md5 field")
-    parser.add_argument("-C", "--copytags", metavar='INDEX2', nargs=1,
+    parser.add_argument("-C", "--copytags", metavar='INDEX2',
                         help="Copy tags from index2 to index")
-    parser.add_argument("-H", "--hotdirs", metavar='INDEX2', nargs=1,
+    parser.add_argument("-H", "--hotdirs", metavar='INDEX2',
                         help="Find hot dirs by calculating change percents from index2 (prev index) and update \
                                 change_percent fields in index")
     parser.add_argument("-l", "--listen", action="store_true",
                         help="Start tcp socket server and listen for remote commands")
     parser.add_argument("-L", "--listentwc", action="store_true",
                         help="Start tcp socket server and listen for messages from diskover treewalk client")
+    parser.add_argument("--twcport", type=int, metavar='PORT',
+                        help="Port number for tree walk client socket server (default: from config)")
     parser.add_argument("--dirsonly", action="store_true",
                         help="Don't include files in batch sent to bots, only send dirs, bots scan for files")
     parser.add_argument("--replacepath", nargs=2, metavar="PATH",
@@ -1561,11 +1563,11 @@ def treewalk(top, num_sep, level, batchsize, cliargs, logger, reindex_dict):
         totaldirs += 1
         files_len = len(files)
         dirs_len = len(dirs)
-        totalfiles += files_len
         # check for empty dirs
         if not cliargs['indexemptydirs'] and not cliargs['dirsonly']:
             if dirs_len == 0 and files_len == 0:
                 continue
+        totalfiles += files_len
         # replace path if cliarg
         if cliargs['replacepath']:
             root = replace_path(root)
@@ -1613,7 +1615,8 @@ def treewalk(top, num_sep, level, batchsize, cliargs, logger, reindex_dict):
                 bar.update(0)
 
     # add any remaining in batch to queue
-    q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,), result_ttl=config['redis_ttl'])
+    if len(batch) > 0:
+        q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,), result_ttl=config['redis_ttl'])
 
     # set up progress bar with time remaining
     if bar:
@@ -1715,7 +1718,7 @@ def hotdirs():
     """
     logger.info('Getting diskover bots to calculate change percent '
                 'for directories from %s to %s',
-                         cliargs['hotdirs'][0], cliargs['index'])
+                         cliargs['hotdirs'], cliargs['index'])
     # look in index for all directory docs and add to queue
     dirlist = index_get_docs(cliargs, logger, doctype='directory', hotdirs=True, index=cliargs['index'])
     dirbatch = []
@@ -2010,13 +2013,13 @@ if __name__ == "__main__":
     if cliargs['copytags']:
         from diskover_bot_module import tag_copier
         wait_for_worker_bots(logger)
-        logger.info('Copying tags from %s to %s', cliargs['copytags'][0], cliargs['index'])
+        logger.info('Copying tags from %s to %s', cliargs['copytags'], cliargs['index'])
         # look in index2 for all directory docs with tags and add to queue
-        dirlist = index_get_docs(cliargs, logger, doctype='directory', copytags=True, index=cliargs['copytags'][0])
+        dirlist = index_get_docs(cliargs, logger, doctype='directory', copytags=True, index=cliargs['copytags'])
         for path in dirlist:
             q.enqueue(tag_copier, args=(path, cliargs,), result_ttl=config['redis_ttl'])
         # look in index2 for all file docs with tags and add to queue
-        filelist = index_get_docs(cliargs, logger, doctype='file', copytags=True, index=cliargs['copytags'][0])
+        filelist = index_get_docs(cliargs, logger, doctype='file', copytags=True, index=cliargs['copytags'])
         for path in filelist:
             q.enqueue(tag_copier, args=(path, cliargs,), result_ttl=config['redis_ttl'])
         if len(dirlist) == 0 and len(filelist) == 0:

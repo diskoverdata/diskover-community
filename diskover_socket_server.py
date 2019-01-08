@@ -126,44 +126,50 @@ def socket_thread_handler_twc(threadnum, q, q_kill, lock, rootdir, num_sep, leve
     """
 
     while True:
-
         try:
-
             c = q.get()
             clientsock, addr = c
             logger.debug(clientsock)
             logger.debug(addr)
 
+            totalfiles = 0
             while True:
                 data = recv_one_message(clientsock)
-                #logger.debug(data)
-
                 if not data:
                     break
-
                 if data == b'SIGKILL' or data == 'SIGKILL':
                     q_kill.put(b'SIGKILL')
                     break
 
+                # unpickle data sent from client
                 data_decoded = pickle.loads(data)
                 logger.debug(data_decoded)
 
                 # enqueue to redis
                 batch = []
                 for root, dirs, files in data_decoded:
+                    files_len = len(files)
+                    totalfiles += files_len
+                    # check for empty dirs
                     if len(dirs) == 0 and len(files) == 0 and not cliargs['indexemptydirs']:
                         continue
-                    batch.append((root, files))
+                    batch.append((root, dirs, files))
                     batch_len = len(batch)
-                    if batch_len >= batchsize:
-                        q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,))
+                    if batch_len >= batchsize or (cliargs['adaptivebatch'] and totalfiles >= config['adaptivebatch_maxfiles']):
+                        q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,), 
+                                            result_ttl=config['redis_ttl'])
+                        if cliargs['debug'] or cliargs['verbose']:
+                            logger.info("enqueued batchsize: %s (batchsize: %s)" % (batch_len, batchsize))
                         del batch[:]
+                        totalfiles = 0
                         if cliargs['adaptivebatch']:
                             batchsize = adaptive_batch(q_crawl, cliargs, batchsize)
+                            if cliargs['debug'] or cliargs['verbose']:
+                                logger.info("batchsize set to: %s" % batchsize)
 
                 if len(batch) > 0:
                     # add any remaining in batch to queue
-                    q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,))
+                    q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,), result_ttl=config['redis_ttl'])
                     del batch[:]
 
             # close connection to client
@@ -214,7 +220,7 @@ def start_socket_server(cliargs, logger):
             logger.debug(addr)
             logger.info("Got a connection from %s" % str(addr))
             # add client to list
-            client = [clientsock, addr]
+            client = (clientsock, addr)
             clientlist.append(client)
             # add task to Queue
             q.put(client)
@@ -232,8 +238,9 @@ def start_socket_server(cliargs, logger):
 
 
 def start_socket_server_twc(rootdir_path, num_sep, level, batchsize, cliargs, logger, reindex_dict):
-    """This is the start socket server function.
-    It opens a socket and waits for remote commands.
+    """This is the start socket server tree walk function.
+    It opens a socket and waits for diskover tree walk client 
+    connections.
     """
     global clientlist
 
@@ -250,7 +257,10 @@ def start_socket_server_twc(rootdir_path, num_sep, level, batchsize, cliargs, lo
         serversock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         serversock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         host = config['listener_host']  # default is localhost
-        port = config['listener_twcport']  # default is 9998
+        if cliargs['twcport']:
+            port = cliargs['twcport']
+        else:
+            port = config['listener_twcport']  # default is 9998
         # bind to port
         serversock.bind((host, port))
 
@@ -259,12 +269,14 @@ def start_socket_server_twc(rootdir_path, num_sep, level, batchsize, cliargs, lo
 
         # set up the threads and start them
         for i in range(max_connections):
-            # create thread
-            t = threading.Thread(target=socket_thread_handler_twc, args=(i, q, q_kill, lock, rootdir_path, num_sep,
-                                                                     level, batchsize, cliargs, logger, reindex_dict,))
+            t = threading.Thread(
+                target=socket_thread_handler_twc,
+                args=(i, q, q_kill, lock, rootdir_path, num_sep, 
+                        level, batchsize, cliargs, logger, reindex_dict,))
             t.daemon = True
             t.start()
 
+        starttime = time.time()
         while True:
             if q_kill.qsize() > 0:
                 logger.info("Received signal to shutdown socket server")
@@ -279,14 +291,13 @@ def start_socket_server_twc(rootdir_path, num_sep, level, batchsize, cliargs, lo
             logger.debug(addr)
             logger.info("Got a connection from %s" % str(addr))
             # add client to list
-            client = [clientsock, addr]
+            client = (clientsock, addr)
             clientlist.append(client)
             # set start time to first connection
             if len(clientlist) == 1:
                 starttime = time.time()
-            # add task to Queue
+            # put client into Queue
             q.put(client)
-
 
     except socket.error as e:
         serversock.close()
