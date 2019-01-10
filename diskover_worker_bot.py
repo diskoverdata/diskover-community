@@ -16,13 +16,8 @@ from rq import SimpleWorker, Connection
 from redis import exceptions
 from datetime import datetime
 
-import diskover_connections
-
-# create Reddis connection
-diskover_connections.connect_to_redis()
-from diskover_connections import redis_conn
-
 import diskover_bot_module
+from diskover_bot_module import redis_conn
 
 
 if __name__ == "__main__":
@@ -42,7 +37,7 @@ if __name__ == "__main__":
     \033[0m""" % (version))
 
     with Connection(redis_conn):
-        w = SimpleWorker(listen, default_worker_ttl=config['redis_worker_ttl'])
+        w = SimpleWorker(listen)
         if cliargs_bot['burst']:
             w.work(burst=True, logging_level=cliargs_bot['loglevel'])
         else:

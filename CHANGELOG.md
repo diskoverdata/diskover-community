@@ -1,5 +1,14 @@
 # Diskover Change Log
 
+## [1.5.0-rc28] = 2019-01-10
+### added
+- multiple es hosts can now be set in diskover.cfg elasticsearch section, see diskover.cfg.sample
+- improved worker bot stability
+- unix socket setting to redis section in diskover.cfg.sample, copy to your config and set if using redis unix socket, see diskover github wiki for more information about redis optimization for diskover
+### changed
+- switch to using redis connections pools
+- removed redis worker ttl, remove from your diskover.cfg redis section
+
 ## [1.5.0-rc27] = 2019-01-08
 ### added
 - -m --mtime cli arg for diskover.py now allows for negative numbers to only index files modified in the last n days, example -m -30 would only index files that have been modified in last 30 days

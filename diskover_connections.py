@@ -20,7 +20,8 @@ except ImportError:
             Urllib3HttpConnection, exceptions
     except ImportError:
         raise ImportError('elasticsearch module not installed')
-from redis import Redis
+from redis import Redis, ConnectionPool
+from redis.connection import UnixDomainSocketConnection
 
 
 es_conn = None
@@ -34,7 +35,8 @@ def connect_to_elasticsearch():
     # Check if we are using AWS es
     if config['aws'] == "true":
         es_conn = Elasticsearch(
-            hosts=[{'host': config['es_host'], 'port': config['es_port']}],
+            hosts=config['es_host'],
+            port=config['es_port'],
             use_ssl=True, verify_certs=True,
             connection_class=RequestsHttpConnection,
             timeout=config['es_timeout'], maxsize=config['es_maxsize'],
@@ -42,7 +44,8 @@ def connect_to_elasticsearch():
     # Local connection to es
     else:
         es_conn = Elasticsearch(
-            hosts=[{'host': config['es_host'], 'port': config['es_port']}],
+            hosts=config['es_host'],
+            port=config['es_port'],
             http_auth=(config['es_user'], config['es_password']),
             connection_class=Urllib3HttpConnection,
             timeout=config['es_timeout'], maxsize=config['es_maxsize'],
@@ -52,6 +55,16 @@ def connect_to_elasticsearch():
 def connect_to_redis():
     from diskover import config
     global redis_conn
-    redis_conn = Redis(host=config['redis_host'], port=config['redis_port'],
-                       password=config['redis_password'], db=config['redis_db'],
-                       retry_on_timeout=True, socket_keepalive=True)
+
+    # use connection pools
+    # use socket
+    if config['redis_socket']:
+        pool = ConnectionPool(connection_class=UnixDomainSocketConnection, path=config['redis_socket'],
+                        password=config['redis_password'], db=config['redis_db'])
+        redis_conn = Redis(connection_pool=pool)
+
+    # use host/port
+    else:
+        pool = ConnectionPool(host=config['redis_host'], port=config['redis_port'],
+                        password=config['redis_password'], db=config['redis_db'])
+        redis_conn = Redis(connection_pool=pool)

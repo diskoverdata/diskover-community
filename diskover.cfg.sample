@@ -48,6 +48,7 @@ base = 2
 ;host = search-diskover-es-cluster-eg3yztrvzb6qucroyyjk2vokza.ap-northeast-1.es.amazonaws.com
 ;port = 443
 ; below two lines are for local ES, comment out if you are using AWS ES
+; set multiple hosts using comma such as eshost1,eshost2
 host = localhost
 port = 9200
 ; uncomment the below two lines if you installed X-Pack, for http-auth
@@ -82,6 +83,8 @@ scrollsize = 1000
 [redis]
 host = 127.0.0.1
 port = 6379
+; set to socket path to use unix socket instead of host/port, comment out to not use (default)
+;socket = /tmp/redis.sock
 ;password =
 ; cache directory times in Redis
 ; used for -I index2 when comparing directory times to get metadata from index2 instead of off disk

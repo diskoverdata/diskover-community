@@ -38,7 +38,7 @@ import sys
 import json
 
 
-version = '1.5.0-rc27'
+version = '1.5.0-rc28'
 __version__ = version
 
 IS_PY3 = sys.version_info >= (3, 0)
@@ -236,9 +236,11 @@ def load_config():
         except ConfigParser.NoOptionError:
             configsettings['aws'] = "false"
         try:
-            configsettings['es_host'] = config.get('elasticsearch', 'host')
+            h = config.get('elasticsearch', 'host')
+            hosts = h.split(',')
+            configsettings['es_host'] = hosts
         except ConfigParser.NoOptionError:
-            configsettings['es_host'] = "localhost"
+            configsettings['es_host'] = ['localhost']
         try:
             configsettings['es_port'] = int(config.get('elasticsearch', 'port'))
         except ConfigParser.NoOptionError:
@@ -308,6 +310,10 @@ def load_config():
         except ConfigParser.NoOptionError:
             configsettings['redis_port'] = 6379
         try:
+            configsettings['redis_socket'] = config.get('redis', 'socket')
+        except ConfigParser.NoOptionError:
+            configsettings['redis_socket'] = ""
+        try:
             configsettings['redis_password'] = config.get('redis', 'password')
         except ConfigParser.NoOptionError:
             configsettings['redis_password'] = ""
@@ -343,10 +349,6 @@ def load_config():
             configsettings['redis_queue_calcdir'] = config.get('redis', 'queuecalcdir')
         except ConfigParser.NoOptionError:
             configsettings['redis_queue_calcdir'] = "diskover_calcdir"
-        try:
-            configsettings['redis_worker_ttl'] = int(config.get('redis', 'workerttl'))
-        except ConfigParser.NoOptionError:
-            configsettings['redis_worker_ttl'] = 420
         try:
             configsettings['adaptivebatch_startsize'] = int(config.get('adaptivebatch', 'startsize'))
         except ConfigParser.NoOptionError:
