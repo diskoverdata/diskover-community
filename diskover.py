@@ -891,10 +891,8 @@ def index_get_docs(cliargs, logger, doctype='directory', copytags=False, hotdirs
     if pathid is True, will return dict with path and their id.
     """
 
-    if index is None:
-        index = cliargs['index']
-
-    data = _index_get_docs_data(index, copytags, hotdirs, doctype, path, maxdepth, sort, logger)
+    data = _index_get_docs_data(index, cliargs, logger, doctype=doctype, path=path, 
+                                maxdepth=maxdepth, sort=sort)
 
     # refresh index
     es.indices.refresh(index)
@@ -936,66 +934,8 @@ def index_get_docs(cliargs, logger, doctype='directory', copytags=False, hotdirs
         return doclist
 
 
-def index_get_docs_generator(cliargs, logger, doctype='directory', copytags=False, hotdirs=False,
-                   index=None, path=None, sort=False, maxdepth=None):
-    """This is the es get docs generator function.
-    It does the same thing as index_get_docs function, but is a generator
-    and yields as it scroll es index.
-    """
-
-    if index is None:
-        index = cliargs['index']
-
-    data = _index_get_docs_data(index, copytags, hotdirs, doctype, path, maxdepth, sort, logger)
-
-    # refresh index
-    es.indices.refresh(index)
-
-    # search es and start scroll
-    res = es.search(index=index, doc_type=doctype, scroll='1m',
-                    size=config['es_scrollsize'], body=data, request_timeout=config['es_timeout'])
-
-    doclist = []
-    doccount = 0
-    while res['hits']['hits'] and len(res['hits']['hits']) > 0:
-        for hit in res['hits']['hits']:
-            fullpath = hit['_source']['path_parent'] + "/" + hit['_source']['filename']
-            if copytags:
-                doclist.append((fullpath, hit['_source']['tag'], hit['_source']['tag_custom'], doctype))
-            elif hotdirs:
-                doclist.append((hit['_id'], fullpath, hit['_source']['filesize'], hit['_source']['items'],
-                                hit['_source']['items_files'], hit['_source']['items_subdirs']))
-            else:
-                # convert es time to unix time format
-                mtime = time.mktime(datetime.strptime(hit['_source']['last_modified'],
-                    '%Y-%m-%dT%H:%M:%S').timetuple())
-                atime = time.mktime(datetime.strptime(hit['_source']['last_access'],
-                    '%Y-%m-%dT%H:%M:%S').timetuple())
-                ctime = time.mktime(datetime.strptime(hit['_source']['last_change'],
-                    '%Y-%m-%dT%H:%M:%S').timetuple())
-                doclist.append((hit['_id'], fullpath, mtime, atime, ctime, doctype))
-            doccount += 1
-        # yield results before loop
-        yield doclist
-        del doclist[:]
-        # use es scroll api
-        while True:
-            try:
-                res = es.scroll(scroll_id=res['_scroll_id'], scroll='1m',
-                                request_timeout=config['es_timeout'])
-                break
-            except exceptions.TransportError:
-                logger.warning("ES transport exception, backing off and trying again...")
-                time.sleep(1)
-                continue
-
-    logger.info('Found %s %s docs' % (str(doccount), doctype))
-
-    yield doclist
-
-
-def _index_get_docs_data(index, copytags, hotdirs, doctype, path, maxdepth, sort, logger):
-    if copytags:
+def _index_get_docs_data(index, cliargs, logger, doctype='directory', path=None, maxdepth=None, sort=False):
+    if cliargs['copytags']:
         logger.info('Searching for all %s docs with tags in %s...', doctype, index)
         data = {
             '_source': ['path_parent', 'filename', 'tag', 'tag_custom'],
@@ -1005,7 +945,7 @@ def _index_get_docs_data(index, copytags, hotdirs, doctype, path, maxdepth, sort
                 }
             }
         }
-    elif hotdirs:
+    elif cliargs['hotdirs']:
         logger.info('Searching for all %s docs in %s...', doctype, index)
         data = {
             '_source': ['path_parent', 'filename', 'filesize', 'items', 'items_files', 'items_subdirs'],
@@ -1015,7 +955,7 @@ def _index_get_docs_data(index, copytags, hotdirs, doctype, path, maxdepth, sort
         }
     else:
         if not path:
-            if maxdepth is None:
+            if not maxdepth:
                 logger.info('Searching for all %s docs in %s...', doctype, index)
                 data = {
                     '_source': ['path_parent', 'filename', 'last_modified', 'last_access', 'last_change'],
@@ -1072,6 +1012,15 @@ def replace_path(path):
     # change any windows path separators (for bots running in linux)
     path = path.replace('\\', '/')
     return path
+
+
+def split_list(a, n):
+        """Generator that splits list a evenly into n pieces
+        """
+        if IS_PY3:
+            xrange = range
+        k, m = divmod(len(a), n)
+        return (a[i * k + min(i, m):(i + 1) * k + min(i + 1, m)] for i in xrange(n))
 
 
 def add_diskspace(index, logger, path):
@@ -1411,9 +1360,10 @@ def adaptive_batch(q, cliargs, batchsize):
 
 def calc_dir_sizes(cliargs, logger, path=None):
     from diskover_bot_module import calc_dir_size
-    # maximum tree depth to calculate
-    maxdepth = cliargs['maxdcdepth']
     jobcount = 0
+    # max depth to calc dir sizes
+    maxdepth = cliargs['maxdcdepth']
+    index = cliargs['index']
 
     try:
         # wait for worker bots to be idle and all queues are empty
@@ -1437,27 +1387,48 @@ def calc_dir_sizes(cliargs, logger, path=None):
         else:
             bar = None
 
-        if path:
-            for dirlist in index_get_docs_generator(cliargs, logger, path=path):
-                q_calc.enqueue(calc_dir_size, args=(dirlist, cliargs,), result_ttl=config['redis_ttl'])
-                jobcount += 1
-                # update progress bar
-                if bar:
-                    try:
-                        bar.update(len(q_calc))
-                    except (ZeroDivisionError, ValueError):
-                        bar.update(0)
-        else:
-            for dirlist in index_get_docs_generator(cliargs, logger, sort=True, maxdepth=maxdepth):
-                q_calc.enqueue(calc_dir_size, args=(dirlist, cliargs,), result_ttl=config['redis_ttl'])
-                jobcount += 1
-                # update progress bar
-                if bar:
-                    try:
-                        bar.update(len(q_calc))
-                    except (ZeroDivisionError, ValueError):
-                        bar.update(0)
+        data = _index_get_docs_data(index, cliargs, logger, path=path, maxdepth=maxdepth)
 
+        # refresh index
+        es.indices.refresh(index)
+
+        starttime = time.time()
+        # search es and start scroll
+        res = es.search(index=index, doc_type='directory', scroll='1m',
+                        size=config['es_scrollsize'], body=data, request_timeout=config['es_timeout'])
+
+        dirlist = []
+        dircount = 0
+        while res['hits']['hits'] and len(res['hits']['hits']) > 0:
+            for hit in res['hits']['hits']:
+                fullpath = hit['_source']['path_parent'] + "/" + hit['_source']['filename']
+                # convert es time to unix time format
+                mtime = time.mktime(datetime.strptime(hit['_source']['last_modified'],
+                    '%Y-%m-%dT%H:%M:%S').timetuple())
+                atime = time.mktime(datetime.strptime(hit['_source']['last_access'],
+                    '%Y-%m-%dT%H:%M:%S').timetuple())
+                ctime = time.mktime(datetime.strptime(hit['_source']['last_change'],
+                    '%Y-%m-%dT%H:%M:%S').timetuple())
+                dirlist.append((hit['_id'], fullpath, mtime, atime, ctime))
+                dircount += 1
+            # enqueue dir calc job
+            q_calc.enqueue(calc_dir_size, args=(dirlist, cliargs,), result_ttl=config['redis_ttl'])
+            jobcount += 1
+
+            # update progress bar
+            if bar:
+                try:
+                    bar.update(len(q_calc))
+                except (ZeroDivisionError, ValueError):
+                    bar.update(0)
+
+            del dirlist[:]
+            # use es scroll api
+            res = es.scroll(scroll_id=res['_scroll_id'], scroll='1m',
+                            request_timeout=config['es_timeout'])
+
+        logger.info('Found %s directory docs' % str(dircount))
+        
         # set up progress bar with time remaining
         if bar:
             bar.finish()
@@ -1477,8 +1448,9 @@ def calc_dir_sizes(cliargs, logger, path=None):
 
         if bar:
             bar.finish()
-
-        logger.info('Finished calculating directory sizes')
+        
+        elapsed = get_time(time.time() - starttime)
+        logger.info('Finished calculating %s directory sizes in %s' % (dircount, elapsed))
 
     except KeyboardInterrupt:
         print("Ctrl-c keyboard interrupt, shutting down...")
@@ -1640,10 +1612,11 @@ def treewalk(top, num_sep, level, batchsize, cliargs, logger, reindex_dict):
     if bar:
         bar.finish()
 
-    elapsed = round(time.time() - starttime, 3)
+    elapsed = time.time() - starttime
     dirspersec = round(totaldirs / elapsed, 3)
+    elapsed = get_time(elapsed)
 
-    logger.info("Finished crawling, elapsed time %s sec, dirs walked %s (%s dirs/sec)" %
+    logger.info("Finished crawling in %s, dirs walked %s (%s dirs/sec)" %
                 (elapsed, totaldirs, dirspersec))
 
 
@@ -1853,9 +1826,10 @@ def post_crawl_tasks():
 
     # calculate directory sizes and items
     if cliargs['reindex'] or cliargs['reindexrecurs'] or cliargs['crawlbot']:
-        calc_dir_sizes(cliargs, logger, path=rootdir_path)
+        calc_path = rootdir_path
     else:
-        calc_dir_sizes(cliargs, logger)
+        calc_path = None
+    calc_dir_sizes(cliargs, logger, path=calc_path)
 
     # add elapsed time crawl stat to es
     add_crawl_stats(es, cliargs['index'], rootdir_path, (time.time() - starttime), "finished_dircalc")
@@ -2153,7 +2127,7 @@ if __name__ == "__main__":
     if cliargs['crawlbot']:
         from diskover_crawlbot import start_crawlbot_scanner
         wait_for_worker_bots(logger)
-        botdirlist = index_get_docs(cliargs, logger, doctype='directory')
+        botdirlist = index_get_docs(cliargs, logger, doctype='directory', index=cliargs['index'])
         # Set up worker threads for crawlbot
         start_crawlbot_scanner(cliargs, logger, rootdir_path, botdirlist, reindex_dict)
         sys.exit(0)

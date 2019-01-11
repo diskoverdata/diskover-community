@@ -120,7 +120,7 @@ def start_crawlbot_scanner(cliargs, logger, rootdir_path, botdirlist, reindex_di
             logger.info(
                 '*** crawlbot: getting new dirlist from ES, crawlbot has been running for %s', elapsed)
             lock.acquire(True)
-            dirlist = index_get_docs(cliargs, logger, doctype='directory')
+            dirlist = index_get_docs(cliargs, logger, doctype='directory', index=cliargs['index'])
             lock.release()
             # add disk space info to es index
             add_diskspace(cliargs['index'], logger, rootdir_path)
