@@ -102,8 +102,6 @@ ttl = 500
 queue = diskover
 queuecrawl = diskover_crawl
 queuecalcdir = diskover_calcdir
-; rq worker ttl heartbeat (in seconds) sent to prevent timeout (default 420)
-workerttl = 420
 
 [adaptivebatch]
 ; adaptive batch settings when using -a (intelligent crawling)
