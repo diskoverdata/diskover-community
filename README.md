@@ -47,7 +47,7 @@ If you are a fan of the project or you are using diskover and it's helping you s
 ### Requirements
 
 * `Linux or OS X/macOS` (tested on OS X 10.11.6, Ubuntu 16.04/18.04), `Windows 10` (using Windows Subsystem for Linux)
-* `Python 2.7. or Python 3.5./3.6.` (tested on Python 2.7.15, 3.6.5) Python 3 recommended.
+* `Python 2.7. or Python 3.5./3.6.` (tested on Python 2.7.15, 3.6.5) **Python 3 recommended**
 * `Python elasticsearch client module`
 * `Python requests module`
 * `Python scandir module`
@@ -55,7 +55,7 @@ If you are a fan of the project or you are using diskover and it's helping you s
 * `Python redis module`
 * `Python rq module`
 * `Elasticsearch 5.6.x` (local or [AWS ES Service](https://aws.amazon.com/elasticsearch-service/), tested on Elasticsearch 5.6.9) Elasticsearch 6 is not supported yet.
-* `Redis 4.x` (tested on 4.0.8)
+* `Redis 4.x` (tested on 4.0.9)
 
 **See requirements.txt for specific python module version numbers since newer versions may not work with diskover.**
 
