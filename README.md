@@ -46,7 +46,7 @@ If you are a fan of the project or you are using diskover and it's helping you s
 
 ### Requirements
 
-* `Linux or OS X/macOS` (tested on OS X 10.11.6, Ubuntu 16.04/18.04) ***Windows 10 if using Windows Subsystem for Linux***
+* `Linux or OS X/macOS` (tested on OS X 10.11.6, Ubuntu 16.04/18.04), `Windows 10` (using Windows Subsystem for Linux)
 * `Python 2.7. or Python 3.5./3.6.` (tested on Python 2.7.15, 3.6.5) Python 3 recommended.
 * `Python elasticsearch client module`
 * `Python requests module`
