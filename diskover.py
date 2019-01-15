@@ -954,8 +954,8 @@ def _index_get_docs_data(index, cliargs, logger, doctype='directory', path=None,
             }
         }
     else:
-        if not path:
-            if not maxdepth:
+        if path is None:
+            if maxdepth is None:
                 logger.info('Searching for all %s docs in %s...', doctype, index)
                 data = {
                     '_source': ['path_parent', 'filename', 'last_modified', 'last_access', 'last_change'],
@@ -1401,7 +1401,7 @@ def calc_dir_sizes(cliargs, logger, path=None):
         dircount = 0
         while res['hits']['hits'] and len(res['hits']['hits']) > 0:
             for hit in res['hits']['hits']:
-                fullpath = hit['_source']['path_parent'] + "/" + hit['_source']['filename']
+                fullpath = os.path.join(hit['_source']['path_parent'], hit['_source']['filename'])
                 # convert es time to unix time format
                 mtime = time.mktime(datetime.strptime(hit['_source']['last_modified'],
                     '%Y-%m-%dT%H:%M:%S').timetuple())
@@ -1411,9 +1411,17 @@ def calc_dir_sizes(cliargs, logger, path=None):
                     '%Y-%m-%dT%H:%M:%S').timetuple())
                 dirlist.append((hit['_id'], fullpath, mtime, atime, ctime))
                 dircount += 1
-            # enqueue dir calc job
-            q_calc.enqueue(calc_dir_size, args=(dirlist, cliargs,), result_ttl=config['redis_ttl'])
-            jobcount += 1
+                dirlist_len = len(dirlist)
+                if dirlist_len >= batchsize:
+                    q_calc.enqueue(calc_dir_size, args=(dirlist, cliargs,), result_ttl=config['redis_ttl'])
+                    jobcount += 1
+                    if cliargs['debug'] or cliargs['verbose']:
+                        logger.info("enqueued batchsize: %s (batchsize: %s)" % (dirlist_len, batchsize))
+                    del dirlist[:]
+                    if cliargs['adaptivebatch']:
+                        batchsize = adaptive_batch(q_crawl, cliargs, batchsize)
+                        if cliargs['debug'] or cliargs['verbose']:
+                            logger.info("batchsize set to: %s" % batchsize)
 
             # update progress bar
             if bar:
@@ -1426,6 +1434,10 @@ def calc_dir_sizes(cliargs, logger, path=None):
             # use es scroll api
             res = es.scroll(scroll_id=res['_scroll_id'], scroll='1m',
                             request_timeout=config['es_timeout'])
+        
+        # enqueue dir calc job for any remaining in dirlist
+        q_calc.enqueue(calc_dir_size, args=(dirlist, cliargs,), result_ttl=config['redis_ttl'])
+        jobcount += 1
 
         logger.info('Found %s directory docs' % str(dircount))
         

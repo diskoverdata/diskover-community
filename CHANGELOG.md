@@ -1,6 +1,6 @@
 # Diskover Change Log
 
-## [1.5.0-rc28] = 2019-01-11
+## [1.5.0-rc28] = 2019-01-15
 ### added
 - multiple es hosts can now be set in diskover.cfg elasticsearch section, see diskover.cfg.sample
 - improved worker bot stability
@@ -9,8 +9,10 @@
 - switch to using redis connections pools
 - removed redis worker ttl, remove from your diskover.cfg redis section
 - removed dir calc threads for bots which was causing issues with es number of queued jobs (issue #47)
+- dir calcs now use batchsize setting and adaptive batch (if using -a) for sending to worker bots
 ### fixed
 - es error with too many queued dir calc jobs (issue #47)
+- bug with calculating directory sizes for subdirs in / (root)
 
 ## [1.5.0-rc27] = 2019-01-08
 ### added
