@@ -185,8 +185,7 @@ For bugs about diskover, please use the [issues page](https://github.com/shirosa
 
 ## Contact developer
 
-For questions or support with diskover you can also contact me on linuxserver.io Discord @shirosai.
-https://discord.gg/YWrKVTn
+For questions or support with diskover you can also contact me on [linuxserver.io Discord](https://discord.gg/YWrKVTn) @shirosai.
 
 ## License
 
