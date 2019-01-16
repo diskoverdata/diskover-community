@@ -1505,7 +1505,7 @@ def scandirwalk(path):
         entry = q_paths_results.get()
         root, dirs, nondirs = entry
         if cliargs['debug'] or cliargs['verbose']:
-            logger.info("scandirwalk: %s %s %s" % (root, dirs, nondirs))
+            logger.info("scandirwalk: %s (dircount: %s, filecount: %s)" % (root, str(len(dirs)), str(len(nondirs))))
         # yield before recursion
         yield root, dirs, nondirs
         # recurse into subdirectories
