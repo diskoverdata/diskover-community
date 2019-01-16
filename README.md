@@ -183,6 +183,11 @@ For discussions or questions about diskover, please ask on [Google Group](https:
 
 For bugs about diskover, please use the [issues page](https://github.com/shirosaidev/diskover/issues).
 
+## Contact developer
+
+For questions or support with diskover you can also contact me on linuxserver.io Discord @shirosai.
+https://discord.gg/YWrKVTn
+
 ## License
 
 See the [license file](https://github.com/shirosaidev/diskover/blob/master/LICENSE).
