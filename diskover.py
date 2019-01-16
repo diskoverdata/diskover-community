@@ -1436,8 +1436,9 @@ def calc_dir_sizes(cliargs, logger, path=None):
                             request_timeout=config['es_timeout'])
         
         # enqueue dir calc job for any remaining in dirlist
-        q_calc.enqueue(calc_dir_size, args=(dirlist, cliargs,), result_ttl=config['redis_ttl'])
-        jobcount += 1
+        if len(dirlist) > 0:
+            q_calc.enqueue(calc_dir_size, args=(dirlist, cliargs,), result_ttl=config['redis_ttl'])
+            jobcount += 1
 
         logger.info('Found %s directory docs' % str(dircount))
         
@@ -1469,13 +1470,15 @@ def calc_dir_sizes(cliargs, logger, path=None):
         sys.exit(0)
 
 
-def scandirwalk_worker():
+def scandirwalk_worker(threadn):
     dirs = []
     nondirs = []
     while True:
         path = q_paths.get()
         try:
             q_paths_in_progress.put(path)
+            if cliargs['debug'] or cliargs['verbose']:
+                logger.info("[thread-%s] scandirwalk_worker: %s" % (threadn, path))
             for entry in scandir(path):
                 if entry.is_dir(follow_symlinks=False):
                     dirs.append(entry.name)
@@ -1484,10 +1487,10 @@ def scandirwalk_worker():
                         nondirs.append(entry.name)
             q_paths_results.put((path, dirs[:], nondirs[:]))
         except (OSError, IOError) as e:
-            logger.warning("OS/IO Exception caused by: %s" % e)
+            logger.warning("[thread-%s] OS/IO Exception caused by: %s" % (threadn, e))
             pass
         except Exception as e:
-            logger.warning("Exception caused by: %s" % e)
+            logger.warning("[thread-%s] Exception caused by: %s" % (threadn, e))
             pass
         finally:
             q_paths_in_progress.get()
@@ -1501,6 +1504,8 @@ def scandirwalk(path):
     while True:
         entry = q_paths_results.get()
         root, dirs, nondirs = entry
+        if cliargs['debug'] or cliargs['verbose']:
+            logger.info("scandirwalk: %s %s %s" % (root, dirs, nondirs))
         # yield before recursion
         yield root, dirs, nondirs
         # recurse into subdirectories
@@ -1529,7 +1534,7 @@ def treewalk(top, num_sep, level, batchsize, cliargs, logger, reindex_dict):
 
     # set up threads for tree walk
     for i in range(cliargs['walkthreads']):
-        t = Thread(target=scandirwalk_worker)
+        t = Thread(target=scandirwalk_worker, args=(i,))
         t.daemon = True
         t.start()
 
@@ -1552,6 +1557,8 @@ def treewalk(top, num_sep, level, batchsize, cliargs, logger, reindex_dict):
         # check for empty dirs
         if not cliargs['indexemptydirs'] and not cliargs['dirsonly']:
             if dirs_len == 0 and files_len == 0:
+                if cliargs['debug'] or cliargs['verbose']:
+                    logger.info("skipping empty dir: %s" % root)
                 continue
         totalfiles += files_len
         # replace path if cliarg
