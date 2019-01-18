@@ -125,7 +125,17 @@ def qumulo_api_listdir(top, ip, ses):
     return dirs, nondirs
 
 
-def qumulo_api_walk(path, ip, ses, q_paths, q_paths_results):
+def apiwalk_worker(q_paths, q_paths_results, lock):
+    ip, ses = qumulo_connection()
+    while True:
+        path = q_paths.get()
+        dirs, nondirs = qumulo_api_listdir(path, ip, ses)
+        root = qumulo_get_file_attr(path, ip, ses)
+        q_paths_results.put((root, dirs, nondirs))
+        q_paths.task_done()
+
+
+def qumulo_api_walk(path, q_paths, q_paths_results, cliargs):
     q_paths.put(path)
     while True:
         entry = q_paths_results.get()
@@ -135,7 +145,8 @@ def qumulo_api_walk(path, ip, ses, q_paths, q_paths_results):
         # recurse into subdirectories
         for name in dirs:
             new_path = os.path.join(root, name)
-            q_paths.put(new_path)
+            if not dir_excluded(new_path, config, cliargs):
+                q_paths.put(new_path)
         q_paths_results.task_done()
         if q_paths_results.qsize() == 0 and q_paths.qsize() == 0:
             time.sleep(.5)
@@ -143,19 +154,7 @@ def qumulo_api_walk(path, ip, ses, q_paths, q_paths_results):
                 break
 
 
-def apiwalk_worker(ip, ses, q_paths, q_paths_results, lock):
-    while True:
-        path = q_paths.get()
-        dirs, nondirs = qumulo_api_listdir(path, ip, ses)
-
-        root = qumulo_get_file_attr(path, ip, ses)
-
-        q_paths_results.put((root, dirs, nondirs))
-
-        q_paths.task_done()
-
-
-def qumulo_treewalk(path, ip, ses, q_crawl, num_sep, level, batchsize, cliargs, logger, reindex_dict):
+def qumulo_treewalk(path, q_crawl, num_sep, level, batchsize, cliargs, logger, reindex_dict):
     batch = []
     dircount = 0
     totaldirs = 0
@@ -169,7 +168,7 @@ def qumulo_treewalk(path, ip, ses, q_crawl, num_sep, level, batchsize, cliargs, 
 
     # set up threads for tree walk
     for i in range(cliargs['walkthreads']):
-        t = Thread(target=apiwalk_worker, args=(ip, ses, q_paths, q_paths_results, lock,))
+        t = Thread(target=apiwalk_worker, args=(q_paths, q_paths_results, lock,))
         t.daemon = True
         t.start()
 
@@ -184,7 +183,7 @@ def qumulo_treewalk(path, ip, ses, q_crawl, num_sep, level, batchsize, cliargs, 
         bar = None
 
     bartimestamp = time.time()
-    for root, dirs, files in qumulo_api_walk(path, ip, ses, q_paths, q_paths_results):
+    for root, dirs, files in qumulo_api_walk(path, q_paths, q_paths_results, cliargs):
         dircount += 1
         totaldirs += 1
         files_len = len(files)
@@ -196,31 +195,27 @@ def qumulo_treewalk(path, ip, ses, q_crawl, num_sep, level, batchsize, cliargs, 
             root_path = root['path'].rstrip(os.path.sep)
         else:
             root_path = root['path']
-        if not dir_excluded(root_path, config, cliargs):
-            batch.append((root, dirs, files))
-            batch_len = len(batch)
-            if batch_len >= batchsize or (cliargs['adaptivebatch'] and totalfiles >= config['adaptivebatch_maxfiles']):
-                q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,),
-                                      result_ttl=config['redis_ttl'])
+
+        batch.append((root, dirs, files))
+        batch_len = len(batch)
+        if batch_len >= batchsize or (cliargs['adaptivebatch'] and totalfiles >= config['adaptivebatch_maxfiles']):
+            q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,),
+                                    result_ttl=config['redis_ttl'])
+            if cliargs['debug'] or cliargs['verbose']:
+                logger.info("enqueued batchsize: %s (batchsize: %s)" % (batch_len, batchsize))
+            del batch[:]
+            if cliargs['adaptivebatch']:
+                batchsize = adaptive_batch(q_crawl, cliargs, batchsize)
                 if cliargs['debug'] or cliargs['verbose']:
-                    logger.info("enqueued batchsize: %s (batchsize: %s)" % (batch_len, batchsize))
-                del batch[:]
-                if cliargs['adaptivebatch']:
-                    batchsize = adaptive_batch(q_crawl, cliargs, batchsize)
-                    if cliargs['debug'] or cliargs['verbose']:
-                        logger.info("batchsize set to: %s" % batchsize)
+                    logger.info("batchsize set to: %s" % batchsize)
 
-            # check if at maxdepth level and delete dirs/files lists to not
-            # descend further down the tree
-            if cliargs['maxdepth']:
-                num_sep_this = root_path.count(os.path.sep)
-                if num_sep + level <= num_sep_this:
-                    del dirs[:]
-                    del files[:]
-
-        else:  # directory excluded
-            del dirs[:]
-            del files[:]
+        # check if at maxdepth level and delete dirs/files lists to not
+        # descend further down the tree
+        if cliargs['maxdepth']:
+            num_sep_this = root_path.count(os.path.sep)
+            if num_sep + level <= num_sep_this:
+                del dirs[:]
+                del files[:]
 
         # update progress bar
         if bar:

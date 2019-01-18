@@ -1480,7 +1480,7 @@ def scandirwalk_worker(threadn):
             if cliargs['debug'] or cliargs['verbose']:
                 logger.info("[thread-%s] scandirwalk_worker: %s" % (threadn, path))
             for entry in scandir(path):
-                if entry.is_dir(follow_symlinks=False):
+                if entry.is_dir(follow_symlinks=False) and not dir_excluded(entry.path, config, cliargs):
                     dirs.append(entry.name)
                 if not cliargs['dirsonly']:
                     if entry.is_file(follow_symlinks=False):
@@ -1564,35 +1564,31 @@ def treewalk(top, num_sep, level, batchsize, cliargs, logger, reindex_dict):
         # replace path if cliarg
         if cliargs['replacepath']:
             root = replace_path(root)
-        if not dir_excluded(root, config, cliargs):
-            if cliargs['dirsonly']:
-                batch.append((root, dirs))
-            else:
-                batch.append((root, dirs, files))
-            batch_len = len(batch)
-            if batch_len >= batchsize or (cliargs['adaptivebatch'] and totalfiles >= config['adaptivebatch_maxfiles']):
-                q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,),
-                                      result_ttl=config['redis_ttl'])
+
+        if cliargs['dirsonly']:
+            batch.append((root, dirs))
+        else:
+            batch.append((root, dirs, files))
+        batch_len = len(batch)
+        if batch_len >= batchsize or (cliargs['adaptivebatch'] and totalfiles >= config['adaptivebatch_maxfiles']):
+            q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,),
+                                    result_ttl=config['redis_ttl'])
+            if cliargs['debug'] or cliargs['verbose']:
+                logger.info("enqueued batchsize: %s (batchsize: %s)" % (batch_len, batchsize))
+            del batch[:]
+            totalfiles = 0
+            if cliargs['adaptivebatch']:
+                batchsize = adaptive_batch(q_crawl, cliargs, batchsize)
                 if cliargs['debug'] or cliargs['verbose']:
-                    logger.info("enqueued batchsize: %s (batchsize: %s)" % (batch_len, batchsize))
-                del batch[:]
-                totalfiles = 0
-                if cliargs['adaptivebatch']:
-                    batchsize = adaptive_batch(q_crawl, cliargs, batchsize)
-                    if cliargs['debug'] or cliargs['verbose']:
-                        logger.info("batchsize set to: %s" % batchsize)
+                    logger.info("batchsize set to: %s" % batchsize)
 
-            # check if at maxdepth level and delete dirs/files lists to not
-            # descend further down the tree
-            if cliargs['maxdepth']:
-                num_sep_this = root.count(os.path.sep)
-                if num_sep + level <= num_sep_this:
-                    del dirs[:]
-                    del files[:]
-
-        else:  # directory excluded
-            del dirs[:]
-            del files[:]
+        # check if at maxdepth level and delete dirs/files lists to not
+        # descend further down the tree
+        if cliargs['maxdepth']:
+            num_sep_this = root.count(os.path.sep)
+            if num_sep + level <= num_sep_this:
+                del dirs[:]
+                del files[:]
 
         # update progress bar
         if bar:

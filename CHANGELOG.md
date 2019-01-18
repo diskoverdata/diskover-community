@@ -1,6 +1,6 @@
 # Diskover Change Log
 
-## [1.5.0-rc28] = 2019-01-16
+## [1.5.0-rc28] = 2019-01-19
 ### added
 - multiple es hosts can now be set in diskover.cfg elasticsearch section, see diskover.cfg.sample
 - improved worker bot stability
@@ -14,6 +14,7 @@
 ### fixed
 - es error with too many queued dir calc jobs (issue #47)
 - bug with calculating directory sizes for subdirs in / (root)
+- bug with directory excludes and scandirwalk_worker building dir/file lists for excluded directories, this was causing slow downs in crawling for directories excluded that contain a large amount of files/dirs
 
 ## [1.5.0-rc27] = 2019-01-08
 ### added
