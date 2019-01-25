@@ -7,6 +7,8 @@
 - restoretimes config setting to dupescheck section in diskover.cfg.sample, copy to your config - setting to True will try to restore atime and mtime for any files which get opened from byte check and md5 (useful for cifs which does not work with noatime mount option)
 ### changed
 - finddupes uses cpu count x 2 instead of 4 for threads
+### fixed
+- bots disapearing from redis rq (rqinfo and rq-dashboard), upgrade to redis 3.0.1 and rq 0.13.0 python modules using pip
 
 ## [1.5.0-rc28] = 2019-01-19
 ### added
