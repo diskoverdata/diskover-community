@@ -38,7 +38,7 @@ import sys
 import json
 
 
-version = '1.5.0-rc28'
+version = '1.5.0-rc29'
 __version__ = version
 
 IS_PY3 = sys.version_info >= (3, 0)
@@ -401,6 +401,10 @@ def load_config():
             configsettings['dupes_checkbytes'] = int(config.get('dupescheck', 'checkbytes'))
         except ConfigParser.NoOptionError:
             configsettings['dupes_checkbytes'] = 64
+        try:
+            configsettings['dupes_restoretimes'] = config.get('dupescheck', 'restoretimes').lower()
+        except ConfigParser.NoOptionError:
+            configsettings['dupes_restoretimes'] = "false"
         try:
             configsettings['crawlbot_botsleep'] = float(config.get('crawlbot', 'sleeptime'))
         except ConfigParser.NoOptionError:

@@ -11,18 +11,20 @@ diskover is released under the Apache 2.0 license. See
 LICENSE for the full license text.
 """
 
-from diskover import index_bulk_add, config, es, progress_bar, redis_conn
+from diskover import index_bulk_add, config, es, progress_bar, redis_conn, worker_bots_busy
 from diskover_bot_module import dupes_process_hashkey
 from rq import SimpleWorker
 import base64
 import hashlib
 import os
 import time
+import warnings
 try:
     from Queue import Queue as pyQueue
 except ImportError:
     from queue import Queue as pyQueue
 from threading import Thread
+from multiprocessing import cpu_count
 
 
 def index_dupes(hashgroup, cliargs):
@@ -46,8 +48,8 @@ def index_dupes(hashgroup, cliargs):
         index_bulk_add(es, file_id_list, config, cliargs)
 
 
-def start_file_threads(file_in_thread_q, file_out_thread_q, threads=4):
-    for i in range(threads):
+def start_file_threads(file_in_thread_q, file_out_thread_q, threadn):
+    for i in range(threadn):
         thread = Thread(target=md5_hasher, args=(file_in_thread_q, file_out_thread_q,))
         thread.daemon = True
         thread.start()
@@ -56,7 +58,7 @@ def start_file_threads(file_in_thread_q, file_out_thread_q, threads=4):
 def md5_hasher(file_in_thread_q, file_out_thread_q):
     while True:
         item = file_in_thread_q.get()
-        filename, cliargs = item
+        filename, atime, mtime, cliargs = item
         # get md5 sum, don't load whole file into memory,
         # load in n bytes at a time (read_size blocksize)
         try:
@@ -68,7 +70,25 @@ def md5_hasher(file_in_thread_q, file_out_thread_q):
                     hasher.update(buf)
                     buf = f.read(read_size)
             md5 = hasher.hexdigest()
-        except (IOError, OSError):
+
+            # restore times (atime/mtime)
+            if config['dupes_restoretimes'] == "true":
+                atime_unix = time.mktime(time.strptime(atime, '%Y-%m-%dT%H:%M:%S'))
+                mtime_unix = time.mktime(time.strptime(mtime, '%Y-%m-%dT%H:%M:%S'))
+                try:
+                    os.utime(filename, (atime_unix, mtime_unix))
+                except (OSError, IOError) as e:
+                    warnings.warn("OS/IO Exception caused by: %s" % e)
+                    pass
+                except Exception as e:
+                    warnings.warn("Exception caused by: %s" % e)
+                    pass
+        except (OSError, IOError) as e:
+            warnings.warn("OS/IO Exception caused by: %s" % e)
+            file_in_thread_q.task_done()
+            continue
+        except Exception as e:
+            warnings.warn("Exception caused by: %s" % e)
             file_in_thread_q.task_done()
             continue
         file_out_thread_q.put((filename, md5))
@@ -97,9 +117,11 @@ def verify_dupes(hashgroup, cliargs):
     for file in hashgroup['files']:
         try:
             f = open(file['filename'], 'rb')
-        except (IOError, OSError):
+        except (OSError, IOError) as e:
+            warnings.warn("OS/IO Exception caused by: %s" % e)
             continue
-        except Exception:
+        except Exception as e:
+            warnings.warn("Exception caused by: %s" % e)
             continue
         # check if files is only 1 byte
         try:
@@ -108,7 +130,8 @@ def verify_dupes(hashgroup, cliargs):
             pass
             try:
                 bytes_f = base64.b64encode(f.read(min_read_bytes))
-            except Exception:
+            except Exception as e:
+                warnings.warn("Exception caused by: %s" % e)
                 continue
         try:
             f.seek(-read_bytes, os.SEEK_END)
@@ -118,9 +141,22 @@ def verify_dupes(hashgroup, cliargs):
             try:
                 f.seek(-min_read_bytes, os.SEEK_END)
                 bytes_l = base64.b64encode(f.read(min_read_bytes))
-            except Exception:
+            except Exception as e:
+                warnings.warn("Exception caused by: %s" % e)
                 continue
         f.close()
+        # restore times (atime/mtime)
+        if config['dupes_restoretimes'] == "true":
+            atime_unix = time.mktime(time.strptime(file['atime'], '%Y-%m-%dT%H:%M:%S'))
+            mtime_unix = time.mktime(time.strptime(file['mtime'], '%Y-%m-%dT%H:%M:%S'))
+            try:
+                os.utime(file['filename'], (atime_unix, mtime_unix))
+            except (OSError, IOError) as e:
+                warnings.warn("OS/IO Exception caused by: %s" % e)
+                pass
+            except Exception as e:
+                warnings.warn("Exception caused by: %s" % e)
+                pass
 
         # create hash of bytes
         bytestring = str(bytes_f) + str(bytes_l)
@@ -128,12 +164,12 @@ def verify_dupes(hashgroup, cliargs):
 
         # create new key for each bytehash and
         # set value as new list and add file
-        hashgroup_bytes.setdefault(bytehash, []).append(file['filename'])
+        hashgroup_bytes.setdefault(bytehash, []).append((file['filename'], file['atime'], file['mtime']))
 
     # remove any bytehash key that only has 1 item (no duplicate)
     for key, value in list(hashgroup_bytes.items()):
         if len(value) < 2:
-            filename = value[0]
+            filename = value[0][0]
             del hashgroup_bytes[key]
             # remove file from hashgroup
             for i in range(len(hashgroup['files'])):
@@ -146,13 +182,15 @@ def verify_dupes(hashgroup, cliargs):
     # set up python Queue for threaded file md5 checking
     file_in_thread_q = pyQueue()
     file_out_thread_q = pyQueue()
-    start_file_threads(file_in_thread_q, file_out_thread_q)
+    threadn = cpu_count()*2
+    start_file_threads(file_in_thread_q, file_out_thread_q, threadn)
 
     # do md5 check on files with same byte hashes
     for key, value in list(hashgroup_bytes.items()):
-        for filename in value:
+        for file in value:
+            filename, atime, mtime = file
             # add file into thread queue
-            file_in_thread_q.put((filename, cliargs))
+            file_in_thread_q.put((filename, atime, mtime, cliargs))
 
         # wait for threads to finish
         file_in_thread_q.join()
@@ -160,10 +198,10 @@ def verify_dupes(hashgroup, cliargs):
         # get all files and add to tree_files
         while file_out_thread_q.qsize():
             item = file_out_thread_q.get()
-            file, md5 = item
+            filename, md5 = item
             # create new key for each md5 sum and set value as new list and
             # add file
-            hashgroup_md5.setdefault(md5, []).append(file)
+            hashgroup_md5.setdefault(md5, []).append(filename)
 
     # remove any md5sum key that only has 1 item (no duplicate)
     for key, value in list(hashgroup_md5.items()):
@@ -195,7 +233,7 @@ def populate_hashgroup(key, cliargs):
     hashgroup_files = []
 
     data = {
-        "_source": ["path_parent", "filename"],
+        "_source": ["path_parent", "filename", "last_access", "last_modified"],
         "query": {
             "bool": {
                 "must": {
@@ -204,8 +242,6 @@ def populate_hashgroup(key, cliargs):
             }
         }
     }
-    # refresh index
-    #es.indices.refresh(index=cliargs['index'])
     res = es.search(index=cliargs['index'], doc_type='file', size="1000",
                     body=data, request_timeout=config['es_timeout'])
 
@@ -213,8 +249,9 @@ def populate_hashgroup(key, cliargs):
     for hit in res['hits']['hits']:
         hashgroup_files.append(
             {'id': hit['_id'],
-             'filename': hit['_source']['path_parent'] + "/" +
-                         hit['_source']['filename']})
+            'filename': hit['_source']['path_parent'] + "/" + hit['_source']['filename'],
+            'atime': hit['_source']['last_access'],
+            'mtime': hit['_source']['last_modified']})
 
     # return filehash group and add to queue
     fhg = {'filehash': key, 'files': hashgroup_files, 'md5sum': ''}
@@ -283,26 +320,15 @@ def dupes_finder(es, q, cliargs, logger):
     else:
         bar = None
 
-    # wait for queue to be empty and update progress bar
-    time.sleep(1)
-    while True:
-        workers_busy = False
-        workers = SimpleWorker.all(connection=redis_conn)
-        for worker in workers:
-            if worker._state == "busy":
-                workers_busy = True
-                break
-        q_len = len(q)
-        if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+    # update progress bar until bots are idle and queue is empty
+    while worker_bots_busy([q]):
+        if bar:
+            q_len = len(q)
             try:
                 bar.update(q_len)
-            except ZeroDivisionError:
+            except (ZeroDivisionError, ValueError):
                 bar.update(0)
-            except ValueError:
-                bar.update(0)
-        if q_len == 0 and workers_busy == False:
-            break
-        time.sleep(.5)
+        time.sleep(1)
 
-    if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
+    if bar:
         bar.finish()

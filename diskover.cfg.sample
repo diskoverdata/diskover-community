@@ -137,6 +137,9 @@ readsize = 65536
 maxsize = 1073741824
 ; bytes to check at start and end of file before doing md5 sum check (set large enough to account for file header info, default is 64)
 checkbytes = 64
+; try to restore times (mtime/atime) for files that get opened by byte check and md5
+; set to True or False, default False (useful for cifs which does not work with noatime mount option)
+restoretimes = False
 
 [crawlbot]
 ; continuous scanner
