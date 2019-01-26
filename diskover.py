@@ -1693,7 +1693,7 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
 
         starttime = time.time()
 
-        logger.info("Starting crawl (maxdepth %s)" % cliargs['maxdepth'])
+        logger.info("Starting crawl using %s treewalk threads (maxdepth %s)" % (cliargs['walkthreads'], cliargs['maxdepth']))
 
         # qumulo api crawl
         if cliargs['qumulo']:
