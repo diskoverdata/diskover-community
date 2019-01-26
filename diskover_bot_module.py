@@ -14,8 +14,6 @@ LICENSE for the full license text.
 from diskover import config, escape_chars, index_bulk_add, plugins, IS_PY3
 from datetime import datetime
 from scandir import scandir
-from threading import Thread
-from multiprocessing import cpu_count
 import argparse
 import os
 import hashlib
