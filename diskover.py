@@ -406,6 +406,10 @@ def load_config():
         except ConfigParser.NoOptionError:
             configsettings['dupes_restoretimes'] = "false"
         try:
+            configsettings['dupes_threads'] = int(config.get('dupescheck', 'threads'))
+        except ConfigParser.NoOptionError:
+            configsettings['dupes_threads'] = 8
+        try:
             configsettings['crawlbot_botsleep'] = float(config.get('crawlbot', 'sleeptime'))
         except ConfigParser.NoOptionError:
             configsettings['crawlbot_botsleep'] = 0.1

@@ -1,12 +1,12 @@
 # Diskover Change Log
 
-## [1.5.0-rc29] = 2019-01-25
+## [1.5.0-rc29] = 2019-01-26
 ### added
 - faster finddupes
 - worker bot warnings output for finddupes for any io/os exceptions
 - restoretimes config setting to dupescheck section in diskover.cfg.sample, copy to your config - setting to True will try to restore atime and mtime for any files which get opened from byte check and md5 (useful for cifs which does not work with noatime mount option)
 ### changed
-- finddupes uses cpu count x 2 instead of 4 for threads
+- finddupes now uses threads setting in diskover.cfg dupescheck section, copy from diskover.cfg.sample and adjust for your env, prev. was 4 for threads, default is now 8
 - requirements.txt to support newer versions of rq and redis python modules
 ### fixed
 - bots disappearing from redis rq (rqinfo and rq-dashboard), upgrade to redis 3.0.1 and rq 0.13.0 python modules using pip

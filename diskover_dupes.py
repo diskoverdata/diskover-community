@@ -48,8 +48,8 @@ def index_dupes(hashgroup, cliargs):
         index_bulk_add(es, file_id_list, config, cliargs)
 
 
-def start_file_threads(file_in_thread_q, file_out_thread_q, threadn):
-    for i in range(threadn):
+def start_file_threads(file_in_thread_q, file_out_thread_q):
+    for i in range(config['dupes_threads']):
         thread = Thread(target=md5_hasher, args=(file_in_thread_q, file_out_thread_q,))
         thread.daemon = True
         thread.start()
@@ -182,8 +182,7 @@ def verify_dupes(hashgroup, cliargs):
     # set up python Queue for threaded file md5 checking
     file_in_thread_q = pyQueue()
     file_out_thread_q = pyQueue()
-    threadn = cpu_count()*2
-    start_file_threads(file_in_thread_q, file_out_thread_q, threadn)
+    start_file_threads(file_in_thread_q, file_out_thread_q)
 
     # do md5 check on files with same byte hashes
     for key, value in list(hashgroup_bytes.items()):

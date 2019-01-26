@@ -140,6 +140,8 @@ checkbytes = 64
 ; try to restore times (mtime/atime) for files that get opened by byte check and md5
 ; set to True or False, default False (useful for cifs which does not work with noatime mount option)
 restoretimes = False
+; number of threads for calculating md5 checksum of files
+threads = 8
 
 [crawlbot]
 ; continuous scanner
