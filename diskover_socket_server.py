@@ -83,7 +83,7 @@ def socket_thread_handler(threadnum, q, cliargs, logger):
         except (ValueError, TypeError) as e:
             q.task_done()
             logger.error("[thread-%s]: Invalid JSON from %s: (%s)" % (threadnum, str(addr), e))
-            message = b'{"msg": "error", "error": ' + e + b'}\n'
+            message = b'{"msg": "error", "error": "Invalid JSON caused by %s"}\n' % str(e).encode('utf-8')
             clientsock.send(message)
             logger.debug(message)
             # close connection to client
