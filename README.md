@@ -85,7 +85,13 @@ $ cd diskover
 
 ## Getting Started
 
-Check Redis and Elasticsearch are running and install Python dependencies using `pip`.
+Check Elasticsearch and Redis are running and are the required versions (see requirements above).
+```sh
+$ curl -X GET http://localhost:9200/
+$ redis-cli info
+```
+
+Install Python dependencies using `pip`.
 
 ```sh
 $ pip install -r requirements.txt
