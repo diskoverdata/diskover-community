@@ -15,6 +15,7 @@ from diskover import config
 from datetime import datetime
 import time
 import sys
+import os
 
 
 def gource(es, cliargs):
@@ -61,8 +62,7 @@ def gource(es, cliargs):
                     '%Y-%m-%dT%H:%M:%S').timetuple())))
                 u = str(hit['_source']['owner'])
                 t = 'M'
-            f = str(hit['_source']['path_parent'] + "/" +
-                    hit['_source']['filename'])
+            f = os.path.join(hit['_source']['path_parent'], hit['_source']['filename'])
             output = d + '|' + u + '|' + t + '|' + f
             try:
                 # output for gource

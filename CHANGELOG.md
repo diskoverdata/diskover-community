@@ -1,6 +1,6 @@
 # Diskover Change Log
 
-## [1.5.0-rc29] = 2019-01-27
+## [1.5.0-rc29] = 2019-01-28
 ### added
 - faster finddupes
 - worker bot warnings output for finddupes for any io/os exceptions
@@ -11,6 +11,8 @@
 ### fixed
 - bots disappearing from redis rq (rqinfo and rq-dashboard), upgrade to redis 3.0.1 and rq 0.13.0 python modules using pip
 - diskover socket server Traceback Exception "TypeError: can't concat JSONDecodeError to bytes" from sending non json data to socket server
+- export.json Kibana export missing some visualizations
+- UnicodeEncodeError: 'ascii' codec can't encode character when running diskover-gource.sh using python 2
 
 ## [1.5.0-rc28] = 2019-01-19
 ### added
