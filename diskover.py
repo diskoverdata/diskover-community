@@ -915,13 +915,13 @@ def index_get_docs(cliargs, logger, doctype='directory', copytags=False, hotdirs
     while res['hits']['hits'] and len(res['hits']['hits']) > 0:
         for hit in res['hits']['hits']:
             fullpath = os.path.abspath(os.path.join(hit['_source']['path_parent'], hit['_source']['filename']))
-            rel_path = fullpath.replace(rootdir_path, ".")
             if copytags:
                 doclist.append((fullpath, hit['_source']['tag'], hit['_source']['tag_custom'], doctype))
             elif hotdirs:
                 doclist.append((hit['_id'], fullpath, hit['_source']['filesize'], hit['_source']['items'],
                                 hit['_source']['items_files'], hit['_source']['items_subdirs']))
             elif pathid:
+                rel_path = fullpath.replace(rootdir_path, ".")
                 pathdict[rel_path] = hit['_id']
             else:
                 # convert es time to unix time format
@@ -1937,8 +1937,7 @@ if __name__ == "__main__":
     if not cliargs['quiet'] and not cliargs['gourcert'] and not cliargs['gourcemt']:
         # print random banner
         print_banner(version)
-
-    logger.info("Using config file: %s" % configfile)
+        logger.info("Using config file: %s" % configfile)
 
     # list plugins
     if cliargs['listplugins']:
