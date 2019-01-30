@@ -13,7 +13,7 @@
 - diskover socket server Traceback Exception "TypeError: can't concat JSONDecodeError to bytes" from sending non json data to socket server
 - export.json Kibana export missing some visualizations
 - UnicodeEncodeError: 'ascii' codec can't encode character when running diskover-gource.sh using python 2
-- Traceback NameError when running hotdirs or copytags
+- Traceback errors when running hotdirs or copytags
 
 ## [1.5.0-rc28] = 2019-01-19
 ### added

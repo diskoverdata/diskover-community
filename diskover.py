@@ -1746,9 +1746,8 @@ def hotdirs():
     # update progress bar until all bots are idle and q queue is empty
     while worker_bots_busy([q]):
         if bar:
-            q_len = len(q)
             try:
-                bar.update(bar_max_val - q_len)
+                bar.update(len(q))
             except (ZeroDivisionError, ValueError):
                 bar.update(0)
         time.sleep(1)
