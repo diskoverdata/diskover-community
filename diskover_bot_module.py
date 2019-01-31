@@ -62,7 +62,7 @@ def get_worker_name():
     return '{0}.{1}'.format(socket.gethostname().partition('.')[0], os.getpid())
         
 
-def auto_tag(metadict, type, mtime, atime, ctime):
+def auto_tag(metadict, tagtype, mtime, atime, ctime):
     """This is the auto tag function.
     It checks diskover config for any auto tag patterns
     and updates the meta dict for file or directory
@@ -73,7 +73,7 @@ def auto_tag(metadict, type, mtime, atime, ctime):
     pathpass = True
     timepass = True
 
-    if type == 'file':
+    if tagtype == 'file':
         for pattern in config['autotag_files']:
             try:
                 for name in pattern['name_exclude']:
@@ -178,7 +178,7 @@ def auto_tag(metadict, type, mtime, atime, ctime):
                 metadict['tag_custom'] = pattern['tag_custom']
                 return metadict
 
-    elif type == 'directory':
+    elif tagtype == 'directory':
         for pattern in config['autotag_dirs']:
             try:
                 for name in pattern['name_exclude']:
