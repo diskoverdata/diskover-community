@@ -2,7 +2,7 @@
 
 [![License](https://img.shields.io/github/license/shirosaidev/diskover.svg?label=License&maxAge=86400)](./LICENSE)
 [![Release](https://img.shields.io/github/release/shirosaidev/diskover.svg?label=Release&maxAge=60)](https://github.com/shirosaidev/diskover/releases/latest)
-[![Sponsor Patreon](https://img.shields.io/badge/Sponsor%20%24-Patreon-brightgreen.svg)](https://www.patreon.com/diskover)
+[![Sponsor Patreon](https://img.shields.io/badge/Sponsor%20%24-Patreon-brightgreen.svg)](https://www.patreon.com/shirosaidev)
 [![Donate PayPal](https://img.shields.io/badge/Donate%20%24-PayPal-brightgreen.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=CLF223XAS4W72)
 
 <img align="left" width="249" height="189" src="docs/diskover.png?raw=true" hspace="5" vspace="5" alt="diskover">
@@ -40,7 +40,7 @@ Kibana dashboards/saved searches/visualizations and support for Gource<br>
 
 ## Become a Patron & support shedding light on data darkness
 
-If you are a fan of the project or you are using diskover and it's helping you save storage space, please consider supporting the project on [Patreon](https://www.patreon.com/diskover) or [PayPal](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=CLF223XAS4W72). Thank you so much to all the fans and supporters!
+If you are a fan of the project or you are using diskover and it's helping you save storage space, please consider supporting the project on [Patreon](https://www.patreon.com/shirosaidev) or [PayPal](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=CLF223XAS4W72). Thank you so much to all the fans and supporters!
 
 ## Installation Guide
 
@@ -166,7 +166,7 @@ diskover has a tcp socket client that can tree walk locally on storage and send 
 
 ## OVA image file (for vmware, etc)
 
-Becoming a Patron gets you access to the OVA files running the latest version of diskover/diskover-web. Fastest way to get up and running diskover. Check out the [Patreon](https://www.patreon.com/diskover) page to learn more about how to get access to the OVA downloads.
+Becoming a Patron gets you access to the OVA files running the latest version of diskover/diskover-web. Fastest way to get up and running diskover. Check out the [Patreon](https://www.patreon.com/shirosaidev) page to learn more about how to get access to the OVA downloads.
 
 ## Docker
 
