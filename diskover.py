@@ -899,7 +899,7 @@ def index_get_docs(cliargs, logger, doctype='directory', copytags=False, hotdirs
     if pathid is True, will return dict with path and their id.
     """
 
-    data = _index_get_docs_data(index, cliargs, logger, doctype=doctype, path=path, 
+    data = _index_get_docs_data(index, cliargs, logger, doctype=doctype, path=path,
                                 maxdepth=maxdepth, sort=sort)
 
     # refresh index
@@ -1050,7 +1050,7 @@ def add_diskspace(index, logger, path):
         total_bytes = ctypes.c_ulonglong(0)
         free_bytes = ctypes.c_ulonglong(0)
         available_bytes = ctypes.c_ulonglong(0)
-        ctypes.windll.kernel32.GetDiskFreeSpaceExW(ctypes.c_wchar_p(path), 
+        ctypes.windll.kernel32.GetDiskFreeSpaceExW(ctypes.c_wchar_p(path),
             ctypes.pointer(available_bytes),
             ctypes.pointer(total_bytes),
             ctypes.pointer(free_bytes))
@@ -1379,7 +1379,10 @@ def calc_dir_sizes(cliargs, logger, path=None):
         while worker_bots_busy([q, q_crawl, q_calc]):
             time.sleep(1)
 
-        if cliargs['adaptivebatch']:
+        # If maxdcdepth is set (i.e. this is a recalculation), set the batchsize low
+        if cliargs['maxdcdepth'] != None:
+            batchsize = 1
+        elif cliargs['adaptivebatch']:
             batchsize = ab_start
         else:
             batchsize = cliargs['batchsize']
@@ -1442,14 +1445,14 @@ def calc_dir_sizes(cliargs, logger, path=None):
             # use es scroll api
             res = es.scroll(scroll_id=res['_scroll_id'], scroll='1m',
                             request_timeout=config['es_timeout'])
-        
+
         # enqueue dir calc job for any remaining in dirlist
         if len(dirlist) > 0:
             q_calc.enqueue(calc_dir_size, args=(dirlist, cliargs,), result_ttl=config['redis_ttl'])
             jobcount += 1
 
         logger.info('Found %s directory docs' % str(dircount))
-        
+
         # set up progress bar with time remaining
         if bar:
             bar.finish()
@@ -1469,7 +1472,7 @@ def calc_dir_sizes(cliargs, logger, path=None):
 
         if bar:
             bar.finish()
-        
+
         elapsed = get_time(time.time() - starttime)
         logger.info('Finished calculating %s directory sizes in %s' % (dircount, elapsed))
 
