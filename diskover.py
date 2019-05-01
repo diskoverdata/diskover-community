@@ -524,6 +524,7 @@ def index_create(indexname):
                     logger.warning('es index exists, deleting')
                     es.indices.delete(index=indexname, ignore=[400, 404])
                 else:
+                    logger.info("Cannot continue with index. Exiting.")
                     sys.exit(1)
 
     # set up es index mappings and create new index
