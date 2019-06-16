@@ -506,6 +506,17 @@ def list_plugins():
     for plugin_info in plugins_info:
         print(plugin_info["name"])
 
+def user_prompt(question: str) -> bool:
+    """ Prompt the yes/no-*question* to the user. """
+    from distutils.util import strtobool
+
+    while True:
+        user_input = input(question + " [y/n]: ").lower()
+        try:
+            result = strtobool(user_input)
+            return result
+        except ValueError:
+            print("Please use y/n or yes/no.\n")
 
 def index_create(indexname):
     """This is the es index create function.
@@ -527,8 +538,17 @@ def index_create(indexname):
             return
         # delete existing index
         else:
-            logger.warning('es index exists, deleting')
-            es.indices.delete(index=indexname, ignore=[400, 404])
+            if cliargs['forcedropexisting']:
+                logger.warning('es index exists, deleting')
+                es.indices.delete(index=indexname, ignore=[400, 404])
+            else:
+                if user_prompt("Drop existing index?"):
+                    logger.warning('es index exists, deleting')
+                    es.indices.delete(index=indexname, ignore=[400, 404])
+                else:
+                    logger.info("Cannot continue with index. Exiting.")
+                    sys.exit(1)
+
     # set up es index mappings and create new index
     if cliargs['s3']:
         from diskover_s3 import get_s3_mappings
@@ -918,7 +938,7 @@ def index_get_docs(cliargs, logger, doctype='directory', copytags=False, hotdirs
     if pathid is True, will return dict with path and their id.
     """
 
-    data = _index_get_docs_data(index, cliargs, logger, doctype=doctype, path=path, 
+    data = _index_get_docs_data(index, cliargs, logger, doctype=doctype, path=path,
                                 maxdepth=maxdepth, sort=sort)
 
     # refresh index
@@ -1069,7 +1089,7 @@ def add_diskspace(index, logger, path):
         total_bytes = ctypes.c_ulonglong(0)
         free_bytes = ctypes.c_ulonglong(0)
         available_bytes = ctypes.c_ulonglong(0)
-        ctypes.windll.kernel32.GetDiskFreeSpaceExW(ctypes.c_wchar_p(path), 
+        ctypes.windll.kernel32.GetDiskFreeSpaceExW(ctypes.c_wchar_p(path),
             ctypes.pointer(available_bytes),
             ctypes.pointer(total_bytes),
             ctypes.pointer(free_bytes))
@@ -1259,6 +1279,8 @@ def parse_cli_args(indexname):
                         help="Reindex directory (non-recursive), data is added to existing index")
     parser.add_argument("-R", "--reindexrecurs", action="store_true",
                         help="Reindex directory and all subdirs (recursive), data is added to existing index")
+    parser.add_argument("-F", "--forcedropexisting", action="store_true",
+                        help="Silently drop an existing index (if present)")
     parser.add_argument("-D", "--finddupes", action="store_true",
                         help="Find duplicate files in existing index and update their dupe_md5 field")
     parser.add_argument("-C", "--copytags", metavar='INDEX2',
@@ -1460,14 +1482,14 @@ def calc_dir_sizes(cliargs, logger, path=None):
             # use es scroll api
             res = es.scroll(scroll_id=res['_scroll_id'], scroll='1m',
                             request_timeout=config['es_timeout'])
-        
+
         # enqueue dir calc job for any remaining in dirlist
         if len(dirlist) > 0:
             q_calc.enqueue(calc_dir_size, args=(dirlist, cliargs,), result_ttl=config['redis_ttl'])
             jobcount += 1
 
         logger.info('Found %s directory docs' % str(dircount))
-        
+
         # set up progress bar with time remaining
         if bar:
             bar.finish()
@@ -1487,7 +1509,7 @@ def calc_dir_sizes(cliargs, logger, path=None):
 
         if bar:
             bar.finish()
-        
+
         elapsed = get_time(time.time() - starttime)
         logger.info('Finished calculating %s directory sizes in %s' % (dircount, elapsed))
 
