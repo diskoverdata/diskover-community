@@ -189,7 +189,10 @@ def load_config():
             configsettings['ownersgroups_keepdomain'] = "false"
         try:
             t = config.get('autotag', 'files')
-            atf = json.loads(t)
+            if os.path.isfile("%s/%s" % (os.getcwd(),t)):
+                atf = json.loads(open("%s/%s" % (os.getcwd(),t)).read())
+            else:
+                atf = json.loads(t)
             configsettings['autotag_files'] = atf
         except ValueError as e:
             raise ValueError("Error in config autotag files: %s" % e)
@@ -197,7 +200,10 @@ def load_config():
             configsettings['autotag_files'] = []
         try:
             t = config.get('autotag', 'dirs')
-            atd = json.loads(t)
+            if os.path.isfile("%s/%s" % (os.getcwd(),t)):
+                atd = json.loads(open("%s/%s" % (os.getcwd(),t)).read())
+            else:
+                atd = json.loads(t)
             configsettings['autotag_dirs'] = atd
         except ValueError as e:
             raise ValueError("Error in config autotag dirs: %s" % e)
@@ -213,7 +219,10 @@ def load_config():
             configsettings['costpergb_base'] = 2
         try:
             s = config.get('storagecost', 'paths')
-            scp = json.loads(s)
+            if os.path.isfile("%s/%s" % (os.getcwd(),s)):
+                scp = json.loads(open("%s/%s" % (os.getcwd(),s)).read())
+            else:
+                scp = json.loads(s)            
             configsettings['costpergb_paths'] = scp
         except ValueError as e:
             raise ValueError("Error in config storagecost paths: %s" % e)
@@ -221,7 +230,10 @@ def load_config():
             configsettings['costpergb_paths'] = []
         try:
             s = config.get('storagecost', 'times')
-            sct = json.loads(s)
+            if os.path.isfile("%s/%s" % (os.getcwd(),s)):
+                sct = json.loads(open("%s/%s" % (os.getcwd(),s)).read())
+            else:
+                sct = json.loads(s)
             configsettings['costpergb_times'] = sct
         except ValueError as e:
             raise ValueError("Error in config storagecost times: %s" % e)
