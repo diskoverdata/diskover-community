@@ -28,6 +28,7 @@ files = .*,Thumbs.db,.DS_Store,._.DS_Store,.localized,desktop.ini
 
 [autotag]
 ; pattern dictionaries for diskover bots to use when auto-tagging, values are case-sensitive, can include wildcard for ext, name or path (tmp* or TMP* or *tmp or *TMP* etc)
+; can also specify file name with json, example files = autotag.files.json
 ;files = [{"name": [], "name_exclude": [], "ext": ["tmp*", "TMP*", "temp*", "TEMP*", "cache*", "CACHE*"], "path": ["*/Application Support/*", "*/Containers/*"], "path_exclude": [], "mtime": 90, "atime": 0, "ctime": 90, "tag": "delete", "tag_custom": "autotag"}]
 ;dirs = [{"name": ["*tmp*", "*TMP*", "*temp*", "*TEMP*", "*Temp*", "*cache*", "*CACHE*", "*Cache*"], "name_exclude": ["*templates*", "*Templates*"], "path": ["*/Application Support/*", "*/Containers/*"], "path_exclude": [], "mtime": 90, "atime": 0, "ctime": 90, "tag": "delete", "tag_custom": "autotag"}]
 
@@ -37,6 +38,7 @@ costpergb = 0.03
 ; use decimal base 10 (1000) or binary base 2 (1024) for GB size (default is 2, set to 2 or 10)
 base = 2
 ; pattern dictionaries for diskover bots to use when determing cost per GB (overrides above)
+; can also specify file name with json, example paths = storagecost.paths.json
 ;paths = [{"path": ["*/fastdiskpath1/*", "*/Fastdiskpath2/*"], "path_exclude": [], "costpergb": 0.05}, {"path": ["*/slowdiskpath1/*", "*/Slowdiskpath2/*"], "path_exclude": [], "costpergb": 0.02}]
 ;times = [{"mtime": 180, "atime": 0, "ctime": 180, "costpergb": 0.02}]
 ; deciding factor if a match is in both paths and times, can be path or time
@@ -144,7 +146,7 @@ restoretimes = False
 threads = 8
 
 [crawlbot]
-; continuous scanner
+; continuous scanner when running with --crawlbot
 ; time to sleep (seconds) between checking for directory changes
 sleeptime = 0.1
 ; number of threads for checking directories, setting this to num of cores x2 is a good starting point

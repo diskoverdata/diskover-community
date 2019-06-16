@@ -5,7 +5,10 @@
 - crawl api to allow diskover to crawl file system apis (see diskover github wiki for usage instructions)
 - crawlapi section to diskover.cfg.sample, copy to your diskover.cfg
 - --crawlapi flag to diskover.py
+- optional usage of json files for storagecost and autotag definitions (see diskover.cfg.sample and wiki for how to) (@mathse)
+- cli option -F --forcedropexisting to silenty drop existing index (@fake-name)
 ### changed
+- user prompt before deleting existing index (@fake-name)
 - removed qumulo section from diskover.cfg.sample, remove from your config as is no longer used
 - removed diskover_qumulo.py and all code references in diskover (future will add as addon/plugin to new crawl api)
 ### fixed
