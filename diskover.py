@@ -438,26 +438,20 @@ def load_config():
         except ConfigParser.NoOptionError:
             configsettings['gource_maxfilelag'] = 5
         try:
-            try:
-                configsettings['api_url'] = config.get('crawlapi', 'url')
-            except ConfigParser.NoOptionError:
-                configsettings['api_url'] = ""
-            try:
-                configsettings['api_user'] = config.get('crawlapi', 'user')
-            except ConfigParser.NoOptionError:
-                configsettings['api_user'] = ""
-            try:
-                configsettings['api_password'] = config.get('crawlapi', 'password')
-            except ConfigParser.NoOptionError:
-                configsettings['api_password'] = ""
-            try:
-                configsettings['api_pagesize'] = config.get('crawlapi', 'pagesize')
-            except ConfigParser.NoOptionError:
-                configsettings['api_pagesize'] = 100000
-        except ConfigParser.NoSectionError:
+            configsettings['api_url'] = config.get('crawlapi', 'url')
+        except ConfigParser.NoOptionError:
             configsettings['api_url'] = ""
+        try:
+            configsettings['api_user'] = config.get('crawlapi', 'user')
+        except ConfigParser.NoOptionError:
             configsettings['api_user'] = ""
+        try:
+            configsettings['api_password'] = config.get('crawlapi', 'password')
+        except ConfigParser.NoOptionError:
             configsettings['api_password'] = ""
+        try:
+            configsettings['api_pagesize'] = config.get('crawlapi', 'pagesize')
+        except ConfigParser.NoOptionError:
             configsettings['api_pagesize'] = ""
     except ConfigParser.NoSectionError as e:
         print('Missing section from diskover.cfg, check diskover.cfg.sample and copy over, exiting. (%s)' % e)
@@ -506,6 +500,7 @@ def list_plugins():
     for plugin_info in plugins_info:
         print(plugin_info["name"])
 
+
 def user_prompt(question: str) -> bool:
     """ Prompt the yes/no-*question* to the user. """
     from distutils.util import strtobool
@@ -517,6 +512,7 @@ def user_prompt(question: str) -> bool:
             return result
         except ValueError:
             print("Please use y/n or yes/no.\n")
+
 
 def index_create(indexname):
     """This is the es index create function.
