@@ -158,9 +158,9 @@ maxfilelag = 0.1
 
 [crawlapi]
 ; crawl api url endpoint
-#url = http://localhost:8080/api
+;url = http://localhost:8080/api
 ; optional api login
-#user = admin
-#pass = admin
+;user = admin
+;pass = admin
 ; number of items per page for each directory list request
-#pagesize = 1000
+;pagesize = 1000
