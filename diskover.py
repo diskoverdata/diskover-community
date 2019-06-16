@@ -38,7 +38,7 @@ import sys
 import json
 
 
-version = '1.5.0-rc29'
+version = '1.5.0-rc30'
 __version__ = version
 
 IS_PY3 = sys.version_info >= (3, 0)
@@ -426,17 +426,27 @@ def load_config():
         except ConfigParser.NoOptionError:
             configsettings['gource_maxfilelag'] = 5
         try:
-            configsettings['qumulo_host'] = config.get('qumulo', 'cluster')
-        except ConfigParser.NoOptionError:
-            configsettings['qumulo_host'] = ""
-        try:
-            configsettings['qumulo_api_user'] = config.get('qumulo', 'api_user')
-        except ConfigParser.NoOptionError:
-            configsettings['qumulo_api_user'] = ""
-        try:
-            configsettings['qumulo_api_password'] = config.get('qumulo', 'api_password')
-        except ConfigParser.NoOptionError:
-            configsettings['qumulo_api_password'] = ""
+            try:
+                configsettings['api_url'] = config.get('crawlapi', 'url')
+            except ConfigParser.NoOptionError:
+                configsettings['api_url'] = ""
+            try:
+                configsettings['api_user'] = config.get('crawlapi', 'user')
+            except ConfigParser.NoOptionError:
+                configsettings['api_user'] = ""
+            try:
+                configsettings['api_password'] = config.get('crawlapi', 'password')
+            except ConfigParser.NoOptionError:
+                configsettings['api_password'] = ""
+            try:
+                configsettings['api_pagesize'] = config.get('crawlapi', 'pagesize')
+            except ConfigParser.NoOptionError:
+                configsettings['api_pagesize'] = 100000
+        except ConfigParser.NoSectionError:
+            configsettings['api_url'] = ""
+            configsettings['api_user'] = ""
+            configsettings['api_password'] = ""
+            configsettings['api_pagesize'] = ""
     except ConfigParser.NoSectionError as e:
         print('Missing section from diskover.cfg, check diskover.cfg.sample and copy over, exiting. (%s)' % e)
         sys.exit(1)
@@ -508,10 +518,7 @@ def index_create(indexname):
             logger.warning('es index exists, deleting')
             es.indices.delete(index=indexname, ignore=[400, 404])
     # set up es index mappings and create new index
-    if cliargs['qumulo']:
-        from diskover_qumulo import get_qumulo_mappings
-        mappings = get_qumulo_mappings(config)
-    elif cliargs['s3']:
+    if cliargs['s3']:
         from diskover_s3 import get_s3_mappings
         mappings = get_s3_mappings(config)
     else:
@@ -1259,8 +1266,8 @@ def parse_cli_args(indexname):
                         help="Replace path, example: --replacepath Z:\\ /mnt/share/")
     parser.add_argument("--crawlbot", action="store_true",
                         help="Starts up crawl bot continuous scanner to scan for dir changes in index")
-    parser.add_argument("--qumulo", action="store_true",
-                        help="Qumulo storage type, use Qumulo api instead of scandir")
+    parser.add_argument("--crawlapi", action="store_true",
+                        help="Use storage Restful API instead of scandir")
     parser.add_argument("--s3", metavar='FILE', nargs='+',
                         help="Import AWS S3 inventory csv file(s) (gzipped) to diskover index")
     parser.add_argument("--dircalcsonly", action="store_true",
@@ -1438,7 +1445,6 @@ def calc_dir_sizes(cliargs, logger, path=None):
                 except (ZeroDivisionError, ValueError):
                     bar.update(0)
 
-            del dirlist[:]
             # use es scroll api
             res = es.scroll(scroll_id=res['_scroll_id'], scroll='1m',
                             request_timeout=config['es_timeout'])
@@ -1487,19 +1493,30 @@ def scandirwalk_worker(threadn):
             q_paths_in_progress.put(path)
             if cliargs['debug'] or cliargs['verbose']:
                 logger.info("[thread-%s] scandirwalk_worker: %s" % (threadn, path))
-            for entry in scandir(path):
-                if entry.is_dir(follow_symlinks=False) and not dir_excluded(entry.path, config, cliargs):
-                    dirs.append(entry.name)
+            if cliargs['crawlapi']:
+                api_dirs, api_nondirs = api_listdir(path, api_ses)
+                for d in api_dirs:
+                    if not dir_excluded(d['path'], config, cliargs):
+                        dirs.append(d['name'])
                 if not cliargs['dirsonly']:
-                    if entry.is_file(follow_symlinks=False):
-                        nondirs.append(entry.name)
+                    for f in api_nondirs:
+                        nondirs.append(f['name'])
+                del api_dirs[:]
+                del api_nondirs[:]
+            else:
+                for entry in scandir(path):
+                    if entry.is_dir(follow_symlinks=False) and not dir_excluded(entry.path, config, cliargs):
+                        dirs.append(entry.name)
+                    if not cliargs['dirsonly']:
+                        if entry.is_file(follow_symlinks=False):
+                            nondirs.append(entry.name)
             q_paths_results.put((path, dirs[:], nondirs[:]))
         except (OSError, IOError) as e:
             logger.warning("[thread-%s] OS/IO Exception caused by: %s" % (threadn, e))
             pass
         except Exception as e:
-            logger.warning("[thread-%s] Exception caused by: %s" % (threadn, e))
-            pass
+            logger.error("[thread-%s] Exception caused by: %s" % (threadn, e))
+            raise
         finally:
             q_paths_in_progress.get()
         del dirs[:]
@@ -1695,13 +1712,8 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
 
         logger.info("Starting crawl using %s treewalk threads (maxdepth %s)" % (cliargs['walkthreads'], cliargs['maxdepth']))
 
-        # qumulo api crawl
-        if cliargs['qumulo']:
-            from diskover_qumulo import qumulo_treewalk
-            qumulo_treewalk(path, q_crawl, num_sep, level, batchsize, cliargs, logger, reindex_dict)
-        # regular crawl using scandir
-        else:
-            treewalk(path, num_sep, level, batchsize, cliargs, logger, reindex_dict)
+        # start tree walking
+        treewalk(path, num_sep, level, batchsize, cliargs, logger, reindex_dict)
 
         return starttime
 
@@ -1882,9 +1894,9 @@ def pre_crawl_tasks():
 
     # add disk space info to es index
     if not cliargs['reindex'] and not cliargs['reindexrecurs'] and not cliargs['crawlbot']:
-        if cliargs['qumulo']:
-            from diskover_qumulo import qumulo_add_diskspace
-            qumulo_add_diskspace(es, cliargs['index'], rootdir_path, qumulo_ip, qumulo_ses, logger)
+        if cliargs['crawlapi']:
+            from diskover_crawlapi import api_add_diskspace
+            api_add_diskspace(es, cliargs['index'], rootdir_path, api_ses, logger)
         else:
             add_diskspace(cliargs['index'], logger, rootdir_path)
 
@@ -1949,19 +1961,8 @@ if __name__ == "__main__":
         calc_dir_sizes(cliargs, logger)
         sys.exit(0)
 
-    # check index name for Qumulo storage
-    if cliargs['qumulo']:
-        try:
-            if cliargs['index'] == "diskover_qumulo" or \
-                    (cliargs['index'].split('_')[0] != "diskover" and
-                             cliargs['index'].split('_')[1] != "qumulo"):
-                print('Please name your index: diskover_qumulo-<string>')
-                sys.exit(1)
-        except IndexError:
-            print('Please name your index: diskover_qumulo-<string>')
-            sys.exit(1)
     # check index name for s3 storage
-    elif cliargs['s3']:
+    if cliargs['s3']:
         try:
             if cliargs['index'] == "diskover_s3" or \
                     (cliargs['index'].split('_')[0] != "diskover" and
@@ -2041,22 +2042,19 @@ if __name__ == "__main__":
         logger.info("Plugins loaded: %s", plugins_list)
 
     # check if rootdir exists
-    if cliargs['qumulo']:
-        if IS_PY3:
-            print('Python 3 not supported using --qumulo, please use Python 2.7.')
-            sys.exit(0)
+    if cliargs['crawlapi']:
         if cliargs['rootdir'] == '.' or cliargs['rootdir'] == "":
             logger.error("Rootdir path missing, use -d /rootdir, exiting")
             sys.exit(1)
-        from diskover_qumulo import qumulo_connection, qumulo_get_file_attr
-        logger.info('Connecting to Qumulo storage api... (--qumulo)')
-        qumulo_ip, qumulo_ses = qumulo_connection()
-        logger.info('Connected to Qumulo api at %s' % qumulo_ip)
-        # check using qumulo api
+        from diskover_crawlapi import api_connection, api_stat, api_listdir
+        logger.info('Connecting to file system storage api at %s... (--crawlapi)' % config['api_url'])
+        api_ses = api_connection()
+        logger.info('Connected to storage api')
+        # check using storage api
         try:
-            qumulo_get_file_attr(cliargs['rootdir'], qumulo_ip, qumulo_ses)
-        except ValueError:
-            logger.error("Rootdir path not found or not a directory, exiting")
+            api_stat(cliargs['rootdir'], api_ses)
+        except ValueError as e:
+            logger.error("Rootdir path not found or not a directory, exiting (%s)" % e)
             sys.exit(1)
     elif cliargs['s3']:
         # ingest s3 inventory files

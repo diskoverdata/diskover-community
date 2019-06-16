@@ -1,5 +1,16 @@
 # Diskover Change Log
 
+## [1.5.0-rc30] = 2019-06-16
+### added
+- crawl api to allow diskover to crawl file system apis (see diskover github wiki for usage instructions)
+- crawlapi section to diskover.cfg.sample, copy to your diskover.cfg
+- --crawlapi flag to diskover.py
+### changed
+- removed qumulo section from diskover.cfg.sample, remove from your config as is no longer used
+- removed diskover_qumulo.py and all code references in diskover (future will add as addon/plugin to new crawl api)
+### fixed
+- indexing a small number of directories would cause dir sizes to not get calculated
+
 ## [1.5.0-rc29] = 2019-01-30
 ### added
 - faster finddupes
