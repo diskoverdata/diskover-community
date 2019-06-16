@@ -71,7 +71,6 @@ If you are a fan of the project or you are using diskover and it's helping you s
 * [cronkeep](https://github.com/cronkeep/cronkeep) (alternative web ui for managing cron jobs)
 * [Gource](http://gource.io) (for Gource visualizations of diskover Elasticsearch data, see videos above)
 * [sharesniffer](https://github.com/shirosaidev/sharesniffer) (for scanning your network for file shares and auto-mounting for crawls)
-* `Python qumulo-api module` (for using Qumulo storage api, --qumulo cli option, install with pip, Python 2.7. only)
 
 ### Download
 
