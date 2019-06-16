@@ -488,13 +488,9 @@ def get_dir_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
             # get directory meta embeded in path
             mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime = metadata
         else:
+            # get directory meta using lstat
             dirpath = path
-            if cliargs['crawlapi']:
-                # get directory meta using api
-                ino, nlink, uid, gid, size, atime, mtime, ctime = api_stat(dirpath, api_ses)
-            else:
-                # get directory meta using lstat
-                mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime = os.lstat(dirpath)
+            mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime = os.lstat(dirpath)
 
         # convert times to utc for es
         mtime_utc = datetime.utcfromtimestamp(mtime).isoformat()
@@ -608,9 +604,6 @@ def get_file_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
         if statsembeded:
             # get embeded stats from path
             mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime, blocks = metadata
-        elif cliargs['crawlapi']:
-            # get file meta using api
-            ino, nlink, uid, gid, size, atime, mtime, ctime = api_stat(fullpath, api_ses)
         else:
             # use lstat to get meta and not follow sym links
             s = os.lstat(fullpath)
@@ -910,7 +903,7 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
         if path_count == 1:
             if type(root) is tuple:
                 statsembeded = True
-        # check if stats embeded in data from diskover tree walk client
+        # check if stats embeded in data from diskover tree walk client or crawlapi
         if statsembeded:
             root_path = root[0]
             dmeta = get_dir_meta(worker, root, cliargs, reindex_dict, statsembeded=True)

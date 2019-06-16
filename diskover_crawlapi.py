@@ -70,14 +70,21 @@ def api_stat(path, ses):
     nlink = d['numLinks']
     ino = d['inode']
     size = d['size']
+    mode = 0
+    dev = 0
 
-    return ino, nlink, uid, gid, size, atime, mtime, ctime
+    return mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime
 
 
 def api_listdir(path, ses):
     dirs = []
     nondirs = []
     page = 1
+
+    # get path metadata
+    path_metadata = api_stat(path, ses)
+    root = (path, path_metadata)
+
     # get all pages of file lists
     while True:
         url = _url('/files/' + quote(path.encode('utf-8'), safe='/') + '/_children?page=%s&pageSize=%s' % (page, config['api_pagesize']))
@@ -87,9 +94,42 @@ def api_listdir(path, ses):
                 items = ujson.loads(resp.text)['_embedded']['children']
                 for d in items:
                     if d['isDirectory'] and not d['isSymbolicLink']:
-                        dirs.append({'path': d['fullPath'], 'name': d['name']})
+                        dirs.append(
+                            (
+                                d['fullPath'],
+                                (
+                                    0,  # mode
+                                    d['inode'], 
+                                    0,  # dev
+                                    d['numLinks'],
+                                    d['uid'],
+                                    d['gid'],
+                                    d['size'],
+                                    dp.parse(d['lastAccessTime']).timestamp(),
+                                    dp.parse(d['lastModifiedTime']).timestamp(),
+                                    dp.parse(d['creationTime']).timestamp()
+                                )
+                            )
+                        )
                     elif d['isRegularFile'] and not d['isSymbolicLink']:
-                        nondirs.append({'name': d['name']})
+                        nondirs.append(
+                            (
+                                d['fullPath'],
+                                (
+                                    0,  # mode
+                                    d['inode'], 
+                                    0,  # dev
+                                    d['numLinks'],
+                                    d['uid'],
+                                    d['gid'],
+                                    d['size'],
+                                    dp.parse(d['lastAccessTime']).timestamp(),
+                                    dp.parse(d['lastModifiedTime']).timestamp(),
+                                    dp.parse(d['creationTime']).timestamp(),
+                                    0  # blocks
+                                )
+                            )
+                        )
             except KeyError:
                 # no items (last page)
                 break
@@ -98,7 +138,7 @@ def api_listdir(path, ses):
         else:
             break
 
-    return dirs, nondirs
+    return root, dirs, nondirs
 
 
 def api_add_diskspace(es, index, path, ses, logger):

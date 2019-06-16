@@ -1494,13 +1494,14 @@ def scandirwalk_worker(threadn):
             if cliargs['debug'] or cliargs['verbose']:
                 logger.info("[thread-%s] scandirwalk_worker: %s" % (threadn, path))
             if cliargs['crawlapi']:
-                api_dirs, api_nondirs = api_listdir(path, api_ses)
+                root, api_dirs, api_nondirs = api_listdir(path, api_ses)
+                path = root
                 for d in api_dirs:
-                    if not dir_excluded(d['path'], config, cliargs):
-                        dirs.append(d['name'])
+                    if not dir_excluded(d[0], config, cliargs):
+                        dirs.append(d)
                 if not cliargs['dirsonly']:
                     for f in api_nondirs:
-                        nondirs.append(f['name'])
+                        nondirs.append(f)
                 del api_dirs[:]
                 del api_nondirs[:]
             else:
@@ -1530,13 +1531,20 @@ def scandirwalk(path):
         entry = q_paths_results.get()
         root, dirs, nondirs = entry
         if cliargs['debug'] or cliargs['verbose']:
-            logger.info("scandirwalk: %s (dircount: %s, filecount: %s)" % (root, str(len(dirs)), str(len(nondirs))))
+            if cliargs['crawlapi']:
+                logger.info("apiwalk: %s (dircount: %s, filecount: %s)" % (root[0], str(len(dirs)), str(len(nondirs))))
+            else:
+                logger.info("scandirwalk: %s (dircount: %s, filecount: %s)" % (root, str(len(dirs)), str(len(nondirs))))
         # yield before recursion
         yield root, dirs, nondirs
         # recurse into subdirectories
-        for name in dirs:
-            new_path = os.path.join(root, name)
-            q_paths.put(new_path)
+        if cliargs['crawlapi']:
+            for d in dirs:
+                q_paths.put(d[0])
+        else:
+            for name in dirs:
+                new_path = os.path.join(root, name)
+                q_paths.put(new_path)
         q_paths_results.task_done()
         if q_paths_results.qsize() == 0 and q_paths.qsize() == 0:
             time.sleep(.5)
