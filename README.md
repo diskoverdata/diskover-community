@@ -62,6 +62,7 @@ If you are a fan of the project or you are using diskover and it's helping you s
 ### Optional Installs
 
 * [diskover-web](https://github.com/shirosaidev/diskover-web) (diskover's web file manager and analytics app)
+* [saisoku](https://github.com/shirosaidev/saisoku) (data sync/mover between on-prem to cloud, etc)
 * [Redis RQ Dashboard](https://python-rq.org/docs/monitoring/) (for monitoring redis queue)
 * [netdata](https://my-netdata.io/) (for realtime monitoring cpu/disk/mem/network/elasticsearch/redis/etc metrics, plugin for rq-dashboard in netdata directory)
 * [Kibana](https://www.elastic.co/products/kibana) (for visualizing Elasticsearch data, tested on Kibana 5.6.9)
