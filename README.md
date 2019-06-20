@@ -126,6 +126,12 @@ $ python /path/to/diskover.py -d /rootpath/you/want/to/crawl -i diskover-indexna
 
 **Defaults for crawl with no flags is to index from . (current directory) and files >0 Bytes and 0 days modified time. Empty files and directores are skipped (unless you use -s 0 and -e flags). Symlinks are not followed and skipped. Use -h to see cli options.**
 
+Don't prompt user to overwrite existing index:
+
+```sh
+$ python /path/to/diskover.py -d /rootpath/you/want/to/crawl -i diskover-indexname -a -O -F
+```
+
 Crawl down to maximum tree depth of 3:
 
 ```sh
