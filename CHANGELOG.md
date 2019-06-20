@@ -1,6 +1,6 @@
 # Diskover Change Log
 
-## [1.5.0-rc30] = 2019-06-16
+## [1.5.0-rc30] = 2019-06-20
 ### added
 - crawl api to allow diskover to crawl file system apis (see diskover github wiki for usage instructions)
 - crawlapi section to diskover.cfg.sample, copy to your diskover.cfg
@@ -13,6 +13,7 @@
 - removed diskover_qumulo.py and all code references in diskover (future will add as addon/plugin to new crawl api)
 ### fixed
 - indexing a small number of directories would cause dir sizes to not get calculated
+- NameError exception when running --crawlbot continuous scanner mode
 
 ## [1.5.0-rc29] = 2019-01-30
 ### added

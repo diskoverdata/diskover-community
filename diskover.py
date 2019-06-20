@@ -1514,7 +1514,7 @@ def calc_dir_sizes(cliargs, logger, path=None):
         sys.exit(0)
 
 
-def scandirwalk_worker(threadn):
+def scandirwalk_worker(threadn, cliargs, logger):
     dirs = []
     nondirs = []
     while True:
@@ -1555,7 +1555,7 @@ def scandirwalk_worker(threadn):
         q_paths.task_done()
 
 
-def scandirwalk(path):
+def scandirwalk(path, cliargs, logger):
     q_paths.put(path)
     while True:
         entry = q_paths_results.get()
@@ -1597,7 +1597,7 @@ def treewalk(top, num_sep, level, batchsize, cliargs, logger, reindex_dict):
 
     # set up threads for tree walk
     for i in range(cliargs['walkthreads']):
-        t = Thread(target=scandirwalk_worker, args=(i,))
+        t = Thread(target=scandirwalk_worker, args=(i, cliargs, logger,))
         t.daemon = True
         t.start()
 
@@ -1612,7 +1612,7 @@ def treewalk(top, num_sep, level, batchsize, cliargs, logger, reindex_dict):
         bar = None
 
     bartimestamp = time.time()
-    for root, dirs, files in scandirwalk(top):
+    for root, dirs, files in scandirwalk(top, cliargs, logger):
         dircount += 1
         totaldirs += 1
         files_len = len(files)
