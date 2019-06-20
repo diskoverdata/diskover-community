@@ -35,9 +35,6 @@ from diskover_connections import es_conn as es
 diskover_connections.connect_to_redis()
 from diskover_connections import redis_conn
 
-# create api connection
-from diskover_crawlapi import api_connection, api_stat
-api_ses = api_connection()
 
 # cache uid/gid names
 uids = []

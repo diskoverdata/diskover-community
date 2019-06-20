@@ -20,12 +20,8 @@ except ImportError:
 import sys
 import requests
 from requests.exceptions import HTTPError
-import ujson
+import json
 import dateutil.parser as dp
-
-import urllib3
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-requests.packages.urllib3.disable_warnings()
 
 
 def _url(path):
@@ -61,7 +57,7 @@ def api_connection():
 def api_stat(path, ses):
     url = _url('/files/' + quote(path.encode('utf-8'), safe='/'))
     resp = ses.get(url, verify=False)
-    d = ujson.loads(resp.text)
+    d = json.loads(resp.text)
     uid = d['uid']
     gid = d['gid']
     ctime = dp.parse(d['creationTime']).timestamp()
@@ -91,7 +87,7 @@ def api_listdir(path, ses):
         resp = ses.get(url, verify=False)
         if resp.status_code == 200:
             try:
-                items = ujson.loads(resp.text)['_embedded']['children']
+                items = json.loads(resp.text)['_embedded']['children']
                 for d in items:
                     if d['isDirectory'] and not d['isSymbolicLink']:
                         dirs.append(
@@ -144,7 +140,7 @@ def api_listdir(path, ses):
 def api_add_diskspace(es, index, path, ses, logger):
     url = _url('/metadata')
     resp = ses.get(url, verify=False)
-    d = ujson.loads(resp.text)
+    d = json.loads(resp.text)
     total = int(d['totalSpace'])
     free = int(d['unallocatedSpace'])
     available = int(d['usableSpace'])
