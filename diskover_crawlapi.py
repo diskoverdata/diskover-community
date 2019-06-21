@@ -127,10 +127,17 @@ def api_listdir(path, ses):
                             )
                         )
             except KeyError:
-                # no items (last page)
+                # no items
                 break
             finally:
-                page = page + 1
+                # check if there is a next page or if on last page
+                try:
+                    url_next = json.loads(resp.text)['_links']['next']['href']
+                except KeyError:
+                    # no more pages
+                    break
+                finally:
+                    page = page + 1
         else:
             break
 
