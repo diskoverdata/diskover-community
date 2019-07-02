@@ -1,5 +1,9 @@
 # Diskover Change Log
 
+# [1.5.0.1] - 2019-07-02
+### changed
+- ended release candidate (rc) ver
+
 ## [1.5.0-rc30] = 2019-06-20
 ### added
 - crawl api to allow diskover to crawl file system apis (see diskover github wiki for usage instructions)

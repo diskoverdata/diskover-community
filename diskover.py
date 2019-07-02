@@ -38,7 +38,7 @@ import sys
 import json
 
 
-version = '1.5.0-rc30'
+version = '1.5.0.1'
 __version__ = version
 
 IS_PY3 = sys.version_info >= (3, 0)
