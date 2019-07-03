@@ -1,5 +1,9 @@
 # Diskover Change Log
 
+# [1.5.0.2] - 2019-07-03
+### changed
+- version increase to match diskover-web updates
+
 # [1.5.0.1] - 2019-07-02
 ### changed
 - ended release candidate (rc) ver

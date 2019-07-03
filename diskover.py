@@ -6,7 +6,7 @@ your file metadata into Elasticsearch.
 See README.md or https://github.com/shirosaidev/diskover
 for more information.
 
-Copyright (C) Chris Park 2017-2018
+Copyright (C) Chris Park 2017-2019
 diskover is released under the Apache 2.0 license. See
 LICENSE for the full license text.
 """
@@ -38,7 +38,7 @@ import sys
 import json
 
 
-version = '1.5.0.1'
+version = '1.5.0.2'
 __version__ = version
 
 IS_PY3 = sys.version_info >= (3, 0)
