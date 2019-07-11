@@ -22,7 +22,7 @@ while [ "$1" != "" ]; do
         esac 
 done
 
-if [ -z "$USE_FTP" ]; then
+if ! [ -z "$USE_FTP" ]; then
     echo "Will mount ftp://$FTP_HOST:$FTP_PORT/$FTP_PATH on $DISKOVER_ROOTDIR"
     curlftpfs -r -o custom_list=LIST "ftp://$FTP_USR:$FTP_PWD@$FTP_HOST:$FTP_PORT/$FTP_PATH" "$DISKOVER_ROOTDIR"
     echo "Will execute: $DISKOVER_CMD"
