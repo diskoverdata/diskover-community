@@ -16,15 +16,13 @@ while [ "$1" != "" ]; do
                 --ftp-path )            FTP_PATH=$2; shift 2;;
                 --ftp-username )        FTP_USR=$2; shift 2;;
                 --ftp-password )        FTP_PWD=$2; shift 2;;
-                --diskover-server )     DISKOVER_CMD="python diskover.py"; shift;;
+                --diskover-server )     DISKOVER_CMD="python diskover.py --rootdir $SCAN_DIR"; shift;;
                 --diskover-worker )     DISKOVER_CMD="python diskover_worker_bot.py"; shift;;
                 --ftp )                 USE_FTP=1; shift;;
                 --)                     shift; break;;
                 * )                     DISKOVER_CMD="$DISKOVER_CMD $1"; shift;;
         esac 
 done
-
-DISKOVER_CMD="$DISKOVER_CMD --rootdir $SCAN_DIR"
 
 if ! [ -z "$USE_FTP" ]; then
     echo "Will mount ftp://$FTP_HOST:$FTP_PORT/$FTP_PATH on $DISKOVER_ROOTDIR"
