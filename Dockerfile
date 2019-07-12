@@ -17,4 +17,4 @@ RUN apt-get update && \
 
 VOLUME ["${DISKOVER_ROOTDIR}"]
 
-ENTRYPOINT ["/bin/bash", "entrypoint.sh", "--rootdir", "${DISKOVER_ROOTDIR}"]
+ENTRYPOINT ["/bin/bash", "entrypoint.sh"]
