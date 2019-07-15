@@ -1,4 +1,6 @@
 #!/bin/bash
+set -e
+
 USE_FTP=
 FTP_USR=anonymous
 FTP_PWD=
@@ -26,9 +28,9 @@ if ! [ -z "$USE_FTP" ]; then
     echo "Will mount ftp://$FTP_HOST:$FTP_PORT/$FTP_PATH on $DISKOVER_ROOTDIR"
     curlftpfs -r -o custom_list=LIST "ftp://$FTP_USR:$FTP_PWD@$FTP_HOST:$FTP_PORT/$FTP_PATH" "$DISKOVER_ROOTDIR"
     echo "Will execute: $DISKOVER_CMD"
-    eval "$DISKOVER_CMD"
+    eval '$DISKOVER_CMD'
     fusermount -u "$DISKOVER_ROOTDIR"
 else
     echo "Will execute: $DISKOVER_CMD"
-    eval "$DISKOVER_CMD"
+    eval '$DISKOVER_CMD'
 fi
