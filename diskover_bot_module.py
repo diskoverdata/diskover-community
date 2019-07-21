@@ -596,7 +596,7 @@ def get_file_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
         # check if file is in exluded_files list
         if file_excluded(filename):
             return None
-        extension = os.path.splitext(filename)[1][1:].strip().lower()
+        extension = os.path.splitext(filename)[1][1:].lower()
 
         if statsembeded:
             # get embeded stats from path
@@ -947,7 +947,7 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
                     tree_files.append(fmeta)
                     filecount += 1
 
-            # update crawl time=
+            # update crawl time
             elapsed = time.time() - starttime
             dmeta['crawl_time'] = round(elapsed, 6)
             # check for empty dirs and dirsonly cli arg
@@ -979,7 +979,7 @@ def file_excluded(filename):
     if filename in config['excluded_files']:
         return True
     # check for extension in and . (dot) files in excluded_files
-    extension = os.path.splitext(filename)[1][1:].strip().lower()
+    extension = os.path.splitext(filename)[1][1:].lower()
     if (not extension and 'NULLEXT' in config['excluded_files']) or \
                             '*.' + extension in config['excluded_files'] or \
             (filename.startswith('.') and u'.*' in config['excluded_files']):

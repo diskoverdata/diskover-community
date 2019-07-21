@@ -3,7 +3,7 @@
 # starts multiple bots to help with diskover redis queue
 # https://github.com/shirosaidev/diskover
 #
-# Copyright (C) Chris Park 2017-2018
+# Copyright (C) Chris Park 2017-2019
 # diskover is released under the Apache 2.0 license. See
 # LICENSE for the full license text.
 #
@@ -32,7 +32,7 @@ BOTPIDS=/tmp/diskover_bot_pids
 ###########################################################
 
 
-VERSION="1.6"
+VERSION="1.6.1"
 
 function printhelp {
     echo "Usage: $(basename $0) [OPTION]"
@@ -113,6 +113,15 @@ function startbots {
             $PYTHON $DISKOVERBOT $ARGS > /dev/null 2>&1 &
         else
             $PYTHON $DISKOVERBOT $ARGS >> $BOTLOG.$i 2>&1 &
+        fi
+        # check if bot started
+        if [ $i -eq 1 ]; then
+            sleep 1
+            ps -p $! > /dev/null 2>&1
+            if [ $? -gt 0 ]; then
+                echo "ERROR starting bot, check redis and ES are running and diskover.cfg settings."
+                exit 1
+            fi
         fi
         echo "$(hostname -s).$! (pid $!) (botnum $i)"
         echo "$!" >> $BOTPIDS

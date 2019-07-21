@@ -38,7 +38,7 @@ import sys
 import json
 
 
-version = '1.5.0.2'
+version = '1.5.0.3'
 __version__ = version
 
 IS_PY3 = sys.version_info >= (3, 0)
@@ -1190,10 +1190,11 @@ def escape_chars(text):
     """This is the escape special characters function.
     It returns escaped path strings for es queries.
     """
-    # escape any backslace characters
+    # escape any backslash chars
     text = text.replace('\\', '\\\\')
     # escape any characters in chr_dict
-    chr_dict = {'/': '\\/', '(': '\\(', ')': '\\)', '[': '\\[', ']': '\\]', '$': '\\$',
+    chr_dict = {'\n': '\\n', '\t': '\\t',
+                '/': '\\/', '(': '\\(', ')': '\\)', '[': '\\[', ']': '\\]', '$': '\\$',
                 ' ': '\\ ', '&': '\\&', '<': '\\<', '>': '\\>', '+': '\\+', '-': '\\-',
                 '|': '\\|', '!': '\\!', '{': '\\{', '}': '\\}', '^': '\\^', '~': '\\~',
                 '?': '\\?', ':': '\\:', '=': '\\=', '\'': '\\\'', '"': '\\"', '@': '\\@',

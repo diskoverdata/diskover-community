@@ -1,5 +1,13 @@
 # Diskover Change Log
 
+# [1.5.0.3] - 2019-07-20
+### added
+- diskover-bot-launcher.sh version 1.6.1 - added check for bot starting and error print out
+### changed
+- select indices page now shows any index still being built status in drop down list
+### fixed
+- dir calc issues with newline "\n" characters in paths
+
 # [1.5.0.2] - 2019-07-03
 ### changed
 - version increase to match diskover-web updates
