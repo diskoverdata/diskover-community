@@ -32,7 +32,7 @@ BOTPIDS=/tmp/diskover_bot_pids
 ###########################################################
 
 
-VERSION="1.6.1"
+VERSION="1.6.2"
 
 function printhelp {
     echo "Usage: $(basename $0) [OPTION]"
@@ -122,7 +122,7 @@ function startbots {
         # check if bot started
         if [ $i -eq 1 ]; then
             sleep 1
-            ps -p $! > /dev/null 2>&1
+            ps | grep -v grep | grep $! > /dev/null 2>&1
             if [ $? -gt 0 ]; then
                 echo "ERROR starting bot, check redis and ES are running and diskover.cfg settings."
                 exit 1
@@ -146,7 +146,7 @@ function killbots {
         echo "Killing worker bot pids:"
         for PID in `cat $BOTPIDS`; do
             echo "$PID"
-            if `ps -p $PID > /dev/null 2>&1`; then
+            if `ps | grep -v grep | grep $PID > /dev/null 2>&1`; then
                 kill $PID
             fi
         done
@@ -178,7 +178,7 @@ function showbots {
     if [ -f $BOTPIDS ]; then
         echo "Running worker bots:"
         for PID in `cat $BOTPIDS`; do
-            if `ps -p $PID > /dev/null 2>&1`; then
+            if `ps | grep -v grep | grep $PID > /dev/null 2>&1`; then
                 echo "$(hostname -s).$PID (pid $PID)"
             fi
         done

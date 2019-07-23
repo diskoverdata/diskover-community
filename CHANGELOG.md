@@ -1,8 +1,8 @@
 # Diskover Change Log
 
-# [1.5.0.3] - 2019-07-20
+# [1.5.0.3] - 2019-07-23
 ### added
-- diskover-bot-launcher.sh version 1.6.1 - added check for bot starting and error print out
+- diskover-bot-launcher.sh version 1.6.2 - added bot start check and check for .py file paths (config settings at top of .sh file)
 ### changed
 - select indices page now shows any index still being built status in drop down list
 ### fixed
