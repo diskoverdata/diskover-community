@@ -108,6 +108,11 @@ function startbots {
     elif [ $LOGLEVEL == 3 ]; then
         ARGS+="-l DEBUG"
     fi
+    # check if .py file exists
+    if [ ! -f $DISKOVERBOT ]; then
+        echo "Can't find $DISKOVERBOT, check config at top of this file."
+        exit 1
+    fi
     for (( i = 1; i <= $WORKERBOTS; i++ )); do
         if [ ! $BOTLOG ]; then
             $PYTHON $DISKOVERBOT $ARGS > /dev/null 2>&1 &
@@ -156,6 +161,11 @@ function killbots {
 
 function removebots {
     echo "Removing any stuck/idle worker bot connections in Redis..."
+    # check if .py file exists
+    if [ ! -f $KILLREDISCONN ]; then
+        echo "Can't find $KILLREDISCONN, check config at top of this file."
+        exit 1
+    fi
     if [ $FORCEREMOVEBOTS == TRUE ]; then
         $PYTHON $KILLREDISCONN -f
     else
