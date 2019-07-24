@@ -38,7 +38,7 @@ import sys
 import json
 
 
-version = '1.5.0.3'
+version = '1.5.0.4'
 __version__ = version
 
 IS_PY3 = sys.version_info >= (3, 0)
@@ -1545,6 +1545,9 @@ def scandirwalk_worker(threadn, cliargs, logger):
             q_paths_results.put((path, dirs[:], nondirs[:]))
         except (OSError, IOError) as e:
             logger.warning("[thread-%s] OS/IO Exception caused by: %s" % (threadn, e))
+            pass
+        except UnicodeDecodeError as e:
+            logger.warning("[thread-%s] Unicode Decode Exception caused by: %s (path: %s)" % (threadn, e, path))
             pass
         except Exception as e:
             logger.error("[thread-%s] Exception caused by: %s" % (threadn, e))
