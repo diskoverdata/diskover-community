@@ -187,17 +187,15 @@ https://hub.docker.com/r/linuxserver/diskover/
 
 [Read the wiki](https://github.com/shirosaidev/diskover/wiki) for more documentation on how to use diskover.
 
-## Discussions/Questions
+## Discussions/Support
 
-For discussions or questions about diskover, please ask on [Google Group](https://groups.google.com/forum/?hl=en#!forum/diskover).
+For discussions or support for diskover join the [diskover Slack workspace](https://join.slack.com/t/diskoverworkspace/shared_invite/enQtNzAzMzE4NjkyMDk3LTQ0ODUwN2NmMWM3NWMzZDViY2Q5MDQ4NDRmNjVjNzBiMWE5OTM0YzRkMGU3NzA5N2I5MTZmZDMzYTNlZWVkZDc), my username is @shirosai.
+
+You can also post a comment/question on [Google Group](https://groups.google.com/forum/?hl=en#!forum/diskover).
 
 ## Bugs
 
 For bugs about diskover, please use the [issues page](https://github.com/shirosaidev/diskover/issues).
-
-## Contact developer
-
-For questions or support with diskover you can also contact me on [linuxserver.io Discord](https://discord.gg/YWrKVTn) @shirosai.
 
 ## License
 
