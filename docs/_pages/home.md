@@ -98,3 +98,5 @@ intro:
 <h2>diskover worker bots crawling file system (gource videos)</h2>
 {::nomarkdown}<iframe width="560" height="315" src="https://www.youtube.com/embed/qKLJjZ0TMqA?rel=0" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>{:/nomarkdown}<br />
 {::nomarkdown}<iframe width="560" height="315" src="https://www.youtube.com/embed/InlfK8GQ-kM?rel=0" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>{:/nomarkdown}
+<h2>Questions/Support</h2>
+<p>For questions or support with diskover, please join the <a href="https://join.slack.com/t/diskoverworkspace/shared_invite/enQtNzAzMzE4NjkyMDk3LTQ0ODUwN2NmMWM3NWMzZDViY2Q5MDQ4NDRmNjVjNzBiMWE5OTM0YzRkMGU3NzA5N2I5MTZmZDMzYTNlZWVkZDc">diskover Slack workspace</a>.</p>
