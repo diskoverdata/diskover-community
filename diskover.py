@@ -38,7 +38,7 @@ import sys
 import json
 
 
-version = '1.5.0.4'
+version = '1.5.0.5'
 __version__ = version
 
 IS_PY3 = sys.version_info >= (3, 0)
@@ -1299,6 +1299,8 @@ def parse_cli_args(indexname):
                         help="Starts up crawl bot continuous scanner to scan for dir changes in index")
     parser.add_argument("--crawlapi", action="store_true",
                         help="Use storage Restful API instead of scandir")
+    parser.add_argument("--storagent", metavar='HOST', nargs='+',
+                        help="Use diskover Storage Agent instead of scandir")
     parser.add_argument("--s3", metavar='FILE', nargs='+',
                         help="Import AWS S3 inventory csv file(s) (gzipped) to diskover index")
     parser.add_argument("--dircalcsonly", action="store_true",
@@ -1518,6 +1520,16 @@ def calc_dir_sizes(cliargs, logger, path=None):
 def scandirwalk_worker(threadn, cliargs, logger):
     dirs = []
     nondirs = []
+    # check if we are using storage agent and make connection
+    if cliargs['storagent']:
+        stor_agent = True
+        hostlist = cliargs['storagent']
+        stor_agent_conn = diskover_agent.AgentConnection(hosts=hostlist)
+        stor_agent_conn.connect()
+        if cliargs['debug'] or cliargs['verbose']:
+            logger.info("[thread-%s] Connected to Storage Agent host: %s" % (threadn, stor_agent_conn.conn_host()))
+    else:
+        stor_agent = False
     while True:
         path = q_paths.get()
         try:
@@ -1535,13 +1547,26 @@ def scandirwalk_worker(threadn, cliargs, logger):
                         nondirs.append(f)
                 del api_dirs[:]
                 del api_nondirs[:]
+            elif stor_agent:
+                # grab dir list from storage agent server
+                dir_list = stor_agent_conn.listdir(path)
+                logger.debug("[thread-%s] scandirwalk_worker: Storage Agent host response time: %s" % (threadn, stor_agent_conn.response_time()))
+                path, dirs_noexcl, nondirs = dir_list
+                for d in dirs_noexcl:
+                    if not dir_excluded(d, config, cliargs):
+                        dirs.append(d)
             else:
+                item_count = 0
                 for entry in scandir(path):
                     if entry.is_dir(follow_symlinks=False) and not dir_excluded(entry.path, config, cliargs):
                         dirs.append(entry.name)
-                    if not cliargs['dirsonly']:
-                        if entry.is_file(follow_symlinks=False):
-                            nondirs.append(entry.name)
+                    elif entry.is_file(follow_symlinks=False) and not cliargs['dirsonly']:
+                        nondirs.append(entry.name)
+                    if item_count == 100000:
+                        if cliargs['debug'] or cliargs['verbose']:
+                            logger.info("[thread-%s] scandirwalk_worker: processing directory with many files: %s" % (threadn, path))
+                    else:
+                        item_count += 1
             q_paths_results.put((path, dirs[:], nondirs[:]))
         except (OSError, IOError) as e:
             logger.warning("[thread-%s] OS/IO Exception caused by: %s" % (threadn, e))
@@ -2097,6 +2122,12 @@ if __name__ == "__main__":
             api_stat(cliargs['rootdir'], api_ses)
         except ValueError as e:
             logger.error("Rootdir path not found or not a directory, exiting (%s)" % e)
+            sys.exit(1)
+    elif cliargs['storagent']:
+        try:
+            import diskover_agent
+        except ImportError:
+            logger.error("Missing diskover_agent.py module, exiting")
             sys.exit(1)
     elif cliargs['s3']:
         # ingest s3 inventory files

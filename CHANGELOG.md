@@ -1,5 +1,12 @@
 # Diskover Change Log
 
+# [1.5.0.5] - 2019-07-31
+### added
+- diskover Storage Agent support with new --storagent cli option (see https://github.com/shirosaidev/diskover-storage-agent)
+- log output if one of the tree walk threads is scanning a directory with many files
+### changed
+- optimized tree walk code
+
 # [1.5.0.4] - 2019-07-24
 ### changed
 - unicode decode path error will now print warning instead of diskover tree walk thread raising an error and stopping
