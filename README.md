@@ -63,6 +63,7 @@ If you are a fan of the project or you are using diskover and it's helping you s
 
 * [diskover-web](https://github.com/shirosaidev/diskover-web) (diskover's web file manager and analytics app)
 * [storage agent](https://github.com/shirosaidev/diskover-storage-agent) (diskover's storage agent for running on remote storage)
+* [tree walk client](https://github.com/shirosaidev/diskover-treewalk-client/) (diskover's tree walk client for running on remote storage)
 * [saisoku](https://github.com/shirosaidev/saisoku) (data sync/mover between on-prem to cloud, etc)
 * [sharesniffer](https://github.com/shirosaidev/sharesniffer) (for scanning your network for file shares and auto-mounting for crawls)
 * [Redis RQ Dashboard](https://python-rq.org/docs/monitoring/) (for monitoring redis queue)
@@ -167,9 +168,6 @@ $ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl/dir2 --reind
 ...
 $ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl --dircalcsonly --maxdcdepth 0
 ```
-
-## TCP socket client for running tree walk directly on remote storage
-diskover has a tcp socket client that can tree walk locally on storage and send data to diskover socket server which acts as a proxy for enqueuing to redis rq. [Read more](https://github.com/shirosaidev/diskover-treewalk-client/).
 
 ## OVA image file (for vmware, etc)
 
