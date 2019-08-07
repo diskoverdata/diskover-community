@@ -346,16 +346,16 @@ def run_command(threadnum, command_dict, clientsock, cliargs, logger):
         if action == 'crawl':
             path = command_dict['path']
             cmd = [pythonpath, diskoverpath, '-b', batchsize,
-                   '-i', index, '-d', path, '-q']
+                   '-i', index, '-d', path, '-q', '-F']
 
         elif action == 'finddupes':
             cmd = [pythonpath, diskoverpath, '-b', batchsize,
-                   '-i', index, '--finddupes', '-q']
+                   '-i', index, '--finddupes', '-q', '-F']
 
         elif action == 'hotdirs':
             index2 = str(command_dict['index2'])
             cmd = [pythonpath, diskoverpath, '-b', batchsize,
-                   '-i', index, '--hotdirs', index2, '-q']
+                   '-i', index, '--hotdirs', index2, '-q', '-F']
 
         elif action == 'reindex':
             try:
@@ -366,10 +366,10 @@ def run_command(threadnum, command_dict, clientsock, cliargs, logger):
             path = command_dict['path']
             if recursive == 'true':
                 cmd = [pythonpath, diskoverpath, '-b', batchsize,
-                    '-i', index, '-d', path, '-R', '-q']
+                    '-i', index, '-d', path, '-R', '-q', '-F']
             else:
                 cmd = [pythonpath, diskoverpath, '-b', batchsize,
-                    '-i', index, '-d', path, '-r', '-q']
+                    '-i', index, '-d', path, '-r', '-q', '-F']
 
         elif action == 'updatedirsizes':
             try:
@@ -379,11 +379,11 @@ def run_command(threadnum, command_dict, clientsock, cliargs, logger):
                 pass
             if recursive == 'true':
                 cmd = [pythonpath, diskoverpath, '-b', batchsize,
-                       '-i', index, '--dircalcsonly', '-q']
+                       '-i', index, '--dircalcsonly', '-q', '-F']
             else:
                 path = command_dict['path']
                 cmd = [pythonpath, diskoverpath, '-b', batchsize,
-                       '-i', index, '-d', path, '--dircalcsonly', '--maxdcdepth', '0', '-q']
+                       '-i', index, '-d', path, '--dircalcsonly', '--maxdcdepth', '0', '-q', '-F']
 
         elif action == 'kill':
             taskid = command_dict['taskid']

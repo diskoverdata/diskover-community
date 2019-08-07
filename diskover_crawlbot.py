@@ -93,7 +93,7 @@ def start_crawlbot_scanner(cliargs, logger, rootdir_path, botdirlist, reindex_di
     global dirlist
     dirlist = botdirlist
 
-    logger.info('diskover crawl bot continuous scanner starting up')
+    logger.info('diskover crawl bot continuous scanner starting up (--crawlbot)')
     logger.info('Randomly scanning for changes every %s sec using %s threads',
                 config['crawlbot_botsleep'], config['crawlbot_botthreads'])
     logger.info('*** Press Ctrl-c to shutdown ***')

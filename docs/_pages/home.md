@@ -8,7 +8,7 @@ header:
   cta_label: "<i class='fa fa-download' aria-hidden='true'></i> Download"
   cta_url: "https://github.com/shirosaidev/diskover/releases/latest"
   caption:
-excerpt: '<img src="https://github.com/shirosaidev/diskover/raw/master/docs/diskover.png?raw=true" style="width: 183px; float: left; margin: 0px 30px 10px 0px;">File system crawler, storage search engine and storage analytics software powered by Elasticsearch to help visualize and manage your disk space usage.<br /> <small><a href="https://github.com/shirosaidev/diskover/releases/tag/v1.5.0-rc29">Latest release v1.5.0-rc29</a></small><br /><br />
+excerpt: '<img src="https://github.com/shirosaidev/diskover/raw/master/docs/diskover.png?raw=true" style="width: 183px; float: left; margin: 0px 30px 10px 0px;">File system crawler, storage search engine and storage analytics software powered by Elasticsearch to help visualize and manage your disk space usage.<br /> <small><a href="https://github.com/shirosaidev/diskover/releases/tag/v1.5.0.5">Latest release v1.5.0.5</a></small><br /><br />
 {::nomarkdown}<iframe style="display: inline-block;" src="https://ghbtns.com/github-btn.html?user=shirosaidev&repo=diskover&type=star&count=true&size=large" frameborder="0" scrolling="0" width="160px" height="30px"></iframe> <iframe style="display: inline-block;" src="https://ghbtns.com/github-btn.html?user=shirosaidev&repo=diskover&type=fork&count=true&size=large" frameborder="0" scrolling="0" width="158px" height="30px"></iframe>{:/nomarkdown}'
 feature_row:
   - url: https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-filetree-screenshot.png?raw=true
@@ -98,3 +98,5 @@ intro:
 <h2>diskover worker bots crawling file system (gource videos)</h2>
 {::nomarkdown}<iframe width="560" height="315" src="https://www.youtube.com/embed/qKLJjZ0TMqA?rel=0" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>{:/nomarkdown}<br />
 {::nomarkdown}<iframe width="560" height="315" src="https://www.youtube.com/embed/InlfK8GQ-kM?rel=0" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>{:/nomarkdown}
+<h2>Questions/Support</h2>
+<p>For questions or support with diskover, please join the <a href="https://join.slack.com/t/diskoverworkspace/shared_invite/enQtNzAzMzE4NjkyMDk3LTQ0ODUwN2NmMWM3NWMzZDViY2Q5MDQ4NDRmNjVjNzBiMWE5OTM0YzRkMGU3NzA5N2I5MTZmZDMzYTNlZWVkZDc">diskover Slack workspace</a>.</p>

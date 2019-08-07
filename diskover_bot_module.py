@@ -35,6 +35,7 @@ from diskover_connections import es_conn as es
 diskover_connections.connect_to_redis()
 from diskover_connections import redis_conn
 
+
 # cache uid/gid names
 uids = []
 gids = []
@@ -397,7 +398,7 @@ def cost_per_gb(metadict, fullpath, mtime, atime, ctime, doctype):
     return metadict
 
 
-def get_owner_group_names(uid, gid):
+def get_owner_group_names(uid, gid, cliargs):
     """This is the get owner group name function.
     It tries to get owner and group names and deals
     with uid/gid -> name cacheing.
@@ -411,7 +412,7 @@ def get_owner_group_names(uid, gid):
     # not in cache
     else:
         # check if we should just get uid or try to get owner name
-        if config['ownersgroups_uidgidonly'] == "true":
+        if config['ownersgroups_uidgidonly'] == "true" or cliargs['crawlapi']:
             owner = uid
         else:
             try:
@@ -442,7 +443,7 @@ def get_owner_group_names(uid, gid):
     # not in cache
     else:
         # check if we should just get gid or try to get group name
-        if config['ownersgroups_uidgidonly'] == "true":
+        if config['ownersgroups_uidgidonly'] == "true" or cliargs['crawlapi']:
             group = gid
         else:
             try:
@@ -484,8 +485,8 @@ def get_dir_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
             # get directory meta embeded in path
             mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime = metadata
         else:
-            dirpath = path
             # get directory meta using lstat
+            dirpath = path
             mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime = os.lstat(dirpath)
 
         # convert times to utc for es
@@ -507,7 +508,7 @@ def get_dir_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
         indextime_utc = datetime.utcnow().isoformat()
 
         # get owner and group names
-        owner, group = get_owner_group_names(uid, gid)
+        owner, group = get_owner_group_names(uid, gid, cliargs)
 
         filename = os.path.basename(dirpath)
         parentdir = os.path.abspath(os.path.join(dirpath, os.pardir))
@@ -565,7 +566,7 @@ def get_dir_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
         return False
     except Exception as e:
         warnings.warn("Exception caused by: %s" % e)
-        return False
+        raise
 
     # cache directory times in Redis, encode path (key) using base64
     if config['redis_cachedirtimes'] == 'true':
@@ -595,7 +596,7 @@ def get_file_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
         # check if file is in exluded_files list
         if file_excluded(filename):
             return None
-        extension = os.path.splitext(filename)[1][1:].strip().lower()
+        extension = os.path.splitext(filename)[1][1:].lower()
 
         if statsembeded:
             # get embeded stats from path
@@ -633,7 +634,7 @@ def get_file_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
         ctime_utc = datetime.utcfromtimestamp(ctime).isoformat()
 
         # get owner and group names
-        owner, group = get_owner_group_names(uid, gid)
+        owner, group = get_owner_group_names(uid, gid, cliargs)
 
         # create md5 hash of file using metadata filesize and mtime
         filestring = str(size) + str(mtime)
@@ -884,11 +885,6 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
     global worker
     tree_dirs = []
     tree_files = []
-    if cliargs['qumulo']:
-        qumulo = True
-        from diskover_qumulo import qumulo_get_dir_meta, qumulo_get_file_meta
-    else:
-        qumulo = False
     totalcrawltime = 0
     statsembeded = False
 
@@ -904,14 +900,8 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
         if path_count == 1:
             if type(root) is tuple:
                 statsembeded = True
-        if qumulo:
-            if root['path'] != '/':
-                root_path = root['path'].rstrip(os.path.sep)
-            else:
-                root_path = root['path']
-            dmeta = qumulo_get_dir_meta(worker, root, cliargs, reindex_dict, redis_conn)
-        # check if stats embeded in data from diskover tree walk client
-        elif statsembeded:
+        # check if stats embeded in data from diskover tree walk client or crawlapi
+        if statsembeded:
             root_path = root[0]
             dmeta = get_dir_meta(worker, root, cliargs, reindex_dict, statsembeded=True)
         else:
@@ -948,9 +938,7 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
                         files.append(entry.name)
             filecount = 0
             for file in files:
-                if qumulo:
-                    fmeta = qumulo_get_file_meta(worker, file, cliargs, reindex_dict)
-                elif statsembeded:
+                if statsembeded:
                     fmeta = get_file_meta(worker, file, cliargs, reindex_dict, statsembeded=True)
                 else:
                     fmeta = get_file_meta(worker, os.path.join(root_path, file), cliargs,
@@ -959,7 +947,7 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
                     tree_files.append(fmeta)
                     filecount += 1
 
-            # update crawl time=
+            # update crawl time
             elapsed = time.time() - starttime
             dmeta['crawl_time'] = round(elapsed, 6)
             # check for empty dirs and dirsonly cli arg
@@ -991,7 +979,7 @@ def file_excluded(filename):
     if filename in config['excluded_files']:
         return True
     # check for extension in and . (dot) files in excluded_files
-    extension = os.path.splitext(filename)[1][1:].strip().lower()
+    extension = os.path.splitext(filename)[1][1:].lower()
     if (not extension and 'NULLEXT' in config['excluded_files']) or \
                             '*.' + extension in config['excluded_files'] or \
             (filename.startswith('.') and u'.*' in config['excluded_files']):

@@ -3,7 +3,7 @@
 # starts multiple bots to help with diskover redis queue
 # https://github.com/shirosaidev/diskover
 #
-# Copyright (C) Chris Park 2017-2018
+# Copyright (C) Chris Park 2017-2019
 # diskover is released under the Apache 2.0 license. See
 # LICENSE for the full license text.
 #
@@ -32,7 +32,7 @@ BOTPIDS=/tmp/diskover_bot_pids
 ###########################################################
 
 
-VERSION="1.6"
+VERSION="1.6.2"
 
 function printhelp {
     echo "Usage: $(basename $0) [OPTION]"
@@ -108,11 +108,25 @@ function startbots {
     elif [ $LOGLEVEL == 3 ]; then
         ARGS+="-l DEBUG"
     fi
+    # check if .py file exists
+    if [ ! -f $DISKOVERBOT ]; then
+        echo "Can't find $DISKOVERBOT, check config at top of this file."
+        exit 1
+    fi
     for (( i = 1; i <= $WORKERBOTS; i++ )); do
         if [ ! $BOTLOG ]; then
             $PYTHON $DISKOVERBOT $ARGS > /dev/null 2>&1 &
         else
             $PYTHON $DISKOVERBOT $ARGS >> $BOTLOG.$i 2>&1 &
+        fi
+        # check if bot started
+        if [ $i -eq 1 ]; then
+            sleep 1
+            ps | grep -v grep | grep $! > /dev/null 2>&1
+            if [ $? -gt 0 ]; then
+                echo "ERROR starting bot, check redis and ES are running and diskover.cfg settings."
+                exit 1
+            fi
         fi
         echo "$(hostname -s).$! (pid $!) (botnum $i)"
         echo "$!" >> $BOTPIDS
@@ -132,7 +146,7 @@ function killbots {
         echo "Killing worker bot pids:"
         for PID in `cat $BOTPIDS`; do
             echo "$PID"
-            if `ps -p $PID > /dev/null 2>&1`; then
+            if `ps | grep -v grep | grep $PID > /dev/null 2>&1`; then
                 kill $PID
             fi
         done
@@ -147,6 +161,11 @@ function killbots {
 
 function removebots {
     echo "Removing any stuck/idle worker bot connections in Redis..."
+    # check if .py file exists
+    if [ ! -f $KILLREDISCONN ]; then
+        echo "Can't find $KILLREDISCONN, check config at top of this file."
+        exit 1
+    fi
     if [ $FORCEREMOVEBOTS == TRUE ]; then
         $PYTHON $KILLREDISCONN -f
     else
@@ -159,7 +178,7 @@ function showbots {
     if [ -f $BOTPIDS ]; then
         echo "Running worker bots:"
         for PID in `cat $BOTPIDS`; do
-            if `ps -p $PID > /dev/null 2>&1`; then
+            if `ps | grep -v grep | grep $PID > /dev/null 2>&1`; then
                 echo "$(hostname -s).$PID (pid $PID)"
             fi
         done

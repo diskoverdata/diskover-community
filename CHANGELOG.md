@@ -1,5 +1,47 @@
 # Diskover Change Log
 
+# [1.5.0.5] - 2019-07-31
+### added
+- diskover Storage Agent support with new --storagent cli option (see https://github.com/shirosaidev/diskover-storage-agent)
+- log output if one of the tree walk threads is scanning a directory with many files
+### changed
+- optimized tree walk code
+
+# [1.5.0.4] - 2019-07-24
+### changed
+- unicode decode path error will now print warning instead of diskover tree walk thread raising an error and stopping
+
+# [1.5.0.3] - 2019-07-23
+### added
+- diskover-bot-launcher.sh version 1.6.2 - added bot start check and check for .py file paths (config settings at top of .sh file)
+### changed
+- select indices page now shows any index still being built status in drop down list
+### fixed
+- dir calc issues with newline "\n" characters in paths
+
+# [1.5.0.2] - 2019-07-03
+### changed
+- version increase to match diskover-web updates
+
+# [1.5.0.1] - 2019-07-02
+### changed
+- ended release candidate (rc) ver
+
+## [1.5.0-rc30] = 2019-06-20
+### added
+- crawl api to allow diskover to crawl file system apis (see diskover github wiki for usage instructions)
+- crawlapi section to diskover.cfg.sample, copy to your diskover.cfg
+- --crawlapi flag to diskover.py
+- optional usage of json files for storagecost and autotag definitions (see diskover.cfg.sample and wiki for how to) (@mathse)
+- cli option -F --forcedropexisting to silenty drop existing index (@fake-name)
+### changed
+- user prompt before deleting existing index (@fake-name)
+- removed qumulo section from diskover.cfg.sample, remove from your config as is no longer used
+- removed diskover_qumulo.py and all code references in diskover (future will add as addon/plugin to new crawl api)
+### fixed
+- indexing a small number of directories would cause dir sizes to not get calculated
+- NameError exception when running --crawlbot continuous scanner mode
+
 ## [1.5.0-rc29] = 2019-01-30
 ### added
 - faster finddupes
