@@ -38,6 +38,12 @@ def api_connection():
     api_user = config['api_user']
     api_password = config['api_password']
     ses = requests.Session()
+    adapter = requests.adapters.HTTPAdapter(pool_connections=100, pool_maxsize=100, max_retries=3)
+    if "https" in api_url:
+        p = "https"
+    else:
+        p = "http"
+    ses.mount(p, adapter)
     if api_user != "" and api_password != "":
         ses.auth = (api_user, api_password)
     # check connection to api
