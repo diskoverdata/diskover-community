@@ -1,5 +1,15 @@
 # Diskover Change Log
 
+# [1.5.0.6] - 2019-08-07
+### changed
+- newer versions of py modules in requirements.txt, update with "pip install -r requirements.txt"
+- new version of killredisconn.py - fixed zombie idle worker connections not getting removed from Redis
+- diskover-bot-launcher.sh v.1.6.3
+### fixed
+- requests dependency warning supported version for urllib3 in lsio docker hub image
+- user_prompt error when asking to overwrite index in Python 2
+- SyntaxError: invalid syntax user_prompt function error when starting bots using Python 2
+
 # [1.5.0.5] - 2019-07-31
 ### added
 - diskover Storage Agent support with new --storagent cli option (see https://github.com/shirosaidev/diskover-storage-agent)

@@ -1,18 +1,16 @@
 #!/usr/bin/env python
-# Kills idle redis connections
+# Kills idle zombie redis rq workers
 # https://github.com/shirosaidev/diskover
 #
-# Copyright (C) Chris Park 2017-2018
+# Copyright (C) Chris Park 2017-2019
 # diskover is released under the Apache 2.0 license. See
 # LICENSE for the full license text.
 #
 
-import redis
-import sys
+from redis import Redis
+from rq import Worker
 import os
-import re
-
-idle_max = 300
+import datetime
 
 try:
     host = os.environ['REDIS_HOST']
@@ -27,29 +25,13 @@ try:
 except KeyError:
     password = None
 
-r = redis.Redis(host=host, port=port, password=password)
-cl = r.execute_command("client", "list")
+redis_conn = Redis(host=host, port=port, password=password)
 
-try:
-    arg = sys.argv[1]
-    if arg == '-f':
-        force = True
-        print("forcing client removal from redis (-f)")
-except IndexError:
-    force = False
-    print("to force removing clients from redis, use -f")
-
-pattern = r"addr=(.*?) .*? idle=(\d*)"
-regex = re.compile(pattern.encode('utf-8'))
-for match in regex.finditer(cl):
-    if force:
-        r.execute_command("client", "kill", match.group(1))
-        print("client %s force removed from redis, idle time %s" %
-              (match.group(1).decode('utf-8'), int(match.group(2))))
-    elif int(match.group(2)) > idle_max:
-        r.execute_command("client", "kill", match.group(1))
-        print("client %s removed from redis, idle time %s > %s" %
-              (match.group(1).decode('utf-8'), int(match.group(2)), idle_max))
-    else:
-        print("client %s not removed from redis, idle time %s < %s" %
-              (match.group(1).decode('utf-8'), int(match.group(2)), idle_max))
+workers = Worker.all(connection=redis_conn)
+for worker in workers:
+    print("worker %s removed from redis" % worker)
+    job = worker.get_current_job()
+    if job is not None:
+        job.ended_at = datetime.datetime.utcnow()
+        worker.failed_queue.quarantine(job, exc_info=("Dead worker", "Moving job to failed queue"))
+    worker.register_death()
