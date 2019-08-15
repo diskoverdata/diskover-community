@@ -32,7 +32,7 @@ BOTPIDS=/tmp/diskover_bot_pids
 ###########################################################
 
 
-VERSION="1.6.2"
+VERSION="1.6.3"
 
 function printhelp {
     echo "Usage: $(basename $0) [OPTION]"
@@ -44,8 +44,7 @@ function printhelp {
     echo "  -s            show all bots running"
     echo "  -k            kill all bots"
     echo "  -r            restart all running bots"
-    echo "  -R            remove any stuck/idle worker bot connections in Redis"
-    echo "  -f            force remove all worker bot connections in Redis"
+    echo "  -R            remove any idle zombie worker bot connections in Redis"
     echo "  -l n          logging level 0 = ERROR, 1 = WARNING, 2 = INFO, 3 = DEBUG"
     echo "  -V            displays version and exits"
     echo "  -h            displays this help message and exits"
@@ -59,7 +58,6 @@ function printhelp {
 KILLBOTS=FALSE
 RESTARTBOTS=FALSE
 REMOVEBOTS=FALSE
-FORCEREMOVEBOTS=FALSE
 SHOWBOTS=FALSE
 while getopts :h?w:bskrRfl:V opt; do
     case "$opt" in
@@ -70,7 +68,6 @@ while getopts :h?w:bskrRfl:V opt; do
     k) KILLBOTS=TRUE;;
     r) RESTARTBOTS=TRUE;;
     R) REMOVEBOTS=TRUE;;
-    f) FORCEREMOVEBOTS=TRUE; REMOVEBOTS=TRUE;;
     l) LOGLEVEL=$OPTARG;;
     V) echo "$0 v$VERSION"; exit 0;;
     ?) echo "Invalid option ${OPTARG}, use -h for help" >&2; exit 1;;
@@ -124,7 +121,8 @@ function startbots {
             sleep 1
             ps | grep -v grep | grep $! > /dev/null 2>&1
             if [ $? -gt 0 ]; then
-                echo "ERROR starting bot, check redis and ES are running and diskover.cfg settings."
+                echo "ERROR starting bot, check redis is running and diskover.cfg settings."
+                echo "There are additional setting at the top of this file."
                 exit 1
             fi
         fi
@@ -160,17 +158,13 @@ function killbots {
 }
 
 function removebots {
-    echo "Removing any stuck/idle worker bot connections in Redis..."
+    echo "Removing any idle zombie worker bot connections in Redis..."
     # check if .py file exists
     if [ ! -f $KILLREDISCONN ]; then
         echo "Can't find $KILLREDISCONN, check config at top of this file."
         exit 1
     fi
-    if [ $FORCEREMOVEBOTS == TRUE ]; then
-        $PYTHON $KILLREDISCONN -f
-    else
-        $PYTHON $KILLREDISCONN
-    fi
+    $PYTHON $KILLREDISCONN
     echo "Done"
 }
 

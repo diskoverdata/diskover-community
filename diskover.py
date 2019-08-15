@@ -38,7 +38,7 @@ import sys
 import json
 
 
-version = '1.5.0.5'
+version = '1.5.0.6'
 __version__ = version
 
 IS_PY3 = sys.version_info >= (3, 0)
@@ -501,17 +501,23 @@ def list_plugins():
         print(plugin_info["name"])
 
 
-def user_prompt(question: str) -> bool:
+def user_prompt(question):
     """ Prompt the yes/no-*question* to the user. """
     from distutils.util import strtobool
 
     while True:
-        user_input = input(question + " [y/n]: ").lower()
         try:
+            if IS_PY3:
+                user_input = input(question + " [y/n]: ").lower()
+            else:
+                user_input = raw_input(question + " [y/n]: ").lower()
             result = strtobool(user_input)
             return result
         except ValueError:
             print("Please use y/n or yes/no.\n")
+        except KeyboardInterrupt:
+            print("Ctrl-c keyboard interrupt, shutting down...")
+            sys.exit(0)
 
 
 def index_create(indexname):
