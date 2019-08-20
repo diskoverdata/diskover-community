@@ -15,7 +15,7 @@ from scandir import scandir
 from rq import SimpleWorker, Queue
 from rq.registry import StartedJobRegistry
 from datetime import datetime
-from random import randint
+from random import choice
 try:
     import configparser as ConfigParser
 except ImportError:
@@ -43,41 +43,21 @@ __version__ = version
 
 IS_PY3 = sys.version_info >= (3, 0)
 
-
-def print_banner(version):
-    """This is the print banner function.
-    It prints a random banner.
-    """
-
-    c = randint(1, 4)
-    if c == 1:
-        color = '31m'
-    elif c == 2:
-        color = '32m'
-    elif c == 3:
-        color = '33m'
-    elif c == 4:
-        color = '35m'
-
-    b = randint(1, 4)
-    if b == 1:
-        banner = """\033[%s
-
+BANNER_COLORS = ('31m', '32m', '33m', '34m')
+BANNERS = (
+    """\033[{}
       ________  .__        __
       \______ \ |__| _____|  | _________  __ ___________
        |    |  \|  |/  ___/  |/ /  _ \  \/ // __ \_  __ \\ /)___(\\
        |    `   \  |\___ \|    <  <_> )   /\  ___/|  | \/ (='.'=)
       /_______  /__/____  >__|_ \____/ \_/  \___  >__|   (\\")_(\\")
               \/        \/     \/               \/
-                          v%s
+                          v{}
                           https://shirosaidev.github.io/diskover
                           Crawling all your stuff.
                           Support diskover on Patreon or PayPal :)\033[0m
-
-""" % (color, version)
-    elif b == 2:
-        banner = """\033[%s
-
+""",
+    """\033[{}
    ___       ___       ___       ___       ___       ___       ___       ___
   /\  \     /\  \     /\  \     /\__\     /\  \     /\__\     /\  \     /\  \\
  /::\  \   _\:\  \   /::\  \   /:/ _/_   /::\  \   /:/ _/_   /::\  \   /::\  \\
@@ -85,29 +65,23 @@ def print_banner(version):
 \:\/:/  / \::/\/__/ \:\:\/__/ \;:;-",-" \:\/:/  / |::::/  / \:\:\/  / \;:::/  /
  \::/  /   \:\__\    \::/  /   |:|  |    \::/  /   L;;/__/   \:\/  /   |:\/__/
   \/__/     \/__/     \/__/     \|__|     \/__/               \/__/     \|__|
-                                      v%s
+                                      v{}
                                       https://shirosaidev.github.io/diskover
                                       Bringing light to the darkness.
                                       Support diskover on Patreon or PayPal :)\033[0m
-
-    """ % (color, version)
-    elif b == 3:
-        banner = """\033[%s
-
+""",
+    """\033[{}
      _/_/_/    _/            _/
     _/    _/        _/_/_/  _/  _/      _/_/    _/      _/    _/_/    _/  _/_/
    _/    _/  _/  _/_/      _/_/      _/    _/  _/      _/  _/_/_/_/  _/_/
   _/    _/  _/      _/_/  _/  _/    _/    _/    _/  _/    _/        _/
  _/_/_/    _/  _/_/_/    _/    _/    _/_/        _/       _/_/_/  _/
-                              v%s
+                              v{}
                               https://shirosaidev.github.io/diskover
                               "I didn't even know that was there."
                               Support diskover on Patreon or PayPal :)\033[0m
-
-    """ % (color, version)
-    elif b == 4:
-        banner = """\033[%s
-
+""",
+    """\033[{}
       __               __
      /\ \  __         /\ \\
      \_\ \/\_\    ____\ \ \/'\\     ___   __  __     __   _ __     //
@@ -115,12 +89,19 @@ def print_banner(version):
     /\ \L\ \ \ \/\__, `\\\ \ \\\`\ /\ \L\ \ \ \_/ |/\  __/\ \ \/   /rr
     \ \___,_\ \_\/\____/ \ \_\ \_\ \____/\ \___/ \ \____\\\ \\_\\  *\))_
      \/__,_ /\/_/\/___/   \/_/\/_/\/___/  \/__/   \/____/ \\/_/
-                      v%s
+                      v{}
                       https://shirosaidev.github.io/diskover
                       "Holy s*i# there are so many temp files."
                       Support diskover on Patreon or PayPal :)\033[0m
+""",
+)
 
-    """ % (color, version)
+
+def print_banner(version):
+    """Prints a random banner.
+    """
+    color = choice(BANNER_COLORS)
+    banner = choice(BANNERS).format(color, version)
     sys.stdout.write(banner)
     sys.stdout.write('\n')
     sys.stdout.flush()
