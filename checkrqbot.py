@@ -12,6 +12,7 @@ from rq import Worker
 from datetime import datetime
 import os
 import time
+import socket
 
 
 try:
@@ -28,12 +29,23 @@ except KeyError:
     password = None
 
 redis_conn = Redis(host=host, port=port, password=password)
+hostname = socket.gethostname()
+timeout = 180
 
 workers = Worker.all(connection=redis_conn)
 for worker in workers:
-    job = worker.get_current_job()
-    state = worker.get_state()
-    t = int(datetime.utcnow().timestamp() - worker.last_heartbeat.timestamp())
-    if job is not None and state is not 'busy' and t > 420:
-        print("worker %s (%s %s) appears to be a zombie (last heartbeat: %s sec)" \
-            % (worker.name, worker.hostname.decode('utf-8'), worker.pid, t))
+    job = worker.get_current_job_id()
+    w_host = worker.hostname.decode('UTF-8')
+    # skip any worker not doing a job
+    if job is None:
+        continue
+    # skip any worker that is not running on this host
+    if hostname != w_host:
+        continue
+    job_count = worker.successful_job_count
+    # job should either finish or timeout in this time
+    time.sleep(timeout)
+    # check if the job count is the same as before
+    if worker.successful_job_count == job_count:
+        print("worker %s (%s %s) appears to be a zombie!" \
+            % (worker.name, w_host, worker.pid))
