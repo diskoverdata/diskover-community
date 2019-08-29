@@ -99,4 +99,4 @@ intro:
 {::nomarkdown}<iframe width="560" height="315" src="https://www.youtube.com/embed/qKLJjZ0TMqA?rel=0" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>{:/nomarkdown}<br />
 {::nomarkdown}<iframe width="560" height="315" src="https://www.youtube.com/embed/InlfK8GQ-kM?rel=0" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>{:/nomarkdown}
 <h2>Questions/Support</h2>
-<p>For questions or support with diskover, please join the <a href="https://join.slack.com/t/diskoverworkspace/shared_invite/enQtNzAzMzE4NjkyMDk3LTQ0ODUwN2NmMWM3NWMzZDViY2Q5MDQ4NDRmNjVjNzBiMWE5OTM0YzRkMGU3NzA5N2I5MTZmZDMzYTNlZWVkZDc">diskover Slack workspace</a>.</p>
+<p>For questions or support with diskover, please join the <a href="https://join.slack.com/t/diskoverworkspace/shared_invite/enQtNzQ0NjE1Njk5MjIyLWI4NWQ0MjFhYzQyMTRhMzk4NTQ3YjBlYjJiMDk1YWUzMTZmZjI1MTdhYTA3NzAzNTU0MDc5NDA2ZDI4OWRiMjM">diskover Slack workspace</a>.</p>
