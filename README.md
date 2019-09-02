@@ -188,7 +188,7 @@ https://hub.docker.com/r/linuxserver/diskover/
 
 ## Discussions/Support
 
-For discussions or support for diskover join the [diskover Slack workspace](https://join.slack.com/t/diskoverworkspace/shared_invite/enQtNzAzMzE4NjkyMDk3LTQ0ODUwN2NmMWM3NWMzZDViY2Q5MDQ4NDRmNjVjNzBiMWE5OTM0YzRkMGU3NzA5N2I5MTZmZDMzYTNlZWVkZDc), my username is @shirosai.
+For discussions or support for diskover join the [diskover Slack workspace](https://join.slack.com/t/diskoverworkspace/shared_invite/enQtNzQ0NjE1Njk5MjIyLWI4NWQ0MjFhYzQyMTRhMzk4NTQ3YjBlYjJiMDk1YWUzMTZmZjI1MTdhYTA3NzAzNTU0MDc5NDA2ZDI4OWRiMjM), my username is @shirosai.
 
 You can also post a comment/question on [Google Group](https://groups.google.com/forum/?hl=en#!forum/diskover).
 
