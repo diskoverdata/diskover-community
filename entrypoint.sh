@@ -7,7 +7,18 @@ FTP_PWD=
 FTP_HOST=127.0.0.1
 FTP_PORT=21
 FTP_PATH=
-DISKOVER_CMD="python diskover.py"
+
+if [ "$SERVER_MODE" = "yes" ] || [ "$SERVER_MODE" = "y" ] || [ "$SERVER_MODE" = "true" ]
+then
+    echo "Will START AS SERVER MODE!!!"
+    DISKOVER_CMD='python diskover.py'    
+else
+    echo "Will START AS WORKER MODE !!!"
+    DISKOVER_CMD="python diskover_worker_bot.py"
+fi
+
+
+echo "Evaluated DISKOVER_CMD=$DISKOVER_CMD"
 
 while [ "$1" != "" ]; do
         case $1 in
@@ -16,8 +27,6 @@ while [ "$1" != "" ]; do
                 --ftp-path )            FTP_PATH=$2; shift 2;;
                 --ftp-username )        FTP_USR=$2; shift 2;;
                 --ftp-password )        FTP_PWD=$2; shift 2;;
-                --diskover-server )     DISKOVER_CMD="python diskover.py"; shift;;
-                --diskover-worker )     DISKOVER_CMD="python diskover_worker_bot.py"; shift;;
                 --ftp )                 USE_FTP=1; shift;;
                 --)                     shift; break;;
                 * )                     DISKOVER_CMD="$DISKOVER_CMD $1"; shift;;
