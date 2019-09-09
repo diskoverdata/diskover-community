@@ -29,7 +29,7 @@ except ImportError:
 import progressbar
 import argparse
 import logging
-import imp
+import importlib
 import time
 import math
 import re
@@ -38,7 +38,7 @@ import sys
 import json
 
 
-version = '1.5.0.6'
+version = '1.5.0.7'
 __version__ = version
 
 IS_PY3 = sys.version_info >= (3, 0)
@@ -474,8 +474,8 @@ def get_plugins_info():
         if not os.path.isdir(location) or not main_module + ".py" \
                 in os.listdir(location):
             continue
-        info = imp.find_module(main_module, [location])
-        plugins_info.append({"name": i, "info": info})
+        spec = importlib.machinery.PathFinder().find_spec(main_module, [location])
+        plugins_info.append({"name": i, "spec": spec})
     return plugins_info
 
 
@@ -486,7 +486,8 @@ def load_plugins():
     loaded_plugins = []
     plugins_info = get_plugins_info()
     for plugin_info in plugins_info:
-        plugin_module = imp.load_module(plugin_info["name"], *plugin_info["info"])
+        plugin_module = importlib.util.module_from_spec(plugin_info["spec"])
+        plugin_info["spec"].loader.exec_module(plugin_module)
         loaded_plugins.append(plugin_module)
     return loaded_plugins
 

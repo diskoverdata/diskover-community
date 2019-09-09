@@ -37,6 +37,8 @@ if __name__ == "__main__":
     \033[0m""" % (version))
 
     with Connection(redis_conn):
+        if cliargs_bot['listen']:
+            listen = cliargs_bot['listen']
         w = SimpleWorker(listen)
         if cliargs_bot['burst']:
             w.work(burst=True, logging_level=cliargs_bot['loglevel'])

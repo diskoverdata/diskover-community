@@ -50,6 +50,8 @@ def parse_cliargs_bot():
     parser = argparse.ArgumentParser()
     parser.add_argument("-b", "--burst", action="store_true",
                         help="Burst mode (worker will quit after all work is done)")
+    parser.add_argument("-L", "--listen", metavar='QUEUE', nargs='+',
+                        help="Override what redis rq queues to listen to (default is from diskover.cfg)")
     parser.add_argument("-l", "--loglevel", default="INFO",
                         help="Set worker logging level to DEBUG, INFO, WARNING, ERROR (default is INFO)")
     args = parser.parse_args()
