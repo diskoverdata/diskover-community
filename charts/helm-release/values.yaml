@@ -36,13 +36,3 @@ resources:
     cpu: 2
     memory: 2048Mi
 probePath: /actuator/health
-livenessProbe:
-  initialDelaySeconds: 60
-  periodSeconds: 10
-  successThreshold: 1
-  timeoutSeconds: 1
-readinessProbe:
-  periodSeconds: 10
-  successThreshold: 1
-  timeoutSeconds: 1
-terminationGracePeriodSeconds: 10
