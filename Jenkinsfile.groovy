@@ -59,7 +59,7 @@ pipeline {
                     sh "jx step git credentials"
 
                     // so we can retrieve the version in later steps
-                    sh "echo \$(jx-release-version) > VERSION"ou
+                    sh "echo \$(jx-release-version) > VERSION"
                     sh "jx step tag --version \$(cat VERSION)"
                     sh "skaffold version"
                     sh "export VERSION=`cat VERSION` && skaffold build -f skaffold.yaml"
