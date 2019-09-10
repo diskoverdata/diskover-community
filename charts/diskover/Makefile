@@ -12,7 +12,7 @@ build: clean
 
 print: clean
 	rm -rf requirements.lock
-	helm template
+	helm template .
 
 install: clean build
 	helm install . --name ${NAME}
