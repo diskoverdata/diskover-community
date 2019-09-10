@@ -14,4 +14,4 @@ dependencies:
 - alias: preview
 #  name: customize!project.name
   name: diskover # Please do not edit this line! Managed by customize.sh
-  repository: file://../helm-release
+  repository: file://../diskover
