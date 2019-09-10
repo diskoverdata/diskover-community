@@ -1,5 +1,3 @@
-{{- if .Values.knativeDeploy }}
-{{- else }}
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
@@ -50,7 +48,6 @@ spec:
         resources:
 {{ toYaml .Values.resources | indent 12 }}
       terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
-{{- end }}
       - configMap:
           defaultMode: 420
           items:

@@ -18,7 +18,7 @@ env:
 
 # enable this flag to use knative serve to deploy the app
 knativeDeploy: false
-
+terminationGracePeriodSeconds: 30
 service:
 #  name: customize!project.name
   name: diskover # Please do not edit this line! Managed by customize.sh
