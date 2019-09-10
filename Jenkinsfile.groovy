@@ -30,10 +30,17 @@ pipeline {
                     sh "echo $PREVIEW_VERSION > PREVIEW_VERSION"
                     sh "skaffold version"
                     sh "export VERSION=$PREVIEW_VERSION && skaffold build -f skaffold.yaml"
+                    // sh "jx step post build --image $DOCKER_REGISTRY/$ORG/$APP_NAME:$PREVIEW_VERSION"
 
                     script {
                         def buildVersion = readFile "${env.WORKSPACE}/PREVIEW_VERSION"
                         currentBuild.description = "$APP_NAME.$PREVIEW_NAMESPACE"
+                    }
+
+
+                    dir('charts/preview') {
+                      sh "make preview"
+                      sh "jx preview --app $APP_NAME --namespace=$PREVIEW_NAMESPACE --dir ../.."
                     }
                 }
             }
