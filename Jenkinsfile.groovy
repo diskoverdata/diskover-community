@@ -42,7 +42,7 @@ pipeline {
                       sh "make preview"
                       sh "jx preview --app $APP_NAME --namespace=$PREVIEW_NAMESPACE --dir ../.."
                       sh "sleep 20"
-                      sh "kubectl describe pods --n=$PREVIEW_NAMESPACE"
+                      sh "kubectl describe pods -n=$PREVIEW_NAMESPACE"
                     }
                 }
             }
