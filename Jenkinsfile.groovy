@@ -3,9 +3,9 @@ pipeline {
     label "dockerhub-maven"
   }
 
-  parameters {
-        string(name: 'BUILD_BRANCH', defaultValue: 'master', description: 'The target branch')
-  }
+  // parameters {
+  //       string(name: 'BUILD_BRANCH', defaultValue: 'master', description: 'The target branch')
+  // }
 
   environment {
     ORG = 'fsa-streamotion' 
