@@ -21,6 +21,9 @@ spec:
       - name: {{ .Chart.Name }}-worker
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
+        command:
+        - /bin/bash
+        - entrypoint.sh
         livenessProbe:
           exec:
             command:
