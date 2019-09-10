@@ -8,7 +8,6 @@ ifeq ($(OS),Darwin)
 else ifeq ($(OS),Linux)
 	sed -i -e "s/version:.*/version: $(PREVIEW_VERSION)/" Chart.yaml
 	sed -i -e "s/version:.*/version: $(PREVIEW_VERSION)/" ../*/Chart.yaml
-#	sed -i -e "s|repository:.*|repository: $(DOCKER_REGISTRY)\/customize!project.org\/customize!project.name|" values.yaml
 	sed -i -e "s|repository:.*|repository: $(DOCKER_REGISTRY)\/kayosportsau\/diskover|" values.yaml # Please do not edit this line! Managed by customize.sh
 	sed -i -e "s/tag:.*/tag: $(PREVIEW_VERSION)/" values.yaml
 else
