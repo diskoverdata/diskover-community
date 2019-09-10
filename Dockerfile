@@ -14,5 +14,4 @@ RUN mkdir ${DISKOVER_ROOTDIR} && \
 
 VOLUME ["${DISKOVER_ROOTDIR}"]
 
-ENTRYPOINT ["/bin/bash", "entrypoint.sh"]
-CMD ["--rootdir", "${DISKOVER_ROOTDIR}"]
+# ENTRYPOINT ["/bin/bash", "entrypoint.sh"]
