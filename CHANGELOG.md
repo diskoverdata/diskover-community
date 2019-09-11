@@ -1,12 +1,13 @@
 # Diskover Change Log
 
-# [1.5.0.7] - 2019-09-09
+# [1.5.0.7] - 2019-09-10
 ### added
 - -L --listen cli arg to diskover worker bot to override what redis rq to listen to
 ### changed
 - replaced imp module with importlib for plugins
 ### fixed
 - thread exhaustion from too many spawned threads when running finddupes
+- s3 inventory importing
 
 # [1.5.0.6] - 2019-08-07
 ### changed
