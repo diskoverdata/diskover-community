@@ -16,6 +16,17 @@ env:
   # NEW_RELIC_DISTRIBUTED_TRACING_ENABLED: "true"
 
 
+redis:
+  host: redis
+  port: 20134
+
+
+elasticsearch: {}
+
+
+crawlapi:
+  url: sdfasdfasdf
+
 # enable this flag to use knative serve to deploy the app
 knativeDeploy: false
 terminationGracePeriodSeconds: 30
