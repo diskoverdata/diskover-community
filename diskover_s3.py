@@ -118,6 +118,8 @@ def process_line(row, tree_dirs, tree_files, cliargs):
     size = inventory_dict['s3_size']
     # filename
     filename = os.path.basename(path)
+    extension = os.path.splitext(filename)[1][1:].strip().lower()
+    # check if file is in exluded_files list
     if file_excluded(filename):
         return tree_dirs, tree_files
     # Skip files smaller than minsize cli flag
