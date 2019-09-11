@@ -1460,10 +1460,14 @@ def calc_dir_sizes(cliargs, logger, path=None):
                 # convert es time to unix time format
                 mtime = time.mktime(datetime.strptime(hit['_source']['last_modified'],
                     '%Y-%m-%dT%H:%M:%S').timetuple())
-                atime = time.mktime(datetime.strptime(hit['_source']['last_access'],
-                    '%Y-%m-%dT%H:%M:%S').timetuple())
-                ctime = time.mktime(datetime.strptime(hit['_source']['last_change'],
-                    '%Y-%m-%dT%H:%M:%S').timetuple())
+                if cliargs['s3']:
+                    atime = 0
+                    ctime = 0
+                else:
+                    atime = time.mktime(datetime.strptime(hit['_source']['last_access'],
+                        '%Y-%m-%dT%H:%M:%S').timetuple())
+                    ctime = time.mktime(datetime.strptime(hit['_source']['last_change'],
+                        '%Y-%m-%dT%H:%M:%S').timetuple())
                 dirlist.append((hit['_id'], fullpath, mtime, atime, ctime))
                 dircount += 1
                 dirlist_len = len(dirlist)
