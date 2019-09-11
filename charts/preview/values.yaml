@@ -15,6 +15,12 @@ cleanup:
     helm.sh/hook: pre-delete
     helm.sh/hook-delete-policy: hook-succeeded
 
+elasticsearch:
+  enabled: true
+
+redis:
+  enabled: true
+
 preview:
   image:
     repository:

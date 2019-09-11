@@ -9,6 +9,21 @@ dependencies:
   repository: http://chartmuseum.jenkins-x.io
   version: 2.3.92
 
+- name: redis
+  version: 7.0.0
+  repository: https://kubernetes-charts.storage.googleapis.com/
+  condition: redis.enabled
+
+- name: kibana
+  version: ^3.0.0
+  repository: https://kubernetes-charts.storage.googleapis.com/
+  condition: kibana.enabled
+
+- name: elasticsearch
+  version: ^1.22.0
+  repository: https://kubernetes-charts.storage.googleapis.com/
+  condition: elasticsearch.enabled
+
   # !! "alias: preview" must be last entry in dependencies array !!
   # !! Place custom dependencies above !!
 - alias: preview
