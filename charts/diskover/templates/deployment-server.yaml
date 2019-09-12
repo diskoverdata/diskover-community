@@ -51,7 +51,7 @@ spec:
         - name: RUN_MODE
           value: "SERVER"
         - name: $STANDALONE
-          value: "true"
+          value: "false"
         - name: $DEBUG_ENALBED
           value: "true"
   {{- range $pkey, $pval := .Values.env }}
