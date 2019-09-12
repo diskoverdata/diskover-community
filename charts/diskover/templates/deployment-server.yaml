@@ -58,8 +58,8 @@ spec:
         - name: {{ $pkey }}
           value: "{{ $pval }}"
 {{- end }}
-ports:
-  - containerPort: {{ .Values.service.internalPort }}
+      ports:
+        - containerPort: {{ .Values.service.internalPort }}
 resources:
   {{ toYaml .Values.resources | indent 12 }}
 terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
