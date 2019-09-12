@@ -14,20 +14,14 @@ redis_host: redis
 redis_port: 6379
 
 # define environment variables here as a map of key: value
-worker:
+server:
   env:
-    SPRING_PROFILES_ACTIVE: demo
-    NEW_RELIC_APP_NAME: bedrock-k8s
-    NEW_RELIC_LICENSE_KEY: 70e37aaa633e349320a9c1107d5daca497fc4791
-    NEW_RELIC_AGENT_ENABLED: true
+    xx: yy
     # NEW_RELIC_DISTRIBUTED_TRACING_ENABLED: "true"
 
 worker:
   env:
-    SPRING_PROFILES_ACTIVE: demo
-    NEW_RELIC_APP_NAME: bedrock-k8s
-    NEW_RELIC_LICENSE_KEY: 70e37aaa633e349320a9c1107d5daca497fc4791
-    NEW_RELIC_AGENT_ENABLED: true
+    xx : yy
     # NEW_RELIC_DISTRIBUTED_TRACING_ENABLED: "true"
 
 
