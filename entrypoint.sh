@@ -15,7 +15,7 @@ elif [ "$RUN_MODE" == "SERVER" ]; then
     echo "Will run in SERVER mode!!!"
     DISKOVER_CMD="python diskover.py"
 
-    if [ -z "$STANDALONE" ] && [ "$STANDALONE" == "true" ]; then
+    if [ -z "$STANDALONE" ] && [ "$STANDALONE" == "false" ]; then
         echo "Listening on TCP:9999..."
         DISKOVER_CMD+=" --listen"
     elif [ -z "$DEBUG_ENALBED" ] && [ "$DEBUG_ENALBED" == "true" ]; then
