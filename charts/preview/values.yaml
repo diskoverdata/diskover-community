@@ -23,6 +23,9 @@ kibana:
 
 redis:
   enabled: true
+  usePassword: false
+  cluster:
+    enabled: false
 
 preview:
   image:
