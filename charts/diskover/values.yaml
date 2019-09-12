@@ -24,15 +24,6 @@ worker:
     xx : yy
     # NEW_RELIC_DISTRIBUTED_TRACING_ENABLED: "true"
 
-
-elasticsearch:
-  host: elasticsearch
-  port: 9200
-
-redis:
-  host: redis
-  port: 6379
-
 socketlistener:
   host: localhost
   port: 9999
