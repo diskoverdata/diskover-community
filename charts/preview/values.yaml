@@ -20,7 +20,7 @@ elasticsearch:
 
 kibana:
   enabled: true
-  
+
 redis:
   enabled: true
 
@@ -29,3 +29,5 @@ preview:
     repository:
     tag:
     pullPolicy: IfNotPresent
+  redis_host: preview-redis-master
+  elasticsearch_host: preview-elasticsearch-client
