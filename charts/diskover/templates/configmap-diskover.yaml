@@ -58,7 +58,7 @@ data:
     ;user = elastic
     ;password = changeme
     ; index name for ES, cli arg overwrites this
-    indexname = diskover-index
+    indexname = {{ .Chart.Name }}-index
     ; timeout for connection to ES (default is 10)
     timeout = 30
     ; number of connections kept open to ES when crawling (default is 10)
@@ -102,9 +102,9 @@ data:
     ; rq default ttl for key/results (default 500)
     ttl = 500
     ; rq queue names to use (default is diskover, diskover_crawl, diskover_calcdir)
-    queue = {{ .Values.redis_queue }}
-    queuecrawl = {{ .Values.redis_queuecrawl }}
-    queuecalcdir = {{ .Values.redis_queuecalcdir }}
+    queue = {{ .Chart.Name }}_queue
+    queuecrawl = {{{ .Chart.Name }}_queuecrawl
+    queuecalcdir = {{ .Chart.Name }}_queuecalcdir
 
     [adaptivebatch]
     ; adaptive batch settings when using -a (intelligent crawling)

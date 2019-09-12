@@ -9,6 +9,7 @@ image:
 
 elasticsearch_host: elasticsearch
 elasticsearch_port: 9200
+elasticsearch_index: diskover-index
 
 redis_host: redis
 redis_port: 6379
