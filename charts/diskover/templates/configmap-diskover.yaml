@@ -102,9 +102,9 @@ data:
     ; rq default ttl for key/results (default 500)
     ttl = 500
     ; rq queue names to use (default is diskover, diskover_crawl, diskover_calcdir)
-    queue = k2_test
-    queuecrawl = k2_test_crawl
-    queuecalcdir = k2_test_calcdir
+    queue = {{ .Values.redis_queue }}
+    queuecrawl = {{ .Values.redis_queuecrawl }}
+    queuecalcdir = {{ .Values.redis_queuecalcdir }}
 
     [adaptivebatch]
     ; adaptive batch settings when using -a (intelligent crawling)

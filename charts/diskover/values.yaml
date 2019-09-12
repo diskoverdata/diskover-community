@@ -12,6 +12,9 @@ elasticsearch_port: 9200
 
 redis_host: redis
 redis_port: 6379
+redis_queue: diskover
+redis_queuecrawl: diskover_crawl
+redis_queuecalcdir: diskover_calcdir
 
 # define environment variables here as a map of key: value
 server:
