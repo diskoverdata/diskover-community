@@ -52,12 +52,10 @@ spec:
           value: "SERVER"
         - name: STANDALONE
           value: "false"
-        - name: DEBUG_ENALBED
-          value: "true"
-{{- range $pkey, $pval := .Values.server.env }}
-        - name: {{ $pkey }}
-          value: "{{ $pval }}"
-{{- end }}
+# {{- range $pkey, $pval := .Values.server.env }}
+#         - name: {{ $pkey }}
+#           value: "{{ $pval }}"
+# {{- end }}
         ports:
         - containerPort: {{ .Values.service.internalPort }}
         resources:
