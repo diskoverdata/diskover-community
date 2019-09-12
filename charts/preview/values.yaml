@@ -17,7 +17,9 @@ cleanup:
 
 elasticsearch:
   enabled: true
-
+  replicas: 1
+  minimumMasterNodes: 1
+  
 kibana:
   enabled: true
 
