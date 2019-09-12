@@ -64,14 +64,6 @@ spec:
 {{ toYaml .Values.resources | indent 12 }}
       terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
       volumes:
-      # - hostPath:
-      #     path: /etc/localtime
-      #     type: ""
-      #   name: localtime
-      # - hostPath:
-      #     path: /etc/timezone
-      #     type: ""
-      #   name: timezone
       - configMap:
           defaultMode: 420
           items:
