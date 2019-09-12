@@ -103,7 +103,7 @@ data:
     ttl = 500
     ; rq queue names to use (default is diskover, diskover_crawl, diskover_calcdir)
     queue = {{ .Chart.Name }}_queue
-    queuecrawl = {{{ .Chart.Name }}_queuecrawl
+    queuecrawl = {{ .Chart.Name }}_queuecrawl
     queuecalcdir = {{ .Chart.Name }}_queuecalcdir
 
     [adaptivebatch]
