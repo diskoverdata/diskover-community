@@ -18,6 +18,9 @@ cleanup:
 elasticsearch:
   enabled: true
 
+kibana:
+  enabled: true
+  
 redis:
   enabled: true
 
