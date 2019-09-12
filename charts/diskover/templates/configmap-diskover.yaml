@@ -52,8 +52,8 @@ data:
     ;port = 443
     ; below two lines are for local ES, comment out if you are using AWS ES
     ; set multiple hosts using comma such as eshost1,eshost2
-    host = elasticsearch
-    port = 9200
+    host = {{ .Values.elasticsearch.host }}
+    port = {{ .Values.elasticsearch.port }}
     ; uncomment the below two lines if you installed X-Pack, for http-auth
     ;user = elastic
     ;password = changeme
@@ -84,8 +84,8 @@ data:
     scrollsize = 1000
 
     [redis]
-    host = redis
-    port = 6379
+    host = {{ .Values.redis.host }}
+    port = {{ .Values.redis.port }}
     ; set to socket path to use unix socket instead of host/port, comment out to not use (default)
     ;socket = /tmp/redis.sock
     ;password =
@@ -126,10 +126,10 @@ data:
 
     [socketlistener]
     ; hostname and port (TCP) for diskover socket server for remote commands
-    host = localhost
-    port = 9999
+    host = {{ .Values.socketlistener.host }}
+    port = {{ .Values.socketlistener.port }}
     ; max connections for diskover socket server
-    maxconnections = 5
+    maxconnections = {{ .Values.socketlistener.maxconnections }}
     ; port (TCP) for diskover socket server for messages from diskover treewalk client
     twcport = 9998
 
@@ -151,7 +151,7 @@ data:
     ; time to sleep (seconds) between checking for directory changes
     sleeptime = 0.1
     ; number of threads for checking directories, setting this to num of cores x2 is a good starting point
-    threads = 8
+    threads = {{ .Values.crawlbot.threads }}
     ; how often in seconds to get new directory list with updated times from ES (default 3600)
     dirlisttime = 3600
 
@@ -169,7 +169,7 @@ data:
 
     [crawlapi]
     ; crawl api url endpoint
-    ; url = http://localhost:8080/api
+    url = {{ .Values.crawlapi.url }}
     ; optional api login
     ; user = admin
     ; pass = admin

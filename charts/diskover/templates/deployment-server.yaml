@@ -1,0 +1,82 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ template "fullname" . }}-worker
+  labels:
+    draft: {{ default "draft-app" .Values.draft }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+spec:
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata:
+      labels:
+        draft: {{ default "draft-app" .Values.draft }}
+        app: {{ template "fullname" . }}
+  {{- if .Values.podAnnotations }}
+annotations:
+  {{ toYaml .Values.podAnnotations | indent 8 }}
+  {{- end }}
+spec:
+  containers:
+    - name: {{ .Chart.Name }}-worker
+      image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+      imagePullPolicy: {{ .Values.image.pullPolicy }}
+      command:
+        - /bin/bash
+        - entrypoint.sh
+      livenessProbe:
+        exec:
+          command:
+            - /bin/sh
+            - -c
+            - python diskover_healthcheck.py
+        failureThreshold: 2
+        initialDelaySeconds: 10
+        periodSeconds: 10
+        successThreshold: 1
+        timeoutSeconds: 10
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+        - mountPath: /diskover/diskover.cfg
+          name: diskover-config
+          subPath: diskover.cfg
+      # - mountPath: /etc/localtime
+      #   name: localtime
+      # - mountPath: /etc/timezone
+      #   name: timezone
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      env:
+        - name: RUN_MODE
+          value: "SERVER"
+        - name: $STANDALONE
+          value: "true"
+        - name: $DEBUG_ENALBED
+          value: "true"
+  {{- range $pkey, $pval := .Values.env }}
+- name: {{ $pkey }}
+  value: "{{ $pval }}"
+  {{- end }}
+ports:
+  - containerPort: {{ .Values.service.internalPort }}
+resources:
+  {{ toYaml .Values.resources | indent 12 }}
+terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+volumes:
+  # - hostPath:
+  #     path: /etc/localtime
+  #     type: ""
+  #   name: localtime
+  # - hostPath:
+  #     path: /etc/timezone
+  #     type: ""
+  #   name: timezone
+  - configMap:
+      defaultMode: 420
+      items:
+        - key: diskover.cfg
+          path: diskover.cfg
+      name: {{ .Chart.Name }}-config
+    name: diskover-config
+
