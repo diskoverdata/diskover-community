@@ -7,13 +7,28 @@ image:
   tag: dev
   pullPolicy: Always
 
+elasticsearch_host: elasticsearch
+elasticsearch_port: 9200
+
+redis_host: redis
+redis_port: 6379
+
 # define environment variables here as a map of key: value
-env:
-  SPRING_PROFILES_ACTIVE: demo
-  NEW_RELIC_APP_NAME: bedrock-k8s
-  NEW_RELIC_LICENSE_KEY: 70e37aaa633e349320a9c1107d5daca497fc4791
-  NEW_RELIC_AGENT_ENABLED: true
-  # NEW_RELIC_DISTRIBUTED_TRACING_ENABLED: "true"
+worker:
+  env:
+    SPRING_PROFILES_ACTIVE: demo
+    NEW_RELIC_APP_NAME: bedrock-k8s
+    NEW_RELIC_LICENSE_KEY: 70e37aaa633e349320a9c1107d5daca497fc4791
+    NEW_RELIC_AGENT_ENABLED: true
+    # NEW_RELIC_DISTRIBUTED_TRACING_ENABLED: "true"
+
+worker:
+  env:
+    SPRING_PROFILES_ACTIVE: demo
+    NEW_RELIC_APP_NAME: bedrock-k8s
+    NEW_RELIC_LICENSE_KEY: 70e37aaa633e349320a9c1107d5daca497fc4791
+    NEW_RELIC_AGENT_ENABLED: true
+    # NEW_RELIC_DISTRIBUTED_TRACING_ENABLED: "true"
 
 
 elasticsearch:
@@ -49,9 +64,9 @@ service:
     fabric8.io/ingress.annotations: "kubernetes.io/ingress.class: nginx"
 resources:
   limits:
-    cpu: 2
-    memory: 4096Mi
+    cpu: 1
+    memory: 512Mi
   requests:
-    cpu: 2
-    memory: 2048Mi
+    cpu: 1
+    memory: 512Mi
 probePath: /actuator/health

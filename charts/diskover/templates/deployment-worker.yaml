@@ -50,7 +50,7 @@ spec:
         env:
         - name: RUN_MODE
           value: "WORKER"
-{{- range $pkey, $pval := .Values.env }}
+{{- range $pkey, $pval := .Values.worker.env }}
         - name: {{ $pkey }}
           value: "{{ $pval }}"
 {{- end }}

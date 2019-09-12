@@ -52,8 +52,8 @@ data:
     ;port = 443
     ; below two lines are for local ES, comment out if you are using AWS ES
     ; set multiple hosts using comma such as eshost1,eshost2
-    host = {{ .Values.elasticsearch.host }}
-    port = {{ .Values.elasticsearch.port }}
+    host = {{ .Values.elasticsearch_host }}
+    port = {{ .Values.elasticsearch_port }}
     ; uncomment the below two lines if you installed X-Pack, for http-auth
     ;user = elastic
     ;password = changeme
@@ -84,8 +84,8 @@ data:
     scrollsize = 1000
 
     [redis]
-    host = {{ .Values.redis.host }}
-    port = {{ .Values.redis.port }}
+    host = {{ .Values.redis_host }}
+    port = {{ .Values.redis_port }}
     ; set to socket path to use unix socket instead of host/port, comment out to not use (default)
     ;socket = /tmp/redis.sock
     ;password =
