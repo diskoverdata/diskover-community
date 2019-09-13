@@ -19,7 +19,7 @@ elasticsearch:
   enabled: true
   replicas: 1
   minimumMasterNodes: 1
-  
+
 kibana:
   enabled: true
 
@@ -36,3 +36,6 @@ preview:
     pullPolicy: IfNotPresent
   redis_host: preview-redis-master
   elasticsearch_host: preview-elasticsearch-client
+  crawlapi:
+    url: http://restful-filesystem.web-staging.dev.cluster.foxsports-gitops-prod.com.au/api
+    
