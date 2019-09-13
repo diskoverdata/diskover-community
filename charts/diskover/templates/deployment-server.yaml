@@ -11,7 +11,7 @@ spec:
     metadata:
       labels:
         draft: {{ default "draft-app" .Values.draft }}
-        app: {{ template "fullname" . }}
+        app: {{ template "fullname" . }}-server
 {{- if .Values.podAnnotations }}
       annotations:
 {{ toYaml .Values.podAnnotations | indent 8 }}
