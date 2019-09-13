@@ -23,7 +23,7 @@ spec:
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         command:
         - /bin/bash
-        - sleep 100000
+        - entrypoint.sh
         livenessProbe:
           exec:
             command:
