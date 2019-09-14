@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: Service
+metadata:
+{{- if .Values.rq-service.name }}
+  name: {{ .Values.rq-service.name }}
+{{- else }}
+  name: {{ template "fullname" . }}
+{{- end }}
+  labels:
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+{{- if .Values.rq-service.annotations }}
+  annotations:
+{{ toYaml .Values.rq-service.annotations | indent 4 }}
+{{- end }}
+spec:
+  type: {{ .Values.rq-service.type }}
+  ports:
+  - port: {{ .Values.rq-service.externalPort }}
+    targetPort: {{ .Values.rq-service.internalPort }}
+    protocol: TCP
+    name: diskover-tcp
+  selector:
+    app: rq
+

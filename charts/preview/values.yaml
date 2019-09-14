@@ -38,4 +38,14 @@ preview:
   elasticsearch_host: preview-elasticsearch-client
   crawlapi:
     url: http://restful-filesystem.web-staging.dev.cluster.foxsports-gitops-prod.com.au/api
+
+rq-service:
+  name: rq-dashbord
+  type: ClusterIP
+  externalPort: 9181
+  internalPort: 9181
+  annotations:
+    fabric8.io/expose: "true"
+    fabric8.io/ingress.annotations: "kubernetes.io/ingress.class: nginx"
+
     
