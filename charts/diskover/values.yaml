@@ -30,7 +30,7 @@ worker:
     # NEW_RELIC_DISTRIBUTED_TRACING_ENABLED: "true"
 
 socketlistener:
-  host: localhost
+  host: 0.0.0.0
   port: 9999
   maxconnections: 5
 
@@ -44,8 +44,7 @@ crawlapi:
 knativeDeploy: false
 terminationGracePeriodSeconds: 30
 service:
-#  name: customize!project.name
-  name: diskover # Please do not edit this line! Managed by customize.sh
+  name: diskover-server
   type: ClusterIP
   externalPort: 9999
   internalPort: 9999

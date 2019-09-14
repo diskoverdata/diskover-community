@@ -18,7 +18,7 @@ spec:
   - port: {{ .Values.service.externalPort }}
     targetPort: {{ .Values.service.internalPort }}
     protocol: TCP
-    name: http
+    name: diskover-tcp
   selector:
     app: {{ template "fullname" . }}-server
 
