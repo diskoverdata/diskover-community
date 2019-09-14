@@ -39,7 +39,7 @@ preview:
   crawlapi:
     url: http://restful-filesystem.web-staging.dev.cluster.foxsports-gitops-prod.com.au/api
 
-rq-service:
+rq_service:
   name: rq-dashbord
   type: ClusterIP
   externalPort: 9181
