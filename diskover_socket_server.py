@@ -382,7 +382,8 @@ def run_command(threadnum, command_dict, clientsock, cliargs, logger):
         if action == 'crawl':
             path = command_dict['path']
             cmd = [pythonpath, diskoverpath, '-b', batchsize,
-                   '-i', index, '-d', path, '-q', '-F']
+                   '-i', index, '-d', path, '-m', mtime, '-s', minsize,
+                   '-q', '-F']
 
         elif action == 'finddupes':
             cmd = [pythonpath, diskoverpath, '-b', batchsize,
