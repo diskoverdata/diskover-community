@@ -1,8 +1,9 @@
 # Diskover Change Log
 
-# [1.5.0.7] - 2019-09-10
+# [1.5.0.7] - 2019-09-15
 ### added
 - -L --listen cli arg to diskover worker bot to override what redis rq to listen to
+- additional crawl options for diskover socket server "crawl" command (see wiki for more info)
 ### changed
 - replaced imp module with importlib for plugins
 ### fixed
