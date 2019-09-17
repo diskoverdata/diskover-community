@@ -19,9 +19,10 @@ elasticsearch:
   enabled: true
   replicas: 1
   minimumMasterNodes: 1
+  appVersion: "5.6"
   image:
     repository: elasticsearch
-    tag: 5.6.16
+    tag: "5.6"
 
 kibana:
   enabled: true
@@ -29,11 +30,9 @@ kibana:
 redis:
   enabled: true
   usePassword: false
+  fullnameOverride: redis
   cluster:
     enabled: false
-  image:
-    repository: redis
-    tag: 4.0.14
 
 preview:
   image:
