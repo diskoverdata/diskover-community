@@ -16,7 +16,7 @@ cleanup:
     helm.sh/hook-delete-policy: hook-succeeded
 
 elastic-preview:
-  enabled: true
+  enabled: false
   name: elasticsearch
   fullnameOverride: elasticsearch
   appVersion: "5.6"
@@ -73,7 +73,7 @@ rq_service:
 
     
 
-preview:
+diskover:
   image:
     repository:
     tag:
