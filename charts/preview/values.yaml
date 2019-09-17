@@ -23,6 +23,17 @@ elasticsearch:
   image:
     repository: elasticsearch
     tag: "5.6"
+  cluster:
+    plugins:
+    - x-pack
+  client:
+    ingress:
+      enabled: true
+      annotations:
+        kubernetes.io/ingress.class: nginx
+      path: /
+      hosts:
+        - diskover-preview-es.dev.cluster.foxsports-gitops-prod.com.au
 
 kibana:
   enabled: true
