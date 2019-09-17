@@ -41,6 +41,9 @@ elastic-preview:
       requests:
         cpu: "2000m"
         memory: "1Gi"       
+  data: 
+    persistence: 
+      enabled: false      
   client:
     exposeTransportPort: true
     resources:
