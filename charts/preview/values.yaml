@@ -19,6 +19,8 @@ elasticsearch:
   enabled: true
   replicas: 1
   minimumMasterNodes: 1
+  image:
+    tag: 5.6.16
 
 kibana:
   enabled: true
@@ -28,6 +30,8 @@ redis:
   usePassword: false
   cluster:
     enabled: false
+  image:
+    tag: 4.0.14
 
 preview:
   image:
