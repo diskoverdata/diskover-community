@@ -21,8 +21,7 @@ elastic-preview:
   fullnameOverride: elasticsearch
   appVersion: "5.6"
   image:
-    repository: elasticsearch
-    tag: "5.6"
+    repository: elasticsearch:5.6
   cluster:
     name: foxsports_conductor_elasticsearch_cluster
     additionalJavaOpts: -XX:MaxMetaspaceSize=256m
