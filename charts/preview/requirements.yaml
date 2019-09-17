@@ -19,11 +19,11 @@ dependencies:
   repository: https://kubernetes-charts.storage.googleapis.com/
   condition: kibana.enabled
 
+
 - name: elasticsearch
-  alias: preview-elastic  
-  version: 1.31.1
-  repository: https://artifactory.cluster.foxsports-gitops-prod.com.au/artifactory/helm/
-  condition: elasticsearch.enabled
+  alias: elastic-preview
+  version: ^1.22.0
+  repository: https://kubernetes-charts.storage.googleapis.com/
 
   # !! "alias: preview" must be last entry in dependencies array !!
   # !! Place custom dependencies above !!

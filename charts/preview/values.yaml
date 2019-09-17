@@ -15,7 +15,7 @@ cleanup:
     helm.sh/hook: pre-delete
     helm.sh/hook-delete-policy: hook-succeeded
 
-preview-elastic:
+elastic-preview:
   enabled: true
   name: elasticsearch
   fullnameOverride: elasticsearch
@@ -52,12 +52,6 @@ preview-elastic:
         memory: "1Gi"
     ingress:
       enabled: false
-      annotations:
-        kubernetes.io/ingress.class: nginx
-      path: /
-      hosts:
-        - conductor-es.kubernetes-production.foxsports.com.au
-      tls: []
 
 kibana:
   enabled: true
