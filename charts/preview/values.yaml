@@ -30,7 +30,6 @@ kibana:
 redis:
   enabled: true
   usePassword: false
-  fullnameOverride: redis
   cluster:
     enabled: false
 
