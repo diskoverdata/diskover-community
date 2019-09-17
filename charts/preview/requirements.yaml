@@ -26,9 +26,6 @@ dependencies:
   repository: https://kubernetes-charts.storage.googleapis.com/
   condition: elasticsearch.enabled
 
-  # !! "alias: preview" must be last entry in dependencies array !!
-  # !! Place custom dependencies above !!
 - alias: diskover
-#  name: customize!project.name
-  name: diskover # Please do not edit this line! Managed by customize.sh
+  name: diskover
   repository: file://../diskover
