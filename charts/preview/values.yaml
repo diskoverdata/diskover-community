@@ -16,7 +16,7 @@ cleanup:
     helm.sh/hook-delete-policy: hook-succeeded
 
 elasticsearch:
-  enabled: false
+  enabled: true
   name: elasticsearch
   fullnameOverride: elasticsearch
   appVersion: "5.6"
