@@ -20,6 +20,7 @@ elasticsearch:
   replicas: 1
   minimumMasterNodes: 1
   image:
+    repository: elasticsearch
     tag: 5.6.16
 
 kibana:
@@ -31,6 +32,7 @@ redis:
   cluster:
     enabled: false
   image:
+    repository: redis
     tag: 4.0.14
 
 preview:
