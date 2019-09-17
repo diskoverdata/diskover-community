@@ -43,6 +43,7 @@ pipeline {
                       sh "jx preview --app $APP_NAME --namespace=$PREVIEW_NAMESPACE --dir ../.."
                       sh "sleep 20"
                       sh "kubectl describe pods -n=$PREVIEW_NAMESPACE"
+                      sh "cd charts/preview && make print"
                     }
                 }
             }

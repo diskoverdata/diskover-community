@@ -16,3 +16,7 @@ else
 endif
 	echo "  version: $(PREVIEW_VERSION)" >> requirements.yaml
 	jx step helm build
+
+print: clean
+	rm -rf requirements.lock
+	helm template .
