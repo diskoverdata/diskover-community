@@ -15,7 +15,7 @@ cleanup:
     helm.sh/hook: pre-delete
     helm.sh/hook-delete-policy: hook-succeeded
 
-elastic-preview:
+elasticsearch:
   enabled: false
   name: elasticsearch
   fullnameOverride: elasticsearch
@@ -55,6 +55,16 @@ elastic-preview:
         memory: "1Gi"
     ingress:
       enabled: false
+  ing_service: #responsible to expose the ing
+    name: es-ing-service
+    type: ClusterIP
+    externalPort: 9200
+    internalPort: 9200
+    annotations:
+      fabric8.io/expose: "true"
+      fabric8.io/ingress.annotations: "kubernetes.io/ingress.class: nginx"
+
+
 
 kibana:
   enabled: true
@@ -73,8 +83,6 @@ rq_service:
   annotations:
     fabric8.io/expose: "true"
     fabric8.io/ingress.annotations: "kubernetes.io/ingress.class: nginx"
-
-    
 
 diskover:
   image:

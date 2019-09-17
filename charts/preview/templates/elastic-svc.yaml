@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Service
+metadata:
+{{- if .Values.elastice.ing_service.name }}
+  name: {{ .Values.elastice.ing_service.name }}
+{{- else }}
+  name: {{ template "fullname" . }}
+{{- end }}
+  labels:
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+{{- if .Values.elastice.ing_service.annotations }}
+  annotations:
+{{ toYaml .Values.elastice.ing_service.annotations | indent 4 }}
+{{- end }}
+spec:
+  type: {{ .Values.elastice.ing_service.type }}
+  ports:
+  - port: {{ .Values.elastice.ing_service.externalPort }}
+    targetPort: {{ .Values.elastice.ing_service.internalPort }}
+    protocol: TCP
+    name: elasticsearch-http
+  selector:
+    app: elastic-preview
+    component: client
+    release: preview

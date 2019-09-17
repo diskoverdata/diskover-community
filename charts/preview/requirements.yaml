@@ -21,7 +21,6 @@ dependencies:
 
 
 - name: elasticsearch
-  alias: elastic-preview
   version: ^1.22.0
   repository: https://kubernetes-charts.storage.googleapis.com/
   condition: elasticsearch.enabled
