@@ -20,6 +20,7 @@ dependencies:
   condition: kibana.enabled
 
 - name: elasticsearch
+  alias: preview-elastic  
   version: 1.31.1
   repository: https://artifactory.cluster.foxsports-gitops-prod.com.au/artifactory/helm/
   condition: elasticsearch.enabled

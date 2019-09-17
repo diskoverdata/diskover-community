@@ -15,7 +15,7 @@ cleanup:
     helm.sh/hook: pre-delete
     helm.sh/hook-delete-policy: hook-succeeded
 
-elasticsearch:
+preview-elastic:
   enabled: true
   name: elasticsearch
   fullnameOverride: elasticsearch
@@ -33,8 +33,7 @@ elasticsearch:
   master:
     replicas: 2
     persistence:
-      enabled: true
-      storageClass: conductor-nfs-client
+      enabled: false
     resources:
       limits:
         cpu: "2000m"
@@ -42,17 +41,6 @@ elasticsearch:
       requests:
         cpu: "2000m"
         memory: "1Gi"       
-  data:
-    persistence:
-      enabled: true
-      storageClass: conductor-nfs-client
-    resources:
-      limits:
-        cpu: "2000m"
-        memory: "4Gi"
-      requests:
-        cpu: "2000m"
-        memory: "4Gi"
   client:
     exposeTransportPort: true
     resources:
@@ -63,7 +51,7 @@ elasticsearch:
         cpu: "1000m"
         memory: "1Gi"
     ingress:
-      enabled: true
+      enabled: false
       annotations:
         kubernetes.io/ingress.class: nginx
       path: /
