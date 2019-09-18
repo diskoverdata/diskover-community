@@ -20,6 +20,6 @@ spec:
     protocol: TCP
     name: elasticsearch-http
   selector:
-    app: elastic
+    app: elasticsearch
     component: client
     release: preview
