@@ -56,7 +56,7 @@ elasticsearch:
   ing_service: #responsible to expose the ing
     name: es-ing-service
     type: ClusterIP
-    externalPort: 9200
+    externalPort: 80
     internalPort: 9200
     annotations:
       fabric8.io/expose: "true"
