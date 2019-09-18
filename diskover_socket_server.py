@@ -55,7 +55,7 @@ def socket_thread_handler(threadnum, q, cliargs, logger):
                 q.task_done()
                 # close connection to client
                 clientsock.close()
-                logger.info("[thread-%s]: %s closed connection" % (threadnum, str(addr)))
+                logger.debug("[thread-%s]: %s closed connection" % (threadnum, str(addr)))
                 continue
 
             # check if ping msg
@@ -78,7 +78,7 @@ def socket_thread_handler(threadnum, q, cliargs, logger):
             q.task_done()
             # close connection to client
             clientsock.close()
-            logger.info("[thread-%s]: %s closed connection" % (threadnum, str(addr)))
+            logger.debug("[thread-%s]: %s closed connection" % (threadnum, str(addr)))
 
         except (ValueError, TypeError) as e:
             q.task_done()
@@ -88,7 +88,7 @@ def socket_thread_handler(threadnum, q, cliargs, logger):
             logger.debug(message)
             # close connection to client
             clientsock.close()
-            logger.info("[thread-%s]: %s closed connection" % (threadnum, str(addr)))
+            logger.debug("[thread-%s]: %s closed connection" % (threadnum, str(addr)))
             pass
 
         except socket.error as e:
@@ -96,7 +96,7 @@ def socket_thread_handler(threadnum, q, cliargs, logger):
             logger.error("[thread-%s]: Socket error (%s)" % (threadnum, e))
             # close connection to client
             clientsock.close()
-            logger.info("[thread-%s]: %s closed connection" % (threadnum, str(addr)))
+            logger.debug("[thread-%s]: %s closed connection" % (threadnum, str(addr)))
             pass
 
 
@@ -174,7 +174,7 @@ def socket_thread_handler_twc(threadnum, q, q_kill, lock, rootdir, num_sep, leve
 
             # close connection to client
             clientsock.close()
-            logger.info("[thread-%s]: %s closed connection" % (threadnum, str(addr)))
+            logger.debug("[thread-%s]: %s closed connection" % (threadnum, str(addr)))
             q.task_done()
 
         except socket.error as e:
@@ -212,13 +212,13 @@ def start_socket_server(cliargs, logger):
             t.start()
 
         while True:
-            logger.info("Waiting for connection, listening on %s port %s TCP (ctrl-c to shutdown)"
+            logger.debug("Waiting for connection, listening on %s port %s TCP (ctrl-c to shutdown)"
                         % (str(host), str(port)))
             # establish connection
             clientsock, addr = serversock.accept()
             logger.debug(clientsock)
             logger.debug(addr)
-            logger.info("Got a connection from %s" % str(addr))
+            logger.debug("Got a connection from %s" % str(addr))
             # add client to list
             client = (clientsock, addr)
             clientlist.append(client)
@@ -283,13 +283,13 @@ def start_socket_server_twc(rootdir_path, num_sep, level, batchsize, cliargs, lo
                 q.join()
                 serversock.close()
                 return starttime
-            logger.info("Waiting for connection, listening on %s port %s TCP (ctrl-c to shutdown)"
+            logger.debug("Waiting for connection, listening on %s port %s TCP (ctrl-c to shutdown)"
                         % (str(host), str(port)))
             # establish connection
             clientsock, addr = serversock.accept()
             logger.debug(clientsock)
             logger.debug(addr)
-            logger.info("Got a connection from %s" % str(addr))
+            logger.debug("Got a connection from %s" % str(addr))
             # add client to list
             client = (clientsock, addr)
             clientlist.append(client)
