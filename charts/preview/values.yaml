@@ -17,8 +17,6 @@ cleanup:
 
 elasticsearch:
   enabled: true
-  name: elasticsearch
-  fullnameOverride: elasticsearch
   appVersion: "5.6"
   image:
     repository: elasticsearch
