@@ -7,7 +7,27 @@ FTP_PWD=
 FTP_HOST=127.0.0.1
 FTP_PORT=21
 FTP_PATH=
-DISKOVER_CMD="python diskover.py"
+
+if [ "$RUN_MODE" == "WORKER" ]; then
+    echo "Will run in WORKER mode!!!"
+    DISKOVER_CMD="python diskover_worker_bot.py"
+elif [ "$RUN_MODE" == "SERVER" ]; then
+    echo "Will run in SERVER mode!!!"
+    DISKOVER_CMD="python diskover.py"
+
+    if [ -z "$STANDALONE" ] || [ "$STANDALONE" != "true" ]; then
+        echo "Listening on TCP:9999..."
+        DISKOVER_CMD+=" --listen"
+    fi
+    if [ -n "$DEBUG_ENALBED" ] && [ "$DEBUG_ENALBED" == "true" ]; then
+        echo "Debug mode ON"
+        DISKOVER_CMD+=" --debug"
+    fi
+else
+    echo "Unsupported RUN_MODE. Supported values are [WORKER, SERVER] Exiting..."
+fi
+
+echo "Evaluated DISKOVER_CMD=$DISKOVER_CMD"
 
 while [ "$1" != "" ]; do
         case $1 in
@@ -16,17 +36,15 @@ while [ "$1" != "" ]; do
                 --ftp-path )            FTP_PATH=$2; shift 2;;
                 --ftp-username )        FTP_USR=$2; shift 2;;
                 --ftp-password )        FTP_PWD=$2; shift 2;;
-                --diskover-server )     DISKOVER_CMD="python diskover.py"; shift;;
-                --diskover-worker )     DISKOVER_CMD="python diskover_worker_bot.py"; shift;;
                 --ftp )                 USE_FTP=1; shift;;
                 --)                     shift; break;;
                 * )                     DISKOVER_CMD="$DISKOVER_CMD $1"; shift;;
-        esac 
+        esac
 done
 
 if ! [ -z "$USE_FTP" ]; then
     echo "Will mount ftp://$FTP_HOST:$FTP_PORT/$FTP_PATH on $DISKOVER_ROOTDIR"
-    curlftpfs -r -o custom_list="LIST" "ftp://$FTP_USR:$FTP_PWD@$FTP_HOST:$FTP_PORT/$FTP_PATH" "$DISKOVER_ROOTDIR"
+    curlftpfs -r -o custom_list="LIST",ftp_port=- "ftp://$FTP_USR:$FTP_PWD@$FTP_HOST:$FTP_PORT/$FTP_PATH" "$DISKOVER_ROOTDIR"
     echo "Will execute: $DISKOVER_CMD"
     eval '$DISKOVER_CMD'
     fusermount -u "$DISKOVER_ROOTDIR"

@@ -1,0 +1,30 @@
+# !! File must end with empty line !!
+dependencies:
+- alias: expose
+  name: exposecontroller
+  repository: http://chartmuseum.jenkins-x.io
+  version: 2.3.92
+- alias: cleanup
+  name: exposecontroller
+  repository: http://chartmuseum.jenkins-x.io
+  version: 2.3.92
+
+- name: redis
+  version: 7.0.0
+  repository: https://kubernetes-charts.storage.googleapis.com/
+  condition: redis.enabled
+
+- name: kibana
+  version: ^3.0.0
+  repository: https://kubernetes-charts.storage.googleapis.com/
+  condition: kibana.enabled
+
+
+- name: elasticsearch
+  version: ^1.22.0
+  repository: https://kubernetes-charts.storage.googleapis.com/
+  condition: elasticsearch.enabled
+
+- alias: diskover
+  name: diskover
+  repository: file://../diskover

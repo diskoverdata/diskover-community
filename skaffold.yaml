@@ -1,0 +1,12 @@
+apiVersion: skaffold/v1beta11
+kind: Config
+build:
+  artifacts:
+  - image: diskover
+    context: .
+    docker:
+      network: host
+      dockerfile: Dockerfile
+  tagPolicy:
+    envTemplate:
+      template: '{{.DOCKER_REGISTRY}}/diskover:{{.VERSION}}'
