@@ -1458,11 +1458,11 @@ def calc_dir_sizes(cliargs, logger, path=None):
                 fullpath = os.path.join(hit['_source']['path_parent'], hit['_source']['filename'])
                 # convert es time to unix time format
                 mtime = time.mktime(datetime.strptime(hit['_source']['last_modified'],
-                    '%Y-%m-%dT%H:%M:%S').timetuple())
+                    '%Y-%m-%dT%H:%M:%S.%f').timetuple())
                 atime = time.mktime(datetime.strptime(hit['_source']['last_access'],
-                    '%Y-%m-%dT%H:%M:%S').timetuple())
+                    '%Y-%m-%dT%H:%M:%S.%f').timetuple())
                 ctime = time.mktime(datetime.strptime(hit['_source']['last_change'],
-                    '%Y-%m-%dT%H:%M:%S').timetuple())
+                    '%Y-%m-%dT%H:%M:%S.%f').timetuple())
                 dirlist.append((hit['_id'], fullpath, mtime, atime, ctime))
                 dircount += 1
                 dirlist_len = len(dirlist)
