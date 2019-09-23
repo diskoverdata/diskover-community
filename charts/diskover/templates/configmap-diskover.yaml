@@ -52,13 +52,13 @@ data:
     ;port = 443
     ; below two lines are for local ES, comment out if you are using AWS ES
     ; set multiple hosts using comma such as eshost1,eshost2
-    host = {{ .Values.elasticsearch_host }}
-    port = {{ .Values.elasticsearch_port }}
+    host = {{ .Values.elasticsearch.host }}
+    port = {{ .Values.elasticsearch.port }}
     ; uncomment the below two lines if you installed X-Pack, for http-auth
     ;user = elastic
     ;password = changeme
     ; index name for ES, cli arg overwrites this
-    indexname = diskover-{{ .Chart.Name }}
+    indexname = {{ .Values.elasticsearch.index }}
     ; timeout for connection to ES (default is 10)
     timeout = 30
     ; number of connections kept open to ES when crawling (default is 10)
@@ -84,8 +84,8 @@ data:
     scrollsize = 1000
 
     [redis]
-    host = {{ .Values.redis_host }}
-    port = {{ .Values.redis_port }}
+    host = {{ .Values.redis.host }}
+    port = {{ .Values.redis.port }}
     ; set to socket path to use unix socket instead of host/port, comment out to not use (default)
     ;socket = /tmp/redis.sock
     ;password =
@@ -102,9 +102,9 @@ data:
     ; rq default ttl for key/results (default 500)
     ttl = 500
     ; rq queue names to use (default is diskover, diskover_crawl, diskover_calcdir)
-    queue = {{ .Chart.Name }}_queue
-    queuecrawl = {{ .Chart.Name }}_queuecrawl
-    queuecalcdir = {{ .Chart.Name }}_queuecalcdir
+    queue = {{ .Values.redis.queue }}
+    queuecrawl = {{ .Values.redis.queuecrawl }}
+    queuecalcdir = {{ .Values.redis.queuecalcdir }}
 
     [adaptivebatch]
     ; adaptive batch settings when using -a (intelligent crawling)
@@ -131,7 +131,7 @@ data:
     ; max connections for diskover socket server
     maxconnections = {{ .Values.socketlistener.maxconnections }}
     ; port (TCP) for diskover socket server for messages from diskover treewalk client
-    twcport = 9998
+    twcport = {{ .Values.socketlistener.twcport }}
 
     [dupescheck]
     ; read size (bytes) for md5 sum check (how many bytes to read in at a time when md5 checking, default 64 KB)

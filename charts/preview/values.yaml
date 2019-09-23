@@ -87,8 +87,10 @@ diskover:
     preview_repository:
     preview_tag:
     pullPolicy: IfNotPresent
-  redis_host: preview-redis-master
-  elasticsearch_host: preview-elasticsearch-client
+  redis:
+    host: preview-redis-master
+  elasticsearch:
+    host: preview-elasticsearch-client
   crawlapi:
     url: http://restful-filesystem.web-staging.dev.cluster.foxsports-gitops-prod.com.au/api
 
