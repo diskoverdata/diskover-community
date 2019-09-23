@@ -880,6 +880,11 @@ def get_metadata(path, cliargs):
         res = es.scroll(scroll_id=scroll_id, scroll='1m',
                         request_timeout=config['es_timeout'])
 
+    try:
+        es.clear_scroll(scroll_id=scroll_id)
+    except UnboundLocalError:
+        pass
+
     return dir_source, files_source
 
 
@@ -920,7 +925,7 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
                 file_source['indexing_date'] = datenow
                 # update worker name
                 file_source['worker_name'] = worker
-                tree_files.append(('file', file_source))
+                tree_files.append(file_source)
             if dir_source:
                 # update indexed at time
                 dir_source['indexing_date'] = datenow

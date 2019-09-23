@@ -1,6 +1,6 @@
 # Diskover Change Log
 
-# [1.5.0.7] - 2019-09-15
+# [1.5.0.7] - 2019-09-23
 ### added
 - -L --listen cli arg to diskover worker bot to override what redis rq to listen to
 - additional crawl options for diskover socket server "crawl" command (see wiki for more info)
@@ -9,6 +9,7 @@
 ### fixed
 - thread exhaustion from too many spawned threads when running finddupes
 - s3 inventory importing
+- traceback errors with -I index2 and using cached dir times in Redis
 
 # [1.5.0.6] - 2019-08-07
 ### changed

@@ -1256,7 +1256,7 @@ def parse_cli_args(indexname):
                         help="Index empty directories (default: don't index)")
     parser.add_argument("-i", "--index", default=indexname,
                         help="Elasticsearch index name (default: from config)")
-    parser.add_argument("-I", "--index2", metavar='INDEX2', nargs=1,
+    parser.add_argument("-I", "--index2", metavar='INDEX2',
                         help="Compare directory times with previous index to get metadata \
                             from index2 instead of off disk (requires cached dir times in Redis)")
     parser.add_argument("-M", "--maxdepth", type=int, default=None,
@@ -1968,7 +1968,7 @@ def pre_crawl_tasks():
 
     # check if using prev index for metadata
     if cliargs['index2']:
-        logger.info('Using %s for metadata cache (-I)' % cliargs['index2'][0])
+        logger.info('Using %s for metadata cache (-I)' % cliargs['index2'])
 
     # add disk space info to es index
     if not cliargs['reindex'] and not cliargs['reindexrecurs'] and not cliargs['crawlbot']:
