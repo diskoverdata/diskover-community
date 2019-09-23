@@ -7,15 +7,17 @@ image:
   tag: dev
   pullPolicy: Always
 
-elasticsearch_host: elasticsearch
-elasticsearch_port: 9200
-elasticsearch_index: diskover-index
+elasticsearch:
+  host: elasticsearch
+  port: 9200
+  index: diskover-index
 
-redis_host: redis
-redis_port: 6379
-redis_queue: diskover
-redis_queuecrawl: diskover_crawl
-redis_queuecalcdir: diskover_calcdir
+redis:
+  host: redis
+  port: 6379
+  queue: diskover
+  queuecrawl: diskover_crawl
+  queuecalcdir: diskover_calcdir
 
 # define environment variables here as a map of key: value
 server:
@@ -33,6 +35,7 @@ socketlistener:
   host: 0.0.0.0
   port: 9999
   maxconnections: 5
+  twcport: 9998
 
 crawlbot:
   threads: 8
