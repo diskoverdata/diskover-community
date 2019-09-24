@@ -627,10 +627,6 @@ def index_create(indexname):
                     "change_percent_items_subdirs": {
                         "type": "float"
                     },
-                    "costpergb": {
-                        "type": "scaled_float",
-                        "scaling_factor": 100
-                    },
                     "worker_name": {
                         "type": "keyword"
                     },
@@ -685,10 +681,6 @@ def index_create(indexname):
                     },
                     "dupe_md5": {
                         "type": "keyword"
-                    },
-                    "costpergb": {
-                        "type": "scaled_float",
-                        "scaling_factor": 100
                     },
                     "worker_name": {
                         "type": "keyword"
@@ -1677,9 +1669,6 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
 
         if cliargs['sizeondisk']:
             logger.info("Storing on disk size instead of file size using a blocksize of %s (-S)" % cliargs['blocksize'])
-
-        if cliargs['costpergb']:
-            logger.info("Storing cost per GB (-G)")
 
         if cliargs['adaptivebatch']:
             batchsize = ab_start
