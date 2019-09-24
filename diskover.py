@@ -330,14 +330,6 @@ def load_config():
         except ConfigParser.NoOptionError:
             configsettings['redis_password'] = ""
         try:
-            configsettings['redis_cachedirtimes'] = config.get('redis', 'cachedirtimes').lower()
-        except ConfigParser.NoOptionError:
-            configsettings['redis_cachedirtimes'] = "false"
-        try:
-            configsettings['redis_dirtimesttl'] = int(config.get('redis', 'dirtimesttl'))
-        except ConfigParser.NoOptionError:
-            configsettings['redis_dirtimesttl'] = 604800
-        try:
             configsettings['redis_db'] = int(config.get('redis', 'db'))
         except ConfigParser.NoOptionError:
             configsettings['redis_db'] = 0
@@ -421,18 +413,6 @@ def load_config():
             configsettings['dupes_threads'] = int(config.get('dupescheck', 'threads'))
         except ConfigParser.NoOptionError:
             configsettings['dupes_threads'] = 8
-        try:
-            configsettings['crawlbot_botsleep'] = float(config.get('crawlbot', 'sleeptime'))
-        except ConfigParser.NoOptionError:
-            configsettings['crawlbot_botsleep'] = 0.1
-        try:
-            configsettings['crawlbot_botthreads'] = int(config.get('crawlbot', 'botthreads'))
-        except ConfigParser.NoOptionError:
-            configsettings['crawlbot_botthreads'] = 8
-        try:
-            configsettings['crawlbot_dirlisttime'] = int(config.get('crawlbot', 'dirlisttime'))
-        except ConfigParser.NoOptionError:
-            configsettings['crawlbot_dirlisttime'] = 3600
         try:
             configsettings['gource_maxfilelag'] = float(config.get('gource', 'maxfilelag'))
         except ConfigParser.NoOptionError:
@@ -530,14 +510,12 @@ def index_create(indexname):
     logger.info('Checking es index: %s', indexname)
     # check for existing es index
     if es.indices.exists(index=indexname):
-        # check if crawlbot or reindex cli argument and don't delete existing index
+        # check if reindex cli argument and don't delete existing index
         if cliargs['reindex']:
             logger.info('Reindexing (non-recursive, preserving tags)')
             return
         elif cliargs['reindexrecurs']:
             logger.info('Reindexing (recursive, preserving tags)')
-            return
-        elif cliargs['crawlbot']:
             return
         # delete existing index
         else:
@@ -553,213 +531,209 @@ def index_create(indexname):
                     sys.exit(1)
 
     # set up es index mappings and create new index
-    if cliargs['s3']:
-        from diskover_s3 import get_s3_mappings
-        mappings = get_s3_mappings(config)
-    else:
-        mappings = {
-            "settings": {
-                "index" : {
-                    "number_of_shards": config['index_shards'],
-                    "number_of_replicas": config['index_replicas']
+    mappings = {
+        "settings": {
+            "index" : {
+                "number_of_shards": config['index_shards'],
+                "number_of_replicas": config['index_replicas']
+            }
+        },
+        "mappings": {
+            "diskspace": {
+                "properties": {
+                    "path": {
+                        "type": "keyword"
+                    },
+                    "total": {
+                        "type": "long"
+                    },
+                    "used": {
+                        "type": "long"
+                    },
+                    "free": {
+                        "type": "long"
+                    },
+                    "available": {
+                        "type": "long"
+                    },
+                    "indexing_date": {
+                        "type": "date"
+                    }
                 }
             },
-            "mappings": {
-                "diskspace": {
-                    "properties": {
-                        "path": {
-                            "type": "keyword"
-                        },
-                        "total": {
-                            "type": "long"
-                        },
-                        "used": {
-                            "type": "long"
-                        },
-                        "free": {
-                            "type": "long"
-                        },
-                        "available": {
-                            "type": "long"
-                        },
-                        "indexing_date": {
-                            "type": "date"
-                        }
+            "crawlstat": {
+                "properties": {
+                    "path": {
+                        "type": "keyword"
+                    },
+                    "state": {
+                        "type": "text"
+                    },
+                    "crawl_time": {
+                        "type": "float"
+                    },
+                    "indexing_date": {
+                        "type": "date"
                     }
-                },
-                "crawlstat": {
-                    "properties": {
-                        "path": {
-                            "type": "keyword"
-                        },
-                        "state": {
-                            "type": "text"
-                        },
-                        "crawl_time": {
-                            "type": "float"
-                        },
-                        "indexing_date": {
-                            "type": "date"
-                        }
+                }
+            },
+            "worker": {
+                "properties": {
+                    "worker_name": {
+                        "type": "keyword"
+                    },
+                    "dir_count": {
+                        "type": "integer"
+                    },
+                    "file_count": {
+                        "type": "integer"
+                    },
+                    "bulk_time": {
+                        "type": "float"
+                    },
+                    "crawl_time": {
+                        "type": "float"
+                    },
+                    "indexing_date": {
+                        "type": "date"
                     }
-                },
-                "worker": {
-                    "properties": {
-                        "worker_name": {
-                            "type": "keyword"
-                        },
-                        "dir_count": {
-                            "type": "integer"
-                        },
-                        "file_count": {
-                            "type": "integer"
-                        },
-                        "bulk_time": {
-                            "type": "float"
-                        },
-                        "crawl_time": {
-                            "type": "float"
-                        },
-                        "indexing_date": {
-                            "type": "date"
-                        }
+                }
+            },
+            "directory": {
+                "properties": {
+                    "filename": {
+                        "type": "keyword"
+                    },
+                    "path_parent": {
+                        "type": "keyword"
+                    },
+                    "filesize": {
+                        "type": "long"
+                    },
+                    "items": {
+                        "type": "long"
+                    },
+                    "items_files": {
+                        "type": "long"
+                    },
+                    "items_subdirs": {
+                        "type": "long"
+                    },
+                    "owner": {
+                        "type": "keyword"
+                    },
+                    "group": {
+                        "type": "keyword"
+                    },
+                    "last_modified": {
+                        "type": "date"
+                    },
+                    "last_access": {
+                        "type": "date"
+                    },
+                    "last_change": {
+                        "type": "date"
+                    },
+                    "hardlinks": {
+                        "type": "integer"
+                    },
+                    "inode": {
+                        "type": "keyword"
+                    },
+                    "tag": {
+                        "type": "keyword"
+                    },
+                    "tag_custom": {
+                        "type": "keyword"
+                    },
+                    "crawl_time": {
+                        "type": "float"
+                    },
+                    "change_percent_filesize": {
+                        "type": "float"
+                    },
+                    "change_percent_items": {
+                        "type": "float"
+                    },
+                    "change_percent_items_files": {
+                        "type": "float"
+                    },
+                    "change_percent_items_subdirs": {
+                        "type": "float"
+                    },
+                    "costpergb": {
+                        "type": "scaled_float",
+                        "scaling_factor": 100
+                    },
+                    "worker_name": {
+                        "type": "keyword"
+                    },
+                    "indexing_date": {
+                        "type": "date"
                     }
-                },
-                "directory": {
-                    "properties": {
-                        "filename": {
-                            "type": "keyword"
-                        },
-                        "path_parent": {
-                            "type": "keyword"
-                        },
-                        "filesize": {
-                            "type": "long"
-                        },
-                        "items": {
-                            "type": "long"
-                        },
-                        "items_files": {
-                            "type": "long"
-                        },
-                        "items_subdirs": {
-                            "type": "long"
-                        },
-                        "owner": {
-                            "type": "keyword"
-                        },
-                        "group": {
-                            "type": "keyword"
-                        },
-                        "last_modified": {
-                            "type": "date"
-                        },
-                        "last_access": {
-                            "type": "date"
-                        },
-                        "last_change": {
-                            "type": "date"
-                        },
-                        "hardlinks": {
-                            "type": "integer"
-                        },
-                        "inode": {
-                            "type": "keyword"
-                        },
-                        "tag": {
-                            "type": "keyword"
-                        },
-                        "tag_custom": {
-                            "type": "keyword"
-                        },
-                        "crawl_time": {
-                            "type": "float"
-                        },
-                        "change_percent_filesize": {
-                            "type": "float"
-                        },
-                        "change_percent_items": {
-                            "type": "float"
-                        },
-                        "change_percent_items_files": {
-                            "type": "float"
-                        },
-                        "change_percent_items_subdirs": {
-                            "type": "float"
-                        },
-                        "costpergb": {
-                            "type": "scaled_float",
-                            "scaling_factor": 100
-                        },
-                        "worker_name": {
-                            "type": "keyword"
-                        },
-                        "indexing_date": {
-                            "type": "date"
-                        }
-                    }
-                },
-                "file": {
-                    "properties": {
-                        "filename": {
-                            "type": "keyword"
-                        },
-                        "extension": {
-                            "type": "keyword"
-                        },
-                        "path_parent": {
-                            "type": "keyword"
-                        },
-                        "filesize": {
-                            "type": "long"
-                        },
-                        "owner": {
-                            "type": "keyword"
-                        },
-                        "group": {
-                            "type": "keyword"
-                        },
-                        "last_modified": {
-                            "type": "date"
-                        },
-                        "last_access": {
-                            "type": "date"
-                        },
-                        "last_change": {
-                            "type": "date"
-                        },
-                        "hardlinks": {
-                            "type": "integer"
-                        },
-                        "inode": {
-                            "type": "keyword"
-                        },
-                        "filehash": {
-                            "type": "keyword"
-                        },
-                        "tag": {
-                            "type": "keyword"
-                        },
-                        "tag_custom": {
-                            "type": "keyword"
-                        },
-                        "dupe_md5": {
-                            "type": "keyword"
-                        },
-                        "costpergb": {
-                            "type": "scaled_float",
-                            "scaling_factor": 100
-                        },
-                        "worker_name": {
-                            "type": "keyword"
-                        },
-                        "indexing_date": {
-                            "type": "date"
-                        }
+                }
+            },
+            "file": {
+                "properties": {
+                    "filename": {
+                        "type": "keyword"
+                    },
+                    "extension": {
+                        "type": "keyword"
+                    },
+                    "path_parent": {
+                        "type": "keyword"
+                    },
+                    "filesize": {
+                        "type": "long"
+                    },
+                    "owner": {
+                        "type": "keyword"
+                    },
+                    "group": {
+                        "type": "keyword"
+                    },
+                    "last_modified": {
+                        "type": "date"
+                    },
+                    "last_access": {
+                        "type": "date"
+                    },
+                    "last_change": {
+                        "type": "date"
+                    },
+                    "hardlinks": {
+                        "type": "integer"
+                    },
+                    "inode": {
+                        "type": "keyword"
+                    },
+                    "filehash": {
+                        "type": "keyword"
+                    },
+                    "tag": {
+                        "type": "keyword"
+                    },
+                    "tag_custom": {
+                        "type": "keyword"
+                    },
+                    "dupe_md5": {
+                        "type": "keyword"
+                    },
+                    "costpergb": {
+                        "type": "scaled_float",
+                        "scaling_factor": 100
+                    },
+                    "worker_name": {
+                        "type": "keyword"
+                    },
+                    "indexing_date": {
+                        "type": "date"
                     }
                 }
             }
         }
+    }
 
     # check plugins for additional mappings
     for plugin in plugins:
@@ -1256,9 +1230,6 @@ def parse_cli_args(indexname):
                         help="Index empty directories (default: don't index)")
     parser.add_argument("-i", "--index", default=indexname,
                         help="Elasticsearch index name (default: from config)")
-    parser.add_argument("-I", "--index2", metavar='INDEX2',
-                        help="Compare directory times with previous index to get metadata \
-                            from index2 instead of off disk (requires cached dir times in Redis)")
     parser.add_argument("-M", "--maxdepth", type=int, default=None,
                         help="Maximum directory depth to crawl (default: None)")
     parser.add_argument("-c", "--maxdcdepth", type=int, default=None,
@@ -1271,8 +1242,6 @@ def parse_cli_args(indexname):
                         help="Number of threads for treewalk (default: cpu core count x 2)")
     parser.add_argument("-A", "--autotag", action="store_true",
                         help="Get bots to auto-tag files/dirs based on patterns in config")
-    parser.add_argument("-G", "--costpergb", action="store_true",
-                        help="Store cost per GB in files/dirs based on cost and patterns in config")
     parser.add_argument("-S", "--sizeondisk", action="store_true",
                         help="Store size on disk (disk usage size) using block count x blocksize instead of file size")
     parser.add_argument("-B", "--blocksize", type=int, metavar='BLOCKSIZE', default=512,
@@ -1302,14 +1271,10 @@ def parse_cli_args(indexname):
                         help="Don't include files in batch sent to bots, only send dirs, bots scan for files")
     parser.add_argument("--replacepath", nargs=2, metavar="PATH",
                         help="Replace path, example: --replacepath Z:\\ /mnt/share/")
-    parser.add_argument("--crawlbot", action="store_true",
-                        help="Starts up crawl bot continuous scanner to scan for dir changes in index")
     parser.add_argument("--crawlapi", action="store_true",
                         help="Use storage Restful API instead of scandir")
     parser.add_argument("--storagent", metavar='HOST', nargs='+',
                         help="Use diskover Storage Agent instead of scandir")
-    parser.add_argument("--s3", metavar='FILE', nargs='+',
-                        help="Import AWS S3 inventory csv file(s) (gzipped) to diskover index")
     parser.add_argument("--dircalcsonly", action="store_true",
                         help="Calculate sizes and item counts for each directory doc in existing index \
                                 (done automatically after each crawl)")
@@ -1331,8 +1296,6 @@ def parse_cli_args(indexname):
     args = parser.parse_args()
     if args.index:
         args.index = args.index.lower()
-    if args.index2:
-        args.index2 = args.index2.lower()
     return args
 
 
@@ -1460,14 +1423,10 @@ def calc_dir_sizes(cliargs, logger, path=None):
                 # convert es time to unix time format
                 mtime = time.mktime(datetime.strptime(hit['_source']['last_modified'],
                     '%Y-%m-%dT%H:%M:%S').timetuple())
-                if cliargs['s3']:
-                    atime = 0
-                    ctime = 0
-                else:
-                    atime = time.mktime(datetime.strptime(hit['_source']['last_access'],
-                        '%Y-%m-%dT%H:%M:%S').timetuple())
-                    ctime = time.mktime(datetime.strptime(hit['_source']['last_change'],
-                        '%Y-%m-%dT%H:%M:%S').timetuple())
+                atime = time.mktime(datetime.strptime(hit['_source']['last_access'],
+                    '%Y-%m-%dT%H:%M:%S').timetuple())
+                ctime = time.mktime(datetime.strptime(hit['_source']['last_change'],
+                    '%Y-%m-%dT%H:%M:%S').timetuple())
                 dirlist.append((hit['_id'], fullpath, mtime, atime, ctime))
                 dircount += 1
                 dirlist_len = len(dirlist)
@@ -1770,8 +1729,8 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
             if batchsize < 50:
                 logger.warning("Using a small batch size can decrease performance")
 
-        # set maxdepth level to 1 if reindex or crawlbot (non-recursive)
-        if cliargs['reindex'] or cliargs['crawlbot']:
+        # set maxdepth level to 1 if reindex
+        if cliargs['reindex']:
             level = 1
             cliargs['maxdepth'] = 1
         else:
@@ -1937,7 +1896,7 @@ def post_crawl_tasks():
     add_crawl_stats(es, cliargs['index'], rootdir_path, (time.time() - starttime), "finished_crawl")
 
     # calculate directory sizes and items
-    if cliargs['reindex'] or cliargs['reindexrecurs'] or cliargs['crawlbot']:
+    if cliargs['reindex'] or cliargs['reindexrecurs']:
         calc_path = rootdir_path
     else:
         calc_path = None
@@ -1946,7 +1905,7 @@ def post_crawl_tasks():
     # add elapsed time crawl stat to es
     add_crawl_stats(es, cliargs['index'], rootdir_path, (time.time() - starttime), "finished_dircalc")
 
-    if cliargs['reindex'] or cliargs['reindexrecurs'] or cliargs['crawlbot']:
+    if cliargs['reindex'] or cliargs['reindexrecurs']:
         # wait for worker bots to be idle and all queues are empty
         logger.info('Waiting for diskover worker bots to be done with any jobs in rq...')
         while worker_bots_busy([q, q_crawl, q_calc]):
@@ -1966,12 +1925,8 @@ def pre_crawl_tasks():
     # optimize Elasticsearch index settings for crawling
     tune_es_for_crawl()
 
-    # check if using prev index for metadata
-    if cliargs['index2']:
-        logger.info('Using %s for metadata cache (-I)' % cliargs['index2'])
-
     # add disk space info to es index
-    if not cliargs['reindex'] and not cliargs['reindexrecurs'] and not cliargs['crawlbot']:
+    if not cliargs['reindex'] and not cliargs['reindexrecurs']:
         if cliargs['crawlapi']:
             from diskover_crawlapi import api_add_diskspace
             api_add_diskspace(es, cliargs['index'], rootdir_path, api_ses, logger)
@@ -2039,27 +1994,15 @@ if __name__ == "__main__":
         calc_dir_sizes(cliargs, logger)
         sys.exit(0)
 
-    # check index name for s3 storage
-    if cliargs['s3']:
-        try:
-            if cliargs['index'] == "diskover_s3" or \
-                    (cliargs['index'].split('_')[0] != "diskover" and
-                             cliargs['index'].split('_')[1] != "s3"):
-                print('Please name your index: diskover_s3-<string>')
-                sys.exit(1)
-        except IndexError:
-            print('Please name your index: diskover_s3-<string>')
-            sys.exit(1)
-    else:
-        try:
-            # check index name
-            if cliargs['index'] == "diskover" or \
-                            cliargs['index'].split('-')[0] != "diskover":
-                print('Please name your index: diskover-<string>')
-                sys.exit(1)
-        except IndexError:
+    try:
+        # check index name
+        if cliargs['index'] == "diskover" or \
+                        cliargs['index'].split('-')[0] != "diskover":
             print('Please name your index: diskover-<string>')
             sys.exit(1)
+    except IndexError:
+        print('Please name your index: diskover-<string>')
+        sys.exit(1)
 
     # check for listen socket cli flag to start socket server
     if cliargs['listen']:
@@ -2140,50 +2083,6 @@ if __name__ == "__main__":
         except ImportError:
             logger.error("Missing diskover_agent.py module, exiting")
             sys.exit(1)
-    elif cliargs['s3']:
-        # ingest s3 inventory files
-        from diskover_s3 import start_importing
-        rootdir_path = '/'
-        cliargs['rootdir'] = rootdir_path
-        logger.debug('Excluded dirs: %s', config['excluded_dirs'])
-        logger.debug('Inventory files: %s', cliargs['s3'])
-
-        # warn if indexing 0 Byte empty files
-        if cliargs['minsize'] == 0:
-            logger.warning('You are indexing 0 Byte empty files (-s 0)')
-
-        # create Elasticsearch index
-        index_create(cliargs['index'])
-
-        # add crawl stat to index
-        add_crawl_stats(es, cliargs['index'], rootdir_path, 0, "running")
-
-        # optimize Elasticsearch index settings for crawling
-        tune_es_for_crawl()
-
-        starttime = time.time()
-
-        # start importing
-        start_importing(es, cliargs, logger)
-
-        # add elapsed time crawl stat to es
-        add_crawl_stats(es, cliargs['index'], rootdir_path, (time.time() - starttime), "finished_crawl")
-
-        # calculate directory sizes and items
-        calc_dir_sizes(cliargs, logger)
-
-        add_crawl_stats(es, cliargs['index'], rootdir_path, (time.time() - starttime), "finished_dircalc")
-
-        # wait for worker bots to be idle and all queues are empty
-        logger.info('Waiting for diskover worker bots to be done with any jobs in rq...')
-        while worker_bots_busy([q, q_crawl, q_calc]):
-            time.sleep(1)
-
-        # set Elasticsearch index settings back to default
-        tune_es_for_crawl(defaults=True)
-
-        logger.info('Done importing S3 inventory files! Sayonara!')
-        sys.exit(0)
     else:
         # warn if not running as root (linux) or Administrator (windows)
         try:
@@ -2225,15 +2124,6 @@ if __name__ == "__main__":
         reindex_dict = index_delete_path(rootdir_path, cliargs, logger, reindex_dict)
     elif cliargs['reindexrecurs']:
         reindex_dict = index_delete_path(rootdir_path, cliargs, logger, reindex_dict, recursive=True)
-
-    # start crawlbot if cli argument
-    if cliargs['crawlbot']:
-        from diskover_crawlbot import start_crawlbot_scanner
-        wait_for_worker_bots(logger)
-        botdirlist = index_get_docs(cliargs, logger, doctype='directory', index=cliargs['index'])
-        # Set up worker threads for crawlbot
-        start_crawlbot_scanner(cliargs, logger, rootdir_path, botdirlist, reindex_dict)
-        sys.exit(0)
 
     pre_crawl_tasks()
 

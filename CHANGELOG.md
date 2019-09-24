@@ -6,10 +6,12 @@
 - additional crawl options for diskover socket server "crawl" command (see wiki for more info)
 ### changed
 - replaced imp module with importlib for plugins
+- removed s3 inventory import feature (enterprise ver only feature)
+- removed -I index2 Redis dir cacheing and config entries in diskover.cfg.sample (enterprise ver only feature)
+- removed -G cost per gb (storage costs) and config entries in diskover.cfg.sample (enterprise ver only feature)
+- removed crawl bot continuous scanner and config entries in diskover.cfg.sample (enterprise ver only feature)
 ### fixed
 - thread exhaustion from too many spawned threads when running finddupes
-- s3 inventory importing
-- traceback errors with -I index2 and using cached dir times in Redis
 
 # [1.5.0.6] - 2019-08-07
 ### changed
