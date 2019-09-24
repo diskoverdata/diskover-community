@@ -210,40 +210,6 @@ def load_config():
         except ConfigParser.NoOptionError:
             configsettings['autotag_dirs'] = []
         try:
-            configsettings['costpergb'] = float(config.get('storagecost', 'costpergb'))
-        except ConfigParser.NoOptionError:
-            configsettings['costpergb'] = 0.03
-        try:
-            configsettings['costpergb_base'] = int(config.get('storagecost', 'base'))
-        except ConfigParser.NoOptionError:
-            configsettings['costpergb_base'] = 2
-        try:
-            s = config.get('storagecost', 'paths')
-            if os.path.isfile("%s/%s" % (os.getcwd(),s)):
-                scp = json.loads(open("%s/%s" % (os.getcwd(),s)).read())
-            else:
-                scp = json.loads(s)            
-            configsettings['costpergb_paths'] = scp
-        except ValueError as e:
-            raise ValueError("Error in config storagecost paths: %s" % e)
-        except ConfigParser.NoOptionError:
-            configsettings['costpergb_paths'] = []
-        try:
-            s = config.get('storagecost', 'times')
-            if os.path.isfile("%s/%s" % (os.getcwd(),s)):
-                sct = json.loads(open("%s/%s" % (os.getcwd(),s)).read())
-            else:
-                sct = json.loads(s)
-            configsettings['costpergb_times'] = sct
-        except ValueError as e:
-            raise ValueError("Error in config storagecost times: %s" % e)
-        except ConfigParser.NoOptionError:
-            configsettings['costpergb_times'] = []
-        try:
-            configsettings['costpergb_priority'] = config.get('storagecost', 'priority')
-        except ConfigParser.NoOptionError:
-            configsettings['costpergb_priority'] = "path"
-        try:
             configsettings['aws'] = config.get('elasticsearch', 'aws').lower()
         except ConfigParser.NoOptionError:
             configsettings['aws'] = "false"
