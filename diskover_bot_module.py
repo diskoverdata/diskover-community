@@ -790,17 +790,19 @@ def file_excluded(filename):
     return False
 
 
-def dupes_process_hashkey(hashkey, cliargs):
+def dupes_process_hashkey(hashkeylist, cliargs):
     """This is the duplicate file worker function.
-    It processes hash keys in the dupes Queue.
+    It processes file hash keys in the dupes Queue.
     """
     from diskover_dupes import populate_hashgroup, verify_dupes, index_dupes
-    # find all files in ES matching hashkey
-    hashgroup = populate_hashgroup(hashkey, cliargs)
-    # process the duplicate files in hashgroup
-    hashgroup = verify_dupes(hashgroup, cliargs)
-    if hashgroup:
-        index_dupes(hashgroup, cliargs)
+    for hashkey in hashkeylist:
+        # find all files in ES matching hashkey
+        hashgroup = populate_hashgroup(hashkey, cliargs)
+        if hashgroup:
+            # process the duplicate files in hashgroup
+            hashgroup = verify_dupes(hashgroup, cliargs)
+            if hashgroup:
+                index_dupes(hashgroup, cliargs)
 
 
 def tag_copier(path, cliargs):

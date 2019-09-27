@@ -1,6 +1,6 @@
 # Diskover Change Log
 
-# [1.5.0.7] - 2019-09-23
+# [1.5.0.7] - 2019-09-27
 ### added
 - -L --listen cli arg to diskover worker bot to override what redis rq to listen to
 - additional crawl options for diskover socket server "crawl" command (see wiki for more info)
@@ -10,6 +10,7 @@
 - removed -I index2 Redis dir cacheing and config entries in diskover.cfg.sample (enterprise ver only feature)
 - removed -G cost per gb (storage costs) and config entries in diskover.cfg.sample (enterprise ver only feature)
 - removed crawl bot continuous scanner and config entries in diskover.cfg.sample (enterprise ver only feature)
+- improved duplicate file finding --finddupes
 ### fixed
 - thread exhaustion from too many spawned threads when running finddupes
 

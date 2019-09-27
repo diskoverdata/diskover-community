@@ -6,12 +6,12 @@ your file metadata into Elasticsearch.
 See README.md or https://github.com/shirosaidev/diskover
 for more information.
 
-Copyright (C) Chris Park 2017-2018
+Copyright (C) Chris Park 2017-2019
 diskover is released under the Apache 2.0 license. See
 LICENSE for the full license text.
 """
 
-from diskover import index_bulk_add, config, es, progress_bar, redis_conn, worker_bots_busy
+from diskover import index_bulk_add, config, es, progress_bar, redis_conn, worker_bots_busy, ab_start, adaptive_batch
 from diskover_bot_module import dupes_process_hashkey
 from rq import SimpleWorker
 import base64
@@ -228,17 +228,23 @@ def populate_hashgroup(key, cliargs):
     hashgroup_files = []
 
     data = {
-        "_source": ["path_parent", "filename", "last_access", "last_modified"],
+        "_source": ["path_parent", "filename", "last_access", "last_modified", "type"],
         "query": {
             "bool": {
                 "must": {
                     "term": {"filehash": key}
+                },
+                "filter": {
+                    "term": {"type": "file"}
                 }
             }
         }
     }
-    res = es.search(index=cliargs['index'], doc_type='file', size="1000",
-                    body=data, request_timeout=config['es_timeout'])
+    res = es.search(index=cliargs['index'], size="1000", body=data, request_timeout=config['es_timeout'])
+
+    # return None if only 1 matching file
+    if len(res['hits']['hits']) == 1:
+        return None
 
     # add any hits to hashgroups
     for hit in res['hits']['hits']:
@@ -260,10 +266,16 @@ def dupes_finder(es, q, cliargs, logger):
     and adds file hash groups to Queue.
     """
 
-    logger.info('Searching %s for duplicate file hashes...', cliargs['index'])
+    logger.info('Searching %s for all duplicate files...', cliargs['index'])
 
-    # find the filehashes with largest files and add filehash keys
-    # to hashgroups
+    if cliargs['adaptivebatch']:
+        batchsize = ab_start
+    else:
+        batchsize = cliargs['batchsize']
+    if cliargs['verbose'] or cliargs['debug']:
+        logger.info('Batch size: %s' % batchsize)
+
+    # first get all the filehashes with files that have a hardlinks count of 1
     data = {
         "size": 0,
         "query": {
@@ -272,25 +284,15 @@ def dupes_finder(es, q, cliargs, logger):
                     "term": {"hardlinks": 1}
                 },
                 "filter": {
+                    "term": {"type": "file"}
+                },
+                "must_not": {
                     "range": {
                         "filesize": {
-                            "lte": config['dupes_maxsize'],
-                            "gte": cliargs['minsize']
+                            "gt": config['dupes_maxsize'],
+                            "lt": cliargs['minsize']
                         }
                     }
-                }
-            }
-        },
-        "aggs": {
-            "dupe_filehash": {
-                "terms": {
-                    "field": "filehash",
-                    "min_doc_count": 2,
-                    "size": 10000,
-                    "order": {"max_file_size": "desc"}
-                },
-                "aggs": {
-                    "max_file_size": {"max": {"field": "filesize"}}
                 }
             }
         }
@@ -298,16 +300,39 @@ def dupes_finder(es, q, cliargs, logger):
 
     # refresh index
     es.indices.refresh(index=cliargs['index'])
-    res = es.search(index=cliargs['index'], doc_type='file', body=data,
-                    request_timeout=config['es_timeout'])
+    # search es and start scroll
+    res = es.search(index=cliargs['index'], scroll='1m', size=config['es_scrollsize'],
+                    body=data, request_timeout=config['es_timeout'])
 
-    logger.info('Found %s duplicate file hashes, enqueueing...', len(res['aggregations']['dupe_filehash']['buckets']))
+    filehashlist = []
+    filehashcount = 0
+    while res['hits']['hits'] and len(res['hits']['hits']) > 0:
+        for hit in res['hits']['hits']:
+            filehash = hit['_source']['filehash']
+            if filehash not in filehashlist:
+                filehashlist.append(filehash)
+                filehashcount += 1
+                filehashlist_len = len(filehashlist)
+                if filehashlist_len >= batchsize:
+                    # send to rq for bots to process file hashkey list
+                    q.enqueue(dupes_process_hashkey, args=(filehashlist, cliargs,), result_ttl=config['redis_ttl'])
+                    if cliargs['debug'] or cliargs['verbose']:
+                        logger.info("enqueued batchsize: %s (batchsize: %s)" % (filehashlist_len, batchsize))
+                    del filehashlist[:]
+                    if cliargs['adaptivebatch']:
+                        batchsize = adaptive_batch(q, cliargs, batchsize)
+                        if cliargs['debug'] or cliargs['verbose']:
+                            logger.info("batchsize set to: %s" % batchsize)
 
-    # add hash keys to Queue
-    for bucket in res['aggregations']['dupe_filehash']['buckets']:
-        q.enqueue(dupes_process_hashkey, args=(bucket['key'], cliargs,), result_ttl=config['redis_ttl'])
+        # use es scroll api
+        res = es.scroll(scroll_id=res['_scroll_id'], scroll='1m',
+                        request_timeout=config['es_timeout'])
 
-    logger.info('All file hashes have been enqueued')
+    # enqueue dir calc job for any remaining in dirlist
+    if len(filehashlist) > 0:
+        q.enqueue(dupes_process_hashkey, args=(filehashlist, cliargs,), result_ttl=config['redis_ttl'])
+
+    logger.info('%s file hashes have been enqueued' % filehashcount)
 
     if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
         bar = progress_bar('Checking')
