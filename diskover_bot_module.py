@@ -580,7 +580,7 @@ def calc_dir_size(dirlist, cliargs):
     It gets a directory list from the Queue search ES for all 
     files in each directory (recursive) and sums their filesizes 
     to create a total filesize and item count for each dir, 
-    then pdates dir doc's filesize and items fields.
+    then updates dir doc's filesize and items fields.
     """
     doclist = []
 
@@ -609,9 +609,20 @@ def calc_dir_size(dirlist, cliargs):
                     }
                 },
                 "aggs": {
-                    "total_size": {
-                        "sum": {
-                            "field": "filesize"
+                    "filesizes": {
+                        "filter": { "term": { "_type": "file" } },
+                        "aggs": {
+                            "total_size": { "sum": { "field": "filesize" } }
+                        }
+                    },
+                    "total_file_count": {
+                        "filter": {
+                            "term": { "_type": "file" }
+                        }
+                    },
+                    "total_dir_count": {
+                        "filter": {
+                            "term": { "_type": "directory" }
                         }
                     }
                 }
@@ -626,54 +637,36 @@ def calc_dir_size(dirlist, cliargs):
                     }
                 },
                 "aggs": {
-                    "total_size": {
-                        "sum": {
-                            "field": "filesize"
+                    "filesizes": {
+                        "filter": { "term": { "_type": "file" } },
+                        "aggs": {
+                            "total_size": { "sum": { "field": "filesize" } }
+                        }
+                    },
+                    "total_file_count": {
+                        "filter": {
+                            "term": { "_type": "file" }
+                        }
+                    },
+                    "total_dir_count": {
+                        "filter": {
+                            "term": { "_type": "directory" }
                         }
                     }
                 }
             }
 
         # search ES and start scroll
-        res = es.search(index=cliargs['index'], doc_type='file', body=data,
-                        request_timeout=config['es_timeout'])
+        res = es.search(index=cliargs['index'], body=data, doc_type='file,directory', request_timeout=config['es_timeout'])
 
-        # total items sum
-        totalitems_files += res['hits']['total']
+        # total file type doc count
+        totalitems_files += res['aggregations']['total_file_count']['doc_count']
 
         # total file size sum
-        totalsize += res['aggregations']['total_size']['value']
+        totalsize += res['aggregations']['filesizes']['total_size']['value']
 
-        # directory doc search (subdirs)
-
-        # check if / (root) path
-        if newpath == '\/':
-            data = {
-                "size": 0,
-                "query": {
-                    "query_string": {
-                        "query": "path_parent: " + newpath + "*",
-                        "analyze_wildcard": "true"
-                    }
-                }
-            }
-        else:
-            data = {
-                "size": 0,
-                "query": {
-                    "query_string": {
-                        'query': 'path_parent: ' + newpath + ' OR path_parent: ' + newpathwildcard,
-                        'analyze_wildcard': 'true'
-                    }
-                }
-            }
-
-        # search ES and start scroll
-        res = es.search(index=cliargs['index'], doc_type='directory', body=data,
-                        request_timeout=config['es_timeout'])
-
-        # total items sum
-        totalitems_subdirs += res['hits']['total']
+        # total directory doc count
+        totalitems_subdirs += res['aggregations']['total_dir_count']['doc_count']
 
         # total items
         totalitems += totalitems_files + totalitems_subdirs

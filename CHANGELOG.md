@@ -4,13 +4,14 @@
 ### added
 - -L --listen cli arg to diskover worker bot to override what redis rq to listen to
 - additional crawl options for diskover socket server "crawl" command (see wiki for more info)
+- improved duplicate file finding --finddupes
+- reduced time to calculate directory sizes
 ### changed
 - replaced imp module with importlib for plugins
 - removed s3 inventory import feature (enterprise ver only feature)
 - removed -I index2 Redis dir cacheing and config entries in diskover.cfg.sample (enterprise ver only feature)
 - removed -G cost per gb (storage costs) and config entries in diskover.cfg.sample (enterprise ver only feature)
 - removed crawl bot continuous scanner and config entries in diskover.cfg.sample (enterprise ver only feature)
-- improved duplicate file finding --finddupes
 ### fixed
 - thread exhaustion from too many spawned threads when running finddupes
 
