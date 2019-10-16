@@ -22,7 +22,7 @@ from datetime import datetime
 import csv
 import logging
 import argparse
-from hashlib import md5
+import hashlib
 
 
 logger = logging.getLogger('diskover_filediffs')
@@ -89,7 +89,7 @@ def get_files(index, path):
             ctime = time.mktime(datetime.strptime(hit['_source']['last_change'], '%Y-%m-%dT%H:%M:%S').timetuple())
             atime = time.mktime(datetime.strptime(hit['_source']['last_access'], '%Y-%m-%dT%H:%M:%S').timetuple())
             filelist.append(fullpath)
-            filelist_hashed.append(md5(fullpath.encode('utf-8')).digest())
+            filelist_hashed.append(hashlib.md5(fullpath.encode('utf-8')).hexdigest())
             filelist_times.append((mtime, ctime, atime))
             doccount += 1
         # use es scroll api
