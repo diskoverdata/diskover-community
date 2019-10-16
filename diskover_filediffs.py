@@ -22,6 +22,7 @@ from datetime import datetime
 import csv
 import logging
 import argparse
+from hashlib import md5
 
 
 logger = logging.getLogger('diskover_filediffs')
@@ -78,6 +79,7 @@ def get_files(index, path):
     res = es.search(index=index, doc_type='file', scroll='1m',
                     size=config['es_scrollsize'], body=data, request_timeout=config['es_timeout'])
     filelist = []
+    filelist_hashed = []
     filelist_times = []
     doccount = 0
     while res['hits']['hits'] and len(res['hits']['hits']) > 0:
@@ -87,41 +89,44 @@ def get_files(index, path):
             ctime = time.mktime(datetime.strptime(hit['_source']['last_change'], '%Y-%m-%dT%H:%M:%S').timetuple())
             atime = time.mktime(datetime.strptime(hit['_source']['last_access'], '%Y-%m-%dT%H:%M:%S').timetuple())
             filelist.append(fullpath)
+            filelist_hashed.append(md5(fullpath.encode('utf-8')).digest())
             filelist_times.append((mtime, ctime, atime))
             doccount += 1
         # use es scroll api
         res = es.scroll(scroll_id=res['_scroll_id'], scroll='1m',
                         request_timeout=config['es_timeout'])
     logger.info('Found %s file docs' % str(doccount))
-    return filelist, filelist_times
+    return filelist, filelist_hashed, filelist_times
 
 
 args = vars(get_args())
 
 print('getting files from es...')
-files1_paths, files1_times = get_files(index=args['index'], path=args['rootdir'])
-files2_paths, files2_times = get_files(index=args['index2'], path=args['rootdir'])
+files1_paths, files1_paths_hashed, files1_times = get_files(index=args['index'], path=args['rootdir'])
+files2_paths, files2_paths_hashed, files2_times = get_files(index=args['index2'], path=args['rootdir'])
 
 print('diffing file lists...')
 diff1 = []
 i = 0
-while i < len(files1_paths):
-    file = files1_paths[i]
-    if file not in files2_paths:
+while i < len(files1_paths_hashed):
+    file_hashed = files1_paths_hashed[i]
+    if file_hashed not in files2_paths_hashed:
         mtime = datetime.utcfromtimestamp(files1_times[i][0]).isoformat()
         ctime = datetime.utcfromtimestamp(files1_times[i][1]).isoformat()
         atime = datetime.utcfromtimestamp(files1_times[i][2]).isoformat()
+        file = files1_paths[i]
         diff1.append((file,mtime,ctime,atime))
         print("<  %s,%s,%s,%s" % (file,mtime,ctime,atime))
     i += 1
 diff2 = []
 i = 0
-while i < len(files2_paths):
-    file = files2_paths[i]
-    if file not in files1_paths:
+while i < len(files2_paths_hashed):
+    file_hashed = files2_paths_hashed[i]
+    if file_hashed not in files1_paths_hashed:
         mtime = datetime.utcfromtimestamp(files2_times[i][0]).isoformat()
         ctime = datetime.utcfromtimestamp(files2_times[i][1]).isoformat()
         atime = datetime.utcfromtimestamp(files2_times[i][2]).isoformat()
+        file = files2_paths[i]
         diff2.append((file,mtime,ctime,atime))
         print(">  %s,%s,%s,%s" % (file,mtime,ctime,atime))
     i += 1
