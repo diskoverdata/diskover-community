@@ -6,7 +6,7 @@ your file metadata into Elasticsearch.
 See README.md or https://github.com/shirosaidev/diskover
 for more information.
 
-Compare (diff) two indices for different files and create a csv
+Compare (diff) two indexes for different files and create a csv
 with the different files and their mtime, ctime and atime.
 
 Copyright (C) Chris Park 2019
