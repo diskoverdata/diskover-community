@@ -233,14 +233,12 @@ def populate_hashgroup(key, cliargs):
             "bool": {
                 "must": {
                     "term": {"filehash": key}
-                },
-                "filter": {
-                    "term": {"type": "file"}
                 }
             }
         }
     }
-    res = es.search(index=cliargs['index'], size="1000", body=data, request_timeout=config['es_timeout'])
+    res = es.search(index=cliargs['index'], doc_type="file", size="1000", body=data, 
+                    request_timeout=config['es_timeout'])
 
     # return None if only 1 matching file
     if len(res['hits']['hits']) == 1:
@@ -284,13 +282,10 @@ def dupes_finder(es, q, cliargs, logger):
                     "term": {"hardlinks": 1}
                 },
                 "filter": {
-                    "term": {"type": "file"}
-                },
-                "must_not": {
                     "range": {
                         "filesize": {
-                            "gt": config['dupes_maxsize'],
-                            "lt": cliargs['minsize']
+                            "lte": config['dupes_maxsize'],
+                            "gte": cliargs['minsize']
                         }
                     }
                 }
@@ -301,7 +296,7 @@ def dupes_finder(es, q, cliargs, logger):
     # refresh index
     es.indices.refresh(index=cliargs['index'])
     # search es and start scroll
-    res = es.search(index=cliargs['index'], scroll='1m', size=config['es_scrollsize'],
+    res = es.search(index=cliargs['index'], scroll='1m', doc_type='file', size=config['es_scrollsize'],
                     body=data, request_timeout=config['es_timeout'])
 
     filehashlist = []

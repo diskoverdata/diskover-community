@@ -1,5 +1,9 @@
 # Diskover Change Log
 
+# [1.5.0.8] - 2019-11-03
+### fixed
+- bug with finddupes not finding any filehashes
+
 # [1.5.0.7] - 2019-09-27
 ### added
 - -L --listen cli arg to diskover worker bot to override what redis rq to listen to
