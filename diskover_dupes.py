@@ -228,7 +228,7 @@ def populate_hashgroup(key, cliargs):
     hashgroup_files = []
 
     data = {
-        "_source": ["path_parent", "filename", "last_access", "last_modified", "type"],
+        "_source": ["path_parent", "filename", "last_access", "last_modified"],
         "query": {
             "bool": {
                 "must": {
