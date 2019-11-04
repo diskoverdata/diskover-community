@@ -28,7 +28,11 @@ if __name__ == "__main__":
 
         for worker in workers:
             # Skip any worker that is not running on this host
-            worker_host = worker.hostname.decode('UTF-8')
+            if worker.hostname:
+                worker_host = worker.hostname.decode('UTF-8')
+            else:
+                continue
+            
             if hostname == worker_host:
                 host_worker_exists = True
                 print("Worker exists on this host.")

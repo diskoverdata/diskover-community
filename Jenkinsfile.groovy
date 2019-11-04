@@ -85,8 +85,7 @@ pipeline {
         }
         steps {
           container('maven') {
-            sh "mv charts/helm-release  charts/$APP_NAME"
-            dir("charts/$APP_NAME") {
+            dir("charts/diskover") {
               sh "jx step changelog --generate-yaml=false --version v\$(cat ../../VERSION)"
 
               // release the helm chart
@@ -94,9 +93,9 @@ pipeline {
               // sh "ls -la"
               sh "make release"
               // promote through all 'Auto' promotion Environments
-              sh "jx promote -b --no-poll=true  --helm-repo-url=$CHART_REPOSITORY --no-poll=true --no-merge=true --no-wait=true --env=staging --version \$(cat ../../VERSION)"
+              // sh "jx promote -b --no-poll=true  --helm-repo-url=$CHART_REPOSITORY --no-poll=true --no-merge=true --no-wait=true --env=staging --version \$(cat ../../VERSION)"
 
-              sh "jx promote -b --no-poll=true --helm-repo-url=$CHART_REPOSITORY --no-poll=true --no-merge=true --no-wait=true --env=production --version \$(cat ../../VERSION)"
+              // sh "jx promote -b --no-poll=true --helm-repo-url=$CHART_REPOSITORY --no-poll=true --no-merge=true --no-wait=true --env=production --version \$(cat ../../VERSION)"
 
             }
           }
