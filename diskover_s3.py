@@ -19,6 +19,7 @@ import csv
 from datetime import datetime
 import time
 import hashlib
+import dateutil.parser
 try:
     from Queue import Queue as pyQueue
 except ImportError:
@@ -128,7 +129,7 @@ def process_line(row, tree_dirs, tree_files, cliargs):
     # modified time
     mtime_utc = inventory_dict['s3_last_modified_date'].partition('.')[0]
     # modified time in unix
-    mtime_unix = time.mktime(time.strptime(mtime_utc, '%Y-%m-%dT%H:%M:%S'))
+    mtime_unix = dateutil.parser.isoparse(mtime_utc).timestamp()
     # get time
     indextime_utc = datetime.utcnow().isoformat()
     # get absolute path of parent directory
@@ -288,7 +289,7 @@ def make_fake_s3_dir(parent, file, cliargs):
         return None
 
     mtime_utc = "1970-01-01T00:00:00"
-    mtime_unix = time.mktime(time.strptime(mtime_utc, '%Y-%m-%dT%H:%M:%S'))
+    mtime_unix = dateutil.parser.isoparse(mtime_utc).timestamp()
 
     dir_dict = {}
     dir_dict['filename'] = file

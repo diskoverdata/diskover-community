@@ -16,6 +16,7 @@ from datetime import datetime
 import time
 import sys
 import os
+import dateutil.parser
 
 
 def gource(es, cliargs):
@@ -51,15 +52,11 @@ def gource(es, cliargs):
         for hit in res['hits']['hits']:
             if cliargs['gourcert']:
                 # convert date to unix time
-                d = str(int(time.mktime(datetime.strptime(
-                    hit['_source']['indexing_date'],
-                    '%Y-%m-%dT%H:%M:%S.%f').timetuple())))
+                d = str(dateutil.parser.isoparse(hit['_source']['indexing_date']).timestamp())
                 u = str(hit['_source']['worker_name'])
                 t = 'A'
             elif cliargs['gourcemt']:
-                d = str(int(time.mktime(datetime.strptime(
-                    hit['_source']['last_modified'],
-                    '%Y-%m-%dT%H:%M:%S').timetuple())))
+                d = str(dateutil.parser.isoparse(hit['_source']['last_modified']).timestamp())
                 u = str(hit['_source']['owner'])
                 t = 'M'
             f = os.path.join(hit['_source']['path_parent'], hit['_source']['filename'])

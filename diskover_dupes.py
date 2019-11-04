@@ -19,6 +19,7 @@ import hashlib
 import os
 import time
 import warnings
+import dateutil.parser
 try:
     from Queue import Queue as pyQueue
 except ImportError:
@@ -73,8 +74,8 @@ def md5_hasher(file_in_thread_q, file_out_thread_q):
 
             # restore times (atime/mtime)
             if config['dupes_restoretimes'] == "true":
-                atime_unix = time.mktime(time.strptime(atime, '%Y-%m-%dT%H:%M:%S'))
-                mtime_unix = time.mktime(time.strptime(mtime, '%Y-%m-%dT%H:%M:%S'))
+                atime_unix = dateutil.parser.isoparse(atime).timestamp()
+                mtime_unix = dateutil.parser.isoparse(mtime).timestamp()
                 try:
                     os.utime(filename, (atime_unix, mtime_unix))
                 except (OSError, IOError) as e:
@@ -147,8 +148,8 @@ def verify_dupes(hashgroup, cliargs):
         f.close()
         # restore times (atime/mtime)
         if config['dupes_restoretimes'] == "true":
-            atime_unix = time.mktime(time.strptime(file['atime'], '%Y-%m-%dT%H:%M:%S'))
-            mtime_unix = time.mktime(time.strptime(file['mtime'], '%Y-%m-%dT%H:%M:%S'))
+            atime_unix = dateutil.parser.isoparse(file['atime']).timestamp()
+            mtime_unix = dateutil.parser.isoparse(file['mtime']).timestamp()
             try:
                 os.utime(file['filename'], (atime_unix, mtime_unix))
             except (OSError, IOError) as e:
