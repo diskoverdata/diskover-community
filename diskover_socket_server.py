@@ -214,7 +214,7 @@ def start_socket_server(cliargs, logger):
 
         while True:
             # logger.debug("Waiting for connection, listening on %s port %s TCP (ctrl-c to shutdown)"
-                        % (str(host), str(port)))
+            #             % (str(host), str(port)))
             # establish connection
             clientsock, addr = serversock.accept()
             # logger.debug(clientsock)
