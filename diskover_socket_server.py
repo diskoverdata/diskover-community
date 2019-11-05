@@ -46,16 +46,16 @@ def socket_thread_handler(threadnum, q, cliargs, logger):
         try:
             c = q.get()
             clientsock, addr = c
-            logger.debug(clientsock)
-            logger.debug(addr)
+            # logger.debug(clientsock)
+            # logger.debug(addr)
             data = clientsock.recv(BUFF)
             data = data.decode('utf-8')
-            logger.debug('received data: %s' % data)
+            # logger.debug('received data: %s' % data)
             if not data:
                 q.task_done()
                 # close connection to client
                 clientsock.close()
-                logger.debug("[thread-%s]: %s closed connection" % (threadnum, str(addr)))
+                # logger.debug("[thread-%s]: %s closed connection" % (threadnum, str(addr)))
                 continue
 
             # check if ping msg
@@ -68,11 +68,12 @@ def socket_thread_handler(threadnum, q, cliargs, logger):
             else:
                 # strip away any headers sent by curl
                 data = data.split('\r\n')[-1]
-                logger.info("[thread-%s]: Got command from %s" % (threadnum, str(addr)))
+                # logger.debug("[thread-%s]: Got command from %s" % (threadnum, str(addr)))
                 # load json and store in dict
                 command_dict = json.loads(data)
-                logger.debug(command_dict)
+                # logger.debug(command_dict)
                 # run command from json data
+                logger.info("[thread-%s]: Command -> %s" %  (threadnum, command_dict))
                 run_command(threadnum, command_dict, clientsock, cliargs, logger)
 
             q.task_done()
@@ -212,13 +213,13 @@ def start_socket_server(cliargs, logger):
             t.start()
 
         while True:
-            logger.debug("Waiting for connection, listening on %s port %s TCP (ctrl-c to shutdown)"
+            # logger.debug("Waiting for connection, listening on %s port %s TCP (ctrl-c to shutdown)"
                         % (str(host), str(port)))
             # establish connection
             clientsock, addr = serversock.accept()
-            logger.debug(clientsock)
-            logger.debug(addr)
-            logger.debug("Got a connection from %s" % str(addr))
+            # logger.debug(clientsock)
+            # logger.debug(addr)
+            # logger.debug("Got a connection from %s" % str(addr))
             # add client to list
             client = (clientsock, addr)
             clientlist.append(client)
@@ -429,10 +430,10 @@ def run_command(threadnum, command_dict, clientsock, cliargs, logger):
 
         # send exit msg to client
         exitcode = str(process.returncode).encode('utf-8')
-        logger.debug('Command output:')
-        logger.debug(output.decode('utf-8'))
-        logger.debug('Command error:')
-        logger.debug(error.decode('utf-8'))
+        # logger.debug('Command output:')
+        # logger.debug(output.decode('utf-8'))
+        # logger.debug('Command error:')
+        # logger.debug(error.decode('utf-8'))
         elapsedtime = str(get_time(time.time() - starttime)).encode('utf-8')
         logger.info("Finished command (taskid:%s), exit code: %s, elapsed time: %s"
                     % (taskid.decode('utf-8'), exitcode.decode('utf-8'), elapsedtime.decode('utf-8')))
