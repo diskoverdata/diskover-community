@@ -73,13 +73,13 @@ def socket_thread_handler(threadnum, q, cliargs, logger):
                 command_dict = json.loads(data)
                 # logger.debug(command_dict)
                 # run command from json data
-                logger.info("[thread-%s]: Command -> %s" %  (threadnum, command_dict))
+                logger.info("[thread-%s]: Request -> %s" %  (threadnum, command_dict))
                 run_command(threadnum, command_dict, clientsock, cliargs, logger)
 
             q.task_done()
             # close connection to client
             clientsock.close()
-            logger.debug("[thread-%s]: %s closed connection" % (threadnum, str(addr)))
+            # logger.debug("[thread-%s]: %s closed connection" % (threadnum, str(addr)))
 
         except (ValueError, TypeError) as e:
             q.task_done()
@@ -422,9 +422,8 @@ def run_command(threadnum, command_dict, clientsock, cliargs, logger):
         message = b'{"msg": "taskstart", "taskid": "' + taskid + b'"}\n'
         clientsock.send(message)
 
-        logger.info("[thread-%s]: Running command (taskid:%s)",
-                    threadnum, taskid.decode('utf-8'))
-        logger.info(cmd)
+        # logger.debug("[thread-%s]: Running command (taskid:%s)", threadnum, taskid.decode('utf-8'))
+        logger.info("[thread-%s]: Running command -> %s", threadnum, cmd)
 
         output, error = process.communicate()
 
@@ -435,8 +434,9 @@ def run_command(threadnum, command_dict, clientsock, cliargs, logger):
         # logger.debug('Command error:')
         # logger.debug(error.decode('utf-8'))
         elapsedtime = str(get_time(time.time() - starttime)).encode('utf-8')
-        logger.info("Finished command (taskid:%s), exit code: %s, elapsed time: %s"
-                    % (taskid.decode('utf-8'), exitcode.decode('utf-8'), elapsedtime.decode('utf-8')))
+        # logger.info("[thread-%s]: Finished command (taskid:%s), exit code: %s, elapsed time: %s"
+        #             % (threadnum, taskid.decode('utf-8'), exitcode.decode('utf-8'), elapsedtime.decode('utf-8')))
+        logger.info("[thread-%s]: Finished command with exit code %s", threadnum, exitcode.decode('utf-8'))
         message = b'{"msg": "taskfinish", "taskid": "%s", "exitcode": %s, "elapsedtime": "%s"}\n' \
                   % (taskid, exitcode, elapsedtime)
         clientsock.send(message)
