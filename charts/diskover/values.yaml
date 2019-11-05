@@ -22,13 +22,11 @@ redis:
 # define environment variables here as a map of key: value
 server:
   env:
-    xx: yy
-    DEBUG_ENALBED: true
+    DEBUG_ENALBED: false
     # NEW_RELIC_DISTRIBUTED_TRACING_ENABLED: "true"
 
 worker:
   env:
-    xx : yy
     # NEW_RELIC_DISTRIBUTED_TRACING_ENABLED: "true"
 
 socketlistener:
