@@ -1,5 +1,9 @@
 # Diskover Change Log
 
+# [1.5.0.9] - 2019-11-15
+### fixed
+- error with plugins and Python 2
+
 # [1.5.0.8] - 2019-11-03
 ### fixed
 - bug with finddupes not finding any filehashes

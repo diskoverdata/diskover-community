@@ -38,7 +38,7 @@ import sys
 import json
 
 
-version = '1.5.0.8'
+version = '1.5.0.9'
 __version__ = version
 
 IS_PY3 = sys.version_info >= (3, 0)
@@ -420,7 +420,11 @@ def get_plugins_info():
         if not os.path.isdir(location) or not main_module + ".py" \
                 in os.listdir(location):
             continue
-        spec = importlib.machinery.PathFinder().find_spec(main_module, [location])
+        if IS_PY3:
+            spec = importlib.machinery.PathFinder().find_spec(main_module, [location])
+        else:
+            import imp
+            spec = imp.find_module(main_module, [location])
         plugins_info.append({"name": i, "spec": spec})
     return plugins_info
 
@@ -432,8 +436,12 @@ def load_plugins():
     loaded_plugins = []
     plugins_info = get_plugins_info()
     for plugin_info in plugins_info:
-        plugin_module = importlib.util.module_from_spec(plugin_info["spec"])
-        plugin_info["spec"].loader.exec_module(plugin_module)
+        if IS_PY3:
+            plugin_module = importlib.util.module_from_spec(plugin_info["spec"])
+            plugin_info["spec"].loader.exec_module(plugin_module)
+        else:
+            import imp
+            plugin_module = imp.load_module(plugin_info["name"], *plugin_info["spec"])
         loaded_plugins.append(plugin_module)
     return loaded_plugins
 
