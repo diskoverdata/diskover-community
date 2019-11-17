@@ -50,6 +50,8 @@ If you are a business and would like to inquire about diskover enterprise, pleas
 
 ## Installation Guide
 
+**For a detailed install guide for linux, please see the [Install Guide wiki page](https://github.com/shirosaidev/diskover/wiki/Installation-Guide)**
+
 ### Requirements
 
 * `Linux or OS X/macOS` (tested on OS X 10.11.6, Ubuntu 16.04/18.04), `Windows 10` (using Windows Subsystem for Linux)
@@ -174,9 +176,6 @@ $ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl/dir2 --reind
 ...
 $ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl --dircalcsonly --maxdcdepth 0
 ```
-
-**For a detailed install guide for linux, please see https://github.com/shirosaidev/diskover/wiki/Installation-Guide**
-
 
 ## OVA image file (for vmware, etc)
 
