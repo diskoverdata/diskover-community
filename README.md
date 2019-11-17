@@ -175,6 +175,9 @@ $ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl/dir2 --reind
 $ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl --dircalcsonly --maxdcdepth 0
 ```
 
+**For a detailed install guide for linux, please see https://github.com/shirosaidev/diskover/wiki/Installation-Guide**
+
+
 ## OVA image file (for vmware, etc)
 
 Becoming a Patron gets you access to the OVA files running the latest version of diskover/diskover-web. Fastest way to get up and running diskover. Check out the [Patreon](https://www.patreon.com/shirosaidev) page to learn more about how to get access to the OVA downloads.
