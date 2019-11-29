@@ -366,12 +366,6 @@ def run_command(threadnum, command_dict, clientsock, cliargs, logger):
     except KeyError:
         indexemptydirs = str(cliargs['indexemptydirs'])
         pass
-    # try to get cost per gb option from command or use default
-    try:
-        costpergb = str(command_dict['costpergb'])
-    except KeyError:
-        costpergb = str(cliargs['costpergb'])
-        pass
 
     try:
         action = command_dict['action']
@@ -452,10 +446,6 @@ def run_command(threadnum, command_dict, clientsock, cliargs, logger):
         # add index empty dirs
         if (indexemptydirs == "True" or indexemptydirs == "true"):
             cmd.append('-e')
-
-        # add cost per gb
-        if (costpergb == "True" or costpergb == "true"):
-            cmd.append('-G')
 
         # run command using subprocess
         starttime = time.time()
