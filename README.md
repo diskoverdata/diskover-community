@@ -187,6 +187,7 @@ You can set up diskover and diskover-web in docker, there are a few choices for 
 
 [linuxserver.io](https://linuxserver.io) Docker hub image:
 https://hub.docker.com/r/linuxserver/diskover/
+https://blog.linuxserver.io/2019/06/28/getting-started-with-diskover-in-docker/
 
 [diskover-web](https://github.com/shirosaidev/diskover-web) has Dockerfile with instructions for docker-compose.
 
