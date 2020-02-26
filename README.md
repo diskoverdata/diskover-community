@@ -190,6 +190,9 @@ https://hub.docker.com/r/linuxserver/diskover/
 
 [diskover-web](https://github.com/shirosaidev/diskover-web) has Dockerfile with instructions for docker-compose.
 
+Detailed docker install guide for diskover
+https://engineerworkshop.com/2020/02/04/how-to-monitor-disk-usage-and-growth-with-diskover/
+
 ## User Guide
 
 [Read the wiki](https://github.com/shirosaidev/diskover/wiki) for more documentation on how to use diskover.
