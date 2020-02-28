@@ -29,9 +29,9 @@ import struct
 
 
 # dict to hold socket tasks
-socket_tasks = {}
+#socket_tasks = {}
 # list of socket client
-clientlist = []
+#clientlist = []
 
 
 def socket_thread_handler(threadnum, q, cliargs, logger):
@@ -185,7 +185,7 @@ def start_socket_server(cliargs, logger):
     """This is the start socket server function.
     It opens a socket and waits for remote commands.
     """
-    global clientlist
+    #global clientlist
 
     # set thread/connection limit
     max_connections = config['listener_maxconnections']
@@ -221,7 +221,7 @@ def start_socket_server(cliargs, logger):
             logger.info("Got a connection from %s" % str(addr))
             # add client to list
             client = (clientsock, addr)
-            clientlist.append(client)
+            #clientlist.append(client)
             # add task to Queue
             q.put(client)
 
@@ -242,7 +242,7 @@ def start_socket_server_twc(rootdir_path, num_sep, level, batchsize, cliargs, lo
     It opens a socket and waits for diskover tree walk client 
     connections.
     """
-    global clientlist
+    #global clientlist
 
     # set thread/connection limit
     max_connections = config['listener_maxconnections']
@@ -292,10 +292,10 @@ def start_socket_server_twc(rootdir_path, num_sep, level, batchsize, cliargs, lo
             logger.info("Got a connection from %s" % str(addr))
             # add client to list
             client = (clientsock, addr)
-            clientlist.append(client)
+            #clientlist.append(client)
             # set start time to first connection
-            if len(clientlist) == 1:
-                starttime = time.time()
+            #if len(clientlist) == 1:
+            #    starttime = time.time()
             # put client into Queue
             q.put(client)
 
@@ -315,8 +315,8 @@ def run_command(threadnum, command_dict, clientsock, cliargs, logger):
     It runs commands from the listener socket
     using values in command_dict.
     """
-    global socket_tasks
-    global clientlist
+    #global socket_tasks
+    #global clientlist
 
     # try to get index name from command or use from diskover config file
     try:
@@ -455,7 +455,7 @@ def run_command(threadnum, command_dict, clientsock, cliargs, logger):
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         # add process to socket_tasks dict
-        socket_tasks[taskid] = process
+        #socket_tasks[taskid] = process
 
         message = b'{"msg": "taskstart", "taskid": "' + taskid + b'"}\n'
         clientsock.send(message)

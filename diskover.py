@@ -38,7 +38,7 @@ import sys
 import json
 
 
-version = '1.5.0.9'
+version = '1.5.0.10'
 __version__ = version
 
 IS_PY3 = sys.version_info >= (3, 0)
@@ -1237,6 +1237,14 @@ def parse_cli_args(indexname):
                         help="Don't include files in batch sent to bots, only send dirs, bots scan for files")
     parser.add_argument("--replacepath", nargs=2, metavar="PATH",
                         help="Replace path, example: --replacepath Z:\\ /mnt/share/")
+    parser.add_argument("--splitfiles", action="store_true",
+                        help="For directories with lots of files, split meta collecting of files amongst bots")
+    parser.add_argument("--splitfilesnum", type=int, metavar='NUMFILES', default=10000,
+                        help="Minimum number of files required in directory to cause file split for --splitfiles \
+                                (default: 10000)")
+    parser.add_argument("--noworkerdocs", action="store_true",
+                        help="Don't add worker docs (worker crawl stats) into Elasticsearch, could help to reduce index \
+                                size for very large indexes")
     parser.add_argument("--crawlapi", action="store_true",
                         help="Use storage Restful API instead of scandir")
     parser.add_argument("--storagent", metavar='HOST', nargs='+',
@@ -1498,7 +1506,7 @@ def scandirwalk_worker(threadn, cliargs, logger):
                         dirs.append(entry.name)
                     elif entry.is_file(follow_symlinks=False) and not cliargs['dirsonly']:
                         nondirs.append(entry.name)
-                    if item_count == 100000:
+                    if item_count == 10000:
                         if cliargs['debug'] or cliargs['verbose']:
                             logger.info("[thread-%s] scandirwalk_worker: processing directory with many files: %s" % (threadn, path))
                     else:

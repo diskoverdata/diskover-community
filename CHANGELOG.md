@@ -1,5 +1,12 @@
 # Diskover Change Log
 
+# [1.5.0.10] - 2020-02-28
+### added
+- --splitfiles and --splitfilesnum - For directories with lots of files, split meta collecting of files amongst bots
+- --noworkerdocs - Don't add worker docs (worker crawl stats) into Elasticsearch, could help to reduce index size for very large indexes
+### fixed
+- high memory usage with socket server when running for long time
+
 # [1.5.0.9] - 2019-11-15
 ### fixed
 - error with plugins and Python 2

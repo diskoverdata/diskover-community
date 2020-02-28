@@ -11,9 +11,10 @@ diskover is released under the Apache 2.0 license. See
 LICENSE for the full license text.
 """
 
-from diskover import config, escape_chars, index_bulk_add, plugins, IS_PY3
+from diskover import config, escape_chars, index_bulk_add, plugins, IS_PY3, split_list, q_crawl
 from datetime import datetime
 from scandir import scandir
+from rq import SimpleWorker
 import argparse
 import os
 import hashlib
@@ -22,7 +23,6 @@ import pwd
 import grp
 import time
 import re
-import base64
 import warnings
 
 import diskover_connections
@@ -692,11 +692,25 @@ def es_bulk_add(worker_name, dirlist, filelist, cliargs, totalcrawltime=None):
     docs = dirlist + filelist
     index_bulk_add(es, docs, config, cliargs)
 
-    data = {"worker_name": worker_name, "dir_count": len(dirlist),
-            "file_count": len(filelist), "bulk_time": round(time.time() - starttime, 6),
-            "crawl_time": round(totalcrawltime, 6),
-            "indexing_date": datetime.utcnow().isoformat()}
-    es.index(index=cliargs['index'], doc_type='worker', body=data)
+    if not cliargs['noworkerdocs']:
+        data = {"worker_name": worker_name, "dir_count": len(dirlist),
+                "file_count": len(filelist), "bulk_time": round(time.time() - starttime, 6),
+                "crawl_time": round(totalcrawltime, 6),
+                "indexing_date": datetime.utcnow().isoformat()}
+        es.index(index=cliargs['index'], doc_type='worker', body=data)
+
+
+def file_meta_collector(files, root_path, statsembeded, cliargs, reindex_dict):
+    fmetas = []
+    for file in files:
+        if statsembeded:
+            fmeta = get_file_meta(worker, file, cliargs, reindex_dict, statsembeded=True)
+            fmetas.append(fmeta)
+        else:
+            fmeta = get_file_meta(worker, os.path.join(root_path, file), cliargs,
+                                reindex_dict, statsembeded=False)
+            fmetas.append(fmeta)
+    return fmetas
 
 
 def scrape_tree_meta(paths, cliargs, reindex_dict):
@@ -705,6 +719,7 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
     tree_files = []
     totalcrawltime = 0
     statsembeded = False
+    num_workers = len(SimpleWorker.all(connection=redis_conn))
 
     path_count = 0
     for path in paths:
@@ -733,15 +748,33 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
                     if entry.is_file(follow_symlinks=False) and not file_excluded(entry.name):
                         files.append(entry.name)
             filecount = 0
-            for file in files:
-                if statsembeded:
-                    fmeta = get_file_meta(worker, file, cliargs, reindex_dict, statsembeded=True)
-                else:
-                    fmeta = get_file_meta(worker, os.path.join(root_path, file), cliargs,
-                                         reindex_dict, statsembeded=False)
-                if fmeta:
-                    tree_files.append(fmeta)
-                    filecount += 1
+            # check if the directory has a ton of files in it and farm out meta collection to other worker bots
+            files_count = len(files)
+            if cliargs['splitfiles'] and files_count >= cliargs['splitfilesnum']:
+                fmetas = []
+                for filelist in split_list(files, int(files_count/num_workers)):
+                    fmetas.append(q_crawl.enqueue(file_meta_collector, 
+                                    args=(filelist, root_path, statsembeded, cliargs, reindex_dict,), 
+                                    result_ttl=config['redis_ttl']))
+                n = 0
+                while n < len(fmetas):
+                    if fmetas[n].result:
+                        for fmeta in fmetas[n].result:
+                            if fmeta:
+                                tree_files.append(fmeta)
+                                filecount += 1
+                        n += 1
+                del fmetas[:]
+            else:
+                for file in files:
+                    if statsembeded:
+                        fmeta = get_file_meta(worker, file, cliargs, reindex_dict, statsembeded=True)
+                    else:
+                        fmeta = get_file_meta(worker, os.path.join(root_path, file), cliargs,
+                                            reindex_dict, statsembeded=False)
+                    if fmeta:
+                        tree_files.append(fmeta)
+                        filecount += 1
 
             # update crawl time
             elapsed = time.time() - starttime
