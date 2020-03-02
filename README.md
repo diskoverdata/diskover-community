@@ -125,7 +125,7 @@ $ cd /path/with/diskover
 $ ./diskover-bot-launcher.sh
 ``` 
 
-By default, this will start up 8 bots. See -h for cli options including changing the number of bots to start. Bots can be run on the same host as the diskover.py crawler or multiple hosts in the network as long as they have the same nfs/cifs mountpoint as rootdir (-d path) and can connect to ES and Redis (see wiki for more info).
+By default, this will start up 8 bots. See -h for cli options including changing the number of bots to start. Bots can be run on the same host as the diskover.py crawler or multiple hosts in the network as long as they have the same nfs/cifs mountpoint as rootdir (-d path) and can connect to ES and Redis (see wiki for more info). **Edit this file and check the paths are set correct at the top of the file to the same version of Python that you will be running diskover.py with, they need to be the same or you could run into issues.**
 
 ### Usage examples
 
