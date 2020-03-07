@@ -177,13 +177,13 @@ $ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl/dir2 --reind
 $ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl --dircalcsonly --maxdcdepth 0
 ```
 
-Find [duplicate files](https://github.com/shirosaidev/diskover/wiki/Duplicate-files-(dupes)) after a crawl finishes:
+Find [duplicate files](https://github.com/shirosaidev/diskover/wiki/Duplicate-files-(dupes)) in an index (after crawl finishes):
 
 ``sh
 $ python diskover.py -i diskover-indexname --finddupes
 ``
 
-Find ["hot dirs"](https://github.com/shirosaidev/diskover/wiki/Comparing-(diff)-files-between-two-indexes) and change % between two finished indices (after crawls are complete):
+Find ["hot dirs"](https://github.com/shirosaidev/diskover/wiki/Comparing-(diff)-files-between-two-indexes) and change % between two indices (after crawls are complete):
 
 ``sh
 $ python diskover.py -i diskover-latestindex -H diskover-previndex
