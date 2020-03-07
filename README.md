@@ -179,15 +179,15 @@ $ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl --dircalcson
 
 Find [duplicate files](https://github.com/shirosaidev/diskover/wiki/Duplicate-files-(dupes)) in an index (after crawl finishes):
 
-``sh
+```sh
 $ python diskover.py -i diskover-indexname --finddupes
-``
+```
 
 Find ["hot dirs"](https://github.com/shirosaidev/diskover/wiki/Comparing-(diff)-files-between-two-indexes) and change % between two indices (after crawls are complete):
 
-``sh
+```sh
 $ python diskover.py -i diskover-latestindex -H diskover-previndex
-``
+```
 
 
 ## OVA image file (for vmware, etc)
