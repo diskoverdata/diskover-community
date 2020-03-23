@@ -16,7 +16,15 @@ LICENSE for the full license text.
 """
 
 from diskover import config, escape_chars
-from elasticsearch import Elasticsearch, Urllib3HttpConnection
+try:
+    from elasticsearch5 import Elasticsearch, helpers, RequestsHttpConnection, \
+        Urllib3HttpConnection, exceptions
+except ImportError:
+    try:
+        from elasticsearch import Elasticsearch, helpers, RequestsHttpConnection, \
+            Urllib3HttpConnection, exceptions
+    except ImportError:
+        raise ImportError('elasticsearch module not installed')
 import os
 import sys
 import time
