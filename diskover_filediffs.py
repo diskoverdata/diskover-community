@@ -156,7 +156,7 @@ es = Elasticsearch(
             timeout=config['es_timeout'], maxsize=config['es_maxsize'],
             max_retries=config['es_max_retries'], retry_on_timeout=True)
 
-if args['es2host']:
+if args['eshost2']:
     es2 = Elasticsearch(
                 hosts=args['eshost2'],
                 port=args['esport2'],
