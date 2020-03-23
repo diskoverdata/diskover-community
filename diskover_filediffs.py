@@ -7,14 +7,16 @@ See README.md or https://github.com/shirosaidev/diskover
 for more information.
 
 Compare (diff) two indexes for different files and create a csv
-with the different files and their mtime, ctime and atime.
+with the different files and their size, mtime, ctime and atime.
+Supports indices in different Elasticsearch hosts.
 
-Copyright (C) Chris Park 2019
+Copyright (C) Chris Park 2019-2020
 diskover is released under the Apache 2.0 license. See
 LICENSE for the full license text.
 """
 
-from diskover import es, config, escape_chars
+from diskover import config, escape_chars
+from elasticsearch import Elasticsearch, Urllib3HttpConnection
 import os
 import sys
 import time
@@ -53,57 +55,113 @@ def get_args():
                         help="1st diskover ES index name")
     parser.add_argument("-I", "--index2", metavar='INDEX2', required=True,
                         help="2nd diskover ES index name")
+    parser.add_argument("--es1host", metavar='ESHOST1', required=True,
+                        help="Elasticsearch host 1")
+    parser.add_argument("--es1port", metavar='ESHOST1PORT', type=int, default=9200,
+                        help="Elasticsearch host 1 port (default: 9200)")
+    parser.add_argument("--es1user", metavar='ESHOST1USER',
+                        help="Elasticsearch host 1 username")
+    parser.add_argument("--es1pass", metavar='ESHOST1PASS',
+                        help="Elasticsearch host 1 password")
+    parser.add_argument("--es1ver7", action="store_true",
+                        help="Elasticsearch host 1 is ES 7+")
+    parser.add_argument("--es2host", metavar='ESHOST2',
+                        help="Elasticsearch host 2 (if diff than --es1)")
+    parser.add_argument("--es2port", metavar='ESHOST2PORT', type=int, default=9200,
+                        help="Elasticsearch host 2 port (default: 9200)")
+    parser.add_argument("--es2user", metavar='ESHOST2USER',
+                        help="Elasticsearch host 2 username")
+    parser.add_argument("--es2pass", metavar='ESHOST2PASS',
+                        help="Elasticsearch host 2 password")
+    parser.add_argument("--es2ver7", action="store_true",
+                        help="Elasticsearch host 2 is ES 7+")
     args = parser.parse_args()
     return args
 
 
-def get_files(index, path):
+def get_files(eshost, esver7, index, path):
     newpath = escape_chars(path)
     if newpath == '\/':
         newpathwildcard = '\/*'
     else:
         newpathwildcard = newpath + '\/*'
     logger.info('Searching for all file docs in %s for path %s...', index, path)
-    data = {
-        '_source': ['path_parent', 'filename', 'last_modified', 'last_access', 'last_change'],
-        'query': {
-            'query_string': {
-                'query': '(path_parent: ' + newpath + ') OR '
-                                                        '(path_parent: ' + newpathwildcard + ') OR (filename: "'
-                            + os.path.basename(path) + '" AND path_parent: "'
-                            + os.path.abspath(os.path.join(path, os.pardir)) + '")',
+    eshost.indices.refresh(index)
+    if esver7:
+        data = {
+            '_source': ['path_parent', 'filename', 'filesize', 'last_modified', 'last_access', 'last_change'],
+            'query': {
+                'query_string': {
+                    'query': '(path_parent: ' + newpath + ') OR '
+                                                            '(path_parent: ' + newpathwildcard + ') OR (filename: "'
+                                + os.path.basename(path) + '" AND path_parent: "'
+                                + os.path.abspath(os.path.join(path, os.pardir)) + '" AND type:file)',
+                }
             }
         }
-    }
-    es.indices.refresh(index)
-    res = es.search(index=index, doc_type='file', scroll='1m',
+        res = eshost.search(index=index, doc_type='_doc', scroll='1m',
                     size=config['es_scrollsize'], body=data, request_timeout=config['es_timeout'])
+    else:
+        data = {
+            '_source': ['path_parent', 'filename', 'filesize', 'last_modified', 'last_access', 'last_change'],
+            'query': {
+                'query_string': {
+                    'query': '(path_parent: ' + newpath + ') OR '
+                                                            '(path_parent: ' + newpathwildcard + ') OR (filename: "'
+                                + os.path.basename(path) + '" AND path_parent: "'
+                                + os.path.abspath(os.path.join(path, os.pardir)) + '")',
+                }
+            }
+        }
+        res = eshost.search(index=index, doc_type='file', scroll='1m',
+                        size=config['es_scrollsize'], body=data, request_timeout=config['es_timeout'])
     filelist = []
     filelist_hashed = []
-    filelist_times = []
+    filelist_info = []
     doccount = 0
     while res['hits']['hits'] and len(res['hits']['hits']) > 0:
         for hit in res['hits']['hits']:
             fullpath = os.path.abspath(os.path.join(hit['_source']['path_parent'], hit['_source']['filename']))
+            size = hit['_source']['filesize']
             mtime = time.mktime(datetime.strptime(hit['_source']['last_modified'], '%Y-%m-%dT%H:%M:%S').timetuple())
             ctime = time.mktime(datetime.strptime(hit['_source']['last_change'], '%Y-%m-%dT%H:%M:%S').timetuple())
             atime = time.mktime(datetime.strptime(hit['_source']['last_access'], '%Y-%m-%dT%H:%M:%S').timetuple())
             filelist.append(fullpath)
             filelist_hashed.append(hashlib.md5(fullpath.encode('utf-8')).hexdigest())
-            filelist_times.append((mtime, ctime, atime))
+            filelist_info.append((size, mtime, ctime, atime))
             doccount += 1
         # use es scroll api
-        res = es.scroll(scroll_id=res['_scroll_id'], scroll='1m',
+        res = eshost.scroll(scroll_id=res['_scroll_id'], scroll='1m',
                         request_timeout=config['es_timeout'])
     logger.info('Found %s file docs' % str(doccount))
-    return filelist, filelist_hashed, filelist_times
+    return filelist, filelist_hashed, filelist_info
 
 
 args = vars(get_args())
 
+# set up elasticsearch connections
+es = Elasticsearch(
+            hosts=args['es1host'],
+            port=args['es1port'],
+            http_auth=(args['es1user'], args['es1pass']),
+            connection_class=Urllib3HttpConnection,
+            timeout=config['es_timeout'], maxsize=config['es_maxsize'],
+            max_retries=config['es_max_retries'], retry_on_timeout=True)
+
+if args['es2host']:
+    es2 = Elasticsearch(
+                hosts=args['es2host'],
+                port=args['es2port'],
+                http_auth=(args['es2user'], args['es2pass']),
+                connection_class=Urllib3HttpConnection,
+                timeout=config['es_timeout'], maxsize=config['es_maxsize'],
+                max_retries=config['es_max_retries'], retry_on_timeout=True)
+else:
+    es2 = es
+
 print('getting files from es...')
-files1_paths, files1_paths_hashed, files1_times = get_files(index=args['index'], path=args['rootdir'])
-files2_paths, files2_paths_hashed, files2_times = get_files(index=args['index2'], path=args['rootdir'])
+files1_paths, files1_paths_hashed, files1_info = get_files(es, args['eshost1ver7'], args['index'], args['rootdir'])
+files2_paths, files2_paths_hashed, files2_info = get_files(es2, args['eshost2ver7'], args['index2'], args['rootdir'])
 
 print('diffing file lists...')
 diff1 = []
@@ -111,24 +169,26 @@ i = 0
 while i < len(files1_paths_hashed):
     file_hashed = files1_paths_hashed[i]
     if file_hashed not in files2_paths_hashed:
-        mtime = datetime.utcfromtimestamp(files1_times[i][0]).isoformat()
-        ctime = datetime.utcfromtimestamp(files1_times[i][1]).isoformat()
-        atime = datetime.utcfromtimestamp(files1_times[i][2]).isoformat()
+        size = files1_info[i][0]
+        mtime = datetime.utcfromtimestamp(files1_info[i][1]).isoformat()
+        ctime = datetime.utcfromtimestamp(files1_info[i][2]).isoformat()
+        atime = datetime.utcfromtimestamp(files1_info[i][3]).isoformat()
         file = files1_paths[i]
-        diff1.append((file,mtime,ctime,atime))
-        print("<  %s,%s,%s,%s" % (file,mtime,ctime,atime))
+        diff1.append((file,size,mtime,ctime,atime))
+        print("<  %s,%s,%s,%s,%s" % (file,size,mtime,ctime,atime))
     i += 1
 diff2 = []
 i = 0
 while i < len(files2_paths_hashed):
     file_hashed = files2_paths_hashed[i]
     if file_hashed not in files1_paths_hashed:
-        mtime = datetime.utcfromtimestamp(files2_times[i][0]).isoformat()
-        ctime = datetime.utcfromtimestamp(files2_times[i][1]).isoformat()
-        atime = datetime.utcfromtimestamp(files2_times[i][2]).isoformat()
+        size = files2_info[i][0]
+        mtime = datetime.utcfromtimestamp(files2_info[i][1]).isoformat()
+        ctime = datetime.utcfromtimestamp(files2_info[i][2]).isoformat()
+        atime = datetime.utcfromtimestamp(files2_info[i][3]).isoformat()
         file = files2_paths[i]
-        diff2.append((file,mtime,ctime,atime))
-        print(">  %s,%s,%s,%s" % (file,mtime,ctime,atime))
+        diff2.append((file,size,mtime,ctime,atime))
+        print(">  %s,%s,%s,%s,%s" % (file,size,mtime,ctime,atime))
     i += 1
 print('done')
 
@@ -137,7 +197,7 @@ print('creating csv %s...' % csvfile)
 with open(csvfile, mode='w') as fh:
     fw = csv.writer(fh, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
     for item in diff1:
-        fw.writerow(['<', item[0], item[1], item[2], item[3]])
+        fw.writerow(['<', item[0], item[1], item[2], item[3], item[4]])
     for item in diff2:
-        fw.writerow(['>', item[0], item[1], item[2], item[3]])
+        fw.writerow(['>', item[0], item[1], item[2], item[3], item[4]])
 print('done')
