@@ -55,23 +55,23 @@ def get_args():
                         help="1st diskover ES index name")
     parser.add_argument("-I", "--index2", metavar='INDEX2', required=True,
                         help="2nd diskover ES index name")
-    parser.add_argument("--es1host", metavar='ESHOST1', required=True,
+    parser.add_argument("--eshost1", metavar='HOST', required=True,
                         help="Elasticsearch host 1")
-    parser.add_argument("--es1port", metavar='ESHOST1PORT', type=int, default=9200,
+    parser.add_argument("--esport1", metavar='PORTNUM', type=int, default=9200,
                         help="Elasticsearch host 1 port (default: 9200)")
-    parser.add_argument("--es1user", metavar='ESHOST1USER',
+    parser.add_argument("--esuser1", metavar='USERNAME',
                         help="Elasticsearch host 1 username")
-    parser.add_argument("--es1pass", metavar='ESHOST1PASS',
+    parser.add_argument("--espass1", metavar='PASSWORD',
                         help="Elasticsearch host 1 password")
     parser.add_argument("--es1ver7", action="store_true",
                         help="Elasticsearch host 1 is ES 7+")
-    parser.add_argument("--es2host", metavar='ESHOST2',
+    parser.add_argument("--eshost2", metavar='HOST',
                         help="Elasticsearch host 2 (if diff than --es1)")
-    parser.add_argument("--es2port", metavar='ESHOST2PORT', type=int, default=9200,
+    parser.add_argument("--esport2", metavar='PORTNUM', type=int, default=9200,
                         help="Elasticsearch host 2 port (default: 9200)")
-    parser.add_argument("--es2user", metavar='ESHOST2USER',
+    parser.add_argument("--esuser2", metavar='USERNAME',
                         help="Elasticsearch host 2 username")
-    parser.add_argument("--es2pass", metavar='ESHOST2PASS',
+    parser.add_argument("--espass2", metavar='PASSWORD',
                         help="Elasticsearch host 2 password")
     parser.add_argument("--es2ver7", action="store_true",
                         help="Elasticsearch host 2 is ES 7+")
@@ -141,18 +141,18 @@ args = vars(get_args())
 
 # set up elasticsearch connections
 es = Elasticsearch(
-            hosts=args['es1host'],
-            port=args['es1port'],
-            http_auth=(args['es1user'], args['es1pass']),
+            hosts=args['eshost1'],
+            port=args['esport1'],
+            http_auth=(args['esuser1'], args['espass1']),
             connection_class=Urllib3HttpConnection,
             timeout=config['es_timeout'], maxsize=config['es_maxsize'],
             max_retries=config['es_max_retries'], retry_on_timeout=True)
 
 if args['es2host']:
     es2 = Elasticsearch(
-                hosts=args['es2host'],
-                port=args['es2port'],
-                http_auth=(args['es2user'], args['es2pass']),
+                hosts=args['eshost2'],
+                port=args['esport2'],
+                http_auth=(args['esuser2'], args['espass2']),
                 connection_class=Urllib3HttpConnection,
                 timeout=config['es_timeout'], maxsize=config['es_maxsize'],
                 max_retries=config['es_max_retries'], retry_on_timeout=True)
@@ -160,8 +160,8 @@ else:
     es2 = es
 
 print('getting files from es...')
-files1_paths, files1_paths_hashed, files1_info = get_files(es, args['eshost1ver7'], args['index'], args['rootdir'])
-files2_paths, files2_paths_hashed, files2_info = get_files(es2, args['eshost2ver7'], args['index2'], args['rootdir'])
+files1_paths, files1_paths_hashed, files1_info = get_files(es, args['es1ver7'], args['index'], args['rootdir'])
+files2_paths, files2_paths_hashed, files2_info = get_files(es2, args['es2ver7'], args['index2'], args['rootdir'])
 
 print('diffing file lists...')
 diff1 = []
