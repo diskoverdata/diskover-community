@@ -67,9 +67,9 @@ def get_args():
                         help="Elasticsearch host 1")
     parser.add_argument("--esport1", metavar='PORTNUM', type=int, default=9200,
                         help="Elasticsearch host 1 port (default: 9200)")
-    parser.add_argument("--esuser1", metavar='USERNAME',
+    parser.add_argument("--esuser1", metavar='USERNAME', type=str, default="",
                         help="Elasticsearch host 1 username")
-    parser.add_argument("--espass1", metavar='PASSWORD',
+    parser.add_argument("--espass1", metavar='PASSWORD', type=str, default="",
                         help="Elasticsearch host 1 password")
     parser.add_argument("--es1ver7", action="store_true",
                         help="Elasticsearch host 1 is ES 7+")
@@ -77,9 +77,9 @@ def get_args():
                         help="Elasticsearch host 2 (if diff than --eshost1)")
     parser.add_argument("--esport2", metavar='PORTNUM', type=int, default=9200,
                         help="Elasticsearch host 2 port (default: 9200)")
-    parser.add_argument("--esuser2", metavar='USERNAME',
+    parser.add_argument("--esuser2", metavar='USERNAME', type=str, default="",
                         help="Elasticsearch host 2 username")
-    parser.add_argument("--espass2", metavar='PASSWORD',
+    parser.add_argument("--espass2", metavar='PASSWORD', type=str, default="",
                         help="Elasticsearch host 2 password")
     parser.add_argument("--es2ver7", action="store_true",
                         help="Elasticsearch host 2 is ES 7+")
