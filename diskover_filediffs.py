@@ -100,10 +100,10 @@ def get_files(eshost, esver7, index, path):
             '_source': ['path_parent', 'filename', 'filesize', 'last_modified', 'last_access', 'last_change'],
             'query': {
                 'query_string': {
-                    'query': '(path_parent: ' + newpath + ') OR '
+                    'query': '((path_parent: ' + newpath + ') OR '
                                                             '(path_parent: ' + newpathwildcard + ') OR (filename: "'
                                 + os.path.basename(path) + '" AND path_parent: "'
-                                + os.path.abspath(os.path.join(path, os.pardir)) + '" AND type:file)',
+                                + os.path.abspath(os.path.join(path, os.pardir)) + '")) AND type:file',
                 }
             }
         }
