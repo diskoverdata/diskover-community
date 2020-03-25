@@ -59,6 +59,9 @@ def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", "--rootdir", metavar='ROOTDIR', required=True,
                         help="Directory to start searching ES from")
+    parser.add_argument("-D", "--rootdir2", metavar='ROOTDIR2',
+                        help="Directory to start searching ES from \
+                            (set if index2 is on diff host than eshost1 with diff rootdirs)")
     parser.add_argument("-i", "--index", metavar='INDEX', required=True,
                         help="1st diskover ES index name")
     parser.add_argument("-I", "--index2", metavar='INDEX2', required=True,
@@ -74,7 +77,7 @@ def get_args():
     parser.add_argument("--es1ver7", action="store_true",
                         help="Elasticsearch host 1 is ES 7+")
     parser.add_argument("--eshost2", metavar='HOST',
-                        help="Elasticsearch host 2 (if diff than --eshost1)")
+                        help="Elasticsearch host 2 (set if index2 is on diff host than eshost1)")
     parser.add_argument("--esport2", metavar='PORTNUM', type=int, default=9200,
                         help="Elasticsearch host 2 port (default: 9200)")
     parser.add_argument("--esuser2", metavar='USERNAME', type=str, default="",
@@ -85,6 +88,11 @@ def get_args():
                         help="Elasticsearch host 2 is ES 7+")
     args = parser.parse_args()
     return args
+
+
+def replace_path(path, frompath, topath):
+    path = path.replace(frompath, topath)
+    return path
 
 
 def get_files(eshost, esver7, index, path):
@@ -135,6 +143,8 @@ def get_files(eshost, esver7, index, path):
             ctime = time.mktime(datetime.strptime(hit['_source']['last_change'], '%Y-%m-%dT%H:%M:%S').timetuple())
             atime = time.mktime(datetime.strptime(hit['_source']['last_access'], '%Y-%m-%dT%H:%M:%S').timetuple())
             filelist.append(fullpath)
+            if args['rootdir2'] and index == args['index2']:
+                fullpath = replace_path(fullpath, args['rootdir2'], args['rootdir'])
             filelist_hashed.append(hashlib.md5(fullpath.encode('utf-8')).hexdigest())
             filelist_info.append((size, mtime, ctime, atime))
             doccount += 1
@@ -167,9 +177,12 @@ if args['eshost2']:
 else:
     es2 = es
 
+if not args['rootdir2']:
+    args['rootdir2'] = args['rootdir']
+
 print('getting files from es...')
 files1_paths, files1_paths_hashed, files1_info = get_files(es, args['es1ver7'], args['index'], args['rootdir'])
-files2_paths, files2_paths_hashed, files2_info = get_files(es2, args['es2ver7'], args['index2'], args['rootdir'])
+files2_paths, files2_paths_hashed, files2_info = get_files(es2, args['es2ver7'], args['index2'], args['rootdir2'])
 
 print('diffing file lists...')
 diff1 = []
