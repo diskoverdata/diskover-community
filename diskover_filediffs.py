@@ -195,13 +195,13 @@ if not args['comparecsvs']:
     if not args['rootdir2']:
         args['rootdir2'] = args['rootdir']
 
-    print('getting files from es...')
+    logger.info('getting files from es...')
     files1_paths, files1_paths_hashed, files1_info = get_files(es, args['es1ver7'], args['index'], args['rootdir'])
 
     if not args['filelistonly']:
         files2_paths, files2_paths_hashed, files2_info = get_files(es2, args['es2ver7'], args['index2'], args['rootdir2'])
 
-        print('diffing file lists...')
+        logger.info('diffing file lists...')
         diff1 = []
         i = 0
         while i < len(files1_paths_hashed):
@@ -228,20 +228,20 @@ if not args['comparecsvs']:
                 diff2.append((file,size,mtime,ctime,atime))
                 print(">  %s,%s,%s,%s,%s" % (file,size,mtime,ctime,atime))
             i += 1
-        print('done')
+        logger.info('done')
 
         csvfile = 'diskover_filediffs_%s_%s.csv' % (args['index'], args['index2'])
-        print('creating csv %s...' % csvfile)
+        logger.info('creating csv %s...' % csvfile)
         with open(csvfile, mode='w') as fh:
             fw = csv.writer(fh, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
             for item in diff1:
                 fw.writerow(['<', item[0], item[1], item[2], item[3], item[4]])
             for item in diff2:
                 fw.writerow(['>', item[0], item[1], item[2], item[3], item[4]])
-        print('done')
+        logger.info('done')
     else:
         csvfile = 'diskover_filelist_%s.csv' % args['index']
-        print('creating csv %s...' % csvfile)
+        logger.info('creating csv %s...' % csvfile)
         with open(csvfile, mode='w') as fh:
             fw = csv.writer(fh, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
             i = 0
@@ -254,14 +254,14 @@ if not args['comparecsvs']:
                 file = files1_paths[i]
                 fw.writerow([file, file_hashed, size, mtime, ctime, atime])
                 i += 1
-        print('done')
+        logger.info('done')
 else:
     csvfile1 = args['comparecsvs'][0]
     csvfile2 = args['comparecsvs'][1]
     files1_paths = []
     files1_paths_hashed = []
     files1_info = []
-    print('comparing csv %s with %s...' % (csvfile1, csvfile2))
+    logger.info('comparing csv %s with %s...' % (csvfile1, csvfile2))
     with open(csvfile1, mode='r') as fh:
         fr = csv.reader(fh, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
         for row in fr:
@@ -305,10 +305,10 @@ else:
             diff2.append((file,size,mtime,ctime,atime))
             print(">  %s,%s,%s,%s,%s" % (file,size,mtime,ctime,atime))
         i += 1
-    print('done')
+    logger.info('done')
 
     csvfile = 'diskover_filediffs_%s_%s.csv' % (csvfile1, csvfile2) 
-    print('creating csv %s...' % csvfile)
+    logger.info('creating csv %s...' % csvfile)
     with open(csvfile, mode='w') as fh:
         fw = csv.writer(fh, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
         i = 0
@@ -321,4 +321,4 @@ else:
             file = files1_paths[i]
             fw.writerow([file, file_hashed, size, mtime, ctime, atime])
             i += 1
-    print('done')
+    logger.info('done')
