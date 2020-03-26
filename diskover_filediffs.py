@@ -75,25 +75,26 @@ def get_args():
     parser.add_argument("--comparecsvs", metavar='FILE', nargs=2,
                         help="compare two csv files exported from this script")
     parser.add_argument("--eshost1", metavar='HOST',
-                        help="Elasticsearch host 1 (required if comparing ES indexes)")
+                        help="Elasticsearch host 1 (required if comparing ES indexes or \
+                            using --filelistonly)")
     parser.add_argument("--esport1", metavar='PORTNUM', type=int, default=9200,
                         help="Elasticsearch host 1 port (default: 9200)")
     parser.add_argument("--esuser1", metavar='USERNAME', type=str, default="",
-                        help="Elasticsearch host 1 username")
+                        help="Elasticsearch host 1 username, default: \"\"")
     parser.add_argument("--espass1", metavar='PASSWORD', type=str, default="",
-                        help="Elasticsearch host 1 password")
+                        help="Elasticsearch host 1 password, default: \"\"")
     parser.add_argument("--es1ver7", action="store_true",
-                        help="Elasticsearch host 1 is ES 7+")
+                        help="Elasticsearch host 1 is ver 7.x")
     parser.add_argument("--eshost2", metavar='HOST',
                         help="Elasticsearch host 2 (set if index2 is on diff host than eshost1)")
     parser.add_argument("--esport2", metavar='PORTNUM', type=int, default=9200,
                         help="Elasticsearch host 2 port (default: 9200)")
     parser.add_argument("--esuser2", metavar='USERNAME', type=str, default="",
-                        help="Elasticsearch host 2 username")
+                        help="Elasticsearch host 2 username, default: \"\"")
     parser.add_argument("--espass2", metavar='PASSWORD', type=str, default="",
-                        help="Elasticsearch host 2 password")
+                        help="Elasticsearch host 2 password, default: \"\"")
     parser.add_argument("--es2ver7", action="store_true",
-                        help="Elasticsearch host 2 is ES 7+")
+                        help="Elasticsearch host 2 is ver 7.x")
     args = parser.parse_args()
     return args
 
@@ -168,7 +169,7 @@ args = vars(get_args())
 
 if not args['comparecsvs']:
     if not args['index'] or not args['rootdir']:
-        print('--index and --rootdir cli args required (unless using --comparecsvs), use -h for help')
+        print('--eshost1, --index and --rootdir cli args required (unless using --comparecsvs), use -h for help')
         sys.exit(1)
 
     # set up elasticsearch connections
