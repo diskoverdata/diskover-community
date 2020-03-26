@@ -32,18 +32,6 @@ files = .*,Thumbs.db,.DS_Store,._.DS_Store,.localized,desktop.ini
 ;files = [{"name": [], "name_exclude": [], "ext": ["tmp*", "TMP*", "temp*", "TEMP*", "cache*", "CACHE*"], "path": ["*/Application Support/*", "*/Containers/*"], "path_exclude": [], "mtime": 90, "atime": 0, "ctime": 90, "tag": "delete", "tag_custom": "autotag"}]
 ;dirs = [{"name": ["*tmp*", "*TMP*", "*temp*", "*TEMP*", "*Temp*", "*cache*", "*CACHE*", "*Cache*"], "name_exclude": ["*templates*", "*Templates*"], "path": ["*/Application Support/*", "*/Containers/*"], "path_exclude": [], "mtime": 90, "atime": 0, "ctime": 90, "tag": "delete", "tag_custom": "autotag"}]
 
-[storagecost]
-; storage cost per GB (default is 0.03 cents per GB)
-costpergb = 0.03
-; use decimal base 10 (1000) or binary base 2 (1024) for GB size (default is 2, set to 2 or 10)
-base = 2
-; pattern dictionaries for diskover bots to use when determing cost per GB (overrides above)
-; can also specify file name with json, example paths = storagecost.paths.json
-;paths = [{"path": ["*/fastdiskpath1/*", "*/Fastdiskpath2/*"], "path_exclude": [], "costpergb": 0.05}, {"path": ["*/slowdiskpath1/*", "*/Slowdiskpath2/*"], "path_exclude": [], "costpergb": 0.02}]
-;times = [{"mtime": 180, "atime": 0, "ctime": 180, "costpergb": 0.02}]
-; deciding factor if a match is in both paths and times, can be path or time
-;priority = path
-
 [elasticsearch]
 ; uncomment the below three lines if you are using AWS ES
 ;aws = False
@@ -88,12 +76,6 @@ port = 6379
 ; set to socket path to use unix socket instead of host/port, comment out to not use (default)
 ;socket = /tmp/redis.sock
 ;password =
-; cache directory times in Redis
-; used for -I index2 when comparing directory times to get metadata from index2 instead of off disk
-; set to True to cache dir times or False to turn off (default False)
-cachedirtimes = False
-; how long in seconds directory keys lives in Redis (default 1 day)
-dirtimesttl = 604800
 ; database to use (default is 0)
 db = 0
 ; rq job default time out in sec (default 180)
@@ -144,15 +126,6 @@ checkbytes = 64
 restoretimes = False
 ; number of threads for calculating md5 checksum of files
 threads = 8
-
-[crawlbot]
-; continuous scanner when running with --crawlbot
-; time to sleep (seconds) between checking for directory changes
-sleeptime = 0.1
-; number of threads for checking directories, setting this to num of cores x2 is a good starting point
-threads = 8
-; how often in seconds to get new directory list with updated times from ES (default 3600)
-dirlisttime = 3600
 
 [gource]
 ; should be set to same in diskover-gource.sh

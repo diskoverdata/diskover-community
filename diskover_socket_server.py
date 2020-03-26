@@ -6,7 +6,7 @@ your file metadata into Elasticsearch.
 See README.md or https://github.com/shirosaidev/diskover
 for more information.
 
-Copyright (C) Chris Park 2017-2018
+Copyright (C) Chris Park 2017-2019
 diskover is released under the Apache 2.0 license. See
 LICENSE for the full license text.
 """
@@ -29,9 +29,9 @@ import struct
 
 
 # dict to hold socket tasks
-socket_tasks = {}
+#socket_tasks = {}
 # list of socket client
-clientlist = []
+#clientlist = []
 
 
 def socket_thread_handler(threadnum, q, cliargs, logger):
@@ -186,7 +186,7 @@ def start_socket_server(cliargs, logger):
     """This is the start socket server function.
     It opens a socket and waits for remote commands.
     """
-    global clientlist
+    #global clientlist
 
     # set thread/connection limit
     max_connections = config['listener_maxconnections']
@@ -222,7 +222,7 @@ def start_socket_server(cliargs, logger):
             logger.debug("Got a connection from %s" % str(addr))
             # add client to list
             client = (clientsock, addr)
-            clientlist.append(client)
+            #clientlist.append(client)
             # add task to Queue
             q.put(client)
 
@@ -243,7 +243,7 @@ def start_socket_server_twc(rootdir_path, num_sep, level, batchsize, cliargs, lo
     It opens a socket and waits for diskover tree walk client 
     connections.
     """
-    global clientlist
+    #global clientlist
 
     # set thread/connection limit
     max_connections = config['listener_maxconnections']
@@ -293,10 +293,10 @@ def start_socket_server_twc(rootdir_path, num_sep, level, batchsize, cliargs, lo
             logger.debug("Got a connection from %s" % str(addr))
             # add client to list
             client = (clientsock, addr)
-            clientlist.append(client)
+            #clientlist.append(client)
             # set start time to first connection
-            if len(clientlist) == 1:
-                starttime = time.time()
+            #if len(clientlist) == 1:
+            #    starttime = time.time()
             # put client into Queue
             q.put(client)
 
@@ -316,14 +316,26 @@ def run_command(threadnum, command_dict, clientsock, cliargs, logger):
     It runs commands from the listener socket
     using values in command_dict.
     """
-    global socket_tasks
-    global clientlist
+    #global socket_tasks
+    #global clientlist
 
     # try to get index name from command or use from diskover config file
     try:
         index = str(command_dict['index'])
     except KeyError:
         index = str(config['index'])
+        pass
+    # try to get min days mtime from command or use default
+    try:
+        mtime = str(command_dict['mtime'])
+    except KeyError:
+        mtime = str(cliargs['mtime'])
+        pass
+    # try to get min size from command or use default
+    try:
+        minsize = str(command_dict['minsize'])
+    except KeyError:
+        minsize = str(cliargs['minsize'])
         pass
     # try to get worker batch size from command or use default
     try:
@@ -337,6 +349,24 @@ def run_command(threadnum, command_dict, clientsock, cliargs, logger):
     except KeyError:
         adaptivebatch = str(cliargs['adaptivebatch'])
         pass
+    # try to get optimize index option from command or use default
+    try:
+        optimizeindex = str(command_dict['optimizeindex'])
+    except KeyError:
+        optimizeindex = str(cliargs['optimizeindex'])
+        pass
+    # try to get auto tag option from command or use default
+    try:
+        autotag = str(command_dict['autotag'])
+    except KeyError:
+        autotag = str(cliargs['autotag'])
+        pass
+    # try to get empty dirs option from command or use default
+    try:
+        indexemptydirs = str(command_dict['indexemptydirs'])
+    except KeyError:
+        indexemptydirs = str(cliargs['indexemptydirs'])
+        pass
 
     try:
         action = command_dict['action']
@@ -347,7 +377,8 @@ def run_command(threadnum, command_dict, clientsock, cliargs, logger):
         if action == 'crawl':
             path = command_dict['path']
             cmd = [pythonpath, diskoverpath, '-b', batchsize,
-                   '-i', index, '-d', path, '-q', '-F']
+                   '-i', index, '-d', path, '-m', mtime, '-s', minsize,
+                   '-q', '-F']
 
         elif action == 'crawlapi':
             path = command_dict['path']
@@ -409,6 +440,18 @@ def run_command(threadnum, command_dict, clientsock, cliargs, logger):
         if (adaptivebatch == "True" or adaptivebatch == "true"):
             cmd.append('-a')
 
+        # add optimize index
+        if (optimizeindex == "True" or optimizeindex == "true"):
+            cmd.append('-O')
+
+        # add auto tags
+        if (autotag == "True" or autotag == "true"):
+            cmd.append('-A')
+
+        # add index empty dirs
+        if (indexemptydirs == "True" or indexemptydirs == "true"):
+            cmd.append('-e')
+
         # run command using subprocess
         starttime = time.time()
         taskid = str(uuid.uuid4()).encode('utf-8')
@@ -417,7 +460,7 @@ def run_command(threadnum, command_dict, clientsock, cliargs, logger):
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         # add process to socket_tasks dict
-        socket_tasks[taskid] = process
+        #socket_tasks[taskid] = process
 
         message = b'{"msg": "taskstart", "taskid": "' + taskid + b'"}\n'
         clientsock.send(message)

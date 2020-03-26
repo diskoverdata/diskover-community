@@ -1,5 +1,35 @@
 # Diskover Change Log
 
+# [1.5.0.10] - 2020-02-28
+### added
+- --splitfiles and --splitfilesnum - For directories with lots of files, split meta collecting of files amongst bots
+- --noworkerdocs - Don't add worker docs (worker crawl stats) into Elasticsearch, could help to reduce index size for very large indexes
+### fixed
+- high memory usage with socket server when running for long time
+
+# [1.5.0.9] - 2019-11-15
+### fixed
+- error with plugins and Python 2
+
+# [1.5.0.8] - 2019-11-03
+### fixed
+- bug with finddupes not finding any filehashes
+
+# [1.5.0.7] - 2019-09-27
+### added
+- -L --listen cli arg to diskover worker bot to override what redis rq to listen to
+- additional crawl options for diskover socket server "crawl" command (see wiki for more info)
+- improved duplicate file finding --finddupes
+- reduced time to calculate directory sizes
+### changed
+- replaced imp module with importlib for plugins
+- removed s3 inventory import feature (enterprise ver only feature)
+- removed -I index2 Redis dir cacheing and config entries in diskover.cfg.sample (enterprise ver only feature)
+- removed -G cost per gb (storage costs) and config entries in diskover.cfg.sample (enterprise ver only feature)
+- removed crawl bot continuous scanner and config entries in diskover.cfg.sample (enterprise ver only feature)
+### fixed
+- thread exhaustion from too many spawned threads when running finddupes
+
 # [1.5.0.6] - 2019-08-07
 ### changed
 - newer versions of py modules in requirements.txt, update with "pip install -r requirements.txt"
