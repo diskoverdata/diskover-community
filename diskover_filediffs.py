@@ -57,23 +57,26 @@ logging.basicConfig(format=logformatter, level=logging.INFO)
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-d", "--rootdir", metavar='ROOTDIR', required=True,
-                        help="Directory to start searching ES from")
+    parser.add_argument("-d", "--rootdir", metavar='ROOTDIR',
+                        help="Directory to start searching from in ES --index")
     parser.add_argument("-D", "--rootdir2", metavar='ROOTDIR2',
                         help="Set if comparing file lists with diff rootdirs, example \
                                 /mnt/stor1 and /mnt/stor2 or when using --index2 and \
                                     it is on different es host, will replace --rootdir2 path \
                                     with --rootdir path")
-    parser.add_argument("-i", "--index", metavar='INDEX', required=True,
-                        help="1st diskover ES index name")
+    parser.add_argument("-i", "--index", metavar='INDEX',
+                        help="1st diskover ES index name, \
+                            don\'t set when using --filelistonly or --comparecsvs")
     parser.add_argument("-I", "--index2", metavar='INDEX2',
-                        help="2nd diskover ES index name (for comparison with --index) \
-                            don\'t set when using --filelistonly")
+                        help="2nd diskover ES index name (for comparison with --index), \
+                            don\'t set when using --filelistonly or --comparecsvs")
     parser.add_argument("--filelistonly", action="store_true",
                         help="only output file list from --index and don't do comparison \
                             (no --index2 required)")
-    parser.add_argument("--eshost1", metavar='HOST', required=True,
-                        help="Elasticsearch host 1")
+    parser.add_argument("--comparecsvs", metavar='FILE', nargs=2,
+                        help="compare two csv files exported from this script")
+    parser.add_argument("--eshost1", metavar='HOST',
+                        help="Elasticsearch host 1 (required if comparing ES indexes)")
     parser.add_argument("--esport1", metavar='PORTNUM', type=int, default=9200,
                         help="Elasticsearch host 1 port (default: 9200)")
     parser.add_argument("--esuser1", metavar='USERNAME', type=str, default="",
@@ -163,36 +166,114 @@ def get_files(eshost, esver7, index, path):
 
 args = vars(get_args())
 
-# set up elasticsearch connections
-es = Elasticsearch(
-            hosts=args['eshost1'],
-            port=args['esport1'],
-            http_auth=(args['esuser1'], args['espass1']),
-            connection_class=Urllib3HttpConnection,
-            timeout=config['es_timeout'], maxsize=config['es_maxsize'],
-            max_retries=config['es_max_retries'], retry_on_timeout=True)
-
-if args['eshost2']:
-    es2 = Elasticsearch(
-                hosts=args['eshost2'],
-                port=args['esport2'],
-                http_auth=(args['esuser2'], args['espass2']),
+if not args['comparecsvs']:
+    # set up elasticsearch connections
+    es = Elasticsearch(
+                hosts=args['eshost1'],
+                port=args['esport1'],
+                http_auth=(args['esuser1'], args['espass1']),
                 connection_class=Urllib3HttpConnection,
                 timeout=config['es_timeout'], maxsize=config['es_maxsize'],
                 max_retries=config['es_max_retries'], retry_on_timeout=True)
+
+    if args['eshost2']:
+        es2 = Elasticsearch(
+                    hosts=args['eshost2'],
+                    port=args['esport2'],
+                    http_auth=(args['esuser2'], args['espass2']),
+                    connection_class=Urllib3HttpConnection,
+                    timeout=config['es_timeout'], maxsize=config['es_maxsize'],
+                    max_retries=config['es_max_retries'], retry_on_timeout=True)
+    else:
+        es2 = es
+
+    if not args['rootdir2']:
+        args['rootdir2'] = args['rootdir']
+
+    print('getting files from es...')
+    files1_paths, files1_paths_hashed, files1_info = get_files(es, args['es1ver7'], args['index'], args['rootdir'])
+
+    if not args['filelistonly']:
+        files2_paths, files2_paths_hashed, files2_info = get_files(es2, args['es2ver7'], args['index2'], args['rootdir2'])
+
+        print('diffing file lists...')
+        diff1 = []
+        i = 0
+        while i < len(files1_paths_hashed):
+            file_hashed = files1_paths_hashed[i]
+            if file_hashed not in files2_paths_hashed:
+                size = files1_info[i][0]
+                mtime = datetime.utcfromtimestamp(files1_info[i][1]).isoformat()
+                ctime = datetime.utcfromtimestamp(files1_info[i][2]).isoformat()
+                atime = datetime.utcfromtimestamp(files1_info[i][3]).isoformat()
+                file = files1_paths[i]
+                diff1.append((file,size,mtime,ctime,atime))
+                print("<  %s,%s,%s,%s,%s" % (file,size,mtime,ctime,atime))
+            i += 1
+        diff2 = []
+        i = 0
+        while i < len(files2_paths_hashed):
+            file_hashed = files2_paths_hashed[i]
+            if file_hashed not in files1_paths_hashed:
+                size = files2_info[i][0]
+                mtime = datetime.utcfromtimestamp(files2_info[i][1]).isoformat()
+                ctime = datetime.utcfromtimestamp(files2_info[i][2]).isoformat()
+                atime = datetime.utcfromtimestamp(files2_info[i][3]).isoformat()
+                file = files2_paths[i]
+                diff2.append((file,size,mtime,ctime,atime))
+                print(">  %s,%s,%s,%s,%s" % (file,size,mtime,ctime,atime))
+            i += 1
+        print('done')
+
+        csvfile = 'diskover_filediffs_%s_%s.csv' % (args['index'], args['index2'])
+        print('creating csv %s...' % csvfile)
+        with open(csvfile, mode='w') as fh:
+            fw = csv.writer(fh, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            for item in diff1:
+                fw.writerow(['<', item[0], item[1], item[2], item[3], item[4]])
+            for item in diff2:
+                fw.writerow(['>', item[0], item[1], item[2], item[3], item[4]])
+        print('done')
+    else:
+        csvfile = 'diskover_filelist_%s.csv' % args['index']
+        print('creating csv %s...' % csvfile)
+        with open(csvfile, mode='w') as fh:
+            fw = csv.writer(fh, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            i = 0
+            while i < len(files1_paths_hashed):
+                file_hashed = files1_paths_hashed[i]
+                size = files1_info[i][0]
+                mtime = datetime.utcfromtimestamp(files1_info[i][1]).isoformat()
+                ctime = datetime.utcfromtimestamp(files1_info[i][2]).isoformat()
+                atime = datetime.utcfromtimestamp(files1_info[i][3]).isoformat()
+                file = files1_paths[i]
+                fw.writerow([file, file_hashed, size, mtime, ctime, atime])
+                i += 1
+        print('done')
 else:
-    es2 = es
+    csvfile1 = args['comparecsvs'][0]
+    csvfile2 = args['comparecsvs'][1]
+    files1_paths = []
+    files1_paths_hashed = []
+    files1_info = []
+    print('comparing csv %s with %s...' % (csvfile1, csvfile2))
+    with open(csvfile1, mode='r') as fh:
+        fr = csv.reader(fh, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        for row in fr:
+            files1_paths.append(row[0])
+            files1_paths_hashed.append(row[1])
+            files1_info.append((row[2], row[3], row[4], row[5]))
 
-if not args['rootdir2']:
-    args['rootdir2'] = args['rootdir']
+    files2_paths = []
+    files2_paths_hashed = []
+    files2_info = []
+    with open(csvfile2, mode='r') as fh:
+        fr = csv.reader(fh, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        for row in fr:
+            files2_paths.append(row[0])
+            files2_paths_hashed.append(row[1])
+            files2_info.append((row[2], row[3], row[4], row[5]))
 
-print('getting files from es...')
-files1_paths, files1_paths_hashed, files1_info = get_files(es, args['es1ver7'], args['index'], args['rootdir'])
-
-if not args['filelistonly']:
-    files2_paths, files2_paths_hashed, files2_info = get_files(es2, args['es2ver7'], args['index2'], args['rootdir2'])
-
-    print('diffing file lists...')
     diff1 = []
     i = 0
     while i < len(files1_paths_hashed):
@@ -221,17 +302,7 @@ if not args['filelistonly']:
         i += 1
     print('done')
 
-    csvfile = 'diskover_filediffs_%s_%s.csv' % (args['index'], args['index2'])
-    print('creating csv %s...' % csvfile)
-    with open(csvfile, mode='w') as fh:
-        fw = csv.writer(fh, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-        for item in diff1:
-            fw.writerow(['<', item[0], item[1], item[2], item[3], item[4]])
-        for item in diff2:
-            fw.writerow(['>', item[0], item[1], item[2], item[3], item[4]])
-    print('done')
-else:
-    csvfile = 'diskover_filelist_%s.csv' % args['index']
+    csvfile = 'diskover_filediffs_%s_%s.csv' % (csvfile1, csvfile2) 
     print('creating csv %s...' % csvfile)
     with open(csvfile, mode='w') as fh:
         fw = csv.writer(fh, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
