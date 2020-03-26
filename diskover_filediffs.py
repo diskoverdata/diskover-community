@@ -124,8 +124,8 @@ def get_files(eshost, esver7, index, path):
                 }
             }
         }
-        res = eshost.search(index=index, doc_type='_doc', scroll='1m',
-                    size=config['es_scrollsize'], body=data, request_timeout=config['es_timeout'])
+        res = eshost.search(index=index, scroll='1m', size=config['es_scrollsize'], 
+                            body=data, request_timeout=config['es_timeout'])
     else:
         data = {
             '_source': ['path_parent', 'filename', 'filesize', 'last_modified', 'last_access', 'last_change'],
