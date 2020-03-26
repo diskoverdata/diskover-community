@@ -65,8 +65,7 @@ def get_args():
                                     it is on different es host, will replace --rootdir2 path \
                                     with --rootdir path")
     parser.add_argument("-i", "--index", metavar='INDEX',
-                        help="1st diskover ES index name, \
-                            don\'t set when using --filelistonly or --comparecsvs")
+                        help="1st diskover ES index name, don\'t set when using --comparecsvs")
     parser.add_argument("-I", "--index2", metavar='INDEX2',
                         help="2nd diskover ES index name (for comparison with --index), \
                             don\'t set when using --filelistonly or --comparecsvs")
@@ -166,7 +165,12 @@ def get_files(eshost, esver7, index, path):
 
 args = vars(get_args())
 
+
 if not args['comparecsvs']:
+    if not args['index'] or not args['rootdir']:
+        print('--index and --rootdir cli args required (unless using --comparecsvs), use -h for help')
+        sys.exit(1)
+
     # set up elasticsearch connections
     es = Elasticsearch(
                 hosts=args['eshost1'],
