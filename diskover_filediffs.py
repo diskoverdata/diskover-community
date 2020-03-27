@@ -148,9 +148,9 @@ def get_files_gen(eshost, esver7, index, path):
             if args['rootdir2'] != args['rootdir']:
                 fullpath_rep = replace_path(fullpath, args['rootdir2'], args['rootdir'])
             file_hashed = hashlib.md5(fullpath_rep.encode('utf-8')).hexdigest()
-            mtime = hit['_source']['last_modified']
-            ctime = hit['_source']['last_change']
-            atime = hit['_source']['last_access']
+            mtime = time.mktime(datetime.strptime(hit['_source']['last_modified'], '%Y-%m-%dT%H:%M:%S').timetuple())
+            ctime = time.mktime(datetime.strptime(hit['_source']['last_change'], '%Y-%m-%dT%H:%M:%S').timetuple())
+            atime = time.mktime(datetime.strptime(hit['_source']['last_access'], '%Y-%m-%dT%H:%M:%S').timetuple())
 
             yield fullpath, file_hashed, size, mtime, ctime, atime
             
@@ -299,6 +299,9 @@ if not args['comparecsvs']:
         with open(csvfile, mode='w') as fh:
             fw = csv.writer(fh, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
             for file, file_hashed, size, mtime, ctime, atime in get_files_gen(es, args['es1ver7'], args['index'], args['rootdir']):
+                mtime = datetime.utcfromtimestamp(mtime).isoformat()
+                ctime = datetime.utcfromtimestamp(ctime).isoformat()
+                atime = datetime.utcfromtimestamp(atime).isoformat()
                 fw.writerow([file, file_hashed, size, mtime, ctime, atime])
         logger.info('done')
 else:
