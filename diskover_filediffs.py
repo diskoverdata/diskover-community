@@ -148,7 +148,7 @@ def get_files_gen(eshost, esver7, index, path):
             mtime = time.mktime(datetime.strptime(hit['_source']['last_modified'], '%Y-%m-%dT%H:%M:%S').timetuple())
             ctime = time.mktime(datetime.strptime(hit['_source']['last_change'], '%Y-%m-%dT%H:%M:%S').timetuple())
             atime = time.mktime(datetime.strptime(hit['_source']['last_access'], '%Y-%m-%dT%H:%M:%S').timetuple())
-            if args['rootdir2']:
+            if args['rootdir2'] != args['rootdir']:
                 fullpath_hash = replace_path(fullpath, args['rootdir2'], args['rootdir'])
             file_hashed = hashlib.md5(fullpath_hash.encode('utf-8')).hexdigest()
             mtime = datetime.utcfromtimestamp(files1_info[i][1]).isoformat()
@@ -210,7 +210,7 @@ def get_files(eshost, esver7, index, path):
             ctime = time.mktime(datetime.strptime(hit['_source']['last_change'], '%Y-%m-%dT%H:%M:%S').timetuple())
             atime = time.mktime(datetime.strptime(hit['_source']['last_access'], '%Y-%m-%dT%H:%M:%S').timetuple())
             filelist.append(fullpath)
-            if args['rootdir2']:
+            if args['rootdir2'] != args['rootdir']:
                 fullpath = replace_path(fullpath, args['rootdir2'], args['rootdir'])
             filelist_hashed.append(hashlib.md5(fullpath.encode('utf-8')).hexdigest())
             filelist_info.append((size, mtime, ctime, atime))
