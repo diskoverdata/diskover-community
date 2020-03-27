@@ -334,9 +334,9 @@ else:
         file_hashed = files1_paths_hashed[i]
         if file_hashed not in files2_paths_hashed:
             size = files1_info[i][0]
-            mtime = datetime.utcfromtimestamp(files1_info[i][1]).isoformat()
-            ctime = datetime.utcfromtimestamp(files1_info[i][2]).isoformat()
-            atime = datetime.utcfromtimestamp(files1_info[i][3]).isoformat()
+            mtime = files1_info[i][1]
+            ctime = files1_info[i][2]
+            atime = files1_info[i][3]
             file = files1_paths[i]
             diff1.append((file,size,mtime,ctime,atime))
             print("<  %s,%s,%s,%s,%s" % (file,size,mtime,ctime,atime))
@@ -347,9 +347,9 @@ else:
         file_hashed = files2_paths_hashed[i]
         if file_hashed not in files1_paths_hashed:
             size = files2_info[i][0]
-            mtime = datetime.utcfromtimestamp(files2_info[i][1]).isoformat()
-            ctime = datetime.utcfromtimestamp(files2_info[i][2]).isoformat()
-            atime = datetime.utcfromtimestamp(files2_info[i][3]).isoformat()
+            mtime = files2_info[i][1]
+            ctime = files2_info[i][2]
+            atime = files2_info[i][3]
             file = files2_paths[i]
             diff2.append((file,size,mtime,ctime,atime))
             print(">  %s,%s,%s,%s,%s" % (file,size,mtime,ctime,atime))
@@ -360,14 +360,8 @@ else:
     logger.info('creating csv %s...' % csvfile)
     with open(csvfile, mode='w') as fh:
         fw = csv.writer(fh, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-        i = 0
-        while i < len(files1_paths_hashed):
-            file_hashed = files1_paths_hashed[i]
-            size = files1_info[i][0]
-            mtime = datetime.utcfromtimestamp(files1_info[i][1]).isoformat()
-            ctime = datetime.utcfromtimestamp(files1_info[i][2]).isoformat()
-            atime = datetime.utcfromtimestamp(files1_info[i][3]).isoformat()
-            file = files1_paths[i]
-            fw.writerow([file, file_hashed, size, mtime, ctime, atime])
-            i += 1
+        for item in diff1:
+            fw.writerow(['<', item[0], item[1], item[2], item[3], item[4]])
+        for item in diff2:
+            fw.writerow(['>', item[0], item[1], item[2], item[3], item[4]])
     logger.info('done')
