@@ -316,7 +316,11 @@ else:
         for row in fr:
             files1_paths.append(row[0])
             files1_paths_hashed.append(row[1])
-            files1_info.append((row[2], row[3], row[4], row[5]))
+            size = row[2]
+            mtime = time.mktime(datetime.strptime(row[3], '%Y-%m-%dT%H:%M:%S').timetuple())
+            ctime = time.mktime(datetime.strptime(row[4], '%Y-%m-%dT%H:%M:%S').timetuple())
+            atime = time.mktime(datetime.strptime(row[5], '%Y-%m-%dT%H:%M:%S').timetuple())
+            files1_info.append((size, mtime, ctime, atime))
 
     files2_paths = []
     files2_paths_hashed = []
@@ -326,7 +330,11 @@ else:
         for row in fr:
             files2_paths.append(row[0])
             files2_paths_hashed.append(row[1])
-            files2_info.append((row[2], row[3], row[4], row[5]))
+            size = row[2]
+            mtime = time.mktime(datetime.strptime(row[3], '%Y-%m-%dT%H:%M:%S').timetuple())
+            ctime = time.mktime(datetime.strptime(row[4], '%Y-%m-%dT%H:%M:%S').timetuple())
+            atime = time.mktime(datetime.strptime(row[5], '%Y-%m-%dT%H:%M:%S').timetuple())
+            files2_info.append((size, mtime, ctime, atime))
 
     diff1 = []
     i = 0
@@ -334,9 +342,9 @@ else:
         file_hashed = files1_paths_hashed[i]
         if file_hashed not in files2_paths_hashed:
             size = files1_info[i][0]
-            mtime = files1_info[i][1]
-            ctime = files1_info[i][2]
-            atime = files1_info[i][3]
+            mtime = datetime.utcfromtimestamp(files1_info[i][1]).isoformat()
+            ctime = datetime.utcfromtimestamp(files1_info[i][2]).isoformat()
+            atime = datetime.utcfromtimestamp(files1_info[i][3]).isoformat()
             file = files1_paths[i]
             diff1.append((file,size,mtime,ctime,atime))
             print("<  %s,%s,%s,%s,%s" % (file,size,mtime,ctime,atime))
@@ -347,9 +355,9 @@ else:
         file_hashed = files2_paths_hashed[i]
         if file_hashed not in files1_paths_hashed:
             size = files2_info[i][0]
-            mtime = files2_info[i][1]
-            ctime = files2_info[i][2]
-            atime = files2_info[i][3]
+            mtime = datetime.utcfromtimestamp(files2_info[i][1]).isoformat()
+            ctime = datetime.utcfromtimestamp(files2_info[i][2]).isoformat()
+            atime = datetime.utcfromtimestamp(files2_info[i][3]).isoformat()
             file = files2_paths[i]
             diff2.append((file,size,mtime,ctime,atime))
             print(">  %s,%s,%s,%s,%s" % (file,size,mtime,ctime,atime))
