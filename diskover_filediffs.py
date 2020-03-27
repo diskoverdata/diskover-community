@@ -104,6 +104,64 @@ def replace_path(path, frompath, topath):
     return path
 
 
+def get_files_gen(eshost, esver7, index, path):
+    newpath = escape_chars(path)
+    if newpath == '\/':
+        newpathwildcard = '\/*'
+    else:
+        newpathwildcard = newpath + '\/*'
+    logger.info('Searching for all file docs in %s for path %s...', index, path)
+    eshost.indices.refresh(index)
+    if esver7:
+        data = {
+            '_source': ['path_parent', 'filename', 'filesize', 'last_modified', 'last_access', 'last_change'],
+            'query': {
+                'query_string': {
+                    'query': '((path_parent: ' + newpath + ') OR '
+                                                            '(path_parent: ' + newpathwildcard + ') OR (filename: "'
+                                + os.path.basename(path) + '" AND path_parent: "'
+                                + os.path.abspath(os.path.join(path, os.pardir)) + '")) AND type:file',
+                }
+            }
+        }
+        res = eshost.search(index=index, scroll='1m', size=config['es_scrollsize'], 
+                            body=data, request_timeout=config['es_timeout'])
+    else:
+        data = {
+            '_source': ['path_parent', 'filename', 'filesize', 'last_modified', 'last_access', 'last_change'],
+            'query': {
+                'query_string': {
+                    'query': '(path_parent: ' + newpath + ') OR '
+                                                            '(path_parent: ' + newpathwildcard + ') OR (filename: "'
+                                + os.path.basename(path) + '" AND path_parent: "'
+                                + os.path.abspath(os.path.join(path, os.pardir)) + '")',
+                }
+            }
+        }
+        res = eshost.search(index=index, doc_type='file', scroll='1m',
+                        size=config['es_scrollsize'], body=data, request_timeout=config['es_timeout'])
+
+    while res['hits']['hits'] and len(res['hits']['hits']) > 0:
+        for hit in res['hits']['hits']:
+            fullpath = os.path.abspath(os.path.join(hit['_source']['path_parent'], hit['_source']['filename']))
+            size = hit['_source']['filesize']
+            mtime = time.mktime(datetime.strptime(hit['_source']['last_modified'], '%Y-%m-%dT%H:%M:%S').timetuple())
+            ctime = time.mktime(datetime.strptime(hit['_source']['last_change'], '%Y-%m-%dT%H:%M:%S').timetuple())
+            atime = time.mktime(datetime.strptime(hit['_source']['last_access'], '%Y-%m-%dT%H:%M:%S').timetuple())
+            if args['rootdir2']:
+                fullpath_hash = replace_path(fullpath, args['rootdir2'], args['rootdir'])
+            file_hashed = hashlib.md5(fullpath_hash.encode('utf-8')).hexdigest()
+            mtime = datetime.utcfromtimestamp(files1_info[i][1]).isoformat()
+            ctime = datetime.utcfromtimestamp(files1_info[i][2]).isoformat()
+            atime = datetime.utcfromtimestamp(files1_info[i][3]).isoformat()
+
+            yield fullpath, file_hashed, size, mtime, ctime, atime
+            
+        # use es scroll api
+        res = eshost.scroll(scroll_id=res['_scroll_id'], scroll='1m',
+                        request_timeout=config['es_timeout'])
+
+
 def get_files(eshost, esver7, index, path):
     newpath = escape_chars(path)
     if newpath == '\/':
@@ -195,10 +253,9 @@ if not args['comparecsvs']:
     if not args['rootdir2']:
         args['rootdir2'] = args['rootdir']
 
-    logger.info('getting files from es...')
-    files1_paths, files1_paths_hashed, files1_info = get_files(es, args['es1ver7'], args['index'], args['rootdir'])
-
     if not args['filelistonly']:
+        logger.info('getting files from es...')
+        files1_paths, files1_paths_hashed, files1_info = get_files(es, args['es1ver7'], args['index'], args['rootdir'])
         files2_paths, files2_paths_hashed, files2_info = get_files(es2, args['es2ver7'], args['index2'], args['rootdir2'])
 
         logger.info('diffing file lists...')
@@ -244,16 +301,8 @@ if not args['comparecsvs']:
         logger.info('creating csv %s...' % csvfile)
         with open(csvfile, mode='w') as fh:
             fw = csv.writer(fh, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-            i = 0
-            while i < len(files1_paths_hashed):
-                file_hashed = files1_paths_hashed[i]
-                size = files1_info[i][0]
-                mtime = datetime.utcfromtimestamp(files1_info[i][1]).isoformat()
-                ctime = datetime.utcfromtimestamp(files1_info[i][2]).isoformat()
-                atime = datetime.utcfromtimestamp(files1_info[i][3]).isoformat()
-                file = files1_paths[i]
+            for file, file_hashed, size, mtime, ctime, atime in get_files_gen(es, args['es1ver7'], args['index'], args['rootdir']):
                 fw.writerow([file, file_hashed, size, mtime, ctime, atime])
-                i += 1
         logger.info('done')
 else:
     csvfile1 = args['comparecsvs'][0]
