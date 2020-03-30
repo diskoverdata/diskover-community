@@ -11,9 +11,10 @@ diskover is released under the Apache 2.0 license. See
 LICENSE for the full license text.
 """
 
-from diskover import config, escape_chars, index_bulk_add, plugins, IS_PY3
+from diskover import config, escape_chars, index_bulk_add, plugins, IS_PY3, split_list, q_crawl
 from datetime import datetime
 from scandir import scandir
+from rq import SimpleWorker
 import argparse
 import os
 import hashlib
@@ -22,7 +23,6 @@ import pwd
 import grp
 import time
 import re
-import base64
 import warnings
 
 import diskover_connections
@@ -50,6 +50,8 @@ def parse_cliargs_bot():
     parser = argparse.ArgumentParser()
     parser.add_argument("-b", "--burst", action="store_true",
                         help="Burst mode (worker will quit after all work is done)")
+    parser.add_argument("-L", "--listen", metavar='QUEUE', nargs='+',
+                        help="Override what redis rq queues to listen to (default is from diskover.cfg)")
     parser.add_argument("-l", "--loglevel", default="INFO",
                         help="Set worker logging level to DEBUG, INFO, WARNING, ERROR (default is INFO)")
     args = parser.parse_args()
@@ -268,8 +270,7 @@ def auto_tag(metadict, tagtype, mtime, atime, ctime):
 
 def time_check(pattern, mtime, atime, ctime):
     """This is the time check function.
-    It is used by the auto_tag and cost_per_gb
-    functions.
+    It is used by the auto_tag functions.
     """
     timepass = True
 
@@ -287,115 +288,6 @@ def time_check(pattern, mtime, atime, ctime):
             pass
 
     return timepass
-
-
-def cost_per_gb(metadict, fullpath, mtime, atime, ctime, doctype):
-    """This is the cost per gb function.
-    It checks diskover config for any cost per gb patterns
-    and updates the meta dict for file or directory
-    to include the cost per gb.
-    """
-
-    # by default set the costpergb to be cost per gb value from config
-    costpergb = config['costpergb']
-    # determine if we are using base2 or base10 file sizes
-    base = config['costpergb_base']
-    if base == 10:
-        basen = 1000
-    else:
-        basen = 1024
-
-    if doctype == 'file':
-        size_gb = metadict['filesize']/basen/basen/basen
-        metadict['costpergb'] = round(costpergb * size_gb, 2)
-    else:  # directory 
-        size_gb = metadict['doc']['filesize']/basen/basen/basen
-        metadict['doc']['costpergb'] = round(costpergb * size_gb, 2)
-
-    # if pattern lists are empty, return just cost per gb
-    if not config['costpergb_paths'] and not config['costpergb_times']:
-        return metadict
-
-    pathpass = False
-    timepass = False
-    costpergb_path = 0
-    costpergb_time = 0
-
-    filename = os.path.basename(fullpath)
-    parentdir = os.path.abspath(os.path.join(fullpath, os.pardir))
-
-    for pattern in config['costpergb_paths']:
-        if pathpass:
-            break
-        try:
-            for path in pattern['path_exclude']:
-                if path == parentdir or path == filename:
-                    return metadict
-
-                if path.startswith('*') and path.endswith('*'):
-                    path = path.replace('*', '')
-                elif path.startswith('*'):
-                    path = path + '$'
-                elif path.endswith('*'):
-                    path = '^' + path
-            
-                if re.search(path, parentdir) or re.search(path, filename):
-                    return metadict
-        except KeyError:
-            pass
-
-        try:
-            for path in pattern['path']:
-                if path == parentdir or path == filename:
-                    pathpass = True
-                    costpergb_path = pattern['costpergb']
-                    break
-                    
-                if path.startswith('*') and path.endswith('*'):
-                    path = path.replace('*', '')
-                elif path.startswith('*'):
-                    path = path + '$'
-                elif path.endswith('*'):
-                    path = '^' + path
-
-                if re.search(path, parentdir) or re.search(path, filename):
-                    pathpass = True
-                    costpergb_path = pattern['costpergb']
-                    break
-                else:
-                    pathpass = False
-        except KeyError:
-            pass
-
-    for pattern in config['costpergb_times']:
-        timepass = time_check(pattern, mtime, atime, ctime)
-        if timepass:
-            costpergb_time = pattern['costpergb']
-            break
-
-    if pathpass and timepass:
-        if config['costpergb_priority'] == 'path':
-            if doctype == 'file':
-                metadict['costpergb'] = round(costpergb_path * size_gb, 2)
-            else:
-                metadict['doc']['costpergb'] = round(costpergb_path * size_gb, 2)
-        else:
-            if doctype == 'file':
-                metadict['costpergb'] = round(costpergb_time * size_gb, 2)
-            else:
-                metadict['doc']['costpergb'] = round(costpergb_time * size_gb, 2)
-    elif pathpass:
-        if doctype == 'file':
-            metadict['costpergb'] = round(costpergb_path * size_gb, 2)
-        else:
-            metadict['doc']['costpergb'] = round(costpergb_path * size_gb, 2)
-    elif timepass:
-        if doctype == 'file':
-            metadict['costpergb'] = round(costpergb_time * size_gb, 2)
-        else:
-            metadict['doc']['costpergb'] = round(costpergb_time * size_gb, 2)
-
-    return metadict
 
 
 def get_owner_group_names(uid, gid, cliargs):
@@ -494,16 +386,6 @@ def get_dir_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
         atime_utc = datetime.utcfromtimestamp(atime).isoformat()
         ctime_utc = datetime.utcfromtimestamp(ctime).isoformat()
 
-        if cliargs['index2']:
-            # check if directory times cached in Redis
-            redis_dirtime = redis_conn.get(base64.encodestring(dirpath.encode('utf-8', errors='ignore')))
-            if redis_dirtime:
-                cached_times = float(redis_dirtime.decode('utf-8'))
-                # check if cached times are the same as on disk
-                current_times = float(mtime + ctime)
-                if cached_times == current_times:
-                    return "sametimes"
-
         # get time now in utc
         indextime_utc = datetime.utcnow().isoformat()
 
@@ -534,7 +416,6 @@ def get_dir_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
             "change_percent_items": "",
             "change_percent_items_files": "",
             "change_percent_items_subdirs": "",
-            "costpergb": "",
             "worker_name": worker_name,
             "indexing_date": indextime_utc,
             "_type": "directory"
@@ -567,11 +448,6 @@ def get_dir_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
     except Exception as e:
         warnings.warn("Exception caused by: %s" % e)
         raise
-
-    # cache directory times in Redis, encode path (key) using base64
-    if config['redis_cachedirtimes'] == 'true':
-        redis_conn.set(base64.encodestring(dirpath.encode('utf-8', errors='ignore')), mtime + ctime,
-                       ex=config['redis_dirtimesttl'])
 
     return dirmeta_dict
 
@@ -682,10 +558,6 @@ def get_file_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
         if cliargs['autotag'] and len(config['autotag_files']) > 0:
             filemeta_dict = auto_tag(filemeta_dict, 'file', mtime, atime, ctime)
 
-        # add cost per gb to filemeta_dict
-        if cliargs['costpergb']:
-            filemeta_dict = cost_per_gb(filemeta_dict, fullpath, mtime, atime, ctime, 'file')
-
         # search for and copy over any existing tags from reindex_dict
         for sublist in reindex_dict['file']:
             if sublist[0] == fullpath:
@@ -708,7 +580,7 @@ def calc_dir_size(dirlist, cliargs):
     It gets a directory list from the Queue search ES for all 
     files in each directory (recursive) and sums their filesizes 
     to create a total filesize and item count for each dir, 
-    then pdates dir doc's filesize and items fields.
+    then updates dir doc's filesize and items fields.
     """
     doclist = []
 
@@ -737,9 +609,20 @@ def calc_dir_size(dirlist, cliargs):
                     }
                 },
                 "aggs": {
-                    "total_size": {
-                        "sum": {
-                            "field": "filesize"
+                    "filesizes": {
+                        "filter": { "term": { "_type": "file" } },
+                        "aggs": {
+                            "total_size": { "sum": { "field": "filesize" } }
+                        }
+                    },
+                    "total_file_count": {
+                        "filter": {
+                            "term": { "_type": "file" }
+                        }
+                    },
+                    "total_dir_count": {
+                        "filter": {
+                            "term": { "_type": "directory" }
                         }
                     }
                 }
@@ -754,54 +637,36 @@ def calc_dir_size(dirlist, cliargs):
                     }
                 },
                 "aggs": {
-                    "total_size": {
-                        "sum": {
-                            "field": "filesize"
+                    "filesizes": {
+                        "filter": { "term": { "_type": "file" } },
+                        "aggs": {
+                            "total_size": { "sum": { "field": "filesize" } }
+                        }
+                    },
+                    "total_file_count": {
+                        "filter": {
+                            "term": { "_type": "file" }
+                        }
+                    },
+                    "total_dir_count": {
+                        "filter": {
+                            "term": { "_type": "directory" }
                         }
                     }
                 }
             }
 
         # search ES and start scroll
-        res = es.search(index=cliargs['index'], doc_type='file', body=data,
-                        request_timeout=config['es_timeout'])
+        res = es.search(index=cliargs['index'], body=data, doc_type='file,directory', request_timeout=config['es_timeout'])
 
-        # total items sum
-        totalitems_files += res['hits']['total']
+        # total file type doc count
+        totalitems_files += res['aggregations']['total_file_count']['doc_count']
 
         # total file size sum
-        totalsize += res['aggregations']['total_size']['value']
+        totalsize += res['aggregations']['filesizes']['total_size']['value']
 
-        # directory doc search (subdirs)
-
-        # check if / (root) path
-        if newpath == '\/':
-            data = {
-                "size": 0,
-                "query": {
-                    "query_string": {
-                        "query": "path_parent: " + newpath + "*",
-                        "analyze_wildcard": "true"
-                    }
-                }
-            }
-        else:
-            data = {
-                "size": 0,
-                "query": {
-                    "query_string": {
-                        'query': 'path_parent: ' + newpath + ' OR path_parent: ' + newpathwildcard,
-                        'analyze_wildcard': 'true'
-                    }
-                }
-            }
-
-        # search ES and start scroll
-        res = es.search(index=cliargs['index'], doc_type='directory', body=data,
-                        request_timeout=config['es_timeout'])
-
-        # total items sum
-        totalitems_subdirs += res['hits']['total']
+        # total directory doc count
+        totalitems_subdirs += res['aggregations']['total_dir_count']['doc_count']
 
         # total items
         totalitems += totalitems_files + totalitems_subdirs
@@ -816,9 +681,6 @@ def calc_dir_size(dirlist, cliargs):
                     'items_files': totalitems_files,
                     'items_subdirs': totalitems_subdirs}
         }
-        # add total cost per gb to doc
-        if cliargs['costpergb']:
-            d = cost_per_gb(d, path[1], path[2], path[3], path[4], 'directory')
         doclist.append(d)
 
     index_bulk_add(es, doclist, config, cliargs)
@@ -830,55 +692,25 @@ def es_bulk_add(worker_name, dirlist, filelist, cliargs, totalcrawltime=None):
     docs = dirlist + filelist
     index_bulk_add(es, docs, config, cliargs)
 
-    data = {"worker_name": worker_name, "dir_count": len(dirlist),
-            "file_count": len(filelist), "bulk_time": round(time.time() - starttime, 6),
-            "crawl_time": round(totalcrawltime, 6),
-            "indexing_date": datetime.utcnow().isoformat()}
-    es.index(index=cliargs['index'], doc_type='worker', body=data)
+    if not cliargs['noworkerdocs']:
+        data = {"worker_name": worker_name, "dir_count": len(dirlist),
+                "file_count": len(filelist), "bulk_time": round(time.time() - starttime, 6),
+                "crawl_time": round(totalcrawltime, 6),
+                "indexing_date": datetime.utcnow().isoformat()}
+        es.index(index=cliargs['index'], doc_type='worker', body=data)
 
 
-def get_metadata(path, cliargs):
-    dir_source = ""
-    filename = escape_chars(os.path.basename(path))
-    parent_dir = escape_chars(os.path.abspath(os.path.join(path, os.pardir)))
-    fullpath = escape_chars(os.path.abspath(path))
-
-    data = {
-        "size": 1,
-        "query": {
-            "query_string": {
-                "query": "filename: " + filename + " AND path_parent: " + parent_dir
-            }
-        }
-    }
-    res = es.search(index=cliargs['index2'], doc_type='directory', body=data,
-                    request_timeout=config['es_timeout'])
-    try:
-        dir_source = res['hits']['hits'][0]['_source']
-    except IndexError:
-        pass
-
-    data = {
-        "query": {
-            "query_string": {
-                "query": "path_parent: " + fullpath
-            }
-        }
-    }
-    files_source = []
-    res = es.search(index=cliargs['index2'], doc_type='file', scroll='1m',
-                    size=config['es_scrollsize'], body=data, request_timeout=config['es_timeout'])
-
-    while res['hits']['hits'] and len(res['hits']['hits']) > 0:
-        for hit in res['hits']['hits']:
-            files_source.append(hit['_source'])
-        # get es scroll id
-        scroll_id = res['_scroll_id']
-        # use es scroll api
-        res = es.scroll(scroll_id=scroll_id, scroll='1m',
-                        request_timeout=config['es_timeout'])
-
-    return dir_source, files_source
+def file_meta_collector(files, root_path, statsembeded, cliargs, reindex_dict):
+    fmetas = []
+    for file in files:
+        if statsembeded:
+            fmeta = get_file_meta(worker, file, cliargs, reindex_dict, statsembeded=True)
+            fmetas.append(fmeta)
+        else:
+            fmeta = get_file_meta(worker, os.path.join(root_path, file), cliargs,
+                                reindex_dict, statsembeded=False)
+            fmetas.append(fmeta)
+    return fmetas
 
 
 def scrape_tree_meta(paths, cliargs, reindex_dict):
@@ -887,6 +719,7 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
     tree_files = []
     totalcrawltime = 0
     statsembeded = False
+    num_workers = len(SimpleWorker.all(connection=redis_conn))
 
     path_count = 0
     for path in paths:
@@ -908,44 +741,40 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
             root_path = root
             dmeta = get_dir_meta(worker, root_path, cliargs, reindex_dict, statsembeded=False)
 
-        if dmeta == "sametimes":
-            # fetch meta data for directory and all it's files (doc sources) from index2 since
-            # directory times haven't changed
-            dir_source, files_source = get_metadata(root_path, cliargs)
-            datenow = datetime.utcnow().isoformat()
-            for file_source in files_source:
-                # update indexed at time
-                file_source['indexing_date'] = datenow
-                # update worker name
-                file_source['worker_name'] = worker
-                tree_files.append(('file', file_source))
-            if dir_source:
-                # update indexed at time
-                dir_source['indexing_date'] = datenow
-                # update worker name
-                dir_source['worker_name'] = worker
-                # update crawl time
-                elapsed = time.time() - starttime
-                dir_source['crawl_time'] = round(elapsed, 6)
-                tree_dirs.append(dir_source)
-                totalcrawltime += elapsed
-        # get meta off disk since times different in Redis than on disk
-        elif dmeta:
+        if dmeta:
             # no files in batch, get them with scandir
             if cliargs['dirsonly']:
                 for entry in scandir(root):
                     if entry.is_file(follow_symlinks=False) and not file_excluded(entry.name):
                         files.append(entry.name)
             filecount = 0
-            for file in files:
-                if statsembeded:
-                    fmeta = get_file_meta(worker, file, cliargs, reindex_dict, statsembeded=True)
-                else:
-                    fmeta = get_file_meta(worker, os.path.join(root_path, file), cliargs,
-                                         reindex_dict, statsembeded=False)
-                if fmeta:
-                    tree_files.append(fmeta)
-                    filecount += 1
+            # check if the directory has a ton of files in it and farm out meta collection to other worker bots
+            files_count = len(files)
+            if cliargs['splitfiles'] and files_count >= cliargs['splitfilesnum']:
+                fmetas = []
+                for filelist in split_list(files, int(files_count/num_workers)):
+                    fmetas.append(q_crawl.enqueue(file_meta_collector, 
+                                    args=(filelist, root_path, statsembeded, cliargs, reindex_dict,), 
+                                    result_ttl=config['redis_ttl']))
+                n = 0
+                while n < len(fmetas):
+                    if fmetas[n].result:
+                        for fmeta in fmetas[n].result:
+                            if fmeta:
+                                tree_files.append(fmeta)
+                                filecount += 1
+                        n += 1
+                del fmetas[:]
+            else:
+                for file in files:
+                    if statsembeded:
+                        fmeta = get_file_meta(worker, file, cliargs, reindex_dict, statsembeded=True)
+                    else:
+                        fmeta = get_file_meta(worker, os.path.join(root_path, file), cliargs,
+                                            reindex_dict, statsembeded=False)
+                    if fmeta:
+                        tree_files.append(fmeta)
+                        filecount += 1
 
             # update crawl time
             elapsed = time.time() - starttime
@@ -987,17 +816,19 @@ def file_excluded(filename):
     return False
 
 
-def dupes_process_hashkey(hashkey, cliargs):
+def dupes_process_hashkey(hashkeylist, cliargs):
     """This is the duplicate file worker function.
-    It processes hash keys in the dupes Queue.
+    It processes file hash keys in the dupes Queue.
     """
     from diskover_dupes import populate_hashgroup, verify_dupes, index_dupes
-    # find all files in ES matching hashkey
-    hashgroup = populate_hashgroup(hashkey, cliargs)
-    # process the duplicate files in hashgroup
-    hashgroup = verify_dupes(hashgroup, cliargs)
-    if hashgroup:
-        index_dupes(hashgroup, cliargs)
+    for hashkey in hashkeylist:
+        # find all files in ES matching hashkey
+        hashgroup = populate_hashgroup(hashkey, cliargs)
+        if hashgroup:
+            # process the duplicate files in hashgroup
+            hashgroup = verify_dupes(hashgroup, cliargs)
+            if hashgroup:
+                index_dupes(hashgroup, cliargs)
 
 
 def tag_copier(path, cliargs):
