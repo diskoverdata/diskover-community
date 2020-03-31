@@ -161,7 +161,13 @@ Only index files which have been modified in the last 7 days including empty fil
 $ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl -m -7 -s 0 -e
 ```
 
-Store [cost per gb](https://github.com/shirosaidev/diskover/wiki/Cost-per-GB) in es index from diskover.cfg settings and use size on disk (disk usage) instead of file size:
+Distribute file meta collecting amongst bots for directories with many files (can help to keep all bots busy if your file tree has directories with many files):
+
+```sh
+$ python diskover.py -i diskover-index -a -d /rootpath/to/crawl --splitfiles --splitfilesnum 1000
+```
+
+Store [cost per gb](https://github.com/shirosaidev/diskover/wiki/Cost-per-GB) in es index from diskover.cfg settings and use size on disk (disk usage) instead of file size (enterprise ver. only):
 
 ```sh
 $ python diskover.py -i diskover-index -a -d /rootpath/to/crawl -G -S
