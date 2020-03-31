@@ -167,7 +167,7 @@ Distribute file meta collecting amongst bots for directories with many files (ca
 $ python diskover.py -i diskover-index -a -d /rootpath/to/crawl --splitfiles --splitfilesnum 1000
 ```
 
-Store [cost per gb](https://github.com/shirosaidev/diskover/wiki/Cost-per-GB) in es index from diskover.cfg settings and use size on disk (disk usage) instead of file size (enterprise ver. only):
+Store [cost per gb](https://github.com/shirosaidev/diskover/wiki/Cost-per-GB) (Enterprise ver. only) in es index from diskover.cfg settings and use size on disk (disk usage) instead of file size:
 
 ```sh
 $ python diskover.py -i diskover-index -a -d /rootpath/to/crawl -G -S
