@@ -129,6 +129,8 @@ By default, this will start up 8 bots. See -h for cli options including changing
 
 ### Usage examples
 
+See all [cli options](https://github.com/shirosaidev/diskover/wiki/CLI-options) in the wiki.
+
 Start diskover main job dispatcher and file tree crawler with (using adaptive batch size and optimize index cli flags):
 
 ```sh
