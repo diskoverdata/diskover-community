@@ -1,5 +1,11 @@
 # Diskover Change Log
 
+# [1.5.0.11] - 2020-04-01
+### added
+- --nowait cli option to not wait for worker bots to be running before enqueuing crawl jobs in RQ
+### fixed
+- log output when running in verbose/debug and printing continuous messages when processing directory with many files
+
 # [1.5.0.10] - 2020-02-28
 ### added
 - --splitfiles and --splitfilesnum - For directories with lots of files, split meta collecting of files amongst bots

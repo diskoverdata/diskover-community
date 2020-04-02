@@ -38,7 +38,7 @@ import sys
 import json
 
 
-version = '1.5.0.10'
+version = '1.5.0.11'
 __version__ = version
 
 IS_PY3 = sys.version_info >= (3, 0)
@@ -1245,6 +1245,8 @@ def parse_cli_args(indexname):
     parser.add_argument("--noworkerdocs", action="store_true",
                         help="Don't add worker docs (worker crawl stats) into Elasticsearch, could help to reduce index \
                                 size for very large indexes")
+    parser.add_argument("--nowait", action="store_true",
+                        help="Don't wait for worker bots to be running before enqueuing crawl jobs in RQ.")
     parser.add_argument("--crawlapi", action="store_true",
                         help="Use storage Restful API instead of scandir")
     parser.add_argument("--storagent", metavar='HOST', nargs='+',
@@ -1506,11 +1508,9 @@ def scandirwalk_worker(threadn, cliargs, logger):
                         dirs.append(entry.name)
                     elif entry.is_file(follow_symlinks=False) and not cliargs['dirsonly']:
                         nondirs.append(entry.name)
-                    if item_count == 10000:
-                        if cliargs['debug'] or cliargs['verbose']:
-                            logger.info("[thread-%s] scandirwalk_worker: processing directory with many files: %s" % (threadn, path))
-                    else:
-                        item_count += 1
+                    if item_count == 10000 and (cliargs['debug'] or cliargs['verbose']):
+                        logger.info("[thread-%s] scandirwalk_worker: processing directory with many items: %s" % (threadn, path))
+                    item_count += 1
             q_paths_results.put((path, dirs[:], nondirs[:]))
         except (OSError, IOError) as e:
             logger.warning("[thread-%s] OS/IO Exception caused by: %s" % (threadn, e))
@@ -1804,6 +1804,8 @@ def wait_for_worker_bots(logger):
     """This is the wait for worker bots function.
     It loops waiting for worker bots to start.
     """
+    if cliargs['nowait']:
+        return
     workers = SimpleWorker.all(connection=redis_conn)
     while len(workers) == 0:
         logger.info('Waiting for diskover worker bots to start...')
