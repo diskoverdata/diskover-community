@@ -1246,7 +1246,7 @@ def parse_cli_args(indexname):
                         help="Don't add worker docs (worker crawl stats) into Elasticsearch, could help to reduce index \
                                 size for very large indexes")
     parser.add_argument("--nowait", action="store_true",
-                        help="Don't wait for worker bots to be running before enqueuing crawl jobs in RQ.")
+                        help="Don't wait for worker bots to be running before enqueuing crawl jobs in RQ")
     parser.add_argument("--crawlapi", action="store_true",
                         help="Use storage Restful API instead of scandir")
     parser.add_argument("--storagent", metavar='HOST', nargs='+',
