@@ -129,6 +129,8 @@ By default, this will start up 8 bots. See -h for cli options including changing
 
 ### Usage examples
 
+See all [cli options](https://github.com/shirosaidev/diskover/wiki/CLI-options) in the wiki.
+
 Start diskover main job dispatcher and file tree crawler with (using adaptive batch size and optimize index cli flags):
 
 ```sh
@@ -161,7 +163,13 @@ Only index files which have been modified in the last 7 days including empty fil
 $ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl -m -7 -s 0 -e
 ```
 
-Store cost per gb in es index from diskover.cfg settings and use size on disk (disk usage) instead of file size:
+Distribute file meta collecting amongst bots for directories with many files (can help to keep all bots busy if your file tree has directories with many files):
+
+```sh
+$ python diskover.py -i diskover-index -a -d /rootpath/to/crawl --splitfiles --splitfilesnum 1000
+```
+
+Store [cost per gb](https://github.com/shirosaidev/diskover/wiki/Cost-per-GB) (Enterprise ver. only) in es index from diskover.cfg settings and use size on disk (disk usage) instead of file size:
 
 ```sh
 $ python diskover.py -i diskover-index -a -d /rootpath/to/crawl -G -S
