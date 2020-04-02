@@ -175,7 +175,13 @@ Store [cost per gb](https://github.com/shirosaidev/diskover/wiki/Cost-per-GB) (E
 $ python diskover.py -i diskover-index -a -d /rootpath/to/crawl -G -S
 ```
 
-Create index with just level 1 directories and files, then run background crawls in parallel for each directory in rootdir and merge the data into same index. After all crawls are finished, calculate rootdir doc's size/items counts:
+Tree walk and enqueue all jobs into RQ with no bots running (don't wait for bots). This could allow you to tree walk during the day and build up a large queue of all the crawl jobs with no stat calls hitting the storage and then in the evening start up the bots to do the crawl jobs and the heavy stating on the storage:
+
+```sh
+$ python diskover.py -i diskover-index -a -d /rootpath/to/crawl --nowait
+```
+
+Create index with just level 1 directories and files, then run background crawls in parallel for each directory in rootdir and merge the data into same index. After all crawls are finished, calculate rootdir doc's size/items counts. This could be used if you want to get a very high queue fill rate on a very large directory tree and a regular diskover crawl is not filling the queue fast enough and bots are starved for jobs:
 
 ```sh
 $ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl --maxdepth 1
