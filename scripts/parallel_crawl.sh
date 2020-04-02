@@ -54,7 +54,7 @@ LOOPDELAY=0.1
 # name of index added after diskover- prefix
 INDEXNAME="sanitized"
 # date string added after INDEXNAME
-DATESTRING=$(date +%Y.%m.%d)
+DATESTRING=$(date +%Y%m%d)
 
 # directory to store verbose output logs, include trailing slash, verbose logs 
 # stored in subdirs underneath
@@ -82,7 +82,7 @@ then
         fi
     done
 else
-    INDEX="diskover-${INDEXNAME}-$(date +%Y%m%d)-${INDEXSUF}"
+    INDEX="diskover-${INDEXNAME}-${DATESTRING}-${INDEXSUF}"
     LOGDIR="${LOGDIRROOT}${INDEX}"
     if [ -e "${LOGDIR}" ]
     then
