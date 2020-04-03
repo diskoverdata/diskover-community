@@ -6,7 +6,7 @@ your file metadata into Elasticsearch.
 See README.md or https://github.com/shirosaidev/diskover
 for more information.
 
-Copyright (C) Chris Park 2017-2020
+Copyright (C) Chris Park 2017-2019
 diskover is released under the Apache 2.0 license. See
 LICENSE for the full license text.
 """
@@ -38,7 +38,7 @@ import sys
 import json
 
 
-version = '1.5.0.12'
+version = '1.5.0.11'
 __version__ = version
 
 IS_PY3 = sys.version_info >= (3, 0)
@@ -1488,7 +1488,6 @@ def scandirwalk_worker(threadn, cliargs, logger):
                 for d in api_dirs:
                     if not dir_excluded(d[0], config, cliargs):
                         dirs.append(d)
-                        q_paths.put(d[0])
                 if not cliargs['dirsonly']:
                     for f in api_nondirs:
                         nondirs.append(f)
@@ -1501,13 +1500,11 @@ def scandirwalk_worker(threadn, cliargs, logger):
                 path, dirs_noexcl, nondirs = dir_list
                 for d in dirs_noexcl:
                     if not dir_excluded(d, config, cliargs):
-                        q_paths.put(os.path.join(path, d))
                         dirs.append(d)
             else:
                 item_count = 0
                 for entry in scandir(path):
                     if entry.is_dir(follow_symlinks=False) and not dir_excluded(entry.path, config, cliargs):
-                        q_paths.put(entry.path)
                         dirs.append(entry.name)
                     elif entry.is_file(follow_symlinks=False) and not cliargs['dirsonly']:
                         nondirs.append(entry.name)
@@ -1541,7 +1538,16 @@ def scandirwalk(path, cliargs, logger):
                 logger.info("apiwalk: %s (dircount: %s, filecount: %s)" % (root[0], str(len(dirs)), str(len(nondirs))))
             else:
                 logger.info("scandirwalk: %s (dircount: %s, filecount: %s)" % (root, str(len(dirs)), str(len(nondirs))))
+        # yield before recursion
         yield root, dirs, nondirs
+        # recurse into subdirectories
+        if cliargs['crawlapi']:
+            for d in dirs:
+                q_paths.put(d[0])
+        else:
+            for name in dirs:
+                new_path = os.path.join(root, name)
+                q_paths.put(new_path)
         q_paths_results.task_done()
         if q_paths_results.qsize() == 0 and q_paths.qsize() == 0:
             time.sleep(.5)
