@@ -183,6 +183,8 @@ $ python diskover.py -i diskover-index -a -d /rootpath/to/crawl --nowait
 
 Create index with just level 1 directories and files, then run background crawls in parallel for each directory in rootdir and merge the data into same index. After all crawls are finished, calculate rootdir doc's size/items counts. This could be used if you want to get a very high queue fill rate on a very large directory tree and a regular diskover crawl is not filling the queue fast enough and bots are starved for jobs:
 
+See [parallel crawl script](https://github.com/shirosaidev/diskover/blob/master/scripts/parallel_crawl.sh) for an example of scripting this.
+
 ```sh
 $ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl --maxdepth 1
 $ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl/dir1 --reindexrecurs -q &
@@ -190,7 +192,6 @@ $ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl/dir2 --reind
 ...
 $ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl --dircalcsonly --maxdcdepth 0
 ```
-[example script](https://github.com/shirosaidev/diskover/blob/master/scripts/parallel_crawl.sh)
 
 Find [duplicate files](https://github.com/shirosaidev/diskover/wiki/Duplicate-files-(dupes)) in an index (after crawl finishes):
 
