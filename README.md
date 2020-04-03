@@ -190,6 +190,7 @@ $ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl/dir2 --reind
 ...
 $ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl --dircalcsonly --maxdcdepth 0
 ```
+[example script](https://github.com/shirosaidev/diskover/blob/master/scripts/parallel_crawl.sh)
 
 Find [duplicate files](https://github.com/shirosaidev/diskover/wiki/Duplicate-files-(dupes)) in an index (after crawl finishes):
 
