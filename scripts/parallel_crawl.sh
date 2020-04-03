@@ -1,4 +1,4 @@
-#! /bin/bash
+#!/bin/bash
 #
 # This shell script spins up parallel diskover.py crawls to try and split the top level 
 # sub directories in -d <root dir> into separate parallel diskover.py processes to help
@@ -18,6 +18,7 @@ done
 
 ulimit -n 999999
 
+
 ### SETTINGS ###
 
 # location where diskover is installed
@@ -26,6 +27,8 @@ DISKOVERROOT="/opt/diskover"
 # make sure to set python path to same in diskover-bot-launcher.sh script
 # so bots use same version of python
 PYTHON="python3"
+# location of realpath executable or realpath if in path
+REALPATH="realpath"
 
 # number of worker bots to start
 BOTS=48
@@ -66,6 +69,26 @@ CRAWLTIMEOUT=720  # 720 sec x 60 sec = 12 hours
 ### SETTINGS END ###
 
 
+if [ ! "$(which ${PYTHON})" ]
+then
+    echo "Can't find python executable.  Check settings.  Aborting."
+    exit 1
+fi
+
+
+if [ ! "$(which ${REALPATH})" ]
+then
+    echo "Can't find realpath executable.  Check settings.  Aborting."
+    exit 1
+fi
+
+if [ ! -d ${ROOT} ]
+then
+    echo "Root dir not found.  Check settings.  Aborting."
+    exit 1
+fi
+
+
 if [ -z "${INDEXSUF}" ]
 then
     INDEXSUF=1
@@ -87,12 +110,13 @@ else
     if [ -e "${LOGDIR}" ]
     then
         echo "Log directory exists.  Consider specifying a different index.  Aborting."
+        exit 1
     fi
 fi
 
-mkdir -p "${LOGDIR}"
+mkdir -p "${LOGDIR}" || exit 1
 
-cd ${DISKOVERROOT}
+cd ${DISKOVERROOT} || exit 1
 
 # Restart the worker bots
 ./diskover-bot-launcher.sh -k
