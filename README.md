@@ -19,7 +19,8 @@ diskover is written and maintained by the company Shirosaidev and runs on Linux,
 <blockquote><h3><q>This is the first tool I've found that can index 7m files/2m directories in under 20 min</q></h3> -- linuxserver.io community member</blockquote>
 <br>
 
-<div align="center"><img src="https://github.com/shirosaidev/diskover/blob/master/docs/diskover-diagram1.png?raw=true" alt="diskover diagram" width="800" height="525"/></div>
+<div align="center"><img src="https://github.com/shirosaidev/diskover/blob/master/docs/diskover-diagram1.png?raw=true" alt="diskover diagram" width="800" height="525"/></div><br />
+<a href="https://github.com/shirosaidev/diskover/wiki/diskover-architecture-diagram">Architecture diagram</a>
 
 ## Screenshots
 
