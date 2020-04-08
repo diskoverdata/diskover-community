@@ -1,14 +1,19 @@
 #!/bin/bash
-#
 # This shell script spins up parallel diskover.py crawls to try and split the top level 
 # sub directories in -d <root dir> into separate parallel diskover.py processes to help
 # speed up crawl times on very lage file trees.
 #
 # Adjust settings in SETTINGS section below for your env.
 #
+# parallel_crawl.sh v1.0.1
 # Maintainer: shirosai
 # https://github.com/shirosaidev/diskover
 #
+# Copyright (C) Chris Park 2020
+# diskover is released under the Apache 2.0 license. See
+# LICENSE for the full license text.
+#
+
 
 # Ensure we won't hit limits
 for opt in $(ulimit -a | sed 's/.*\-\([a-z]\)[^a-zA-Z].*$/\1/')
@@ -19,7 +24,7 @@ done
 ulimit -n 999999
 
 
-### SETTINGS ###
+################## SETTINGS ##################
 
 # location where diskover is installed
 DISKOVERROOT="/opt/diskover"
@@ -41,7 +46,11 @@ EMPTYFILES=1
 # split file meta collecting amongst bots, set to 1 to use and 0 to not use
 SPLITFILES=1
 # minimum number of files in directory for bots to share with other bots
-SPLITFILESNUM=1000
+SPLITFILESNUM=10000
+# chunk file lists for directories with tons of files, set to 1 to use and 0 to not use
+CHUNKFILES=1
+# number of files to send in chunk for chunkfiles
+CHUNKFILESNUM=1000
 
 # top storage rootdir you want to crawl from
 ROOT="/ifs"
@@ -66,7 +75,7 @@ LOGDIRROOT="/opt/batch/"
 # crawl timeout, kills all diskover.py processes if been running for this long in seconds x 60 sec
 CRAWLTIMEOUT=720  # 720 sec x 60 sec = 12 hours
 
-### SETTINGS END ###
+################## SETTINGS END ##################
 
 
 if [ ! "$(which ${PYTHON})" ]
@@ -130,6 +139,11 @@ if [ ${SPLITFILES} -eq 1 ]
 then
     SFARGS+="--splitfiles --splitfilesnum ${SPLITFILESNUM}"
 fi
+CFARGS=""
+if [ ${CHUNKFILES} -eq 1 ]
+then
+    CFARGS+="--chunkfiles --chunkfilesnum ${CHUNKFILESNUM}"
+fi
 EXTRAARGS=""
 if [ ${EMPTYDIRS} -eq 1 ]
 then
@@ -144,7 +158,7 @@ fi
 if [ ${DEPTH} -eq 0 ]
 then
     echo "Depth set to 0, running all..."
-    ${PYTHON} diskover.py -F ${EXTRAARGS} -i "${INDEX}" -d "${ROOT}" --dirsonly ${BATCH} -T ${THREADS} ${SFARGS} --verbose
+    ${PYTHON} diskover.py -F ${EXTRAARGS} -i "${INDEX}" -d "${ROOT}" ${BATCH} -T ${THREADS} ${SFARGS} --verbose
 else
     echo "Collecting directories up to a depth of ${DEPTH}..."
     FINDB=$(date +%s)
@@ -161,14 +175,14 @@ else
         if [ "${TLD}" == "${ROOT}" ]
         then
             echo "Starting diskover for root ${TLD}... Logs --> ${CURLOG}"
-            ${PYTHON} diskover.py -F ${EXTRAARGS} -i "${INDEX}" -d "${TLD}" --dirsonly --maxdepth 1 ${BATCH} -T ${THREADS} ${SFARGS} --verbose > "${CURLOG}" 2>&1
+            ${PYTHON} diskover.py -F ${EXTRAARGS} -i "${INDEX}" -d "${TLD}" --maxdepth 1 ${BATCH} -T ${THREADS} ${SFARGS} ${CFARGS} --verbose > "${CURLOG}" 2>&1
         elif [ ${CURDEPTH} -lt ${DEPTH} ]
         then
             echo "Starting diskover for ${TLD}... Logs --> ${CURLOG}"
-            ${PYTHON} diskover.py ${EXTRAARGS} -i "${INDEX}" -d "${TLD}" --dirsonly --maxdepth 1 --reindexrecurs ${BATCH} -T ${THREADS} ${SFARGS} --verbose > "${CURLOG}" 2>&1
+            ${PYTHON} diskover.py ${EXTRAARGS} -i "${INDEX}" -d "${TLD}" --maxdepth 1 --reindexrecurs ${BATCH} -T ${THREADS} ${SFARGS} ${CFARGS} --verbose > "${CURLOG}" 2>&1
         else
             echo "Starting diskover for ${TLD} and sending to background... Logs --> ${CURLOG}"
-            ${PYTHON} diskover.py ${EXTRAARGS} -i "${INDEX}" -d "${TLD}" --dirsonly --reindexrecurs ${BATCH} -T ${THREADS} ${SFARGS} --verbose > "${CURLOG}" 2>&1 &
+            ${PYTHON} diskover.py ${EXTRAARGS} -i "${INDEX}" -d "${TLD}" --reindexrecurs ${BATCH} -T ${THREADS} ${SFARGS} ${CFARGS} --verbose > "${CURLOG}" 2>&1 &
         fi
         sleep ${LOOPDELAY}
     done <<< "${TLDS}"
