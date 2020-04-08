@@ -16,6 +16,7 @@
 - removed --dirsonly cli option
 ### fixed
 - issues with finddupes
+- issues with splitfiles
 
 # [1.5.0.11] - 2020-04-01
 ### added

@@ -2031,9 +2031,16 @@ if __name__ == "__main__":
     cliargs = vars(parse_cli_args(config['index']))
 
     # cli args check
-    if cliargs['splitfilesnum'] <= cliargs['chunkfilesnum'] + 1:
-        print('ERROR: --splitfilesnum cannot be <= --chunkfilesnum. See -h for defaults.')
+    if cliargs['splitfilesnum'] < 100:
+        print('Error: --splitfilesnum cannot be < 100. See -h for defaults.')
         sys.exit(1)
+    if cliargs['chunkfilesnum'] < 100:
+        print('Error: --chunkfilesnum cannot be < 100. See -h for defaults.')
+        sys.exit(1)
+    if cliargs['splitfiles'] and cliargs['chunkfiles']:
+        if cliargs['splitfilesnum'] <= cliargs['chunkfilesnum'] + 1:
+            print('Error: --splitfilesnum cannot be <= --chunkfilesnum. See -h for defaults.')
+            sys.exit(1)
 
     # set up logging
     logger = log_setup(cliargs)
