@@ -12,7 +12,7 @@ LICENSE for the full license text.
 """
 
 from diskover import index_bulk_add, config, es, progress_bar, redis_conn, worker_bots_busy, ab_start, adaptive_batch
-from diskover_bot_module import dupes_process_hashkey
+from diskover_bot_module import dupes_process_hashkeys
 from rq import SimpleWorker
 import base64
 import hashlib
@@ -41,7 +41,7 @@ def index_dupes(hashgroup, cliargs):
             '_index': cliargs['index'],
             '_type': 'file',
             '_id': f['id'],
-            'doc': {'dupe_md5': hashgroup['md5sum']}
+            'doc': {'dupe_md5': f['md5']}
         }
         file_id_list.append(d)
     if len(file_id_list) > 0:
@@ -95,26 +95,25 @@ def md5_hasher():
         file_in_thread_q.task_done()
 
 
-def verify_dupes(hashgroup, cliargs):
+def verify_dupes(filehash_filelist, cliargs):
     """This is the verify dupes function.
-    It processes files in hashgroup to verify if they are duplicate.
-    The first few bytes at beginning and end of files are
-    compared and if same, a md5 check is run on the files.
-    If the files are duplicate, their dupe_md5 field
-    is updated to their md5sum.
-    Returns hashgroup.
+    It processes files in filehash_filelist to verify if they are duplicate.
+    The first few bytes at beginning and end of files are compared and if same, 
+    a md5 check is run on the files.
     """
 
     # number of bytes to check at start and end of file
     read_bytes = config['dupes_checkbytes']
+
     # min bytes to read of file size less than above
     min_read_bytes = 1
 
-    # Add first and last few bytes for each file to dictionary
+    dups = {}
 
-    # create a new dictionary with files that have same byte hash
-    hashgroup_bytes = {}
-    for file in hashgroup['files']:
+    # Add first and last few bytes for each file to dups dictionary
+
+    file_count = 0
+    for file in filehash_filelist['files']:
         try:
             f = open(file['filename'], 'rb')
         except (OSError, IOError) as e:
@@ -162,26 +161,29 @@ def verify_dupes(hashgroup, cliargs):
         bytestring = str(bytes_f) + str(bytes_l)
         bytehash = hashlib.md5(bytestring.encode('utf-8')).hexdigest()
 
-        # create new key for each bytehash and
-        # set value as new list and add file
-        hashgroup_bytes.setdefault(bytehash, []).append((file['filename'], file['atime'], file['mtime']))
+        # Add or append the file to dups dict
+        if bytehash in dups:
+            dups[bytehash].append((file['filename'], file['atime'], file['mtime']))
+        else:
+            dups[bytehash] = [(file['filename'], file['atime'], file['mtime'])]
+
+        file_count += 1
+
+    if file_count == 0:
+        return None
 
     # remove any bytehash key that only has 1 item (no duplicate)
-    for key, value in list(hashgroup_bytes.items()):
-        if len(value) < 2:
-            filename = value[0][0]
-            del hashgroup_bytes[key]
-            # remove file from hashgroup
-            for i in range(len(hashgroup['files'])):
-                if hashgroup['files'][i]['filename'] == filename:
-                    del hashgroup['files'][i]
-                    break
+    for key in [key for key in dups if len(dups[key]) < 2]: del dups[key]
+
+    if not dups:
+        return None
 
     # run md5 sum check if bytes were same
-    hashgroup_md5 = {}
+
+    dups_md5 = {}
 
     # do md5 check on files with same byte hashes
-    for key, value in list(hashgroup_bytes.items()):
+    for key, value in dups.items():
         for file in value:
             filename, atime, mtime = file
             # add file into thread queue
@@ -190,72 +192,33 @@ def verify_dupes(hashgroup, cliargs):
         # wait for threads to finish
         file_in_thread_q.join()
 
-        # get all files and add to tree_files
-        while file_out_thread_q.qsize():
+        # get all files from queue
+        while True:
             item = file_out_thread_q.get()
             filename, md5 = item
-            # create new key for each md5 sum and set value as new list and
-            # add file
-            hashgroup_md5.setdefault(md5, []).append(filename)
 
-    # remove any md5sum key that only has 1 item (no duplicate)
-    for key, value in list(hashgroup_md5.items()):
-        if len(value) < 2:
-            filename = value[0]
-            del hashgroup_md5[key]
-            # remove file from hashgroup
-            for i in range(len(hashgroup['files'])):
-                if hashgroup['files'][i]['filename'] == filename:
-                    del hashgroup['files'][i]
-                    break
-        else:
-            md5 = key
+            # Add or append the file to dups_md5 dict
+            if md5 in dups_md5:
+                dups_md5[md5].append(filename)
+            else:
+                dups_md5[md5] = [filename]
+            
+            file_out_thread_q.task_done()
 
-    if len(hashgroup['files']) >= 2:
-        # update hashgroup's md5sum key
-        hashgroup['md5sum'] = md5
-        return hashgroup
-    else:
+            if file_out_thread_q.qsize() == 0:
+                break
+
+    if not dups_md5:
         return None
 
-
-def populate_hashgroup(key, cliargs):
-    """Searches ES for all files matching hashgroup key (filehash)
-    and returns dict containing matching files.
-    Return None if only 1 file matching.
-    """
-
-    hashgroup_files = []
-
-    data = {
-        "_source": ["path_parent", "filename", "last_access", "last_modified"],
-        "query": {
-            "bool": {
-                "must": {
-                    "term": {"filehash": key}
-                }
-            }
-        }
-    }
-    res = es.search(index=cliargs['index'], doc_type="file", size="1000", body=data, 
-                    request_timeout=config['es_timeout'])
-
-    # return None if only 1 matching file
-    if len(res['hits']['hits']) == 1:
-        return None
-
-    # add any hits to hashgroups
-    for hit in res['hits']['hits']:
-        hashgroup_files.append(
-            {'id': hit['_id'],
-            'filename': hit['_source']['path_parent'] + "/" + hit['_source']['filename'],
-            'atime': hit['_source']['last_access'],
-            'mtime': hit['_source']['last_modified']})
-
-    # return filehash group and add to queue
-    fhg = {'filehash': key, 'files': hashgroup_files, 'md5sum': ''}
-
-    return fhg
+    # update md5 key in filehash_filelist for each file in dups_md5
+    for key, value in dups_md5.items():
+        if len(value) >= 2:
+            for i in range(len(filehash_filelist['files'])):
+                if filehash_filelist['files'][i]['filename'] in value:
+                    filehash_filelist['files'][i]['md5'] = key
+    
+    return filehash_filelist
 
 
 def dupes_finder(es, q, cliargs, logger):
@@ -264,7 +227,87 @@ def dupes_finder(es, q, cliargs, logger):
     and adds file hash groups to Queue.
     """
 
-    logger.info('Searching %s for all duplicate files...', cliargs['index'])
+    logger.info('Searching %s for all dupe filehashes...', cliargs['index'])
+
+    # first get all the filehashes with files that have a hardlinks count of 1
+    if cliargs['inchardlinks']:
+        data = {
+                "size": 0,
+                "query": {
+                    "bool": {
+                        "must": {
+                            "range": {
+                                "filesize": {
+                                    "lte": config['dupes_maxsize'],
+                                    "gte": cliargs['minsize']
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+    else:
+        data = {
+            "size": 0,
+            "query": {
+                "bool": {
+                    "must": { 
+                        "term": {"hardlinks": 1} 
+                    },
+                    "filter": {
+                        "range": {
+                            "filesize": {
+                                "lte": config['dupes_maxsize'],
+                                "gte": cliargs['minsize']
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+    # refresh index
+    es.indices.refresh(index=cliargs['index'])
+    # search es and start scroll
+    res = es.search(index=cliargs['index'], doc_type='file', scroll='1m', size=config['es_scrollsize'],
+                    body=data, request_timeout=config['es_timeout'])
+
+    filehashes = {}
+    while res['hits']['hits'] and len(res['hits']['hits']) > 0:
+        for hit in res['hits']['hits']:
+            filehash = hit['_source']['filehash']
+            filepath = os.path.join(hit['_source']['path_parent'], hit['_source']['filename'])
+            if filehash in filehashes:
+                filehashes[filehash].append(
+                    {'id': hit['_id'],
+                    'filename': filepath,
+                    'atime': hit['_source']['last_access'],
+                    'mtime': hit['_source']['last_modified'], 'md5': ''})
+            else:
+                filehashes[filehash] = [
+                    {'id': hit['_id'],
+                    'filename': filepath,
+                    'atime': hit['_source']['last_access'],
+                    'mtime': hit['_source']['last_modified'], 'md5': ''}
+                ]
+            
+        # use es scroll api
+        res = es.scroll(scroll_id=res['_scroll_id'], scroll='1m',
+                        request_timeout=config['es_timeout'])
+
+    possibledupescount = 0
+    for key, value in list(filehashes.items()):
+        filehash_filecount = len(value)
+        if filehash_filecount < 2:
+            del filehashes[key]
+        else:
+            possibledupescount += filehash_filecount
+
+    logger.info('Found %s possible dupe files', possibledupescount)
+    if possibledupescount == 0:
+        return
+        
+    logger.info('Starting to enqueue dupe file hashes...')
 
     if cliargs['adaptivebatch']:
         batchsize = ab_start
@@ -273,61 +316,30 @@ def dupes_finder(es, q, cliargs, logger):
     if cliargs['verbose'] or cliargs['debug']:
         logger.info('Batch size: %s' % batchsize)
 
-    # first get all the filehashes with files that have a hardlinks count of 1
-    data = {
-        "size": 0,
-        "query": {
-            "bool": {
-                "must": {
-                    "term": {"hardlinks": 1}
-                },
-                "filter": {
-                    "range": {
-                        "filesize": {
-                            "lte": config['dupes_maxsize'],
-                            "gte": cliargs['minsize']
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    # refresh index
-    es.indices.refresh(index=cliargs['index'])
-    # search es and start scroll
-    res = es.search(index=cliargs['index'], scroll='1m', doc_type='file', size=config['es_scrollsize'],
-                    body=data, request_timeout=config['es_timeout'])
-
-    filehashlist = []
-    filehashcount = 0
-    while res['hits']['hits'] and len(res['hits']['hits']) > 0:
-        for hit in res['hits']['hits']:
-            filehash = hit['_source']['filehash']
-            if filehash not in filehashlist:
-                filehashlist.append(filehash)
-                filehashcount += 1
-                filehashlist_len = len(filehashlist)
-                if filehashlist_len >= batchsize:
-                    # send to rq for bots to process file hashkey list
-                    q.enqueue(dupes_process_hashkey, args=(filehashlist, cliargs,), result_ttl=config['redis_ttl'])
-                    if cliargs['debug'] or cliargs['verbose']:
-                        logger.info("enqueued batchsize: %s (batchsize: %s)" % (filehashlist_len, batchsize))
-                    del filehashlist[:]
-                    if cliargs['adaptivebatch']:
-                        batchsize = adaptive_batch(q, cliargs, batchsize)
-                        if cliargs['debug'] or cliargs['verbose']:
-                            logger.info("batchsize set to: %s" % batchsize)
-
-        # use es scroll api
-        res = es.scroll(scroll_id=res['_scroll_id'], scroll='1m',
-                        request_timeout=config['es_timeout'])
+    n = 0
+    hashgroups = []
+    for key, value in filehashes.items():
+        if cliargs['verbose'] or cliargs['debug']:
+            logger.info('filehash: %s, filecount: %s' %(key, len(value)))
+        hashgroups.append({'filehash': key, 'files': value})
+        n += 1
+        if n >= batchsize:
+            # send to rq for bots to process hashgroups list
+            q.enqueue(dupes_process_hashkeys, args=(hashgroups, cliargs,), result_ttl=config['redis_ttl'])
+            if cliargs['debug'] or cliargs['verbose']:
+                logger.info("enqueued batchsize: %s (batchsize: %s)" % (n, batchsize))
+            del hashgroups[:]
+            n = 0
+            if cliargs['adaptivebatch']:
+                batchsize = adaptive_batch(q, cliargs, batchsize)
+                if cliargs['debug'] or cliargs['verbose']:
+                    logger.info("batchsize set to: %s" % batchsize)
 
     # enqueue dir calc job for any remaining in dirlist
-    if len(filehashlist) > 0:
-        q.enqueue(dupes_process_hashkey, args=(filehashlist, cliargs,), result_ttl=config['redis_ttl'])
+    if n > 0:
+        q.enqueue(dupes_process_hashkeys, args=(hashgroups, cliargs,), result_ttl=config['redis_ttl'])
 
-    logger.info('%s file hashes have been enqueued' % filehashcount)
+    logger.info('%s possible dupe file hashes have been enqueued, worker bots processing dupes...' % possibledupescount)
 
     if not cliargs['quiet'] and not cliargs['debug'] and not cliargs['verbose']:
         bar = progress_bar('Checking')

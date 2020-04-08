@@ -6,7 +6,7 @@ your file metadata into Elasticsearch.
 See README.md or https://github.com/shirosaidev/diskover
 for more information.
 
-Copyright (C) Chris Park 2017-2018
+Copyright (C) Chris Park 2017-2020
 diskover is released under the Apache 2.0 license. See
 LICENSE for the full license text.
 """
@@ -513,7 +513,11 @@ def get_file_meta(worker_name, path, cliargs, reindex_dict, statsembeded=False):
         owner, group = get_owner_group_names(uid, gid, cliargs)
 
         # create md5 hash of file using metadata filesize and mtime
-        filestring = str(size) + str(mtime)
+        # or just filesize if cli arg set
+        if cliargs['filehashsizeonly']:
+            filestring = str(size)
+        else:
+            filestring = str(size) + str(mtime)
         filehash = hashlib.md5(filestring.encode('utf-8')).hexdigest()
 
         # get time
@@ -687,6 +691,53 @@ def calc_dir_size(dirlist, cliargs):
 
 
 def es_bulk_add(worker_name, dirlist, filelist, cliargs, totalcrawltime=None):
+    if cliargs['chunkfiles']:
+        updated_dirlist = []
+        # check for existing directory docs in index and update crawl time only (dirchunk)
+        for d in dirlist:
+            try:
+                path = d['chunkpath']  # this key determins if its part of a chunked dir
+                crawltime = d['crawl_time']
+                f = os.path.basename(path)
+                # parent path
+                p = os.path.abspath(os.path.join(path, os.pardir))
+
+                data = {
+                    "size": 1,
+                    "_source": ['crawl_time'],
+                    "query": {
+                        "query_string": {
+                            "query": "filename: \"" + f + "\" AND path_parent: \"" + p + "\""
+                        }
+                    }
+                }
+
+                es.indices.refresh(index=cliargs['index'])
+                res = es.search(index=cliargs['index'], doc_type='directory', body=data,
+                                request_timeout=config['es_timeout'])
+
+                if len(res['hits']['hits']) == 0:
+                    continue
+
+                docid = res['hits']['hits'][0]['_id']
+                current_crawltime = res['hits']['hits'][0]['_source']['crawl_time']
+                udpated_crawltime = current_crawltime + crawltime
+
+                # update crawltime in index
+                d = {
+                    '_op_type': 'update',
+                    '_index': cliargs['index'],
+                    '_type': 'directory',
+                    '_id': docid,
+                    'doc': {'crawl_time': udpated_crawltime}
+                }
+            except KeyError:
+                pass  # not part of a chunked dir
+            
+            updated_dirlist.append(d)
+
+        dirlist = updated_dirlist
+
     starttime = time.time()
 
     docs = dirlist + filelist
@@ -718,35 +769,37 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
     tree_dirs = []
     tree_files = []
     totalcrawltime = 0
-    statsembeded = False
     num_workers = len(SimpleWorker.all(connection=redis_conn))
 
-    path_count = 0
     for path in paths:
-        path_count += 1
         starttime = time.time()
-        if not cliargs['dirsonly']:
-            root, dirs, files = path
-        else:
-            root, dirs = path
-            files = []
-        if path_count == 1:
-            if type(root) is tuple:
+        root, dirs, files = path
+
+        # check if dirchunk or stats embeded in data from 
+        # diskover tree walk client or crawlapi
+        if type(root) is tuple:
+            if root[1] == 'dchunk':
+                dirchunk = True
+                statsembeded = False
+            else:
                 statsembeded = True
-        # check if stats embeded in data from diskover tree walk client or crawlapi
+                dirchunk = False
+        else:
+            statsembeded = False
+            dirchunk = False
+
         if statsembeded:
             root_path = root[0]
             dmeta = get_dir_meta(worker, root, cliargs, reindex_dict, statsembeded=True)
         else:
-            root_path = root
-            dmeta = get_dir_meta(worker, root_path, cliargs, reindex_dict, statsembeded=False)
+            if dirchunk:
+                root_path = root[0]
+                dmeta = {'chunkpath': root_path}
+            else:
+                root_path = root
+                dmeta = get_dir_meta(worker, root_path, cliargs, reindex_dict, statsembeded=False)
 
         if dmeta:
-            # no files in batch, get them with scandir
-            if cliargs['dirsonly']:
-                for entry in scandir(root):
-                    if entry.is_file(follow_symlinks=False) and not file_excluded(entry.name):
-                        files.append(entry.name)
             filecount = 0
             # check if the directory has a ton of files in it and farm out meta collection to other worker bots
             files_count = len(files)
@@ -764,6 +817,8 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
                                 tree_files.append(fmeta)
                                 filecount += 1
                         n += 1
+                    else:
+                        time.sleep(.05)
                 del fmetas[:]
             else:
                 for file in files:
@@ -779,7 +834,7 @@ def scrape_tree_meta(paths, cliargs, reindex_dict):
             # update crawl time
             elapsed = time.time() - starttime
             dmeta['crawl_time'] = round(elapsed, 6)
-            # check for empty dirs and dirsonly cli arg
+            # check for empty dirs
             if cliargs['indexemptydirs']:
                 tree_dirs.append(dmeta)
             elif not cliargs['indexemptydirs'] and (len(dirs) > 0 or filecount > 0):
@@ -816,19 +871,17 @@ def file_excluded(filename):
     return False
 
 
-def dupes_process_hashkey(hashkeylist, cliargs):
+def dupes_process_hashkeys(hashgroups, cliargs):
     """This is the duplicate file worker function.
     It processes file hash keys in the dupes Queue.
     """
-    from diskover_dupes import populate_hashgroup, verify_dupes, index_dupes
-    for hashkey in hashkeylist:
-        # find all files in ES matching hashkey
-        hashgroup = populate_hashgroup(hashkey, cliargs)
-        if hashgroup:
-            # process the duplicate files in hashgroup
-            hashgroup = verify_dupes(hashgroup, cliargs)
-            if hashgroup:
-                index_dupes(hashgroup, cliargs)
+    from diskover_dupes import verify_dupes, index_dupes
+
+    for filehash_filelist in hashgroups:
+        # process the duplicate files in hashgroup
+        dupes = verify_dupes(filehash_filelist, cliargs)
+        if dupes:
+            index_dupes(dupes, cliargs)
 
 
 def tag_copier(path, cliargs):
@@ -880,10 +933,7 @@ def tag_copier(path, cliargs):
         '_id': docid,
         'doc': {'tag': path[1], 'tag_custom': path[2]}
     }
-    if path[3] is 'directory':
-        doclist.append(d)
-    else:
-        doclist.append(d)
+    doclist.append(d)
 
     index_bulk_add(es, doclist, config, cliargs)
 

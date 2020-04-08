@@ -3,7 +3,7 @@
 # starts multiple bots to help with diskover redis queue
 # https://github.com/shirosaidev/diskover
 #
-# Copyright (C) Chris Park 2017-2019
+# Copyright (C) Chris Park 2017-2020
 # diskover is released under the Apache 2.0 license. See
 # LICENSE for the full license text.
 #
@@ -28,11 +28,13 @@ BOTLOG=
 LOGLEVEL=2
 # file to store bot pids
 BOTPIDS=/tmp/diskover_bot_pids
+# run bots nicely (nice command)
+NICE=FALSE
 
 ###########################################################
 
 
-VERSION="1.6.3"
+VERSION="1.6.4"
 
 function printhelp {
     echo "Usage: $(basename $0) [OPTION]"
@@ -40,12 +42,13 @@ function printhelp {
     echo "Options:"
     echo
     echo "  -w n          number of worker bots to start (default $WORKERBOTS)"
-    echo "  -b            burst mode (bots quit when no more jobs)"
+    echo "  -b            burst mode (bots quit when no more jobs) (default $BURST)"
+    echo "  -n            run bots nicely (using nice) (default $NICE)"
     echo "  -s            show all bots running"
     echo "  -k            kill all bots"
     echo "  -r            restart all running bots"
     echo "  -R            remove any idle zombie worker bot connections in Redis"
-    echo "  -l n          logging level 0 = ERROR, 1 = WARNING, 2 = INFO, 3 = DEBUG"
+    echo "  -l n          logging level 0 = ERROR, 1 = WARNING, 2 = INFO, 3 = DEBUG (default $LOGLEVEL)"
     echo "  -V            displays version and exits"
     echo "  -h            displays this help message and exits"
     echo
@@ -59,11 +62,12 @@ KILLBOTS=FALSE
 RESTARTBOTS=FALSE
 REMOVEBOTS=FALSE
 SHOWBOTS=FALSE
-while getopts :h?w:bskrRfl:V opt; do
+while getopts :h?w:bnskrRfl:V opt; do
     case "$opt" in
     h) printhelp; exit 0;;
     w) WORKERBOTS=$OPTARG;;
     b) BURST=TRUE;;
+    n) NICE=TRUE;;
     s) SHOWBOTS=TRUE;;
     k) KILLBOTS=TRUE;;
     r) RESTARTBOTS=TRUE;;
@@ -110,11 +114,16 @@ function startbots {
         echo "Can't find $DISKOVERBOT, check config at top of this file."
         exit 1
     fi
+    if [ $NICE == TRUE ]; then
+        NICECMD="nice"
+    else
+        NICECMD=""
+    fi
     for (( i = 1; i <= $WORKERBOTS; i++ )); do
         if [ ! $BOTLOG ]; then
-            $PYTHON $DISKOVERBOT $ARGS > /dev/null 2>&1 &
+            $NICECMD $PYTHON $DISKOVERBOT $ARGS > /dev/null 2>&1 &
         else
-            $PYTHON $DISKOVERBOT $ARGS >> $BOTLOG.$i 2>&1 &
+            $NICECMD $PYTHON $DISKOVERBOT $ARGS >> $BOTLOG.$i 2>&1 &
         fi
         # check if bot started
         if [ $i -eq 1 ]; then

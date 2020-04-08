@@ -1,5 +1,22 @@
 # Diskover Change Log
 
+# [1.5.0.12] - 2020-04-07
+### added
+- improved crawling performance and worker bot utilization, especially for large directories where prev. could take a while to send dir lists to worker bots when scanning over directories with tons of files
+- --chunkfiles and --chunkfilesnum to cli options; file chunking option to send to worker bots when scanning large directories
+- check for scandir using fast c version and not generic fallback which is much slower to crawl
+- updated diskover-bot-launcher.sh script to ver 1.6.4
+- NICE setting in diskover-bot-launcher.sh to run bots nicely (nice command)
+- -n cli option to diskover-bot-launcher.sh to run bots nicely (nice command)
+- updated parallel_crawl.sh script to v1.0.1
+- improved finddupes accuracy and performance
+- -f --filehashsizeonly cli options to only use filesize when generating filehash for file ES docs, default is to use filesize + last_modified fields (used for finddupes)
+- --inchardlinks cli option for finddupes to include any number of hardlinked files when finding dupes with --finddupes
+### changed
+- removed --dirsonly cli option
+### fixed
+- issues with finddupes
+
 # [1.5.0.11] - 2020-04-01
 ### added
 - --nowait cli option to not wait for worker bots to be running before enqueuing crawl jobs in RQ

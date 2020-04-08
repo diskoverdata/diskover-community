@@ -6,7 +6,7 @@ your file metadata into Elasticsearch.
 See README.md or https://github.com/shirosaidev/diskover
 for more information.
 
-Copyright (C) Chris Park 2017-2019
+Copyright (C) Chris Park 2017-2020
 diskover is released under the Apache 2.0 license. See
 LICENSE for the full license text.
 """
@@ -38,7 +38,7 @@ import sys
 import json
 
 
-version = '1.5.0.11'
+version = '1.5.0.12'
 __version__ = version
 
 IS_PY3 = sys.version_info >= (3, 0)
@@ -475,6 +475,27 @@ def user_prompt(question):
             sys.exit(0)
 
 
+def scandir_check():
+    try:
+        import _scandir
+    except ImportError:
+        _scandir = None
+    try:
+        import ctypes
+    except ImportError:
+        ctypes = None
+    if _scandir is None and ctypes is None:
+        print("ERROR: scandir can't find the compiled _scandir C module or ctypes")
+        sys.exit(1)
+    
+    import warnings
+    with warnings.catch_warnings(record=True):
+        import scandir
+    if scandir.scandir_c is None:
+        print("ERROR: Compiled C version of scandir not found!")
+        sys.exit(1)
+
+
 def index_create(indexname):
     """This is the es index create function.
     It checks for existing index and deletes if
@@ -720,8 +741,24 @@ def index_bulk_add(es, doclist, config, cliargs):
         es.cluster.health(wait_for_status='yellow',
                           request_timeout=config['es_timeout'])
     # bulk load data to Elasticsearch index
-    diskover_connections.helpers.bulk(es, doclist, index=cliargs['index'],
-            chunk_size=config['es_chunksize'], request_timeout=config['es_timeout'])
+    try:
+        helpers.bulk(es, doclist, index=cliargs['index'],
+                chunk_size=config['es_chunksize'], request_timeout=config['es_timeout'])
+    except helpers.BulkIndexError:
+        # bulk index error can happen occasionaly when using splitfiles and
+        # if a doc trying be updated has a version mismatch, try to bulk
+        # upload the update list items again
+        time.sleep(.5)
+        if cliargs['splitfiles']:
+            update_doclist = []
+            for d in doclist:
+                try:
+                    if d['_op_type']:
+                        update_doclist.append(d)
+                except KeyError:
+                    pass
+            doclist = update_doclist
+        index_bulk_add(es, doclist, config, cliargs)
 
 
 def index_delete_path(path, cliargs, logger, reindex_dict, recursive=False):
@@ -1201,9 +1238,12 @@ def parse_cli_args(indexname):
     parser.add_argument("-c", "--maxdcdepth", type=int, default=None,
                         help="Maximum directory depth to calculate directory sizes/items (default: None)")
     parser.add_argument("-b", "--batchsize", type=int, default=50,
-                        help="Batch size (dir count) for sending to worker bots (default: 50)")
+                        help="Batch size (dir count) for sending to worker bots, \
+                                setting too low could impact performance (default: 50)")
     parser.add_argument("-a", "--adaptivebatch", action="store_true",
                         help="Adaptive batch size for sending to worker bots (intelligent crawl)")
+    parser.add_argument("-f", "--filehashsizeonly", action="store_true",
+                        help="Use filesize only for generating filehash field (default: use filesize + last_modified)")
     parser.add_argument("-T", "--walkthreads", type=int, default=cpu_count()*2,
                         help="Number of threads for treewalk (default: cpu core count x 2)")
     parser.add_argument("-A", "--autotag", action="store_true",
@@ -1233,20 +1273,26 @@ def parse_cli_args(indexname):
                         help="Start tcp socket server and listen for messages from diskover treewalk client")
     parser.add_argument("--twcport", type=int, metavar='PORT',
                         help="Port number for tree walk client socket server (default: from config)")
-    parser.add_argument("--dirsonly", action="store_true",
-                        help="Don't include files in batch sent to bots, only send dirs, bots scan for files")
     parser.add_argument("--replacepath", nargs=2, metavar="PATH",
                         help="Replace path, example: --replacepath Z:\\ /mnt/share/")
     parser.add_argument("--splitfiles", action="store_true",
                         help="For directories with lots of files, split meta collecting of files amongst bots")
     parser.add_argument("--splitfilesnum", type=int, metavar='NUMFILES', default=10000,
-                        help="Minimum number of files required in directory to cause file split for --splitfiles \
-                                (default: 10000)")
+                        help="Minimum number of files required in directory to cause file split for --splitfiles, \
+                                setting too low could impact performance (default: 10000)")
+    parser.add_argument("--chunkfiles", action="store_true",
+                        help="Chunk file lists and send to worker bots when scanning large directories")
+    parser.add_argument("--chunkfilesnum", type=int, metavar='NUMFILES', default=1000,
+                        help="Minimum number of files required in directory to cause file chunking, \
+                                setting too low could impact performance (default: 1000)")
     parser.add_argument("--noworkerdocs", action="store_true",
                         help="Don't add worker docs (worker crawl stats) into Elasticsearch, could help to reduce index \
                                 size for very large indexes")
     parser.add_argument("--nowait", action="store_true",
                         help="Don't wait for worker bots to be running before enqueuing crawl jobs in RQ")
+    parser.add_argument("--inchardlinks", action="store_true",
+                        help="Include any number of hardlinked files when finding dupes with --finddupes \
+                                (default: no files with hardlink count > 1)")
     parser.add_argument("--crawlapi", action="store_true",
                         help="Use storage Restful API instead of scandir")
     parser.add_argument("--storagent", metavar='HOST', nargs='+',
@@ -1463,7 +1509,7 @@ def calc_dir_sizes(cliargs, logger, path=None):
         sys.exit(0)
 
 
-def scandirwalk_worker(threadn, cliargs, logger):
+def scandirwalk_worker(threadn, num_sep, level, cliargs, logger):
     dirs = []
     nondirs = []
     # check if we are using storage agent and make connection
@@ -1486,11 +1532,21 @@ def scandirwalk_worker(threadn, cliargs, logger):
                 root, api_dirs, api_nondirs = api_listdir(path, api_ses)
                 path = root
                 for d in api_dirs:
+                    # check if at maxdepth level to not enqueue subdirs and 
+                    # descend further down the tree
+                    if cliargs['maxdepth']:
+                        num_sep_this = path.count(os.path.sep)
+                        if num_sep + level < num_sep_this:
+                            break
                     if not dir_excluded(d[0], config, cliargs):
+                        q_paths.put(d)
                         dirs.append(d)
-                if not cliargs['dirsonly']:
-                    for f in api_nondirs:
-                        nondirs.append(f)
+                for f in api_nondirs:
+                    if cliargs['maxdepth']:
+                        num_sep_this = f[0].count(os.path.sep)
+                        if num_sep + level < num_sep_this:
+                            break
+                    nondirs.append(f)
                 del api_dirs[:]
                 del api_nondirs[:]
             elif stor_agent:
@@ -1503,13 +1559,29 @@ def scandirwalk_worker(threadn, cliargs, logger):
                         dirs.append(d)
             else:
                 item_count = 0
+                f_count = 0
                 for entry in scandir(path):
+                    # check if at maxdepth level to not enqueue subdirs and 
+                    # descend further down the tree
+                    if cliargs['maxdepth']:
+                        num_sep_this = entry.path.count(os.path.sep)
+                        if num_sep + level < num_sep_this:
+                            break
                     if entry.is_dir(follow_symlinks=False) and not dir_excluded(entry.path, config, cliargs):
+                        q_paths.put(entry.path)
                         dirs.append(entry.name)
-                    elif entry.is_file(follow_symlinks=False) and not cliargs['dirsonly']:
+                    elif entry.is_file(follow_symlinks=False):
                         nondirs.append(entry.name)
+                        f_count += 1
                     if item_count == 10000 and (cliargs['debug'] or cliargs['verbose']):
                         logger.info("[thread-%s] scandirwalk_worker: processing directory with many items: %s" % (threadn, path))
+                    if cliargs['chunkfiles'] and f_count > cliargs['chunkfilesnum']:
+                        if cliargs['debug'] or cliargs['verbose']:
+                            logger.info("[thread-%s] scandirwalk_worker: chunksize reached, sending partial dirlist to worker bots: %s" % (threadn, path))
+                        q_paths_results.put(((path, 'dchunk'), dirs[:], nondirs[:]))
+                        del dirs[:]
+                        del nondirs[:]
+                        f_count = 0
                     item_count += 1
             q_paths_results.put((path, dirs[:], nondirs[:]))
         except (OSError, IOError) as e:
@@ -1538,16 +1610,7 @@ def scandirwalk(path, cliargs, logger):
                 logger.info("apiwalk: %s (dircount: %s, filecount: %s)" % (root[0], str(len(dirs)), str(len(nondirs))))
             else:
                 logger.info("scandirwalk: %s (dircount: %s, filecount: %s)" % (root, str(len(dirs)), str(len(nondirs))))
-        # yield before recursion
         yield root, dirs, nondirs
-        # recurse into subdirectories
-        if cliargs['crawlapi']:
-            for d in dirs:
-                q_paths.put(d[0])
-        else:
-            for name in dirs:
-                new_path = os.path.join(root, name)
-                q_paths.put(new_path)
         q_paths_results.task_done()
         if q_paths_results.qsize() == 0 and q_paths.qsize() == 0:
             time.sleep(.5)
@@ -1570,7 +1633,7 @@ def treewalk(top, num_sep, level, batchsize, cliargs, logger, reindex_dict):
 
     # set up threads for tree walk
     for i in range(cliargs['walkthreads']):
-        t = Thread(target=scandirwalk_worker, args=(i, cliargs, logger,))
+        t = Thread(target=scandirwalk_worker, args=(i, num_sep, level, cliargs, logger,))
         t.daemon = True
         t.start()
 
@@ -1586,25 +1649,36 @@ def treewalk(top, num_sep, level, batchsize, cliargs, logger, reindex_dict):
 
     bartimestamp = time.time()
     for root, dirs, files in scandirwalk(top, cliargs, logger):
-        dircount += 1
-        totaldirs += 1
+        if type(root) is tuple:
+            _root = root[0]
+            if root[1] == 'dchunk':
+                dirchunk = True
+            else:
+                statsembeded = True
+        else:
+            _root = root
+            dirchunk = False
+            statsembeded = False
+        if not dirchunk or statsembeded:
+            dircount += 1
+            totaldirs += 1
         files_len = len(files)
         dirs_len = len(dirs)
         # check for empty dirs
-        if not cliargs['indexemptydirs'] and not cliargs['dirsonly']:
+        if not cliargs['indexemptydirs']:
             if dirs_len == 0 and files_len == 0:
                 if cliargs['debug'] or cliargs['verbose']:
-                    logger.info("skipping empty dir: %s" % root)
+                    logger.info("skipping empty dir: %s" % _root)
                 continue
         totalfiles += files_len
         # replace path if cliarg
         if cliargs['replacepath']:
-            root = replace_path(root)
-
-        if cliargs['dirsonly']:
-            batch.append((root, dirs))
-        else:
-            batch.append((root, dirs, files))
+            if dirchunk:
+                root[0] = replace_path(root[0])
+            else:
+                root = replace_path(root)
+        # add directory and it's items to batch list
+        batch.append((root, dirs, files))
         batch_len = len(batch)
         if batch_len >= batchsize or (cliargs['adaptivebatch'] and totalfiles >= config['adaptivebatch_maxfiles']):
             q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,),
@@ -1617,14 +1691,6 @@ def treewalk(top, num_sep, level, batchsize, cliargs, logger, reindex_dict):
                 batchsize = adaptive_batch(q_crawl, cliargs, batchsize)
                 if cliargs['debug'] or cliargs['verbose']:
                     logger.info("batchsize set to: %s" % batchsize)
-
-        # check if at maxdepth level and delete dirs/files lists to not
-        # descend further down the tree
-        if cliargs['maxdepth']:
-            num_sep_this = root.count(os.path.sep)
-            if num_sep + level <= num_sep_this:
-                del dirs[:]
-                del files[:]
 
         # update progress bar
         if bar:
@@ -1697,8 +1763,20 @@ def crawl_tree(path, cliargs, logger, reindex_dict):
             if cliargs['verbose'] or cliargs['debug']:
                 logger.info('Batch size: %s' % batchsize)
             logger.info("Sending batches of %s to worker bots", batchsize)
-            if batchsize < 50:
+            if batchsize < 25:
                 logger.warning("Using a small batch size can decrease performance")
+        
+        if cliargs['splitfiles']:
+            logger.info("Bots will split filelists larger than %s and share with other bots", 
+                            cliargs['splitfilesnum'])
+            if cliargs['splitfilesnum'] < 5000:
+                logger.warning("Using a small splitfiles num can decrease performance")
+
+        if cliargs['chunkfiles']:
+            logger.info("Sending chunks of %s files to worker bots for any large directories", 
+                            cliargs['chunkfilesnum'])
+            if cliargs['chunkfilesnum'] < 500:
+                logger.warning("Using a small chunkfiles num can decrease performance")
 
         # set maxdepth level to 1 if reindex
         if cliargs['reindex']:
@@ -1924,6 +2002,7 @@ import diskover_connections
 diskover_connections.connect_to_elasticsearch()
 from diskover_connections import es_conn as es
 from diskover_connections import exceptions
+from diskover_connections import helpers
 
 # create Reddis connection
 diskover_connections.connect_to_redis()
@@ -1945,8 +2024,16 @@ lock = Lock()
 
 
 if __name__ == "__main__":
+    # check fast c version of scandir is installed
+    scandir_check()
+
     # parse cli arguments into cliargs dictionary
     cliargs = vars(parse_cli_args(config['index']))
+
+    # cli args check
+    if cliargs['splitfilesnum'] <= cliargs['chunkfilesnum'] + 1:
+        print('ERROR: --splitfilesnum cannot be <= --chunkfilesnum. See -h for defaults.')
+        sys.exit(1)
 
     # set up logging
     logger = log_setup(cliargs)
@@ -2089,6 +2176,10 @@ if __name__ == "__main__":
     # warn if indexing 0 Byte empty files
     if cliargs['minsize'] == 0:
         logger.warning('You are indexing 0 Byte empty files (-s 0)')
+    
+    # warn if indexing empty dirs
+    if cliargs['indexemptydirs']:
+        logger.warning('You are indexing empty directories (-e)')
 
     # check if we are reindexing and remove existing docs in Elasticsearch
     # before crawling and reindexing
