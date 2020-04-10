@@ -1539,7 +1539,7 @@ def scandirwalk_worker(threadn, num_sep, level, cliargs, logger):
                         if num_sep + level < num_sep_this:
                             break
                     if not dir_excluded(d[0], config, cliargs):
-                        q_paths.put(d)
+                        q_paths.put(d[0])
                         dirs.append(d)
                 for f in api_nondirs:
                     if cliargs['maxdepth']:
