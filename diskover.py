@@ -1653,8 +1653,10 @@ def treewalk(top, num_sep, level, batchsize, cliargs, logger, reindex_dict):
             _root = root[0]
             if root[1] == 'dchunk':
                 dirchunk = True
+                statsembeded = False
             else:
                 statsembeded = True
+                dirchunk = False
         else:
             _root = root
             dirchunk = False
