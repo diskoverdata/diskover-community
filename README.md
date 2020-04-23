@@ -170,6 +170,18 @@ Distribute file meta collecting amongst bots for directories with many files (ca
 $ python diskover.py -i diskover-index -a -d /rootpath/to/crawl --splitfiles --splitfilesnum 1000
 ```
 
+Find [duplicate files](https://github.com/shirosaidev/diskover/wiki/Duplicate-files-(dupes)) in an index (after crawl finishes):
+
+```sh
+$ python diskover.py -i diskover-indexname --finddupes
+```
+
+Find ["hot dirs"](https://github.com/shirosaidev/diskover/wiki/Comparing-(diff)-files-between-two-indexes) and change % between two indices (after crawls are complete):
+
+```sh
+$ python diskover.py -i diskover-latestindex -H diskover-previndex
+```
+
 Store [cost per gb](https://github.com/shirosaidev/diskover/wiki/Cost-per-GB) (Enterprise ver. only) in es index from diskover.cfg settings and use size on disk (disk usage) instead of file size:
 
 ```sh
@@ -192,18 +204,6 @@ $ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl/dir1 --reind
 $ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl/dir2 --reindexrecurs -q &
 ...
 $ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl --dircalcsonly --maxdcdepth 0
-```
-
-Find [duplicate files](https://github.com/shirosaidev/diskover/wiki/Duplicate-files-(dupes)) in an index (after crawl finishes):
-
-```sh
-$ python diskover.py -i diskover-indexname --finddupes
-```
-
-Find ["hot dirs"](https://github.com/shirosaidev/diskover/wiki/Comparing-(diff)-files-between-two-indexes) and change % between two indices (after crawls are complete):
-
-```sh
-$ python diskover.py -i diskover-latestindex -H diskover-previndex
 ```
 
 
