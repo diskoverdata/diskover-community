@@ -164,10 +164,10 @@ Only index files which have been modified in the last 7 days including empty fil
 $ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl -m -7 -s 0 -e
 ```
 
-Distribute file meta collecting amongst bots for directories with many files (can help to keep all bots busy if your file tree has directories with many files):
+Distribute file meta collecting amongst bots and split file lists for directories with many files (can help to keep all bots busy if your file tree has directories with many files):
 
 ```sh
-$ python diskover.py -i diskover-index -a -d /rootpath/to/crawl --splitfiles --splitfilesnum 1000
+$ python diskover.py -i diskover-index -a -d /rootpath/to/crawl --splitfiles --chunkfiles
 ```
 
 Find [duplicate files](https://github.com/shirosaidev/diskover/wiki/Duplicate-files-(dupes)) in an index (after crawl finishes):
