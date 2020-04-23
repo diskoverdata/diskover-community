@@ -173,13 +173,13 @@ $ python diskover.py -i diskover-index -a -d /rootpath/to/crawl --splitfiles --c
 Find [duplicate files](https://github.com/shirosaidev/diskover/wiki/Duplicate-files-(dupes)) in an index (after crawl finishes):
 
 ```sh
-$ python diskover.py -i diskover-indexname --finddupes
+$ python diskover.py -i diskover-indexname -a --finddupes
 ```
 
 Find ["hot dirs"](https://github.com/shirosaidev/diskover/wiki/Comparing-(diff)-files-between-two-indexes) and change % between two indices (after crawls are complete):
 
 ```sh
-$ python diskover.py -i diskover-latestindex -H diskover-previndex
+$ python diskover.py -i diskover-latestindex -a -H diskover-previndex
 ```
 
 Store [cost per gb](https://github.com/shirosaidev/diskover/wiki/Cost-per-GB) (Enterprise ver. only) in es index from diskover.cfg settings and use size on disk (disk usage) instead of file size:
