@@ -60,3 +60,5 @@ resources:
     cpu: 1
     memory: 512Mi
 probePath: /actuator/health
+policies:
+  enabled: true

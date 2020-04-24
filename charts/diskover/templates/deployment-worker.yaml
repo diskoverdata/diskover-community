@@ -45,8 +45,10 @@ spec:
         #   name: localtime
         # - mountPath: /etc/timezone
         #   name: timezone
+{{- if .Values.policies.enabled }}
         dnsPolicy: ClusterFirst
         restartPolicy: Always
+{{ end }}
         env:
         - name: RUN_MODE
           value: "WORKER"
