@@ -233,6 +233,7 @@ def dupes_finder(es, q, cliargs, logger):
     if cliargs['inchardlinks']:
         data = {
                 "size": 0,
+                "_source": ['filename', 'filehash', 'path_parent', 'last_modified', 'last_access'],
                 "query": {
                     "bool": {
                         "must": {
@@ -249,6 +250,7 @@ def dupes_finder(es, q, cliargs, logger):
     else:
         data = {
             "size": 0,
+            "_source": ['filename', 'filehash', 'path_parent', 'last_modified', 'last_access'],
             "query": {
                 "bool": {
                     "must": { 
