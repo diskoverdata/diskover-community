@@ -50,27 +50,95 @@ def index_dupes(hashgroup, cliargs):
 
 def start_file_threads():
     for i in range(config['dupes_threads']):
-        thread = Thread(target=md5_hasher)
+        thread = Thread(target=dupes_thread_worker)
         thread.daemon = True
         thread.start()
 
 
-def md5_hasher():
+def dupes_thread_worker():
+    # number of bytes to check at start and end of file
+    read_bytes = config['dupes_checkbytes']
+
+    # min bytes to read of file size less than above
+    min_read_bytes = 1
+    
     while True:
         item = file_in_thread_q.get()
-        filename, atime, mtime, cliargs = item
-        # get md5 sum, don't load whole file into memory,
-        # load in n bytes at a time (read_size blocksize)
-        try:
-            read_size = config['md5_readsize']
-            hasher = hashlib.md5()
-            with open(filename, 'rb') as f:
-                buf = f.read(read_size)
-                while len(buf) > 0:
-                    hasher.update(buf)
-                    buf = f.read(read_size)
-            md5 = hasher.hexdigest()
+        filename, atime, mtime, cliargs, worktype = item
 
+        if worktype == 'md5hash':
+            # get md5 sum, don't load whole file into memory,
+            # load in n bytes at a time (read_size blocksize)
+            try:
+                read_size = config['md5_readsize']
+                hasher = hashlib.md5()
+                with open(filename, 'rb') as f:
+                    buf = f.read(read_size)
+                    while len(buf) > 0:
+                        hasher.update(buf)
+                        buf = f.read(read_size)
+                md5 = hasher.hexdigest()
+
+                # restore times (atime/mtime)
+                if config['dupes_restoretimes'] == "true":
+                    atime_unix = time.mktime(time.strptime(atime, '%Y-%m-%dT%H:%M:%S'))
+                    mtime_unix = time.mktime(time.strptime(mtime, '%Y-%m-%dT%H:%M:%S'))
+                    try:
+                        os.utime(filename, (atime_unix, mtime_unix))
+                    except (OSError, IOError) as e:
+                        warnings.warn("OS/IO Exception caused by: %s" % e)
+                        pass
+                    except Exception as e:
+                        warnings.warn("Exception caused by: %s" % e)
+                        pass
+            except (OSError, IOError) as e:
+                warnings.warn("OS/IO Exception caused by: %s" % e)
+                file_in_thread_q.task_done()
+                continue
+            except Exception as e:
+                warnings.warn("Exception caused by: %s" % e)
+                file_in_thread_q.task_done()
+                continue
+            file_out_thread_q.put((filename, md5))
+            file_in_thread_q.task_done()
+
+        elif worktype == 'bytehash':
+            # Get first and last few bytes of file and hash those 
+            # strings together
+            try:
+                f = open(filename, 'rb')
+            except (OSError, IOError) as e:
+                warnings.warn("OS/IO Exception caused by: %s" % e)
+                file_in_thread_q.task_done()
+                continue
+            except Exception as e:
+                warnings.warn("Exception caused by: %s" % e)
+                file_in_thread_q.task_done()
+                continue
+            # check if files is only 1 byte
+            try:
+                bytes_f = base64.b64encode(f.read(read_bytes))
+            except (IOError, OSError):
+                pass
+                try:
+                    bytes_f = base64.b64encode(f.read(min_read_bytes))
+                except Exception as e:
+                    warnings.warn("Exception caused by: %s" % e)
+                    file_in_thread_q.task_done()
+                    continue
+            try:
+                f.seek(-read_bytes, os.SEEK_END)
+                bytes_l = base64.b64encode(f.read(read_bytes))
+            except (IOError, OSError):
+                pass
+                try:
+                    f.seek(-min_read_bytes, os.SEEK_END)
+                    bytes_l = base64.b64encode(f.read(min_read_bytes))
+                except Exception as e:
+                    warnings.warn("Exception caused by: %s" % e)
+                    file_in_thread_q.task_done()
+                    continue
+            f.close()
             # restore times (atime/mtime)
             if config['dupes_restoretimes'] == "true":
                 atime_unix = time.mktime(time.strptime(atime, '%Y-%m-%dT%H:%M:%S'))
@@ -83,16 +151,13 @@ def md5_hasher():
                 except Exception as e:
                     warnings.warn("Exception caused by: %s" % e)
                     pass
-        except (OSError, IOError) as e:
-            warnings.warn("OS/IO Exception caused by: %s" % e)
+
+            # create hash of bytes
+            bytestring = str(bytes_f) + str(bytes_l)
+            bytehash = hashlib.md5(bytestring.encode('utf-8')).hexdigest()
+
+            file_out_thread_q.put((filename, atime, mtime, bytehash))
             file_in_thread_q.task_done()
-            continue
-        except Exception as e:
-            warnings.warn("Exception caused by: %s" % e)
-            file_in_thread_q.task_done()
-            continue
-        file_out_thread_q.put((filename, md5))
-        file_in_thread_q.task_done()
 
 
 def verify_dupes(filehash_filelist, cliargs):
@@ -102,75 +167,30 @@ def verify_dupes(filehash_filelist, cliargs):
     a md5 check is run on the files.
     """
 
-    # number of bytes to check at start and end of file
-    read_bytes = config['dupes_checkbytes']
-
-    # min bytes to read of file size less than above
-    min_read_bytes = 1
-
     dups = {}
 
-    # Add first and last few bytes for each file to dups dictionary
-
-    file_count = 0
     for file in filehash_filelist['files']:
-        try:
-            f = open(file['filename'], 'rb')
-        except (OSError, IOError) as e:
-            warnings.warn("OS/IO Exception caused by: %s" % e)
-            continue
-        except Exception as e:
-            warnings.warn("Exception caused by: %s" % e)
-            continue
-        # check if files is only 1 byte
-        try:
-            bytes_f = base64.b64encode(f.read(read_bytes))
-        except (IOError, OSError):
-            pass
-            try:
-                bytes_f = base64.b64encode(f.read(min_read_bytes))
-            except Exception as e:
-                warnings.warn("Exception caused by: %s" % e)
-                continue
-        try:
-            f.seek(-read_bytes, os.SEEK_END)
-            bytes_l = base64.b64encode(f.read(read_bytes))
-        except (IOError, OSError):
-            pass
-            try:
-                f.seek(-min_read_bytes, os.SEEK_END)
-                bytes_l = base64.b64encode(f.read(min_read_bytes))
-            except Exception as e:
-                warnings.warn("Exception caused by: %s" % e)
-                continue
-        f.close()
-        # restore times (atime/mtime)
-        if config['dupes_restoretimes'] == "true":
-            atime_unix = time.mktime(time.strptime(file['atime'], '%Y-%m-%dT%H:%M:%S'))
-            mtime_unix = time.mktime(time.strptime(file['mtime'], '%Y-%m-%dT%H:%M:%S'))
-            try:
-                os.utime(file['filename'], (atime_unix, mtime_unix))
-            except (OSError, IOError) as e:
-                warnings.warn("OS/IO Exception caused by: %s" % e)
-                pass
-            except Exception as e:
-                warnings.warn("Exception caused by: %s" % e)
-                pass
+        # add file into thread queue
+        file_in_thread_q.put((file['filename'], file['atime'], file['mtime'], cliargs, 'bytehash'))
 
-        # create hash of bytes
-        bytestring = str(bytes_f) + str(bytes_l)
-        bytehash = hashlib.md5(bytestring.encode('utf-8')).hexdigest()
+        # wait for threads to finish
+        file_in_thread_q.join()
 
-        # Add or append the file to dups dict
-        if bytehash in dups:
-            dups[bytehash].append((file['filename'], file['atime'], file['mtime']))
-        else:
-            dups[bytehash] = [(file['filename'], file['atime'], file['mtime'])]
+        # get all files from queue
+        while True:
+            item = file_out_thread_q.get()
+            filename, atime, mtime, bytehash = item
 
-        file_count += 1
+            # Add or append the file to dups dict
+            if bytehash in dups:
+                dups[bytehash].append((filename, atime, mtime))
+            else:
+                dups[bytehash] = [(filename, atime, mtime)]
+            
+            file_out_thread_q.task_done()
 
-    if file_count == 0:
-        return None
+            if file_out_thread_q.qsize() == 0:
+                break
 
     # remove any bytehash key that only has 1 item (no duplicate)
     for key in [key for key in dups if len(dups[key]) < 2]: del dups[key]
@@ -187,7 +207,7 @@ def verify_dupes(filehash_filelist, cliargs):
         for file in value:
             filename, atime, mtime = file
             # add file into thread queue
-            file_in_thread_q.put((filename, atime, mtime, cliargs))
+            file_in_thread_q.put((filename, atime, mtime, cliargs, 'md5hash'))
 
         # wait for threads to finish
         file_in_thread_q.join()
