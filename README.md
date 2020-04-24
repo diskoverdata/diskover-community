@@ -146,6 +146,12 @@ Don't prompt user to overwrite existing index:
 $ python /path/to/diskover.py -d /rootpath/you/want/to/crawl -i diskover-indexname -a -O -F
 ```
 
+Use 32 tree walk threads (default is cpu cores x 2):
+
+```sh
+$ python /path/to/diskover.py -d /rootpath/you/want/to/crawl -i diskover-indexname -a -T 32
+```
+
 Crawl down to maximum tree depth of 3:
 
 ```sh
@@ -167,7 +173,7 @@ $ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl -m -7 -s 0 -
 Distribute file meta collecting amongst bots and split file lists for directories with many files (can help to keep all bots busy if your file tree has directories with many files):
 
 ```sh
-$ python diskover.py -i diskover-index -a -d /rootpath/to/crawl --splitfiles --chunkfiles
+$ python diskover.py -i diskover-index -a -d /rootpath/to/crawl --splitfiles --splitfilesnum 5000 --chunkfiles --chunkfilesnum 500
 ```
 
 Find [duplicate files](https://github.com/shirosaidev/diskover/wiki/Duplicate-files-(dupes)) in an index (after crawl finishes):
