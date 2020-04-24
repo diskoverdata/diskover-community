@@ -146,6 +146,12 @@ Don't prompt user to overwrite existing index:
 $ python /path/to/diskover.py -d /rootpath/you/want/to/crawl -i diskover-indexname -a -O -F
 ```
 
+Use 32 tree walk threads (default is cpu cores x 2):
+
+```sh
+$ python /path/to/diskover.py -d /rootpath/you/want/to/crawl -i diskover-indexname -a -T 32
+```
+
 Crawl down to maximum tree depth of 3:
 
 ```sh
@@ -164,10 +170,22 @@ Only index files which have been modified in the last 7 days including empty fil
 $ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl -m -7 -s 0 -e
 ```
 
-Distribute file meta collecting amongst bots for directories with many files (can help to keep all bots busy if your file tree has directories with many files):
+Distribute file meta collecting amongst bots and split file lists for directories with many files (can help to keep all bots busy if your file tree has directories with many files):
 
 ```sh
-$ python diskover.py -i diskover-index -a -d /rootpath/to/crawl --splitfiles --splitfilesnum 1000
+$ python diskover.py -i diskover-index -a -d /rootpath/to/crawl --splitfiles --splitfilesnum 5000 --chunkfiles --chunkfilesnum 500
+```
+
+Find [duplicate files](https://github.com/shirosaidev/diskover/wiki/Duplicate-files-(dupes)) in an index (after crawl finishes):
+
+```sh
+$ python diskover.py -i diskover-indexname -a --finddupes
+```
+
+Find ["hot dirs"](https://github.com/shirosaidev/diskover/wiki/Comparing-(diff)-files-between-two-indexes) and change % between two indices (after crawls are complete):
+
+```sh
+$ python diskover.py -i diskover-latestindex -a -H diskover-previndex
 ```
 
 Store [cost per gb](https://github.com/shirosaidev/diskover/wiki/Cost-per-GB) (Enterprise ver. only) in es index from diskover.cfg settings and use size on disk (disk usage) instead of file size:
@@ -192,18 +210,6 @@ $ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl/dir1 --reind
 $ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl/dir2 --reindexrecurs -q &
 ...
 $ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl --dircalcsonly --maxdcdepth 0
-```
-
-Find [duplicate files](https://github.com/shirosaidev/diskover/wiki/Duplicate-files-(dupes)) in an index (after crawl finishes):
-
-```sh
-$ python diskover.py -i diskover-indexname --finddupes
-```
-
-Find ["hot dirs"](https://github.com/shirosaidev/diskover/wiki/Comparing-(diff)-files-between-two-indexes) and change % between two indices (after crawls are complete):
-
-```sh
-$ python diskover.py -i diskover-latestindex -H diskover-previndex
 ```
 
 
