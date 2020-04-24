@@ -1,6 +1,6 @@
 # Diskover Change Log
 
-# [1.5.0.12] - 2020-04-07
+# [1.5.0.12] - 2020-04-24
 ### added
 - improved crawling performance and worker bot utilization, especially for large directories where prev. could take a while to send dir lists to worker bots when scanning over directories with tons of files
 - --chunkfiles and --chunkfilesnum to cli options; file chunking option to send to worker bots when scanning large directories
