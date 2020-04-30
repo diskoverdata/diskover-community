@@ -44,8 +44,8 @@ spec:
         #   name: localtime
         # - mountPath: /etc/timezone
         #   name: timezone
-        dnsPolicy: ClusterFirst
-        restartPolicy: Always
+        #dnsPolicy: ClusterFirst
+        #restartPolicy: Always
         env:
         - name: RUN_MODE
           value: "SERVER"
