@@ -38,7 +38,7 @@ import sys
 import json
 
 
-version = '1.5.0.12'
+version = '1.5.0.13'
 __version__ = version
 
 IS_PY3 = sys.version_info >= (3, 0)
@@ -1439,6 +1439,7 @@ def calc_dir_sizes(cliargs, logger, path=None):
 
         dirlist = []
         dircount = 0
+        bartimestamp = time.time()
         while res['hits']['hits'] and len(res['hits']['hits']) > 0:
             for hit in res['hits']['hits']:
                 fullpath = os.path.join(hit['_source']['path_parent'], hit['_source']['filename'])
@@ -1465,10 +1466,13 @@ def calc_dir_sizes(cliargs, logger, path=None):
 
             # update progress bar
             if bar:
-                try:
-                    bar.update(len(q_calc))
-                except (ZeroDivisionError, ValueError):
-                    bar.update(0)
+                if time.time() - bartimestamp >= 2:
+                    try:
+                        bar.update(len(q_calc))
+                    except (ZeroDivisionError, ValueError):
+                        bar.update(0)
+                    finally:
+                        bartimestamp = time.time()
 
             # use es scroll api
             res = es.scroll(scroll_id=res['_scroll_id'], scroll='1m',
@@ -1696,16 +1700,17 @@ def treewalk(top, num_sep, level, batchsize, cliargs, logger, reindex_dict):
 
         # update progress bar
         if bar:
-            try:
-                if time.time() - bartimestamp >= 2:
+            if time.time() - bartimestamp >= 2:
+                try:
                     elapsed = round(time.time() - bartimestamp, 3)
                     dirspersec = round(dircount / elapsed, 3)
                     widgets[4] = progressbar.FormatLabel(', ' + str(dirspersec) + ' dirs/sec) ')
+                    bar.update(len(q_crawl))
+                except (ZeroDivisionError, ValueError):
+                    bar.update(0)
+                finally:
                     bartimestamp = time.time()
                     dircount = 0
-                bar.update(len(q_crawl))
-            except (ZeroDivisionError, ValueError):
-                bar.update(0)
 
     # add any remaining in batch to queue
     if len(batch) > 0:
