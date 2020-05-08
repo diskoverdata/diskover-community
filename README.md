@@ -19,6 +19,10 @@ diskover is written and maintained by Shirosaidev and runs on Linux, OS X/macOS 
 
 <h4>If you are a business and would like to inquire about diskover enterprise, please visit <a href="https://diskoverspace.com">https://diskoverspace.com</a> to learn more and to contact us.</h4>
 
+## Become a Patron & support shedding light on data darkness
+
+If you are a fan of the project or you are using diskover and it's helping you save storage space, please consider supporting the project on [Patreon](https://www.patreon.com/shirosaidev) or [PayPal](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=CLF223XAS4W72). Thank you so much to all the fans and supporters!
+
 <br>
 <blockquote><h3><q>This is the first tool I've found that can index 7m files/2m directories in under 20 min</q></h3> -- linuxserver.io community member</blockquote>
 <br>
@@ -44,10 +48,6 @@ Kibana dashboards/saved searches/visualizations and support for Gource<br>
 
 <a href="https://youtu.be/InlfK8GQ-kM"><img align="left" width="400" src="https://img.youtube.com/vi/InlfK8GQ-kM/0.jpg" alt="gource video"></a>
 <a href="https://youtu.be/qKLJjZ0TMqA"><img width="400" src="https://img.youtube.com/vi/qKLJjZ0TMqA/0.jpg" alt="gource video"></a>
-
-## Become a Patron & support shedding light on data darkness
-
-If you are a fan of the project or you are using diskover and it's helping you save storage space, please consider supporting the project on [Patreon](https://www.patreon.com/shirosaidev) or [PayPal](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=CLF223XAS4W72). Thank you so much to all the fans and supporters!
 
 ## Installation Guide
 
