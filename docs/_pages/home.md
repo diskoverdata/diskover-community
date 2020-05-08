@@ -5,17 +5,17 @@ header:
   overlay_color: "#000"
   overlay_filter: "0.3"
   overlay_image: https://github.com/shirosaidev/diskover/blob/master/docs/_pages/heatmap.png?raw=true
-  cta_label: "<i class='fa fa-download' aria-hidden='true'></i> Download"
-  cta_url: "https://github.com/shirosaidev/diskover/releases/latest"
+  cta_label: ""
+  cta_url: ""
   caption:
-excerpt: '<img src="https://github.com/shirosaidev/diskover/raw/master/docs/diskover.png?raw=true" style="width: 183px; float: left; margin: 0px 30px 10px 0px;">File system crawler, storage search engine and storage analytics software powered by Elasticsearch to help visualize and manage your disk space usage.<br /> <small>Latest release v1.5.0.13</small><br /><br />
+excerpt: '<img src="https://github.com/shirosaidev/diskover/raw/master/docs/diskover.png?raw=true" style="width: 183px; float: left; margin: 0px 30px 10px 0px;">File system crawler, storage search engine and storage analytics software powered by Elasticsearch to help visualize and manage your disk space usage.<br />
 {::nomarkdown}<iframe style="display: inline-block;" src="https://ghbtns.com/github-btn.html?user=shirosaidev&repo=diskover&type=star&count=true&size=large" frameborder="0" scrolling="0" width="160px" height="30px"></iframe> <iframe style="display: inline-block;" src="https://ghbtns.com/github-btn.html?user=shirosaidev&repo=diskover&type=fork&count=true&size=large" frameborder="0" scrolling="0" width="158px" height="30px"></iframe>{:/nomarkdown}'
 feature_row:
   - url: https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-filetree-screenshot.png?raw=true
     image_path: https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-filetree-screenshot.png?raw=true
     alt: "file system crawler"
     title: "File System Crawler"
-    excerpt: "diskover crawls your storage servers locally or over NFS/SMB and scrapes file/directory meta data into Elasticsearch."
+    excerpt: "diskover crawls your storage servers locally or over network mounts and scrapes file/directory meta data into Elasticsearch."
     url: "https://github.com/shirosaidev/diskover"
     btn_class: "btn--primary"
     btn_label: "Learn More"
@@ -29,7 +29,7 @@ feature_row:
     btn_label: "Learn More"
   - url: https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-treemap-screenshot.png?raw=true
     image_path: https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-treemap-screenshot.png?raw=true
-    alt: "open-source"
+    alt: "cross-platform"
     title: "Cross-Platform"
     excerpt: "Built using Python + PHP + HTML5 + Javascript + D3.js. diskover runs on Linux, macOS and Windows."
     url: "https://github.com/shirosaidev/diskover"
