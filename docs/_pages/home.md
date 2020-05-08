@@ -40,7 +40,7 @@ github:
 <script async defer src="https://buttons.github.io/buttons.js"></script>{:/nomarkdown}'
 intro:
   - excerpt: '{::nomarkdown}Support the development&nbsp;<a class="btn btn--primary" href="https://www.patreon.com/shirosaidev" target="_blank" role="button"><i class="fa fa-heart" aria-hidden="true"></i> Sponsor Patreon</a>&nbsp;<a class="btn btn--primary" href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=CLF223XAS4W72" target="_blank" role="button"><i class="fa fa-credit-card" aria-hidden="true"></i> Donate PayPal</a>{:/nomarkdown}'
-  - excerpt: '{::nomarkdown}<h4>*** To get access to download diskover, email <a href="mailto:info@diskoverspace.com">info@diskoverspace.com</a> ***</h4><p><strong>For businesses interested in diskover enterprise version, please visit <a href="https://diskoverspace.com">https://diskoverspace.com</a> to learn more.</strong></p>
+  - excerpt: '{::nomarkdown}<h4>*** To get access to download diskover, email <a href="mailto:info@diskoverspace.com">info@diskoverspace.com</a> ***</h4><br><p>For businesses interested in diskover enterprise version, please visit <a href="https://diskoverspace.com">https://diskoverspace.com</a> to learn more.</p>
   <p>Join the conversation and get help with diskover on the <a href="https://join.slack.com/t/diskoverworkspace/shared_invite/enQtNzQ0NjE1Njk5MjIyLWI4NWQ0MjFhYzQyMTRhMzk4NTQ3YjBlYjJiMDk1YWUzMTZmZjI1MTdhYTA3NzAzNTU0MDc5NDA2ZDI4OWRiMjM">diskover Slack workspace</a>.</p>{:/nomarkdown}'
 ---
 
