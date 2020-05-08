@@ -40,7 +40,7 @@ github:
 <script async defer src="https://buttons.github.io/buttons.js"></script>{:/nomarkdown}'
 intro:
   - excerpt: '{::nomarkdown}Support the development&nbsp;<a class="btn btn--primary" href="https://www.patreon.com/shirosaidev" target="_blank" role="button"><i class="fa fa-heart" aria-hidden="true"></i> Sponsor Patreon</a>&nbsp;<a class="btn btn--primary" href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=CLF223XAS4W72" target="_blank" role="button"><i class="fa fa-credit-card" aria-hidden="true"></i> Donate PayPal</a>{:/nomarkdown}'
-  - excerpt: '{::nomarkdown}<strong>For businesses interested in diskover enterprise version, please visit <a href="https://diskoverspace.com">https://diskoverspace.com</a> to learn more.</strong>{:/nomarkdown}'
+  - excerpt: '{::nomarkdown}<h2>*** To get access to download diskover, email <a href="info@diskoverspace.com">info@diskoverspace.com</a> ***</h2><br><strong>For businesses interested in diskover enterprise version, please visit <a href="https://diskoverspace.com">https://diskoverspace.com</a> to learn more.</strong>{:/nomarkdown}'
 ---
 
 {% include feature_row id="intro" type="center" %}
