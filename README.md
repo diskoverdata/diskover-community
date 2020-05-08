@@ -15,7 +15,7 @@ Using diskover, users can identify old and unused files and give better insights
 
 diskover is written and maintained by Shirosaidev and runs on Linux, OS X/macOS and Windows 10 (using windows subsystem for linux) using Python 2 or 3.
 
-<h2>*** To get access to download diskover, please email info@diskoverspace.com ***</h2>
+<h4>*** To get access to download diskover, please email <a href="mailto:info@diskoverspace.com">info@diskoverspace.com</a> ***</h4>
 
 <br>
 <blockquote><h3><q>This is the first tool I've found that can index 7m files/2m directories in under 20 min</q></h3> -- linuxserver.io community member</blockquote>
@@ -88,7 +88,7 @@ If you are a business and would like to inquire about diskover enterprise, pleas
 
 ### Download
 
-<h2>*** To get access to download diskover, please email info@diskoverspace.com ***</h2>
+<h4>*** To get access to download diskover, please email <a href="mailto:info@diskoverspace.com">info@diskoverspace.com</a> ***</h4>
 
 
 ## Getting Started
