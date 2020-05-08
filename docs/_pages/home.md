@@ -5,8 +5,8 @@ header:
   overlay_color: "#000"
   overlay_filter: "0.3"
   overlay_image: https://github.com/shirosaidev/diskover/blob/master/docs/_pages/heatmap.png?raw=true
-  cta_label: ""
-  cta_url: ""
+  cta_label: "Visit GitHub"
+  cta_url: "https://github.com/shirosaidev/diskover"
   caption:
 excerpt: '<img src="https://github.com/shirosaidev/diskover/raw/master/docs/diskover.png?raw=true" style="width: 183px; float: left; margin: 0px 30px 10px 0px;">File system crawler, storage search engine and storage analytics software powered by Elasticsearch to help visualize and manage your disk space usage.<br />
 {::nomarkdown}<iframe style="display: inline-block;" src="https://ghbtns.com/github-btn.html?user=shirosaidev&repo=diskover&type=star&count=true&size=large" frameborder="0" scrolling="0" width="160px" height="30px"></iframe> <iframe style="display: inline-block;" src="https://ghbtns.com/github-btn.html?user=shirosaidev&repo=diskover&type=fork&count=true&size=large" frameborder="0" scrolling="0" width="158px" height="30px"></iframe>{:/nomarkdown}'
