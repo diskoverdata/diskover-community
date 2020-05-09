@@ -70,7 +70,7 @@ Kibana dashboards/saved searches/visualizations and support for Gource<br>
 * `Python progressbar2 module`
 * `Python redis module`
 * `Python rq module`
-* `Elasticsearch 5.6.x` (local or [AWS ES Service](https://aws.amazon.com/elasticsearch-service/), tested on Elasticsearch 5.6.9) **Elasticsearch 6 not supported, ES 7 supported in Enterprise version**
+* `Elasticsearch 5.6.x` (local or [AWS ES Service](https://aws.amazon.com/elasticsearch-service/), tested on Elasticsearch 5.6.16) **ES 7 supported in Enterprise version**
 * `Redis 4.x` (tested on 4.0.9)
 
 **See requirements.txt for specific python module version numbers since newer versions may not work with diskover.**
@@ -78,8 +78,6 @@ Kibana dashboards/saved searches/visualizations and support for Gource<br>
 ### Optional Installs
 
 * [diskover-web](https://github.com/shirosaidev/diskover-web) (diskover's web file manager and analytics app)
-* [storage agent](https://github.com/shirosaidev/diskover-storage-agent) (diskover's storage agent for running on remote storage)
-* [tree walk client](https://github.com/shirosaidev/diskover-treewalk-client/) (diskover's tree walk client for running on remote storage)
 * [saisoku](https://github.com/shirosaidev/saisoku) (data sync/mover between on-prem to cloud, etc)
 * [sharesniffer](https://github.com/shirosaidev/sharesniffer) (for scanning your network for file shares and auto-mounting for crawls)
 * [Redis RQ Dashboard](https://python-rq.org/docs/monitoring/) (for monitoring redis queue)
@@ -93,7 +91,7 @@ Kibana dashboards/saved searches/visualizations and support for Gource<br>
 
 ### Download
 
-<h4>*** To get access to download diskover, please email <a href="mailto:info@diskoverspace.com">info@diskoverspace.com</a> ***</h4>
+<h3>*** To get access to download diskover, please email <a href="mailto:info@diskoverspace.com">info@diskoverspace.com</a> ***</h3>
 
 
 ## Getting Started
