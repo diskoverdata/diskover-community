@@ -15,9 +15,9 @@ Using diskover, users can identify old and unused files and give better insights
 
 diskover is written and maintained by Shirosaidev and runs on Linux, OS X/macOS and Windows 10 (using windows subsystem for linux) using Python 2 or 3.
 
-<h4>*** To get access to download diskover, please email <a href="mailto:info@diskoverspace.com">info@diskoverspace.com</a> ***</h4>
+<h3>*** To get access to download diskover, please email <a href="mailto:info@diskoverspace.com">info@diskoverspace.com</a> ***</h3>
 
-<h4>If you are a business and would like to inquire about diskover enterprise, please visit <a href="https://diskoverspace.com">https://diskoverspace.com</a> to learn more and to contact us.</h4>
+<h3>If you are a business and would like to inquire about diskover enterprise, please visit <a href="https://diskoverspace.com">https://diskoverspace.com</a> to learn more and to contact us.</h3>
 
 ## Become a Patron & support shedding light on data darkness
 
