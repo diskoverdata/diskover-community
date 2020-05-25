@@ -1974,7 +1974,7 @@ def tune_es_for_crawl(defaults=False):
 
 def upload_stats():
     """This is the upload stats function.
-    It uploads num of files, dirs, gb crawled to diskoverspace.com.
+    It uploads num of files, dirs, tb crawled to diskoverspace.com.
     """
     index = cliargs['index']
     path = cliargs['rootdir']
@@ -1993,7 +1993,6 @@ def upload_stats():
     }
     size = es.search(index=index, doc_type='directory', body=body)['hits']['hits'][0]['_source']['filesize']
     size_tb = size/1024/1024/1024/1024
-    print('stats ', dir_count, file_count, size_tb)
 
     data = {'token': token, 'dirs': dir_count, 'files': file_count, 'size': size_tb}
     r = requests.post('https://diskoverspace.com/diskover/uploadstats.php', data=data)
