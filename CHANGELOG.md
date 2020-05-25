@@ -1,5 +1,9 @@
 # Diskover Change Log
 
+# [1.5.1.0] - 2020-05-25
+### added
+- auth token requirement to run diskover, learn more at https://github.com/shirosaidev/diskover/wiki/Auth-token and to sign up your account to receive your auth token at https://diskoverspace.com/diskover/
+
 # [1.5.0.13] - 2020-05-03
 ### added
 - decreased crawl time by up to 25% when not running in verbose/debug
