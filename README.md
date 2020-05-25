@@ -96,6 +96,9 @@ $ cd diskover
 
 ## Getting Started
 
+In order to run diskover, you first need to create an account and get your auth code at https://diskoverspace.com/diskover/
+Once you have created an account and verified, login to receive your auth token. You can learn more about where to set your auth token on the wiki https://github.com/shirosaidev/diskover/wiki/Auth-token.
+
 Check Elasticsearch and Redis are running and are the required versions (see requirements above).
 ```sh
 $ curl -X GET http://localhost:9200/
