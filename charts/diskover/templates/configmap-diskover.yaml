@@ -177,4 +177,4 @@ data:
     ; pagesize = 1000
 kind: ConfigMap
 metadata:
-  name: {{ .Chart.Name }}-config
+  name: {{ template "fullname" . }}-config
