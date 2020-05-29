@@ -154,6 +154,8 @@ data:
     threads = {{ .Values.crawlbot.threads }}
     ; how often in seconds to get new directory list with updated times from ES (default 3600)
     dirlisttime = 3600
+    ; max time in seconds to wait till the bots finish crawling, default 120
+    maxwaittime = {{ .Values.crawlbot.maxwaittime }}
 
     [gource]
     ; should be set to same in diskover-gource.sh

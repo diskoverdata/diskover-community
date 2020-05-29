@@ -37,6 +37,7 @@ socketlistener:
 
 crawlbot:
   threads: 8
+  maxwaittime: 120
 
 crawlapi:
   url: http://crawlapi:8080/api

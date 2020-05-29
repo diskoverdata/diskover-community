@@ -381,6 +381,10 @@ def load_config():
         except ConfigParser.NoOptionError:
             configsettings['dupes_threads'] = 8
         try:
+            configsettings['crawlbot_maxwaittime'] = int(config.get('crawlbot', 'maxwaittime'))
+        except ConfigParser.NoOptionError:
+            configsettings['crawlbot_maxwaittime'] = 120
+        try:
             configsettings['gource_maxfilelag'] = float(config.get('gource', 'maxfilelag'))
         except ConfigParser.NoOptionError:
             configsettings['gource_maxfilelag'] = 5
@@ -1643,13 +1647,13 @@ def treewalk(top, num_sep, level, batchsize, cliargs, logger, reindex_dict):
       jobs.append(job)
       
     # Sleep to wait till worker processes jobs
-    maxwaittime = 120
+    maxwaittime = config['crawlbot_maxwaittime']
     sleeptime = 5
     elapsedtime = 0
     alljobssuccess = True
     totalfilesprocessed = 0
     while elapsedtime <= maxwaittime:
-        logger.info('Waiting for worker(s) to complete jobs...')
+        logger.info('elapsedtime - %d. maxwaittime - %d. Waiting for worker(s) to complete jobs...' % (elapsedtime, maxwaittime))
         time.sleep(sleeptime)
         elapsedtime += sleeptime
         workerFailed = False
@@ -1676,25 +1680,25 @@ def treewalk(top, num_sep, level, batchsize, cliargs, logger, reindex_dict):
 
     logger.info("Worker job successful. Total files processed -> %s" % totalfilesprocessed)
 
-    # set up progress bar with time remaining
-    if bar:
-        bar.finish()
-        bar_max_val = len(q_crawl)
-        bar = progressbar.ProgressBar(max_value=bar_max_val)
-        bar.start()
+    # # set up progress bar with time remaining
+    # if bar:
+    #     bar.finish()
+    #     bar_max_val = len(q_crawl)
+    #     bar = progressbar.ProgressBar(max_value=bar_max_val)
+    #     bar.start()
 
-    # update progress bar until bots are idle and queue is empty
-    while worker_bots_busy([q_crawl]):
-        if bar:
-            q_len = len(q_crawl)
-            try:
-                bar.update(bar_max_val - q_len)
-            except (ZeroDivisionError, ValueError):
-                bar.update(0)
-        time.sleep(1)
+    # # update progress bar until bots are idle and queue is empty
+    # while worker_bots_busy([q_crawl]):
+    #     if bar:
+    #         q_len = len(q_crawl)
+    #         try:
+    #             bar.update(bar_max_val - q_len)
+    #         except (ZeroDivisionError, ValueError):
+    #             bar.update(0)
+    #     time.sleep(1)
 
-    if bar:
-        bar.finish()
+    # if bar:
+    #     bar.finish()
 
     elapsed = time.time() - starttime
     dirspersec = round(totaldirs / elapsed, 3)
