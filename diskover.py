@@ -1530,11 +1530,10 @@ def scandirwalk(path, cliargs, logger):
     while True:
         entry = q_paths_results.get()
         root, dirs, nondirs = entry
-        if cliargs['debug'] or cliargs['verbose']:
-            if cliargs['crawlapi']:
-                logger.info("apiwalk: %s (dircount: %s, filecount: %s)" % (root[0], str(len(dirs)), str(len(nondirs))))
-            else:
-                logger.info("scandirwalk: %s (dircount: %s, filecount: %s)" % (root, str(len(dirs)), str(len(nondirs))))
+        if cliargs['crawlapi']:
+            logger.info("apiwalk: %s (dircount: %s, filecount: %s)" % (root[0], str(len(dirs)), str(len(nondirs))))
+        else:
+            logger.info("scandirwalk: %s (dircount: %s, filecount: %s)" % (root, str(len(dirs)), str(len(nondirs))))
         # yield before recursion
         yield root, dirs, nondirs
         # recurse into subdirectories
@@ -1563,6 +1562,7 @@ def treewalk(top, num_sep, level, batchsize, cliargs, logger, reindex_dict):
     dircount = 0
     totaldirs = 0
     totalfiles = 0
+    jobs = []
     starttime = time.time()
 
     # set up threads for tree walk
@@ -1604,8 +1604,9 @@ def treewalk(top, num_sep, level, batchsize, cliargs, logger, reindex_dict):
             batch.append((root, dirs, files))
         batch_len = len(batch)
         if batch_len >= batchsize or (cliargs['adaptivebatch'] and totalfiles >= config['adaptivebatch_maxfiles']):
-            q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,),
+            job = q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,),
                                     result_ttl=config['redis_ttl'])
+            jobs.append(job)
             if cliargs['debug'] or cliargs['verbose']:
                 logger.info("enqueued batchsize: %s (batchsize: %s)" % (batch_len, batchsize))
             del batch[:]
@@ -1638,7 +1639,42 @@ def treewalk(top, num_sep, level, batchsize, cliargs, logger, reindex_dict):
 
     # add any remaining in batch to queue
     if len(batch) > 0:
-        q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,), result_ttl=config['redis_ttl'])
+      job = q_crawl.enqueue(scrape_tree_meta, args=(batch, cliargs, reindex_dict,), result_ttl=config['redis_ttl'])
+      jobs.append(job)
+      
+    # Sleep to wait till worker processes jobs
+    maxwaittime = 120
+    sleeptime = 5
+    elapsedtime = 0
+    alljobssuccess = True
+    totalfilesprocessed = 0
+    while elapsedtime <= maxwaittime:
+        logger.info('Waiting for worker(s) to complete jobs...')
+        time.sleep(sleeptime)
+        elapsedtime += sleeptime
+        workerFailed = False
+        for j in jobs:
+            if j.result is None:
+                logger.info('Worker(s) not finished')
+                alljobssuccess = False
+                break
+            isSuccessful, filenames = j.result
+            if not isSuccessful:
+                logger.info('Worker(s) failed')
+                alljobssuccess = False
+                workerFailed = True
+                break
+            alljobssuccess = True
+            totalfilesprocessed += len(filenames)
+        if workerFailed == False and alljobssuccess != True:
+            continue
+        else:
+            break
+
+    if not alljobssuccess:
+        raise Exception('Worker job(s) failed to complete or took longer than expected')
+
+    logger.info("Worker job successful. Total files processed -> %s" % totalfilesprocessed)
 
     # set up progress bar with time remaining
     if bar:

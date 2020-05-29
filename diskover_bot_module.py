@@ -714,89 +714,97 @@ def file_meta_collector(files, root_path, statsembeded, cliargs, reindex_dict):
 
 
 def scrape_tree_meta(paths, cliargs, reindex_dict):
-    global worker
-    tree_dirs = []
-    tree_files = []
-    totalcrawltime = 0
-    statsembeded = False
-    num_workers = len(SimpleWorker.all(connection=redis_conn))
+    try:
+        global worker
+        tree_dirs = []
+        tree_files = []
+        totalcrawltime = 0
+        statsembeded = False
+        num_workers = len(SimpleWorker.all(connection=redis_conn))
 
-    path_count = 0
-    for path in paths:
-        path_count += 1
-        starttime = time.time()
-        if not cliargs['dirsonly']:
-            root, dirs, files = path
-        else:
-            root, dirs = path
-            files = []
-        if path_count == 1:
-            if type(root) is tuple:
-                statsembeded = True
-        # check if stats embeded in data from diskover tree walk client or crawlapi
-        if statsembeded:
-            root_path = root[0]
-            dmeta = get_dir_meta(worker, root, cliargs, reindex_dict, statsembeded=True)
-        else:
-            root_path = root
-            dmeta = get_dir_meta(worker, root_path, cliargs, reindex_dict, statsembeded=False)
-
-        if dmeta:
-            # no files in batch, get them with scandir
-            if cliargs['dirsonly']:
-                for entry in scandir(root):
-                    if entry.is_file(follow_symlinks=False) and not file_excluded(entry.name):
-                        files.append(entry.name)
-            filecount = 0
-            # check if the directory has a ton of files in it and farm out meta collection to other worker bots
-            files_count = len(files)
-            if cliargs['splitfiles'] and files_count >= cliargs['splitfilesnum']:
-                fmetas = []
-                for filelist in split_list(files, int(files_count/num_workers)):
-                    fmetas.append(q_crawl.enqueue(file_meta_collector, 
-                                    args=(filelist, root_path, statsembeded, cliargs, reindex_dict,), 
-                                    result_ttl=config['redis_ttl']))
-                n = 0
-                while n < len(fmetas):
-                    if fmetas[n].result:
-                        for fmeta in fmetas[n].result:
-                            if fmeta:
-                                tree_files.append(fmeta)
-                                filecount += 1
-                        n += 1
-                del fmetas[:]
+        path_count = 0
+        filenames = []
+        for path in paths:
+            path_count += 1
+            starttime = time.time()
+            if not cliargs['dirsonly']:
+                root, dirs, files = path
             else:
-                for file in files:
-                    if statsembeded:
-                        fmeta = get_file_meta(worker, file, cliargs, reindex_dict, statsembeded=True)
-                    else:
-                        fmeta = get_file_meta(worker, os.path.join(root_path, file), cliargs,
-                                            reindex_dict, statsembeded=False)
-                    if fmeta:
-                        tree_files.append(fmeta)
-                        filecount += 1
+                root, dirs = path
+                files = []
+            if path_count == 1:
+                if type(root) is tuple:
+                    statsembeded = True
+            # check if stats embeded in data from diskover tree walk client or crawlapi
+            if statsembeded:
+                root_path = root[0]
+                dmeta = get_dir_meta(worker, root, cliargs, reindex_dict, statsembeded=True)
+            else:
+                root_path = root
+                dmeta = get_dir_meta(worker, root_path, cliargs, reindex_dict, statsembeded=False)
 
-            # update crawl time
-            elapsed = time.time() - starttime
-            dmeta['crawl_time'] = round(elapsed, 6)
-            # check for empty dirs and dirsonly cli arg
-            if cliargs['indexemptydirs']:
-                tree_dirs.append(dmeta)
-            elif not cliargs['indexemptydirs'] and (len(dirs) > 0 or filecount > 0):
-                tree_dirs.append(dmeta)
-            totalcrawltime += elapsed
+            if dmeta:
+                # no files in batch, get them with scandir
+                if cliargs['dirsonly']:
+                    for entry in scandir(root):
+                        if entry.is_file(follow_symlinks=False) and not file_excluded(entry.name):
+                            files.append(entry.name)
+                filecount = 0
+                # check if the directory has a ton of files in it and farm out meta collection to other worker bots
+                files_count = len(files)
+                if cliargs['splitfiles'] and files_count >= cliargs['splitfilesnum']:
+                    fmetas = []
+                    for filelist in split_list(files, int(files_count/num_workers)):
+                        fmetas.append(q_crawl.enqueue(file_meta_collector, 
+                                        args=(filelist, root_path, statsembeded, cliargs, reindex_dict,), 
+                                        result_ttl=config['redis_ttl']))
+                    n = 0
+                    while n < len(fmetas):
+                        if fmetas[n].result:
+                            for fmeta in fmetas[n].result:
+                                if fmeta:
+                                    tree_files.append(fmeta)
+                                    filecount += 1
+                            n += 1
+                    del fmetas[:]
+                else:
+                    for file in files:
+                        filenames.append(file[0])
+                        if statsembeded:
+                            fmeta = get_file_meta(worker, file, cliargs, reindex_dict, statsembeded=True)
+                        else:
+                            fmeta = get_file_meta(worker, os.path.join(root_path, file), cliargs,
+                                                reindex_dict, statsembeded=False)
+                        if fmeta:
+                            tree_files.append(fmeta)
+                            filecount += 1
+                
+                # update crawl time
+                elapsed = time.time() - starttime
+                dmeta['crawl_time'] = round(elapsed, 6)
+                # check for empty dirs and dirsonly cli arg
+                if cliargs['indexemptydirs']:
+                    tree_dirs.append(dmeta)
+                elif not cliargs['indexemptydirs'] and (len(dirs) > 0 or filecount > 0):
+                    tree_dirs.append(dmeta)
+                totalcrawltime += elapsed
 
-        # check if doc count is more than es chunksize and bulk add to es
-        if len(tree_dirs) + len(tree_files) >= config['es_chunksize']:
+            # check if doc count is more than es chunksize and bulk add to es
+            if len(tree_dirs) + len(tree_files) >= config['es_chunksize']:
+                es_bulk_add(worker, tree_dirs, tree_files, cliargs, totalcrawltime)
+                del tree_dirs[:]
+                del tree_files[:]
+                totalcrawltime = 0
+
+        # bulk add to es
+        if len(tree_dirs) > 0 or len(tree_files) > 0:
             es_bulk_add(worker, tree_dirs, tree_files, cliargs, totalcrawltime)
-            del tree_dirs[:]
-            del tree_files[:]
-            totalcrawltime = 0
 
-    # bulk add to es
-    if len(tree_dirs) > 0 or len(tree_files) > 0:
-        es_bulk_add(worker, tree_dirs, tree_files, cliargs, totalcrawltime)
-
+        print('%s | processed %d files' % (datetime.now(), len(filenames)))
+        return True, filenames
+    except Exception as e:
+        print('%s | error | %s' % (datetime.now(), e))
+        return False, []
 
 def file_excluded(filename):
     """Return True if path or ext in excluded_files set,

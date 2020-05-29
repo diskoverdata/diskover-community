@@ -10,7 +10,7 @@ FTP_PATH=
 
 if [ "$RUN_MODE" == "WORKER" ]; then
     echo "Will run in WORKER mode!!!"
-    DISKOVER_CMD="python diskover_worker_bot.py"
+    DISKOVER_CMD="python diskover_worker_bot.py -l WARNING"
 elif [ "$RUN_MODE" == "SERVER" ]; then
     echo "Will run in SERVER mode!!!"
     DISKOVER_CMD="python diskover.py"
