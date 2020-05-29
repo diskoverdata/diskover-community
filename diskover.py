@@ -1680,25 +1680,25 @@ def treewalk(top, num_sep, level, batchsize, cliargs, logger, reindex_dict):
 
     logger.info("Worker job successful. Total files processed -> %s" % totalfilesprocessed)
 
-    # # set up progress bar with time remaining
-    # if bar:
-    #     bar.finish()
-    #     bar_max_val = len(q_crawl)
-    #     bar = progressbar.ProgressBar(max_value=bar_max_val)
-    #     bar.start()
+    # set up progress bar with time remaining
+    if bar:
+        bar.finish()
+        bar_max_val = len(q_crawl)
+        bar = progressbar.ProgressBar(max_value=bar_max_val)
+        bar.start()
 
-    # # update progress bar until bots are idle and queue is empty
-    # while worker_bots_busy([q_crawl]):
-    #     if bar:
-    #         q_len = len(q_crawl)
-    #         try:
-    #             bar.update(bar_max_val - q_len)
-    #         except (ZeroDivisionError, ValueError):
-    #             bar.update(0)
-    #     time.sleep(1)
+    # update progress bar until bots are idle and queue is empty
+    while worker_bots_busy([q_crawl]):
+        if bar:
+            q_len = len(q_crawl)
+            try:
+                bar.update(bar_max_val - q_len)
+            except (ZeroDivisionError, ValueError):
+                bar.update(0)
+        time.sleep(1)
 
-    # if bar:
-    #     bar.finish()
+    if bar:
+        bar.finish()
 
     elapsed = time.time() - starttime
     dirspersec = round(totaldirs / elapsed, 3)
