@@ -64,6 +64,6 @@ spec:
           items:
           - key: diskover.cfg
             path: diskover.cfg
-          name: {{ .Chart.Name }}-config
+          name: {{ template "fullname" . }}-config
         name: diskover-config
 
