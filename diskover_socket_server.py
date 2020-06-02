@@ -470,15 +470,22 @@ def run_command(threadnum, command_dict, clientsock, cliargs, logger):
         output, error = process.communicate()
 
         # send exit msg to client
-        exitcode = str(process.returncode).encode('utf-8')
-        logger.info('Command output:')
-        logger.info(output.decode('utf-8'))
-        logger.info('Command error:')
-        logger.info(error.decode('utf-8'))
+        exitcode = process.returncode
+        
         elapsedtime = str(get_time(time.time() - starttime)).encode('utf-8')
-        logger.info("[thread-%s]: Finished command with exit code %s", threadnum, exitcode.decode('utf-8'))
-        message = b'{"msg": "taskfinish", "taskid": "%s", "exitcode": %s, "elapsedtime": "%s"}\n' \
-                  % (taskid, exitcode, elapsedtime)
+        logger.info("[thread-%s]: Finished command with exit code %d", threadnum, exitcode)
+        
+        commandOutput = output.decode('utf-8') + error.decode('utf-8')
+        if (exitcode != 0):
+            logger.error('Command error:')
+        else:    
+            logger.info('Command output:')
+        print('***********************************************************************')
+        logger.info(commandOutput)
+        print('***********************************************************************')
+
+        message = b'{"msg": "taskfinish", "taskid": "%s", "exitcode": %s, "elapsedtime": "%s", "commandOutput": %s}\n' \
+                  % (taskid, str(exitcode).encode('utf-8'), elapsedtime, commandOutput.encode('utf-8'))
         clientsock.send(message)
 
     except ValueError:
