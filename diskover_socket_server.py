@@ -484,9 +484,15 @@ def run_command(threadnum, command_dict, clientsock, cliargs, logger):
         logger.info(commandOutput)
         print('***********************************************************************')
 
-        message = b'{"msg": "taskfinish", "taskid": "%s", "exitcode": %s, "elapsedtime": "%s", "commandOutput": %s}\n' \
-                  % (taskid, str(exitcode).encode('utf-8'), elapsedtime, commandOutput.encode('utf-8'))
-        clientsock.send(message)
+        messageDict = {
+            "msg": "taskfinish",
+            "taskid": str(taskid),
+            "exitcode": str(exitcode),
+            "elapsedtime": str(elapsedtime),
+            "commandOutput": str(commandOutput)
+        }
+        message = json.dumps(messageDict)
+        clientsock.send(message.encode('utf-8'))
 
     except ValueError:
         logger.warning("Value error")
