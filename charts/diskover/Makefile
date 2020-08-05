@@ -28,6 +28,7 @@ clean:
 	rm -rf ${NAME}*.tgz
 
 release: clean
+	sed -i -e "s/fsa-streamotion\/diskover/diskover/" values.yaml
 	helm dependency build
 	helm lint
 	helm init --client-only
