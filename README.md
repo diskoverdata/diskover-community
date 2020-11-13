@@ -1,7 +1,6 @@
 # diskover - File system crawler, disk space usage, file search engine and storage analytics powered by Elasticsearch
 
 [![License](https://img.shields.io/github/license/shirosaidev/diskover.svg?label=License&maxAge=86400)](./LICENSE)
-[![Release](https://img.shields.io/github/release/shirosaidev/diskover.svg?label=Release&maxAge=60)](https://github.com/shirosaidev/diskover/releases/latest)
 [![Sponsor Patreon](https://img.shields.io/badge/Sponsor%20%24-Patreon-brightgreen.svg)](https://www.patreon.com/shirosaidev)
 [![Donate PayPal](https://img.shields.io/badge/Donate%20%24-PayPal-brightgreen.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=CLF223XAS4W72)
 
@@ -15,7 +14,7 @@ Using diskover, users can identify old and unused files and give better insights
 
 diskover is written and maintained by Shirosaidev and runs on Linux, OS X/macOS and Windows 10 (using windows subsystem for linux) using Python 2 or 3.
 
-**diskover requires an auth token to run, learn more on the [wiki](https://github.com/shirosaidev/diskover/wiki/Auth-token). Sign up to receive your auth token at https://diskoverspace.com/diskover/.**
+**diskover requires an auth token to run, learn more on the [wiki](https://github.com/shirosaidev/diskover/wiki/Auth-token). Sign up to download diskover and receive your auth token at https://diskoverspace.com/diskover/.**
 
 <br>
 <blockquote><h3><q>This is the first tool I've found that can index 7m files/2m directories in under 20 min</q></h3> -- linuxserver.io community member</blockquote>
@@ -53,20 +52,20 @@ If you are a business and would like to inquire about diskover enterprise, pleas
 
 ## Installation Guide
 
-**For a detailed install guide for linux, please see the [Install Guide wiki page](https://github.com/shirosaidev/diskover/wiki/Installation-Guide)**
+**For a detailed install guide for linux and docker, please see the [Install Guide wiki page](https://github.com/shirosaidev/diskover/wiki/Installation-Guide)**
 
 ### Requirements
 
-* `Linux or OS X/macOS` (tested on OS X 10.11.6, Ubuntu 16.04/18.04), `Windows 10` (using Windows Subsystem for Linux)
-* `Python 2.7. or Python 3.5./3.6.` (tested on Python 2.7.15, 3.6.5) **Python 3 recommended**
+* `Linux or OS X/macOS`, `Windows 10` (using Windows Subsystem for Linux)
+* `Python 2.7. or Python 3.5./3.6.` **Python 3 recommended**
 * `Python elasticsearch client module`
 * `Python requests module`
 * `Python scandir module`
 * `Python progressbar2 module`
 * `Python redis module`
 * `Python rq module`
-* `Elasticsearch 5.6.x` (local or [AWS ES Service](https://aws.amazon.com/elasticsearch-service/), tested on Elasticsearch 5.6.9) **Elasticsearch 6 not supported, ES 7 supported in Enterprise version**
-* `Redis 4.x` (tested on 4.0.9)
+* `Elasticsearch 5.6.x` (local or [AWS ES Service](https://aws.amazon.com/elasticsearch-service/)) **Elasticsearch 6 not supported, ES 7 supported in Enterprise version**
+* `Redis 4.x`
 
 **See requirements.txt for specific python module version numbers since newer versions may not work with diskover.**
 
@@ -88,12 +87,7 @@ If you are a business and would like to inquire about diskover enterprise, pleas
 
 ### Download
 
-```sh
-$ git clone https://github.com/shirosaidev/diskover.git
-$ cd diskover
-```
-
-[Download latest version](https://github.com/shirosaidev/diskover/releases/latest)
+To download diskover, please sign up for an account at https://diskoverspace.com/diskover/.
 
 
 ## Getting Started
@@ -222,18 +216,6 @@ $ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl --dircalcson
 
 Becoming a Patron gets you access to the OVA files running the latest version of diskover/diskover-web. Fastest way to get up and running diskover. Check out the [Patreon](https://www.patreon.com/shirosaidev) page to learn more about how to get access to the OVA downloads.
 
-## Docker
-
-You can set up diskover and diskover-web in docker, there are a few choices for easily running diskover in docker using pre-built images/compose files.
-
-[linuxserver.io](https://linuxserver.io) Docker hub image:
-https://hub.docker.com/r/linuxserver/diskover/
-https://blog.linuxserver.io/2019/06/28/getting-started-with-diskover-in-docker/
-
-[diskover-web](https://github.com/shirosaidev/diskover-web) has Dockerfile with instructions for docker-compose.
-
-Detailed docker install guide for diskover
-https://engineerworkshop.com/2020/02/04/how-to-monitor-disk-usage-and-growth-with-diskover/
 
 ## User Guide
 
@@ -242,8 +224,6 @@ https://engineerworkshop.com/2020/02/04/how-to-monitor-disk-usage-and-growth-wit
 ## Discussions/Support
 
 For discussions or support for diskover join the [diskover Slack workspace](https://join.slack.com/t/diskoverworkspace/shared_invite/enQtNzQ0NjE1Njk5MjIyLWI4NWQ0MjFhYzQyMTRhMzk4NTQ3YjBlYjJiMDk1YWUzMTZmZjI1MTdhYTA3NzAzNTU0MDc5NDA2ZDI4OWRiMjM), my username is @shirosai.
-
-You can also post a comment/question on [Google Group](https://groups.google.com/forum/?hl=en#!forum/diskover).
 
 ## Bugs
 
