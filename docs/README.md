@@ -88,7 +88,7 @@ mkdir ~/.config/diskover
 cp config.yaml ~/.diskover/config.yaml
 vi ~/.diskover/config.yaml (edit for your env, set Elasticsearch hostname/ip)
 ```
-12. Mount your network storage (set up client connection to storage)
+10. Mount your network storage (set up client connection to storage)
 ```
 *** for NFS
 yum -y install nfs-utils
@@ -100,7 +100,7 @@ mkdir /mnt/smbstor1
 mount -t cifs -o username=user_name //server_name/share_name /mnt/smbstor1
 ```
 
-13. Run your first crawl
+11. Run your first crawl
 ```
 cd /opt/diskover
 **start crawling
