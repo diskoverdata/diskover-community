@@ -48,6 +48,9 @@ intro:
 {% include feature_row %}
 
 <br>
+<h2>News/ Updates</h2>
+<p>diskover v2 will be released soon (Q1 2021), please sign up and register at https://diskoverspace.com/diskover/ for updates and join diskover Slack. <strong>v1 will be discontinued soon and no longer supported.</strong></p>
+<br>
 <blockquote><h3><q>This is the first tool I've found that can index 7m files/2m directories in under 20 min</q></h3> -- linuxserver.io community member</blockquote>
 <br>
 <p><strong>diskover</strong> is an open source file system crawler and disk space usage software that uses <strong>Elasticsearch</strong> to index and manage data across heterogeneous storage systems. Using diskover, you are able to more effectively search and organize files and system administrators are able to manage storage infrastructure, efficiently provision storage, monitor and report on storage use, and effectively make decisions about new infrastructure purchases.</p>
