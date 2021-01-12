@@ -16,7 +16,8 @@ diskover is written and maintained by Shirosaidev and runs on Linux, OS X/macOS 
 
 **diskover requires an auth token to run, learn more on the [wiki](https://github.com/shirosaidev/diskover/wiki/Auth-token). Sign up to download diskover and receive your auth token at https://diskoverspace.com/diskover/.**
 
-**diskover v2 will be released soon (Q1 2021), please sign up and register at https://diskoverspace.com/diskover/ for updates and join diskover Slack. v1 will be discontinued soon and no longer supported.**
+# News/ Updates
+diskover v2 will be released soon (Q1 2021), please sign up and register at https://diskoverspace.com/diskover/ for updates and join diskover Slack. **v1 will be discontinued soon and no longer supported.**
 
 <br>
 <blockquote><h3><q>This is the first tool I've found that can index 7m files/2m directories in under 20 min</q></h3> -- linuxserver.io community member</blockquote>
