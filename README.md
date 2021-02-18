@@ -1,4 +1,4 @@
-# Diskover - File system crawler, file search engine and data analytics powered by Elasticsearch
+# Diskover - File system crawler, file search engine and data management and analytics powered by Elasticsearch
 
 [![License](https://img.shields.io/github/license/shirosaidev/diskover.svg?label=License&maxAge=86400)](./LICENSE)
 
