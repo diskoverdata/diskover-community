@@ -13,17 +13,15 @@ Using diskover, users can identify old and unused files and give better insights
 Diskover runs on Linux, macOS and Windows 10 using Python 3.
 
 ## News/ Updates
-diskover v2 will be released soon (Q1 2021), please sign up and register at https://diskoverdata.com/diskover/ for updates and join [diskover Slack workspace](https://join.slack.com/t/diskoverworkspace/shared_invite/enQtNzQ0NjE1Njk5MjIyLWI4NWQ0MjFhYzQyMTRhMzk4NTQ3YjBlYjJiMDk1YWUzMTZmZjI1MTdhYTA3NzAzNTU0MDc5NDA2ZDI4OWRiMjM). **v1 is end of life and is no longer supported.**
-
-To receive updates when Diskover v2 community edition will be available to download, please sign up for an account at https://diskoverdata.com/diskover/.
+Diskover v2 will be released soon (Q1 2021), please sign up and register at https://diskoverdata.com/diskover/ for updates and join [diskover Slack workspace](https://join.slack.com/t/diskoverworkspace/shared_invite/enQtNzQ0NjE1Njk5MjIyLWI4NWQ0MjFhYzQyMTRhMzk4NTQ3YjBlYjJiMDk1YWUzMTZmZjI1MTdhYTA3NzAzNTU0MDc5NDA2ZDI4OWRiMjM). **v1 is end of life and is no longer supported.**
 
 ## User Guide
 
-[Read the wiki](https://github.com/shirosaidev/diskover/wiki) for more documentation on how to use diskover.
+[Read the wiki](https://github.com/shirosaidev/diskover/wiki) for more documentation on how to install and use diskover.
 
 ## Discussions/Support
 
-For discussions or support for diskover join the [diskover Slack workspace](https://join.slack.com/t/diskoverworkspace/shared_invite/enQtNzQ0NjE1Njk5MjIyLWI4NWQ0MjFhYzQyMTRhMzk4NTQ3YjBlYjJiMDk1YWUzMTZmZjI1MTdhYTA3NzAzNTU0MDc5NDA2ZDI4OWRiMjM).
+For discussions or support for diskover join the [Diskover Slack workspace](https://join.slack.com/t/diskoverworkspace/shared_invite/enQtNzQ0NjE1Njk5MjIyLWI4NWQ0MjFhYzQyMTRhMzk4NTQ3YjBlYjJiMDk1YWUzMTZmZjI1MTdhYTA3NzAzNTU0MDc5NDA2ZDI4OWRiMjM).
 
 ## Bugs
 
