@@ -39,7 +39,7 @@ github:
   - excerpt: '{::nomarkdown}<iframe style="display: inline-block;" src="https://ghbtns.com/github-btn.html?user=shirosaidev&repo=diskover&type=star&count=true&size=large" frameborder="0" scrolling="0" width="160px" height="30px"></iframe> <iframe style="display: inline-block;" src="https://ghbtns.com/github-btn.html?user=shirosaidev&repo=diskover&type=fork&count=true&size=large" frameborder="0" scrolling="0" width="158px" height="30px"></iframe>
 <script async defer src="https://buttons.github.io/buttons.js"></script>{:/nomarkdown}'
 intro:
-  - excerpt: '{::nomarkdown}<strong>For businesses interested in diskover enterprise version, please visit <a href="https://diskoverdata.com">https://diskoverdata.com</a> to learn more.</strong><br><br>Join the conversation, get support on <a href="https://join.slack.com/t/diskoverworkspace/shared_invite/enQtNzQ0NjE1Njk5MjIyLWI4NWQ0MjFhYzQyMTRhMzk4NTQ3YjBlYjJiMDk1YWUzMTZmZjI1MTdhYTA3NzAzNTU0MDc5NDA2ZDI4OWRiMjM">diskover Slack</a>.<br><br><a href="https://diskoverspace.com/diskover/">Create an account</a> to download and run diskover community edition.{:/nomarkdown}'
+  - excerpt: '{::nomarkdown}<strong>For businesses interested in deploying and running diskover, please visit <a href="https://diskoverdata.com">https://diskoverdata.com</a> to learn more.</strong><br><br>Join the conversation, get support on <a href="https://join.slack.com/t/diskoverworkspace/shared_invite/enQtNzQ0NjE1Njk5MjIyLWI4NWQ0MjFhYzQyMTRhMzk4NTQ3YjBlYjJiMDk1YWUzMTZmZjI1MTdhYTA3NzAzNTU0MDc5NDA2ZDI4OWRiMjM">diskover Slack</a>.<br><br><a href="https://diskoverspace.com/diskover/">Create an account</a> to download and run diskover community edition.{:/nomarkdown}'
 ---
 
 {% include feature_row id="intro" type="center" %}
