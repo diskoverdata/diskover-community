@@ -6,9 +6,9 @@ header:
   overlay_filter: "0.3"
   overlay_image: https://github.com/shirosaidev/diskover/blob/master/docs/_pages/heatmap.png?raw=true
   cta_label: "<i class='fa fa-download' aria-hidden='true'></i> Download"
-  cta_url: "https://diskoverspace.com/diskover/"
+  cta_url: "https://diskoverdata.com/diskover/"
   caption:
-excerpt: '<img src="https://github.com/shirosaidev/diskover/raw/master/docs/diskover.png?raw=true" style="width: 183px; float: left; margin: 0px 30px 10px 0px;">File system crawler, storage search engine and storage analytics software powered by Elasticsearch to help visualize and manage your disk space usage.<br /> <br /><br />
+excerpt: '<img src="https://github.com/shirosaidev/diskover/raw/master/docs/diskover.png?raw=true" style="width: 183px; float: left; margin: 0px 30px 10px 0px;">File system crawler, file search engine and data management and analytics software powered by Elasticsearch to help visualize and manage your data.<br /> <br /><br />
 {::nomarkdown}<iframe style="display: inline-block;" src="https://ghbtns.com/github-btn.html?user=shirosaidev&repo=diskover&type=star&count=true&size=large" frameborder="0" scrolling="0" width="160px" height="30px"></iframe> <iframe style="display: inline-block;" src="https://ghbtns.com/github-btn.html?user=shirosaidev&repo=diskover&type=fork&count=true&size=large" frameborder="0" scrolling="0" width="158px" height="30px"></iframe>{:/nomarkdown}'
 feature_row:
   - url: https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-filetree-screenshot.png?raw=true
@@ -22,7 +22,7 @@ feature_row:
   - url: https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-dashboard-screenshot.png?raw=true
     image_path: https://github.com/shirosaidev/diskover-web/blob/master/docs/diskover-web-dashboard-screenshot.png?raw=true
     alt: "analyze metadata"
-    title: "Visualize Your Storage"
+    title: "Visualize Your Data"
     excerpt: "Identify old and unused files and give better insights into data change, duplicate files and wasted disk space."
     url: "https://github.com/shirosaidev/diskover"
     btn_class: "btn--primary"
@@ -40,7 +40,7 @@ github:
 <script async defer src="https://buttons.github.io/buttons.js"></script>{:/nomarkdown}'
 intro:
   - excerpt: '{::nomarkdown}Support the development&nbsp;<a class="btn btn--primary" href="https://www.patreon.com/shirosaidev" target="_blank" role="button"><i class="fa fa-heart" aria-hidden="true"></i> Sponsor Patreon</a>&nbsp;<a class="btn btn--primary" href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=CLF223XAS4W72" target="_blank" role="button"><i class="fa fa-credit-card" aria-hidden="true"></i> Donate PayPal</a>{:/nomarkdown}'
-  - excerpt: '{::nomarkdown}<strong>For businesses interested in diskover enterprise version, please visit <a href="https://diskoverspace.com">https://diskoverspace.com</a> to learn more.</strong><br><br>Join the conversation, get support on <a href="https://join.slack.com/t/diskoverworkspace/shared_invite/enQtNzQ0NjE1Njk5MjIyLWI4NWQ0MjFhYzQyMTRhMzk4NTQ3YjBlYjJiMDk1YWUzMTZmZjI1MTdhYTA3NzAzNTU0MDc5NDA2ZDI4OWRiMjM">diskover Slack</a>.<br><br><a href="https://diskoverspace.com/diskover/">Create an account</a> to download and get your auth token to run diskover.{:/nomarkdown}'
+  - excerpt: '{::nomarkdown}<strong>For businesses interested in diskover enterprise version, please visit <a href="https://diskoverdata.com">https://diskoverdata.com</a> to learn more.</strong><br><br>Join the conversation, get support on <a href="https://join.slack.com/t/diskoverworkspace/shared_invite/enQtNzQ0NjE1Njk5MjIyLWI4NWQ0MjFhYzQyMTRhMzk4NTQ3YjBlYjJiMDk1YWUzMTZmZjI1MTdhYTA3NzAzNTU0MDc5NDA2ZDI4OWRiMjM">diskover Slack</a>.<br><br><a href="https://diskoverspace.com/diskover/">Create an account</a> to download and run diskover community edition.{:/nomarkdown}'
 ---
 
 {% include feature_row id="intro" type="center" %}
@@ -48,7 +48,7 @@ intro:
 {% include feature_row %}
 
 <h2>News/ Updates</h2>
-<p>diskover v2 will be released soon (Q1 2021), please sign up and register at <a href="https://diskoverspace.com/diskover/">https://diskoverspace.com/diskover/</a> for updates and join diskover Slack. <strong>v1 will be discontinued soon and no longer supported.</strong></p>
+<p>diskover v2 will be released soon (Q1 2021), please sign up and register at <a href="https://diskoverspace.com/diskover/">https://diskoverspace.com/diskover/</a> for updates and join diskover Slack. <strong>v1 is end of life and is no longer supported.</strong></p>
 <blockquote><h3><q>This is the first tool I've found that can index 7m files/2m directories in under 20 min</q></h3> -- linuxserver.io community member</blockquote>
 <p><strong>diskover</strong> is an open source file system crawler and disk space usage software that uses <strong>Elasticsearch</strong> to index and manage data across heterogeneous storage systems. Using diskover, you are able to more effectively search and organize files and system administrators are able to manage storage infrastructure, efficiently provision storage, monitor and report on storage use, and effectively make decisions about new infrastructure purchases.</p>
 <p>As the amount of file data generated by businesses continues to expand, the stress on expensive storage infrastructure, users and system administrators, and IT budgets continues to grow.</p>
