@@ -48,7 +48,7 @@ If you are a fan of the project or you are using diskover and it's helping you s
 
 ## Enterprise vs community versions
 
-If you are a business and would like to inquire about diskover enterprise, please visit https://diskoverspace.com to learn more and to contact us.
+If you are a business and would like to inquire about diskover enterprise, please visit https://diskoverdata.com to learn more and to contact us.
 
 ## Installation Guide
 
@@ -82,7 +82,7 @@ To download diskover, please sign up for an account at https://diskoverspace.com
 
 ## Getting Started (v1)
 
-In order to run diskover, you first need to create an account and get your auth code at https://diskoverspace.com/diskover/
+In order to run diskover, you first need to create an account and get your auth code at https://diskoverdata.com/diskover/
 Once you have created an account and verified, login to receive your auth token. You can learn more about where to [set your auth token](https://github.com/shirosaidev/diskover/wiki/Auth-token) on the wiki.
 
 Check Elasticsearch and Redis are running and are the required versions (see requirements above).
@@ -208,7 +208,7 @@ $ python diskover.py -i diskover-indexname -a -d /rootpath/to/crawl --dircalcson
 
 ## Discussions/Support
 
-For discussions or support for diskover join the [diskover Slack workspace](https://join.slack.com/t/diskoverworkspace/shared_invite/enQtNzQ0NjE1Njk5MjIyLWI4NWQ0MjFhYzQyMTRhMzk4NTQ3YjBlYjJiMDk1YWUzMTZmZjI1MTdhYTA3NzAzNTU0MDc5NDA2ZDI4OWRiMjM), my username is @shirosai.
+For discussions or support for diskover join the [diskover Slack workspace](https://join.slack.com/t/diskoverworkspace/shared_invite/enQtNzQ0NjE1Njk5MjIyLWI4NWQ0MjFhYzQyMTRhMzk4NTQ3YjBlYjJiMDk1YWUzMTZmZjI1MTdhYTA3NzAzNTU0MDc5NDA2ZDI4OWRiMjM).
 
 ## Bugs
 
