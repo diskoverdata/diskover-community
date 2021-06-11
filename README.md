@@ -13,7 +13,9 @@ Using diskover, users can identify old and unused files and give better insights
 diskover runs on Linux, macOS and Windows 10 using Python 3.
 
 ## News/ Updates
-diskover v2 is targeting to be released late summer 2021, please sign up and register at https://diskoverdata.com for updates and join [diskover Slack workspace](https://join.slack.com/t/diskoverworkspace/shared_invite/enQtNzQ0NjE1Njk5MjIyLWI4NWQ0MjFhYzQyMTRhMzk4NTQ3YjBlYjJiMDk1YWUzMTZmZjI1MTdhYTA3NzAzNTU0MDc5NDA2ZDI4OWRiMjM). **v1 is end of life and is no longer supported.**
+- diskover v2 is targeting to be released late summer 2021, please visit this GitHub page or https://diskoverdata.com for updates and join [diskover Slack workspace](https://join.slack.com/t/diskoverworkspace/shared_invite/enQtNzQ0NjE1Njk5MjIyLWI4NWQ0MjFhYzQyMTRhMzk4NTQ3YjBlYjJiMDk1YWUzMTZmZjI1MTdhYTA3NzAzNTU0MDc5NDA2ZDI4OWRiMjM).
+- v1 is end of life and is no longer supported 
+- diskover v2 community will be returning to GitHub and will be fully open-source.
 
 ## User Guide
 
