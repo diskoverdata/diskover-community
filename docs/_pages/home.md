@@ -5,8 +5,8 @@ header:
   overlay_color: "#000"
   overlay_filter: "0.3"
   overlay_image: https://github.com/shirosaidev/diskover/blob/master/docs/_pages/heatmap.png?raw=true
-  cta_label: "<i class='fa fa-download' aria-hidden='true'></i> Download"
-  cta_url: "https://diskoverdata.com/diskover/"
+  cta_label: "<i class='fa fa-download' aria-hidden='true'></i> Visit GitHub"
+  cta_url: "https://github.com/shirosaidev/diskover"
   caption:
 excerpt: '<img src="https://github.com/shirosaidev/diskover/raw/master/docs/diskover.png?raw=true" style="width: 183px; float: left; margin: 0px 30px 10px 0px;">File system crawler, file search engine and data management and analytics software powered by Elasticsearch to help visualize and manage your data.<br /> <br /><br />
 {::nomarkdown}<iframe style="display: inline-block;" src="https://ghbtns.com/github-btn.html?user=shirosaidev&repo=diskover&type=star&count=true&size=large" frameborder="0" scrolling="0" width="160px" height="30px"></iframe> <iframe style="display: inline-block;" src="https://ghbtns.com/github-btn.html?user=shirosaidev&repo=diskover&type=fork&count=true&size=large" frameborder="0" scrolling="0" width="158px" height="30px"></iframe>{:/nomarkdown}'
@@ -39,7 +39,7 @@ github:
   - excerpt: '{::nomarkdown}<iframe style="display: inline-block;" src="https://ghbtns.com/github-btn.html?user=shirosaidev&repo=diskover&type=star&count=true&size=large" frameborder="0" scrolling="0" width="160px" height="30px"></iframe> <iframe style="display: inline-block;" src="https://ghbtns.com/github-btn.html?user=shirosaidev&repo=diskover&type=fork&count=true&size=large" frameborder="0" scrolling="0" width="158px" height="30px"></iframe>
 <script async defer src="https://buttons.github.io/buttons.js"></script>{:/nomarkdown}'
 intro:
-  - excerpt: '{::nomarkdown}<strong>For businesses interested in deploying and running diskover, please visit <a href="https://diskoverdata.com">https://diskoverdata.com</a> to learn more.</strong><br><br>Join the conversation, get support on <a href="https://join.slack.com/t/diskoverworkspace/shared_invite/enQtNzQ0NjE1Njk5MjIyLWI4NWQ0MjFhYzQyMTRhMzk4NTQ3YjBlYjJiMDk1YWUzMTZmZjI1MTdhYTA3NzAzNTU0MDc5NDA2ZDI4OWRiMjM">diskover Slack</a>.{:/nomarkdown}'
+  - excerpt: '{::nomarkdown}<strong>For businesses interested in diskover, please visit <a href="https://diskoverdata.com">https://diskoverdata.com</a> to learn more.</strong><br><br>Join the conversation, get support on <a href="https://join.slack.com/t/diskoverworkspace/shared_invite/enQtNzQ0NjE1Njk5MjIyLWI4NWQ0MjFhYzQyMTRhMzk4NTQ3YjBlYjJiMDk1YWUzMTZmZjI1MTdhYTA3NzAzNTU0MDc5NDA2ZDI4OWRiMjM">diskover Slack</a>.{:/nomarkdown}'
 ---
 
 {% include feature_row id="intro" type="center" %}
