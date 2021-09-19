@@ -2,7 +2,7 @@
 
 [![License](https://img.shields.io/github/license/shirosaidev/diskover.svg?label=License&maxAge=86400)](./LICENSE)
 
-<img align="left" width="249" height="189" src="docs/diskover.png?raw=true" hspace="5" vspace="5" alt="diskover">
+<img align="left" width="249" height="189" src="images/diskover.png?raw=true" hspace="5" vspace="5" alt="diskover">
 
 diskover is an open source file system indexer that uses Elasticsearch to index and manage data across heterogeneous storage systems. Using diskover, you are able to more effectively search and organize files and system administrators are able to manage storage infrastructure, efficiently provision storage, monitor and report on storage use, and effectively make decisions about new infrastructure purchases.
 
