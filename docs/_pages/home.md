@@ -48,7 +48,7 @@ intro:
 
 <h2>News/ Updates</h2>
 <ul>
-  <li>diskover v2 is currently in beta and targeting to be released late summer 2021. Please visit <a href="https://github.com/shirosaidev/diskover">diskover GitHub</a> or <a href="https://diskoverdata.com">Diskover Data</a> for updates and join <a href="https://join.slack.com/t/diskoverworkspace/shared_invite/enQtNzQ0NjE1Njk5MjIyLWI4NWQ0MjFhYzQyMTRhMzk4NTQ3YjBlYjJiMDk1YWUzMTZmZjI1MTdhYTA3NzAzNTU0MDc5NDA2ZDI4OWRiMjM">diskover Slack</a>.</li>
+  <li>diskover v2 is currently in beta and targeting to be released fall 2021. Please visit <a href="https://github.com/shirosaidev/diskover">diskover GitHub</a> or <a href="https://diskoverdata.com">Diskover Data</a> for updates and join <a href="https://join.slack.com/t/diskoverworkspace/shared_invite/enQtNzQ0NjE1Njk5MjIyLWI4NWQ0MjFhYzQyMTRhMzk4NTQ3YjBlYjJiMDk1YWUzMTZmZjI1MTdhYTA3NzAzNTU0MDc5NDA2ZDI4OWRiMjM">diskover Slack</a>.</li>
   <li>diskover v2 community will be available on GitHub and will be fully open-source.</li>
   <li>v1 is now end of life and is no longer supported.</li>
 </ul>
