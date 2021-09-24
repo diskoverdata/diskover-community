@@ -1,6 +1,6 @@
 # Diskover Community Edition - Open source file indexer, file search engine and data management and analytics powered by Elasticsearch
 
-[![License](https://img.shields.io/github/license/shirosaidev/diskover.svg?label=License&maxAge=86400)](./LICENSE)
+[![License](https://img.shields.io/github/license/diskoverdata/diskover-community.svg?label=License&maxAge=86400)](./LICENSE)
 
 <img align="left" width="249" height="189" src="images/diskover.png?raw=true" hspace="5" vspace="5" alt="diskover">
 
@@ -14,7 +14,7 @@ diskover runs on Linux, macOS and Windows 10 using Python 3.
 
 ## News/ Updates
 - diskover v2 is currently in beta and is targeting for a fall 2021 release, please visit this GitHub page or https://diskoverdata.com for updates and join [diskover Slack workspace](https://join.slack.com/t/diskoverworkspace/shared_invite/enQtNzQ0NjE1Njk5MjIyLWI4NWQ0MjFhYzQyMTRhMzk4NTQ3YjBlYjJiMDk1YWUzMTZmZjI1MTdhYTA3NzAzNTU0MDc5NDA2ZDI4OWRiMjM).
-- diskover v2 community will be returning to GitHub and will be fully open-source.
+- diskover v2 community edition will be returning to GitHub and will be fully open-source.
 - v1 is now end of life and is no longer supported
 
 ## User Guide
