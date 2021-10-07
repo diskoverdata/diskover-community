@@ -4,7 +4,7 @@
 [![GitHub forks](https://img.shields.io/github/forks/diskoverdata/diskover-community)](https://github.com/diskoverdata/diskover-community/network)
 [![GitHub stars](https://img.shields.io/github/stars/diskoverdata/diskover-community)](https://github.com/diskoverdata/diskover-community/stargazers)
 [![GitHub license](https://img.shields.io/github/license/diskoverdata/diskover-community)](https://github.com/diskoverdata/diskover-community/blob/master/LICENSE)
-[![GitHub releases](https://img.shields.io/github/releases/diskoverdata/diskover-community)](https://github.com/diskoverdata/diskover-community/releases)
+[![GitHub releases](https://img.shields.io/github/release/diskoverdata/diskover-community)](https://github.com/diskoverdata/diskover-community/releases)
 
 <img align="left" width="249" height="189" src="images/diskover.png?raw=true" hspace="5" vspace="5" alt="diskover">
 
