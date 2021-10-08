@@ -19,6 +19,7 @@ diskover runs on Linux, macOS and Windows 10 and is written in Python. Diskover'
 ## News/ Updates
 - diskover community edition (ce) v2.0-rc.1 has been released! See [releases](https://github.com/diskoverdata/diskover-community/releases) to download.
 - v2 requires no registration to use.
+- v2 [linuxserver.io](https://linuxserver.io) docker hub container coming soon!
 - v1 is now end of life and is no longer supported.
 
 ## User Guide
