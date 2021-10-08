@@ -1,0 +1,116 @@
+/*
+diskover-web community edition (ce)
+https://github.com/diskoverdata/diskover-community/
+https://diskoverdata.com
+
+Copyright 2017-2021 Diskover Data, Inc.
+"Community" portion of Diskover made available under the Apache 2.0 License found here:
+https://www.diskoverdata.com/apache-license/
+ 
+All other content is subject to the Diskover Data, Inc. end user license agreement found at:
+https://www.diskoverdata.com/eula-subscriptions/
+  
+Diskover Data products and features for all versions found here:
+https://www.diskoverdata.com/solutions/
+
+*/
+
+/* d3 file tree for search */
+
+.tree-wrapper {
+    margin-top: 5px;
+    height: 76vh;
+    overflow: auto;
+    border: 1px solid #282828;
+    border-radius: 5px;
+    padding: 20px;
+    background-color: #222222;
+    position: relative;
+}
+
+#search-results-wrapper {
+    margin-top: 5px;
+    overflow: auto;
+}
+
+#tree-wrapper::-webkit-scrollbar-track {
+    background-color: #33373B;
+}
+
+#tree-wrapper::-webkit-scrollbar-corner {
+    background-color: #33373B;
+}
+
+#tree-wrapper::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+    background-color: #33373B;
+}
+
+#tree-wrapper::-webkit-scrollbar-thumb {
+    background-color: #555;
+    border-radius: 5px;
+}
+
+.selected {
+    color: #ffffff !important;
+    text-decoration: underline !important;
+}
+
+.node {
+    font-size: 12px;
+    overflow: visible;
+    position: absolute;
+    list-style: none;
+    margin-top: 10px;
+    margin-left: 10px;
+    margin-right: 0px;
+    white-space: nowrap;
+    word-wrap: break-word;
+    z-index: 1;
+    width: 400px;
+    color: #C7CED6;
+}
+
+.node .fa-folder {
+    font-size: 14px;
+    padding-right: 6px;
+    color: #6E7681;
+    font-weight: bold;
+}
+
+.node .fa-folder-open {
+    font-size: 14px;
+    padding-right: 6px;
+    color: #6E7681;
+    font-weight: bold;
+}
+
+.node .filename {
+    cursor: pointer;
+    font-size: 12px;
+    padding-left: 2px;
+    padding-right: 2px;
+}
+
+.node .filesize-darkergray {
+    color: #6E7681;
+    font-size: 12px;
+    padding-left: 2px;
+}
+
+/* d3 tool tip */
+
+.d3-tip {
+    font-size: 11px;
+    line-height: 1;
+    font-weight: bold;
+    padding: 12px;
+    background: rgba(29, 29, 29, 0.9);
+    color: #fff;
+    border-radius: 2px;
+    pointer-events: none !important;
+    word-break: break-all;
+    word-wrap: break-word;
+    z-index: 99;
+  }

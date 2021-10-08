@@ -1,0 +1,5 @@
+elasticsearch>=7.0.0,<8.0.0
+confuse
+pywin32
+psutil
+requests

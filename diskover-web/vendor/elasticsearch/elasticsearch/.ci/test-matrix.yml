@@ -1,0 +1,14 @@
+---
+STACK_VERSION:
+  - 7.13.1-SNAPSHOT
+  
+PHP_VERSION:
+  - 8.0-cli
+  - 7.4-cli
+  - 7.3-cli
+
+TEST_SUITE:
+  - free
+  - platinum
+
+exclude: ~

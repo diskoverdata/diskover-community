@@ -1,0 +1,130 @@
+# diskover default/sample config file
+#
+# default search paths for config
+# macOS: ~/.config/diskover and ~/Library/Application Support/diskover
+# Other Unix: ~/.config/diskover and /etc/diskover
+# Windows: %APPDATA%\diskover where the APPDATA environment variable falls back to %HOME%\AppData\Roaming if undefined
+#
+appName: diskover
+#logLevel: WARN
+#logLevel: DEBUG
+logLevel: INFO
+logToFile: False
+#logToFile: True
+logDirectory: /tmp/
+
+diskover:
+    # max number of crawl threads
+    # a thread is created up to maxthreads for each directory at level 1 of tree dir arg
+    maxthreads: 20
+    # block size used for du size
+    blocksize: 512
+    excludes:
+        # directory names and absolute paths you want to exclude from crawl, 
+        # case-sensitive, can include wildcards 
+        # (.* or backup* or /dir/dirname* or *tmp or *tmp* etc)
+        # to exclude none use empty list []
+        dirs: [".*", ".snapshot", ".Snapshot", "~snapshot", "~Snapshot", ".zfs"]
+        #dirs: []
+        # files you want to exclude from crawl, case-sensitive, 
+        # can include wildcards (.*, *.doc or NULLEXT for files with no extension)
+        files: [".*", "Thumbs.db", ".DS_Store", "._.DS_Store", ".localized", "desktop.ini"]
+        #files: []
+        # exclude empty 0 byte files, set to True to exclude empty files or False to not exclude
+        emptyfiles: True
+        # exclude empty dirs, set to True to exclude empty dirs or False to not exclude
+        emptydirs: True
+        # exclude files smaller than min size in bytes
+        minfilesize: 1
+        #minfilesize: 512
+        # exclude files modified less than x days ago
+        minmtime: 0
+        #minmtime: 30
+        # exclude files modified more than x days ago
+        maxmtime: 36500
+        # exclude files changed less than x days ago
+        minctime: 0
+        # exclude files changed more than x days ago
+        maxctime: 36500
+        # exclude files accessed less than x days ago
+        minatime: 0
+        # exclude files accessed more than x days ago
+        maxatime: 36500
+    includes:
+        # directory names and absolute paths you want to include (whitelist), case-sensitive,
+        # to include none use empty list []
+        #dirs: [".recycle"]
+        dirs: []
+        # files you want to include (whitelist), case-sensitive
+        files: []
+    ownersgroups:
+        # control how owner (username) and group fields are stored for file and directory docs
+        # store uid and gid's instead of trying to get owner and group names
+        uidgidonly: False
+        # owner/group names contain domain name set to True
+        domain: False
+        # character separator used on cifs/nfs mounts to separte user/group and domain name, usually \\ or @
+        domainsep: \\
+        # if domain name comes first before character separator, set this to True, otherwise False
+        domainfirst: True
+        # when indexing owner and group fields, keep the domain name
+        keepdomain: False 
+    replacepaths:
+        # translate path names set to True to enable or False to disable.
+        # Set to True if crawling in Windows to replace drive letters and \ with /
+        replace: False
+        #from: /mnt/
+        #to:  /vols/
+        from: 
+        to: 
+    plugins:
+        # set to True to enable all plugins or False to disable all plugins
+        enable: False
+        # list of plugins (by name) to use for directories
+        dirs: ['unixperms']
+        # list of plugins (by name) to use for files
+        files: ['unixperms']
+    other:
+        # restore atime/mtime for files and dirs during crawl
+        # set to True or False, default False (useful for cifs which does not work with noatime mount option)
+        # for nfs, it's preferable to use mount options ro,noatime,nodiratime
+        restoretimes: False
+
+databases:
+    elasticsearch:
+        # set host to your Elasticsearch hostname or IP
+        # if you have multiple ES hosts/nodes in your cluster, you can set multiple hosts using a list ['eshost1', 'eshost2']
+        # if using AWS ES, set to your AWS ES endpoint name without http:// or https://
+        host: localhost
+        # set port to your ES port, default is 9200 for local and 443 or 80 for AWS ES
+        port: 9200
+        # set user and password if using ES http-auth or leave blank/empty if no user/pass
+        #user: elastic
+        #password: changeme
+        user: 
+        password: 
+        # set https to True if using HTTP TLS/SSL or False if using http
+        # for AWS ES, you will most likely want to set this to True
+        https: False
+        # compress http data
+        # for AWS ES, you will most likely want to set this to True
+        httpcompress: False
+        # timeout for connection to ES (default is 10)
+        timeout: 30
+        # number of connections kept open to ES when crawling (default is 10)
+        maxsize: 20
+        # max retries for ES operations (default is 0)
+        maxretries: 10
+        # wait for at least yellow status before bulk uploading (default is False), set to True if you want to wait
+        wait: False
+        # chunk size for ES bulk operations (default is 500)
+        chunksize: 1000
+        # the below settings are to optimize ES for crawling
+        # index refresh interval (default is 1s), set to -1 to disable refresh during crawl (fastest performance but no index searches), after crawl is set back to 1s
+        indexrefresh: 30s
+        # disable replicas during crawl - set to True to turn off replicas or False to keep on (default False), after crawl is set back to replicas value above
+        disablereplicas: True
+        # transaction log flush threshold size (default 512mb)
+        translogsize: 1gb
+        # transaction log sync interval time (default 5s)
+        translogsyncint: 30s
