@@ -757,6 +757,8 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
                         help='optional index name (requires prefix diskover-), default "%default"')
     parser.add_option('-f', '--forcedropexisting', action='store_true', 
                         help='silently drop an existing index (if present)')
+    parser.add_option('-a', '--addtoindex', action='store_true', 
+                        help='add metadata to existing index (if present) (Pro)')
     parser.add_option('-m', '--maxdepth', default=999, type=int, 
                         help='descend at most n directory levels below')
     parser.add_option('-l', '--listplugins', action='store_true', 
@@ -813,11 +815,18 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
 
     # create Elasticsearch connection
     es = elasticsearch_connection()
+    
+    # check for addtoindex
+    if options.addtoindex:
+        logmsg = 'Using -a to add additional top paths to an index requires diskover Pro version.'
+        logger.error(logmsg)
+        if logtofile: logger_warn.error(logmsg)
+        sys.exit(1)
 
     # get top path arg
     if args:
         if len(args) > 1:
-            logmsg = 'Use only one tree_dir arg.'
+            logmsg = 'Use only one tree_dir arg. Mutliple top paths in an index requires diskover Pro version.'
             logger.error(logmsg)
             if logtofile: logger_warn.error(logmsg)
             sys.exit(1)
