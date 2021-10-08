@@ -15,6 +15,7 @@ https://www.diskoverdata.com/solutions/
 
 """
 
+import os
 import sys
 import confuse
 import requests
@@ -31,16 +32,17 @@ logger = logging.getLogger(__name__)
 """Load yaml config file."""
 config = confuse.Configuration('diskover', __name__)
 
+# check for any env vars to override config
 try:
-    es_host = config['databases']['elasticsearch']['host'].get()
-    es_port = config['databases']['elasticsearch']['port'].get()
-    es_user = config['databases']['elasticsearch']['user'].get()
+    es_host = os.getenv('ES_HOST', config['databases']['elasticsearch']['host'].get())
+    es_port = os.getenv('ES_PORT', config['databases']['elasticsearch']['port'].get())
+    es_user = os.getenv('ES_USER', config['databases']['elasticsearch']['user'].get())
     if not es_user:
         es_user = ""
-    es_password = config['databases']['elasticsearch']['password'].get()
+    es_password = os.getenv('ES_PASS', config['databases']['elasticsearch']['password'].get())
     if not es_password:
         es_password = ""
-    es_https = config['databases']['elasticsearch']['https'].get()
+    es_https = os.getenv('ES_HTTPS', config['databases']['elasticsearch']['https'].get())
     es_httpcompress = config['databases']['elasticsearch']['httpcompress'].get()
     es_timeout = config['databases']['elasticsearch']['timeout'].get()
     es_maxsize = config['databases']['elasticsearch']['maxsize'].get()

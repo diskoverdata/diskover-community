@@ -22,16 +22,21 @@ namespace diskover;
 
 class Constants {
     // set to your local time zone https://www.php.net/manual/en/timezones.php
+    // override with env var TZ
     const TIMEZONE = 'America/Vancouver';
     // Elasticsearch host/ip config
     // if you are using AWS ES set host to your Elasticsearch endpoint without http:// or https://
+    // override with env var ES_HOST
     const ES_HOST = 'localhost';
     // default port for Elasticsearch is 9200 and AWS ES is 80 or 443
+    // override with env var ES_PORT
     const ES_PORT = 9200;
     // for no username and password set ES_USER and ES_PASS to ''
+    // override with env vars ES_USER and ES_PASS
     const ES_USER = '';
     const ES_PASS = '';
     // if your Elasticsearch cluster uses HTTP TLS/SSL, set ES_HTTPS to TRUE
+    // override with env var ES_HTTPS
     const ES_HTTPS = FALSE;
     // login auth for diskover-web
     const LOGIN_REQUIRED = TRUE;

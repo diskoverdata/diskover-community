@@ -78,6 +78,10 @@ setd3Vars();
 // time in seconds for index info session var to expire and force reload indices
 $indexinfo_expiretime = 600;
 
+// timezone
+// check for env var TZ
+$timezone = getenv('TZ') ?: Constants::TIMEZONE;
+
 /* End Globals */
 
 
@@ -93,12 +97,13 @@ class ESClient
         $res = curl_es('/', null, false);
 
         // Create ES client connection
+        // check for any env vars to override config
         $hosts = array();
         $hosts[] = array(
-            'host' => Constants::ES_HOST, 'port' => Constants::ES_PORT,
-            'user' => Constants::ES_USER, 'pass' => Constants::ES_PASS
+            'host' => getenv('ES_HOST') ?: Constants::ES_HOST, 'port' => getenv('ES_PORT') ?: Constants::ES_PORT,
+            'user' => getenv('ES_USER') ?: Constants::ES_USER, 'pass' => getenv('ES_PASS') ?: Constants::ES_PASS
         );
-        if (Constants::ES_HTTPS) {
+        if (getenv('ES_HTTPS') ?: Constants::ES_HTTPS) {
             $host['scheme'] = 'https';
         }
         $client = ClientBuilder::create()->setHosts($hosts)->build();
@@ -245,7 +250,7 @@ function setPaths()
 // Set vars and cookies for index, path, etc
 function init()
 {
-    global $esIndex, $no_pathselect_pages, $indices_all, $all_index_info, $indices_sorted, $completed_indices, 
+    global $timezone, $esIndex, $no_pathselect_pages, $indices_all, $all_index_info, $indices_sorted, $completed_indices, 
         $latest_completed_index, $fields, $indexinfo_updatetime, $index_starttimes, $indexinfo_expiretime;
 
     if (!isset($_SESSION['indices_uuids'])) {
@@ -290,7 +295,7 @@ function init()
             'fields' => $fields,
             'starttimes' => $index_starttimes
         ];
-        $indexinfo_updatetime = $_SESSION['indexinfo']['update_time'] = new DateTime("now", new DateTimeZone(Constants::TIMEZONE));
+        $indexinfo_updatetime = $_SESSION['indexinfo']['update_time'] = new DateTime("now", new DateTimeZone($timezone));
     } else {
         $indices_all = $_SESSION['indexinfo']['indices_all'];
         $all_index_info = $_SESSION['indexinfo']['all_index_info'];
@@ -885,6 +890,8 @@ function secondsToTime($seconds)
 // convert utc iso timestamp to local time
 function utcTimeToLocal($date)
 {
+    global $timezone;
+    
     if ($date == null) {
         return "-";
     }
@@ -892,7 +899,7 @@ function utcTimeToLocal($date)
         return $date;
     }
     $l10nDate = new DateTime($date, new DateTimeZone('UTC'));
-    $l10nDate->setTimeZone(new DateTimeZone(CONSTANTS::TIMEZONE));
+    $l10nDate->setTimeZone(new DateTimeZone($timezone));
     return $l10nDate->format('Y-m-d H:i:s');
 }
 

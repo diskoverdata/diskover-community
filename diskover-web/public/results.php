@@ -23,7 +23,7 @@ error_reporting(E_ALL ^ E_NOTICE);
 
 // get top path's last indexed time
 $dt = new DateTime($index_starttimes[$esIndex][$_SESSION['rootpath']], new DateTimeZone('UTC'));
-$dt->setTimezone(new DateTimeZone(Constants::TIMEZONE));
+$dt->setTimezone(new DateTimeZone($timezone));
 $toppath_name = ($_SESSION['rootpath'] == '/') ? '/' : basename($_SESSION['rootpath']);
 $last_index_time = "Last indexed " . $toppath_name . " at " . $dt->format('m/d/Y, h:i:s A T');
 
@@ -96,7 +96,7 @@ if (!empty($results[$p]) && count($results[$p]) > 0) {
                         $toppath = $_SESSION['rootpath'];
                         $pathlabel = ($toppath == '/') ? $toppath : basename($toppath);
                         $dt = new DateTime($index_starttimes[$esIndex][$toppath], new DateTimeZone('UTC'));
-                        $dt->setTimezone(new DateTimeZone(Constants::TIMEZONE));
+                        $dt->setTimezone(new DateTimeZone($timezone));
                         $index_time = $dt->format('m/d/Y, h:i:s A T');
                         $title = $toppath . " | index " . $esIndex . " | last indexed " . $index_time;
                         echo "<span title=\"" . $title . "\" class=\"searchtree-toppath\" style=\"font-weight:bold\"><a href=\"search.php?index=" . $esIndex . "&q=parent_path:" . rawurlencode(escape_chars($toppath)) . "&submitted=true&p=1&path=" . rawurlencode($toppath) . "\"><i class=\"far fa-hdd\" style=\"margin-right:5px; font-weight:bold\"></i> " . $pathlabel . "</a></span><br>\n";

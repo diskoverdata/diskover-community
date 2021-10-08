@@ -95,16 +95,20 @@ databases:
         # set host to your Elasticsearch hostname or IP
         # if you have multiple ES hosts/nodes in your cluster, you can set multiple hosts using a list ['eshost1', 'eshost2']
         # if using AWS ES, set to your AWS ES endpoint name without http:// or https://
+        # override with env var ES_HOST
         host: localhost
         # set port to your ES port, default is 9200 for local and 443 or 80 for AWS ES
+        # override with env var ES_PORT
         port: 9200
         # set user and password if using ES http-auth or leave blank/empty if no user/pass
+        # override with env vars ES_USER and ES_PASS
         #user: elastic
         #password: changeme
         user: 
         password: 
         # set https to True if using HTTP TLS/SSL or False if using http
         # for AWS ES, you will most likely want to set this to True
+        # override with env var ES_HTTPS
         https: False
         # compress http data
         # for AWS ES, you will most likely want to set this to True
