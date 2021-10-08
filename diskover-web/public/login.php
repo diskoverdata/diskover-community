@@ -60,19 +60,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['username']) && isset($
 <html lang="en">
 
 <head>
-   <?php if ($_COOKIE['sendanondata'] == 1) { ?>
-      <!-- Global site tag (gtag.js) - Google Analytics -->
-      <script async src="https://www.googletagmanager.com/gtag/js?id=UA-148834696-1"></script>
-      <script>
-         window.dataLayer = window.dataLayer || [];
+   <?php if (isset($_COOKIE['sendanondata']) && $_COOKIE['sendanondata'] == 1) { ?>
+   <!-- Global site tag (gtag.js) - Google Analytics -->
+   <script async src="https://www.googletagmanager.com/gtag/js?id=G-DYSE689C04"></script>
+   <script>
+   window.dataLayer = window.dataLayer || [];
+   function gtag(){dataLayer.push(arguments);}
+   gtag('js', new Date());
 
-         function gtag() {
-            dataLayer.push(arguments);
-         }
-         gtag('js', new Date());
-
-         gtag('config', 'UA-148834696-1');
-      </script>
+   gtag('config', 'G-DYSE689C04');
+   </script>
    <?php } ?>
    <meta charset="utf-8">
    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
