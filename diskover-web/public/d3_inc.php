@@ -187,7 +187,7 @@ function get_files($client, $index, $path, $filter, $time, $maxfiles=100) {
                 '_source' => ["parent_path","name","size","size_du","mtime"],
                 'query' => [
                     'query_string' => [
-                        'query' => 'parent_path: ' . $escapedpath . ' AND '.$_COOKIE['sizefield'].': >=' . $filter . ' AND '. $_COOKIE['timefield'] .': [* TO ' . $time . '] AND type:"file"'
+                        'query' => 'parent_path: ' . $escapedpath . ' AND '.$_COOKIE['sizefield'].': >=' . $filter . ' AND mtime: [* TO ' . $time . '] AND type:"file"'
                     ]
                 ],
                 'sort' => [

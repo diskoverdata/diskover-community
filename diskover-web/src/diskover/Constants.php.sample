@@ -38,22 +38,6 @@ class Constants {
     // username and password to login
     const USER = 'diskover';
     const PASS = 'darkdata';
-    // analytics filters
-    // default min file size (bytes) filter
-    const FILTER = 1;
-    // default time filter
-    const TIME = 0;
-    // default time field (mtime, ctime, atime) to use for time filter
-    const TIME_FIELD = 'mtime';
-    // default maxdepth filter
-    const MAXDEPTH = 2;
-    // default don't use count (use size)
-    const USE_COUNT = 0;
-    // default don't show files on analytics pages
-    const SHOW_FILES = 0;
-    // default hide threshhold filter
-    const HIDE_THRESH = 0.9;
-    // end analytics filters
     // default results per search page
     const SEARCH_RESULTS = 50;
     // default size field (size, size_du) to use for sizes on charts

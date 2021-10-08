@@ -20,10 +20,8 @@ https://www.diskoverdata.com/solutions/
 const FILTER = 1;
 const MAXDEPTH = 2;
 const TIME = 0;
-const TIME_FIELD = 'mtime';
 const USE_COUNT = 0;
 const SHOW_FILES = 0;
-const HIDE_THRESH = 0.9;
 const SIZE_FIELD = 'size';
 
 // end default constants
@@ -48,20 +46,11 @@ parentpath = parentpath.replace(/\+/g, '%20');
 parentpath = decodeURIComponent(parentpath);
 
 // filters for analytics pages
-var filter = ($_GET('filter')) ? parseInt($_GET('filter')) : parseInt(getCookie('filter'));  // size filter
-if (filter === '') var filter = FILTER;
-var time = ($_GET('time')) ? $_GET('time') : getCookie('time');
-if (time === '') var time = TIME;
-var timefield = getCookie('timefield');
-if (timefield === '') var timefield = TIME_FIELD;
-var maxdepth = ($_GET('maxdepth')) ? parseInt($_GET('maxdepth')) : parseInt(getCookie('maxdepth'));
-if (maxdepth === '') var maxdepth = MAXDEPTH;
-var use_count = ($_GET('use_count')) ? parseInt($_GET('use_count')) : parseInt(getCookie('use_count'));
-if (use_count === '') var use_count = USE_COUNT;
-var show_files = ($_GET('show_files')) ? parseInt($_GET('show_files')) : parseInt(getCookie('show_files'));
-if (show_files === '') var show_files = SHOW_FILES;
-var hide_thresh = (getCookie('hide_thresh')) ? parseFloat(getCookie('hide_thresh')) : HIDE_THRESH;
-if (hide_thresh === '' || isNaN(hide_thresh)) var hide_thresh = HIDE_THRESH;
+var filter = FILTER;
+var time = TIME;
+var maxdepth = MAXDEPTH;
+var use_count = USE_COUNT;
+var show_files = SHOW_FILES;
 var sizefield = getCookie('sizefield');
 if (sizefield === '') var sizefield = SIZE_FIELD;
 
@@ -86,7 +75,7 @@ $(document).ready(function () {
         $(this).closest('form').trigger('submit');
     });
 
-    // reload page button on analytics pages
+    // reload page button
     $("#reload").click(function () {
         console.log("removing path cookie because reload");
         deleteCookie("path");

@@ -39,13 +39,6 @@ $config_const = array(
     'LOGIN_REQUIRED',
     'USER',
     'PASS',
-    'FILTER',
-    'TIME',
-    'TIME_FIELD',
-    'MAXDEPTH',
-    'USE_COUNT',
-    'SHOW_FILES',
-    'HIDE_THRESH',
     'SEARCH_RESULTS',
     'SIZE_FIELD',
     'FILE_TYPES',
@@ -65,10 +58,9 @@ if (!isset($_SESSION['sanitycheck'])) {
     $_SESSION['sanitycheck'] = true;
 }
 
-$adminuser = $taskpaneluser = $esIndex = $indices = $path = $toppath = $indices_all = 
-    $all_index_info = $indices_sorted = $completed_indices = $latest_completed_index = $fields = 
-    $indexinfo_updatetime = $index_starttimes = $es_responsetime = $filter = $time = $timefield = 
-    $use_count = $show_files = $maxdepth = $sizefield = null;
+$esIndex = $path = $toppath = $indices_all = $all_index_info = $indices_sorted = $completed_indices = 
+    $latest_completed_index = $fields = $indexinfo_updatetime = $index_starttimes = $es_responsetime = 
+    $filter = $time = $use_count = $show_files = $maxdepth = $sizefield = null;
 
 // file type groups
 $fileGroups_extensions = Constants::FILE_TYPES;
@@ -177,40 +169,15 @@ function handleError($e, $redirect = true, $ajax = false, $throwexception = fals
 
 // set analytics vars
 function setd3Vars() {
-    global $filter, $time, $timefield, $use_count, $show_files, $maxdepth, $sizefield;
+    global $filter, $time, $use_count, $show_files, $maxdepth, $sizefield;
 
-    $filter = (isset($_GET['filter'])) ? (int) $_GET['filter'] : getCookie('filter'); // filesize filter
-    if ($filter === "") {
-        $filter = Constants::FILTER;
-        createCookie('filter', $filter);
-    }
-    $time = (isset($_GET['time'])) ? (string) $_GET['time'] : getCookie('time'); // time field filter
-    if ($time === "") {
-        $time = Constants::TIME;
-        createCookie('time', $time);
-    }
-    $timefield = getCookie('timefield'); // time field to use
-    if ($timefield === "") {
-        $timefield = Constants::TIME_FIELD;
-        createCookie('timefield', $timefield);
-    }
+    $filter = 1;
+    $time = 0; // time field filter
     // get use_count
-    $use_count = (isset($_GET['use_count'])) ? (int) $_GET['use_count'] : getCookie('use_count'); // use count
-    if ($use_count === "") {
-        $use_count = Constants::USE_COUNT;
-        createCookie('use_count', $use_count);
-    }
+    $use_count = 0;
     // get show_files
-    $show_files = (isset($_GET['show_files'])) ? (int) $_GET['show_files'] : getCookie('show_files'); // show files
-    if ($show_files === "") {
-        $show_files = Constants::SHOW_FILES;
-        createCookie('show_files', $show_files);
-    }
-    $maxdepth = (isset($_GET['maxdepth'])) ? (int) $_GET['maxdepth'] : getCookie('maxdepth'); // maxdepth
-    if ($maxdepth === "") {
-        $maxdepth = Constants::MAXDEPTH;
-        createCookie('maxdepth', $maxdepth);
-    }
+    $show_files = 0;
+    $maxdepth = 2;
     $sizefield = getCookie('sizefield'); // size field to use
     if ($sizefield === "") {
         $sizefield = Constants::SIZE_FIELD;
@@ -222,7 +189,7 @@ function setd3Vars() {
 // Sets imporant path and path related variables
 function setPaths()
 {
-    global $indices, $path, $toppath;
+    global $esIndex, $path, $toppath;
 
     $path = (isset($_GET['path'])) ? $_GET['path'] : getCookie('path');
 
@@ -231,7 +198,7 @@ function setPaths()
         $path = $_SESSION['rootpath'];
         if (empty($path)) {
             // grab path from es
-            $path = get_es_path($indices[0], 1);
+            $path = get_es_path($esIndex, 1);
             $_SESSION['rootpath'] = $path;
             createCookie('rootpath', $path);
             createCookie('prevpath', $path);
@@ -251,25 +218,12 @@ function setPaths()
     
     $toppath = $_SESSION['toppath'];
     if (empty($toppath)) {
-        $toppath = array();
-        // grab path(s) from es
-        foreach ($indices as $index) {
-            $p = get_es_path($index, 100);
-            if (is_array($p)) {
-                foreach ($p as $q) {
-                    // remove any trailing slash (unless root)
-                    if ($q !== "/") {
-                        $q = rtrim($q, '/');
-                    }
-                    $toppath[] = $q;
-                }
-            } else {
-                if ($p !== "/") {
-                    $p = rtrim($p, '/');
-                }
-                $toppath[] = $p;
-            }
+        // grab path from es
+        $p = get_es_path($esIndex, 1);
+        if ($p !== "/") {
+            $p = rtrim($p, '/');
         }
+        $toppath = $p;
         // set top paths session var
         $_SESSION['toppath'] = $toppath;
     }
@@ -280,7 +234,7 @@ function setPaths()
     createCookie('prevpath', $path);
 
     // update rootpath session and cookie and parentpath if path changed
-    if (in_array($path, $toppath) && $path != $prevpath) {
+    if ($path == $toppath && $path != $prevpath) {
         $_SESSION['rootpath'] = $path;
         createCookie('rootpath', $path);
         createCookie('parentpath', getParentDir($path));
@@ -291,7 +245,7 @@ function setPaths()
 // Set vars and cookies for index, path, etc
 function init()
 {
-    global $esIndex, $indices, $no_pathselect_pages, $indices_all, $all_index_info, $indices_sorted, $completed_indices, 
+    global $esIndex, $no_pathselect_pages, $indices_all, $all_index_info, $indices_sorted, $completed_indices, 
         $latest_completed_index, $fields, $indexinfo_updatetime, $index_starttimes, $indexinfo_expiretime;
 
     if (!isset($_SESSION['indices_uuids'])) {
@@ -373,8 +327,6 @@ function init()
         }
     }
 
-    $indices = array($esIndex);
-
     notifyNewIndex();
 
     // check if indices still exist or have been re-indexed
@@ -387,7 +339,7 @@ function init()
 // remove index from globals and session vars
 function removeIndex($index, $uuid = null)
 {
-    global $indices, $indices_all, $all_index_info, $completed_indices;
+    global $indices_all, $all_index_info, $completed_indices;
 
     if (is_null($uuid)) {
         $uuid = array_search($index, $_SESSION['indices_uuids']);
@@ -405,9 +357,6 @@ function removeIndex($index, $uuid = null)
     if ($k = array_search($index, $completed_indices)) {
         unset($completed_indices[$k]);
     }
-    if ($k = array_search($index, $indices)) {
-        unset($indices[$k]);
-    }
     if ($k = array_search($index, $indices_all)) {
         unset($indices_all[$k]);
     }
@@ -421,12 +370,12 @@ function removeIndex($index, $uuid = null)
 // re-indexed will have a new uuid number
 function checkIndices()
 {
-    global $client, $indices, $completed_indices, $indices_info;
+    global $client, $esIndex, $completed_indices, $indices_info;
 
     $indices_missing = $indices_changed = false;
 
     foreach ($_SESSION['indices_uuids'] as $uuid => $index) {
-        if (in_array($index, $indices) !== false) {
+        if ($index === $esIndex) {
             try {
                 $exists = $client->indices()->exists(array('index' => $index));
             } catch (Exception $e) {
@@ -514,7 +463,7 @@ function getIndexInfo()
 // sets index global and session vars
 function setIndexInfo()
 {
-    global $client, $client, $indices_all, $indices_info;
+    global $client, $indices_all, $indices_info;
 
     $disabled_indices = array();
     $indices_sorted = array();
