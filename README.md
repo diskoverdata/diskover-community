@@ -17,7 +17,7 @@ Using diskover, users can identify old and unused files and give better insights
 diskover runs on Linux, macOS and Windows 10 and is written in Python. Diskover's web app, diskover-web, is written in PHP, Javascript, HTML5 and CSS.
 
 ## News/ Updates
-- diskover v2.0 rc1 community edition (ce) has been released! See [releases](https://github.com/diskoverdata/diskover-community/releases) to download.
+- diskover community edition (ce) v2.0-rc.1 has been released! See [releases](https://github.com/diskoverdata/diskover-community/releases) to download.
 - v2 requires no registration to use.
 - v1 is now end of life and is no longer supported.
 
