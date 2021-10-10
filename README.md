@@ -18,8 +18,8 @@ diskover runs on Linux, macOS and Windows 10 and is written in Python. Diskover'
 
 ## Screenshots
 <p align="left">
-<img width="320" height="205" src="images/diskover_v2_ce_screenshot1.png?raw=true" hspace="10" vspace="5" alt="diskover-web screenshot 1">
-<img width="320" height="205" src="images/diskover_v2_ce_screenshot2.png?raw=true" hspace="10" vspace="5" alt="diskover-web screenshot 2">
+<img width="427" height="273" src="images/diskover_v2_ce_screenshot1.png?raw=true" hspace="10" vspace="5" alt="diskover-web screenshot 1">
+<img width="427" height="273" src="images/diskover_v2_ce_screenshot2.png?raw=true" hspace="10" vspace="5" alt="diskover-web screenshot 2">
 </p>
 
 ## Download
