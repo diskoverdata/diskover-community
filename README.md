@@ -6,7 +6,7 @@
 [![GitHub license](https://img.shields.io/github/license/diskoverdata/diskover-community)](https://github.com/diskoverdata/diskover-community/blob/master/LICENSE)
 [![GitHub releases](https://img.shields.io/github/release/diskoverdata/diskover-community)](https://github.com/diskoverdata/diskover-community/releases)
 
-<img style="position:relative;text-align:right;width:125px;height:95px" src="images/diskover.png?raw=true" hspace="4" vspace="4" alt="diskover logo">
+<img align="left" width="125" height="95" src="images/diskover.png?raw=true" hspace="4" vspace="4" alt="diskover logo">
 
 diskover is an open source file system indexer that uses Elasticsearch to index and manage data across heterogeneous storage systems. Using diskover, you are able to more effectively search and organize files and system administrators are able to manage storage infrastructure, efficiently provision storage, monitor and report on storage use, and effectively make decisions about new infrastructure purchases.
 
@@ -17,9 +17,10 @@ Using diskover, users can identify old and unused files and give better insights
 diskover runs on Linux, macOS and Windows 10 and is written in Python. Diskover's web app, diskover-web, is written in PHP, Javascript, HTML5 and CSS.
 
 ## Screenshots
-
-<img style="position:relative;width:320px;height:205px" src="images/diskover_v2_ce_screenshot1.png?raw=true" alt="diskover-web screenshot 1">
-<img style="position:relative;width:320px;height:205px" src="images/diskover_v2_ce_screenshot2.png?raw=true" alt="diskover-web screenshot 2">
+<p align="middle">
+<img width="320" height="205" src="images/diskover_v2_ce_screenshot1.png?raw=true" alt="diskover-web screenshot 1">
+<img width="320" height="205" src="images/diskover_v2_ce_screenshot2.png?raw=true" alt="diskover-web screenshot 2">
+</p>
 
 ## Download
 - diskover community edition (ce) v2.0-rc.1 has been released! See [releases](https://github.com/diskoverdata/diskover-community/releases) to download. v2 requires no registration to use.
