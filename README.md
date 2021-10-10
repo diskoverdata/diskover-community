@@ -18,8 +18,8 @@ diskover runs on Linux, macOS and Windows 10 and is written in Python. Diskover'
 
 ## Screenshots
 
-<img width="640" height="410" src="images/diskover_v2_ce_screenshot1?raw=true" hspace="5" vspace="5" alt="diskover-web screenshot 1">
-<img width="640" height="410" src="images/diskover_v2_ce_screenshot2?raw=true" hspace="5" vspace="5" alt="diskover-web screenshot 2">
+<img width="640" height="410" src="images/diskover_v2_ce_screenshot1.png?raw=true" alt="diskover-web screenshot 1">
+<img width="640" height="410" src="images/diskover_v2_ce_screenshot2.png?raw=true" alt="diskover-web screenshot 2">
 
 ## Download
 - diskover community edition (ce) v2.0-rc.1 has been released! See [releases](https://github.com/diskoverdata/diskover-community/releases) to download. v2 requires no registration to use.
