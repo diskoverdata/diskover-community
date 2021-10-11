@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-diskover
+diskover community edition (ce)
+https://github.com/diskoverdata/diskover-community/
 https://diskoverdata.com
 
 Copyright 2017-2021 Diskover Data, Inc.

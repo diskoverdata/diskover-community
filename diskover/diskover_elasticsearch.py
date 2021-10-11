@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-diskover
+diskover community edition (ce)
+https://github.com/diskoverdata/diskover-community/
 https://diskoverdata.com
 
 Copyright 2017-2021 Diskover Data, Inc.
@@ -50,11 +51,9 @@ try:
     es_scrollsize = config['databases']['elasticsearch']['scrollsize'].get()
     es_wait_status_yellow = config['databases']['elasticsearch']['wait'].get()
     es_chunksize = config['databases']['elasticsearch']['chunksize'].get()
-    es_disablereplicas = config['databases']['elasticsearch']['disablereplicas'].get()
     es_translogsize = config['databases']['elasticsearch']['translogsize'].get()
     es_translogsyncint = config['databases']['elasticsearch']['translogsyncint'].get()
     es_indexrefresh = config['databases']['elasticsearch']['indexrefresh'].get()
-    es_replicas = config['databases']['elasticsearch']['replicas'].get()
 except confuse.NotFoundError as e:
     print(
         'Config ERROR: {0}, check config for errors or missing settings from default config.'.format(e))
@@ -308,14 +307,10 @@ def bulk_upload(es, indexname, docs):
 
 def tune_index(es, indexname, defaults=False):
     """Tune ES index for faster indexing performance."""
-    if es_disablereplicas:
-        replicas = 0
-    else:
-        replicas = es_replicas
     default_settings = {
         "index": {
             "refresh_interval": "1s",
-            "number_of_replicas": es_replicas,
+            "number_of_replicas": 0,
             "translog.flush_threshold_size": "512mb",
             "translog.durability": "request",
             "translog.sync_interval": "5s"
@@ -324,7 +319,7 @@ def tune_index(es, indexname, defaults=False):
     tuned_settings = {
         "index": {
             "refresh_interval": es_indexrefresh,
-            "number_of_replicas": replicas,
+            "number_of_replicas": 0,
             "translog.flush_threshold_size": es_translogsize,
             "translog.durability": "async",
             "translog.sync_interval": es_translogsyncint

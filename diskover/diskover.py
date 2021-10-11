@@ -38,7 +38,7 @@ from diskover_helpers import dir_excluded, file_excluded, \
     get_file_name, load_plugins, list_plugins, get_plugins_info, set_times, \
     get_mem_usage
 
-version = '2.0-rc.1-1 community edition (ce)'
+version = '2.0-rc.1-4 community edition (ce)'
 __version__ = version
 
 # Windows check

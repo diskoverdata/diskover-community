@@ -126,8 +126,6 @@ databases:
         # the below settings are to optimize ES for crawling
         # index refresh interval (default is 1s), set to -1 to disable refresh during crawl (fastest performance but no index searches), after crawl is set back to 1s
         indexrefresh: 30s
-        # disable replicas during crawl - set to True to turn off replicas or False to keep on (default False), after crawl is set back to replicas value above
-        disablereplicas: True
         # transaction log flush threshold size (default 512mb)
         translogsize: 1gb
         # transaction log sync interval time (default 5s)
