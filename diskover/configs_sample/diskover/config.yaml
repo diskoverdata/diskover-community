@@ -132,3 +132,5 @@ databases:
         translogsize: 1gb
         # transaction log sync interval time (default 5s)
         translogsyncint: 30s
+        # search scroll size (default 100 docs)
+        scrollsize: 1000
