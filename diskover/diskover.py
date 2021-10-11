@@ -77,7 +77,6 @@ if not os.path.exists(config_filename):
 try:
     logtofile = config['logToFile'].get()
     logdir = config['logDirectory'].get()
-    maxwalkthreads = config['diskover']['maxwalkthreads'].get()
     maxthreads = config['diskover']['maxthreads'].get()
     exc_empty_dirs = config['diskover']['excludes']['emptydirs'].get()
     exc_empty_files = config['diskover']['excludes']['emptyfiles'].get()
