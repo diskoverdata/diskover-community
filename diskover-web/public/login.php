@@ -20,65 +20,55 @@ ob_start();
 require '../vendor/autoload.php';
 
 use diskover\Constants;
+use diskover\Login;
 
 // Set logging level
 error_reporting(E_ERROR | E_PARSE);
 
 $msg = '';
 
-// login form submitted
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['username']) && isset($_POST['password'])) {
-    // check login using diskover web config credentials
-    if ($_POST['username'] == Constants::USER && $_POST['password'] == Constants::PASS) {
-        if (isset($_POST['stayloggedin'])) {
-            // set server and client to keep session data for 7 days
-            ini_set('session.cookie_lifetime', 60 * 60 * 24 * 7);
-            ini_set('session.gc_maxlifetime', 60 * 60 * 24 * 7);
-            session_start();
-            $_SESSION['stayloggedin'] = true;
-        } else {
-            // set server and client to keep session data for 8 hours
-            ini_set('session.cookie_lifetime', 60 * 60 * 8);
-            ini_set('session.gc_maxlifetime', 60 * 60 * 8);
-            session_start();
-            $_SESSION['stayloggedin'] = false;
-        }
-        $_SESSION['loggedin'] = true;
-        $_SESSION['timeout'] = microtime(true);
-        $_SESSION['username'] = $_POST['username'];
+// If they just changed their password.
+if (isset($_GET['changed'])) {
+    $msg = 'Your password has been changed! Please log in again with your new password.';
+}
 
+// If any POST hits this page, attempt to process.
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $auth = new Login();
+    if ($auth->checkLoginPost()) {
+        // Successful login, redirect
         header("location: index.php");
-        exit();
+        exit;
     } else {
+        // Failed login, inform user.
         $msg = '<i class="glyphicon glyphicon-ban-circle"></i> Incorrect username or password';
     }
 }
 
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
-  <?php if (isset($_COOKIE['sendanondata']) && $_COOKIE['sendanondata'] == 1) { ?>
-    <!-- Global site tag (gtag.js) - Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-DYSE689C04"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag() {dataLayer.push(arguments);}
-      gtag('js', new Date());
+    <?php if (isset($_COOKIE['sendanondata']) && $_COOKIE['sendanondata'] == 1) { ?>
+      <!-- Global site tag (gtag.js) - Google Analytics -->
+      <script async src="https://www.googletagmanager.com/gtag/js?id=G-DYSE689C04"></script>
+      <script>
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
 
-      gtag('config', 'G-DYSE689C04');
-    </script>
-  <?php } ?>
+          gtag('config', 'G-DYSE689C04');
+      </script>
+    <?php } ?>
   <meta charset="utf-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>diskover &mdash; Login</title>
-  <link rel="stylesheet" href="css/fontawesome-free/css/all.min.css" media="screen"/>
-  <link rel="stylesheet" href="css/bootswatch.min.css" media="screen"/>
-  <link rel="stylesheet" href="css/diskover.css" media="screen"/>
-  <link rel="icon" type="image/png" href="images/diskoverfavico.png"/>
+  <link rel="stylesheet" href="css/fontawesome-free/css/all.min.css" media="screen" />
+  <link rel="stylesheet" href="css/bootswatch.min.css" media="screen" />
+  <link rel="stylesheet" href="css/diskover.css" media="screen" />
+  <link rel="icon" type="image/png" href="images/diskoverfavico.png" />
   <style>
       .login-logo {
           text-align: center;
@@ -109,8 +99,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['username']) && isset($
 
       .login-error {
           text-align: center;
-          font-size: 14px;
-          margin-top: 10px;
+          color: #ffcccc;
+          font-size: 16px;
+          margin-top: 20px;
+          padding:0 20px;
       }
 
       .login form {
@@ -162,9 +154,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['username']) && isset($
 
 <body>
 <div class="login">
-  <div class="login-logo"><img src="images/diskover.png" alt="diskover" width="249" height="189"/></div>
+  <div class="login-logo"><img src="images/diskover.png" alt="diskover" width="249" height="189" /></div>
   <h1>diskover Login</h1>
   <h4>community edition (ce)</h4>
+  <p class="login-error text-danger"><?php echo $msg; ?></p>
   <form action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>" method="post">
     <label class="input-label" for="username">
       <i class="fas fa-user"></i>
@@ -178,10 +171,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['username']) && isset($
       <label><input type="checkbox" name="stayloggedin" id="stayloggedin"> Keep me logged in for 7 days</label>
     </div>
     <input type="submit" value="Login" onclick="loadingShow()">
-    <p class="login-error text-danger"><?php echo $msg; ?></p>
   </form>
   <div id="loading">
-    <img id="loading-image" width="32" height="32" src="images/ajax-loader.gif" alt="Loading..."/>
+    <img id="loading-image" width="32" height="32" src="images/ajax-loader.gif" alt="Loading..." />
     <div id="loading-text">Loading... please wait...</div>
   </div>
 </div>
