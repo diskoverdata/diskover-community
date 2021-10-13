@@ -98,14 +98,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             text-align: center;
             color: #cccccc;
             font-size: 18px;
-            padding: 0 0 20px 0;
+            padding: 0 10px 20px;
             border-bottom: 1px solid #000000;
         }
 
         .login-error {
             text-align: center;
-            font-size: 14px;
-            margin-top: 10px;
+            color: #ffcccc;
+            font-size: 16px;
+            margin-top: 20px;
+            padding:0 20px;
+        }
+
+        .login-error.text-danger:hover {
+            color: #ffcccc;
         }
 
         .login form {
@@ -156,27 +162,39 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
 <body>
 <div class="login">
-    <div class="login-logo"><img src="images/diskover.png" alt="diskover" width="249" height="189" /></div>
-    <h1>Password Change</h1>
-    <h4>Welcome to Diskover!<br>Please set your initial password.</h4>
-    <form method="post">
-        <?php /* TODO: If they are not changing their default password, prompt for current password. */ ?>
-        <label for="password">
-            <i class="fas fa-lock"></i>
-        </label>
-        <input type="password" class="form-control" name="password" id="password" placeholder="Password" required>
+  <div class="login-logo"><img src="images/diskover.png" alt="diskover" width="249" height="189" /></div>
+  <h1>Password Change</h1>
+  <h4>
+    <?php if ($initialPassword): ?>
+      Welcome to Diskover!<br>Please set your initial password.
+    <?php else: ?>
+      Please enter your existing password, and choose a new password.
+    <?php endif; ?>
+  </h4>
+  <p class="login-error text-danger"><?php echo $msg; ?></p>
+  <form method="post">
+    <?php if (!$initialPassword): ?>
+      <label for="passwordCurrent">
+        <i class="fas fa-lock"></i>
+      </label>
+      <input type="password" class="form-control" name="passwordCurrent" id="passwordCurrent" placeholder="Current Password" required>
+    <?php endif; ?>
 
-        <label for="password2">
-            <i class="fas fa-lock"></i>
-        </label>
-        <input type="password" class="form-control" name="password2" id="password2" placeholder="Retype Password" required>
-        <input type="submit" value="Save Password" onclick="loadingShow()">
-        <p class="login-error text-danger"><?php echo $msg; ?></p>
-    </form>
-    <div id="loading">
-        <img id="loading-image" width="32" height="32" src="images/ajax-loader.gif" alt="Loading..." />
-        <div id="loading-text">Loading... please wait...</div>
-    </div>
+    <label for="password">
+      <i class="fas fa-lock"></i>
+    </label>
+    <input type="password" class="form-control" name="password" id="password" placeholder="New Password" required>
+
+    <label for="password2">
+      <i class="fas fa-lock"></i>
+    </label>
+    <input type="password" class="form-control" name="password2" id="password2" placeholder="Retype New Password" required>
+    <input type="submit" value="Save Password" onclick="loadingShow()">
+  </form>
+  <div id="loading">
+    <img id="loading-image" width="32" height="32" src="images/ajax-loader.gif" alt="Loading..." />
+    <div id="loading-text">Loading... please wait...</div>
+  </div>
 </div>
 </body>
 

@@ -101,7 +101,7 @@ class UserDatabase
         $username = $_SESSION['username'];
         $password1 = $_POST['password'];
         $password2 = $_POST['password2'];
-        // $currentPassword = $_POST['current'];
+        $currentPassword = $_POST['passwordCurrent'];
 
         $user = $this->findUser($username);
         if (!$user->isValid) {
@@ -111,9 +111,22 @@ class UserDatabase
             return 'Error, could not find current user.';
         }
 
-        if (!$initialChange) {
-            // Validate current password.
-            return 'Not implemented';
+        // On their initial password set, we will not prompt them
+        // for a password, but for sanity, make sure the current
+        // password matches the expected default password.
+        if ($initialChange) {
+            if (!$user->validatePassword(Constants::PASS)) {
+                // They were attempting to change their password from the
+                // initial password change page, but the database password
+                // does not match the expected default password.
+                return 'Initial password has already been set.<br><a href="/login.php">Go to login page</a>';
+            }
+        } else {
+            // This is not the initial password change, so validate
+            // against the password in the database.
+            if (!$user->validatePassword($currentPassword)) {
+                return 'Current password is not correct.';
+            }
         }
 
         // Ensure passwords match, then we can work on one variable.

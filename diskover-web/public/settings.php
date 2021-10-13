@@ -7,10 +7,10 @@ https://diskoverdata.com
 Copyright 2017-2021 Diskover Data, Inc.
 "Community" portion of Diskover made available under the Apache 2.0 License found here:
 https://www.diskoverdata.com/apache-license/
- 
+
 All other content is subject to the Diskover Data, Inc. end user license agreement found at:
 https://www.diskoverdata.com/eula-subscriptions/
-  
+
 Diskover Data products and features for all versions found here:
 https://www.diskoverdata.com/solutions/
 
@@ -62,6 +62,13 @@ require "../src/diskover/Diskover.php";
         <h1 class="page-header"><i class="fas fa-user-cog"></i> Settings</h1>
         <div class="row">
             <div class="col-lg-12">
+                <?php if (Constants::LOGIN_REQUIRED) : ?>
+                <div class="well">
+                  <h4>Profile</h4>
+                  <p><i class="glyphicon glyphicon-user"></i> Username: <?php echo $_SESSION['username']; ?></p>
+                  <p><i class="glyphicon glyphicon-lock"></i> Password: <a href="/password.php">Change Password</a></p>
+                </div>
+                <?php endif; ?>
                 <div class="well">
                     <h4>New index notification</h4>
                     <input type="checkbox" name="notifynewindex" id="notifynewindex" onclick="setNotifyNewIndex()" <?php echo (getCookie('notifynewindex') == 1) ? 'checked' : ''; ?>> <label for="notifynewindex" class="control-label">Notify when newer index</label>
@@ -90,7 +97,7 @@ require "../src/diskover/Diskover.php";
                     <div class="form-check">
                         <input type="checkbox" class="form-check-input" id="sizedu" onclick="setSizeField()">
                         <label class="form-check-label" for="sizedu">Use size_du (allocated size) instead of size for charts and file tree sizes</label>
-                    </div>      
+                    </div>
                 </div>
                 </div><div class="well">
                     <h4>Use predictive search</h4>

@@ -105,6 +105,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
           padding:0 20px;
       }
 
+      .login-error.text-danger:hover {
+          color: #ffcccc;
+      }
+
       .login form {
           display: flex;
           flex-wrap: wrap;
