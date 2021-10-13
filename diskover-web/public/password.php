@@ -187,7 +187,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 
     function loadingShow() {
-        if (document.getElementById('username').value !== '' && document.getElementById('password').value !== '') {
+        if (document.getElementById('password').value !== '' && document.getElementById('password2').value !== '') {
             document.getElementById('loading').style.display = 'block';
         }
     }
