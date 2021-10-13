@@ -7,10 +7,10 @@ https://diskoverdata.com
 Copyright 2017-2021 Diskover Data, Inc.
 "Community" portion of Diskover made available under the Apache 2.0 License found here:
 https://www.diskoverdata.com/apache-license/
- 
+
 All other content is subject to the Diskover Data, Inc. end user license agreement found at:
 https://www.diskoverdata.com/eula-subscriptions/
-  
+
 Diskover Data products and features for all versions found here:
 https://www.diskoverdata.com/solutions/
 
@@ -120,7 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['username']) && isset($
          padding-top: 20px;
       }
 
-      .login form label {
+      .login .input-label {
          display: flex;
          justify-content: center;
          align-items: center;
@@ -166,18 +166,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['username']) && isset($
       <h1>diskover Login</h1>
       <h4>community edition (ce)</h4>
       <form action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>" method="post">
-         <label for="username">
+         <label class="input-label" for="username">
             <i class="fas fa-user"></i>
          </label>
          <input type="text" class="form-control" name="username" id="username" placeholder="Username" required autofocus>
-         <label for="password">
+         <label class="input-label" for="password">
             <i class="fas fa-lock"></i>
          </label>
          <input type="password" class="form-control" name="password" id="password" placeholder="Password" required>
          <div class="checkbox">
-            <input type="checkbox" name="stayloggedin" id="stayloggedin"> Keep me logged in for 7 days
+            <label><input type="checkbox" name="stayloggedin" id="stayloggedin"> Keep me logged in for 7 days</label>
          </div>
-         <input type="submit" value="Login" onclick="loadingShow()"></input>
+         <input type="submit" value="Login" onclick="loadingShow()">
          <p class="login-error text-danger"><?php echo $msg; ?></p>
       </form>
       <div id="loading">
@@ -194,7 +194,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['username']) && isset($
    }
 
    function loadingShow() {
-      if (document.getElementById('username').value != '' && document.getElementById('password').value != '') {
+      if (document.getElementById('username').value !== '' && document.getElementById('password').value !== '') {
          document.getElementById('loading').style.display = 'block';
       }
    }
