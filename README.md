@@ -27,9 +27,9 @@ diskover runs on Linux, macOS and Windows 10 and is written in Python. Diskover'
 git clone https://github.com/diskoverdata/diskover-community.git
 ```
 - diskover community edition (ce) v2.0-rc.1 has been released! See [releases](https://github.com/diskoverdata/diskover-community/releases) to download latest version. 
-- diskover ce v2 [linuxserver.io](https://linuxserver.io) docker hub container:
-    - https://hub.docker.com/r/linuxserver/diskover
-    - https://github.com/linuxserver/docker-diskover
+- diskover ce v2 [linuxserver.io](https://linuxserver.io) docker container:
+    - [docker hub](https://hub.docker.com/r/linuxserver/diskover)
+    - [lsio github](https://github.com/linuxserver/docker-diskover)
 - no registration is required to download or use.
 - v1 indices are not compatible with v2, you will need to re-index.
 
