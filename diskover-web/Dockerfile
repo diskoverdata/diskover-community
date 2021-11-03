@@ -16,12 +16,6 @@ RUN composer install \
 
 FROM php:7.4-fpm
 
-# Install php ldap extension
-RUN apt-get update && \
-        apt-get install -y libldap2-dev
-RUN docker-php-ext-configure ldap
-RUN docker-php-ext-install ldap
-
 # Copy existing application directory contents
 COPY . /var/www
 COPY --from=vendor /tmp/vendor/ /var/www/vendor/
