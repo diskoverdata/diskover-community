@@ -38,7 +38,7 @@ from diskover_helpers import dir_excluded, file_excluded, \
     get_file_name, load_plugins, list_plugins, get_plugins_info, set_times, \
     get_mem_usage
 
-version = '2.0-rc.1-4 community edition (ce)'
+version = '2.0-rc.2 community edition (ce)'
 __version__ = version
 
 # Windows check
@@ -350,6 +350,19 @@ def get_tree_size(thread, root, top, path, docs, depth=0, maxdepth=999):
                                 with crawl_thread_lock:
                                     warnings += 1
                                 continue
+                            # check if using altscanner and if any additional meta data to add to data dict
+                            if options.altscanner:
+                                try:
+                                    extrameta_dict = alt_scanner.add_meta(entry.path, f_stat)
+                                    if extrameta_dict is not None:
+                                        data.update(extrameta_dict)
+                                except Exception as e:
+                                    logmsg = '[{0}] ALT SCANNER EXCEPTION {1}'.format(thread, e)
+                                    logger.exception(logmsg)
+                                    if logtofile: logger_warn.exception(logmsg)
+                                    with crawl_thread_lock:
+                                        warnings += 1
+                                    pass
                             # check plugins for adding extra meta data to data dict
                             if plugins_enabled and plugins_files:
                                 for plugin in plugins:
@@ -381,19 +394,6 @@ def get_tree_size(thread, root, top, path, docs, depth=0, maxdepth=999):
                                         with crawl_thread_lock:
                                             warnings += 1
                                         pass
-                            # check if using altscanner and if any additional meta data to add to data dict
-                            if options.altscanner:
-                                try:
-                                    extrameta_dict = alt_scanner.add_meta(entry.path, f_stat)
-                                    if extrameta_dict is not None:
-                                        data.update(extrameta_dict)
-                                except Exception as e:
-                                    logmsg = '[{0}] ALT SCANNER EXCEPTION {1}'.format(thread, e)
-                                    logger.exception(logmsg)
-                                    if logtofile: logger_warn.exception(logmsg)
-                                    with crawl_thread_lock:
-                                        warnings += 1
-                                    pass
                             # add file doc to docs list and upload to ES once it reaches certain size
                             docs.append(data.copy())
                             doc_count = len(docs)
@@ -456,6 +456,19 @@ def get_tree_size(thread, root, top, path, docs, depth=0, maxdepth=999):
                 if dirs > 0: dirs -= 1
                 pass
             else:
+                # check if using altscanner and if any additional meta data to add to data dict
+                if options.altscanner:
+                    try:
+                        extrameta_dict = alt_scanner.add_meta(path, d_stat)
+                        if extrameta_dict is not None:
+                            data.update(extrameta_dict)
+                    except Exception as e:
+                        logmsg = '[{0}] ALT SCANNER EXCEPTION {1}'.format(thread, e)
+                        logger.exception(logmsg)
+                        if logtofile: logger_warn.exception(logmsg)
+                        with crawl_thread_lock:
+                            warnings += 1
+                        pass
                 # check plugins for adding extra meta data to data dict
                 if plugins_enabled and plugins_dirs:
                     for plugin in plugins:
@@ -487,19 +500,6 @@ def get_tree_size(thread, root, top, path, docs, depth=0, maxdepth=999):
                             with crawl_thread_lock:
                                 warnings += 1
                             pass
-                # check if using altscanner and if any additional meta data to add to data dict
-                if options.altscanner:
-                    try:
-                        extrameta_dict = alt_scanner.add_meta(path, d_stat)
-                        if extrameta_dict is not None:
-                            data.update(extrameta_dict)
-                    except Exception as e:
-                        logmsg = '[{0}] ALT SCANNER EXCEPTION {1}'.format(thread, e)
-                        logger.exception(logmsg)
-                        if logtofile: logger_warn.exception(logmsg)
-                        with crawl_thread_lock:
-                            warnings += 1
-                        pass
                 if depth > 0:
                     # add file doc to docs list and upload to ES once it reaches certain size
                     docs.append(data.copy())
@@ -804,11 +804,19 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
             sys.exit(1)
         except Exception:
             raise
+        logger.info('Using alternate scanner {0}'.format(alt_scanner))
         # point os.scandir() to scandir() in alt scanner module
         os.scandir = alt_scanner.scandir
-        # set up any logging for scanner
-        alt_scanner.log_setup(loglevel, logformat, logtofile, handler_file, handler_warnfile, handler_con)
-        logger.info('Using alternate scanner {0}'.format(alt_scanner))
+        # call log_setup function to set up any logging for scanner
+        try:
+            alt_scanner.log_setup(loglevel, logformat, logtofile, handler_file, handler_warnfile, handler_con)
+        except AttributeError:
+            pass
+         # call init function to create any connections to api, db, etc
+        try:
+            alt_scanner.init()
+        except AttributeError:
+            pass
     else:
         alt_scanner = None
 
