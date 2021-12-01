@@ -26,7 +26,7 @@ error_reporting(E_ALL ^ E_NOTICE);
 /* Start Globals */
 
 // diskover-web version
-$VERSION = '2.0-rc.1-4 community edition (ce)';
+$VERSION = '2.0-rc.2 community edition (ce)';
 
 // array of constants names required in Constants.php config file
 $config_const = array(
@@ -101,11 +101,9 @@ class ESClient
         $hosts = array();
         $hosts[] = array(
             'host' => getenv('ES_HOST') ?: Constants::ES_HOST, 'port' => getenv('ES_PORT') ?: Constants::ES_PORT,
-            'user' => getenv('ES_USER') ?: Constants::ES_USER, 'pass' => getenv('ES_PASS') ?: Constants::ES_PASS
+            'user' => getenv('ES_USER') ?: Constants::ES_USER, 'pass' => getenv('ES_PASS') ?: Constants::ES_PASS,
+            'scheme' => (getenv('ES_HTTPS') || Constants::ES_HTTPS) ? 'https' : 'http'
         );
-        if (getenv('ES_HTTPS') ?: Constants::ES_HTTPS) {
-            $host['scheme'] = 'https';
-        }
         $client = ClientBuilder::create()->setHosts($hosts)->build();
         $this->client = $client;
         return $this->client;
@@ -251,7 +249,7 @@ function setPaths()
 function init()
 {
     global $timezone, $esIndex, $no_pathselect_pages, $indices_all, $all_index_info, $indices_sorted, $completed_indices, 
-        $latest_completed_index, $fields, $indexinfo_updatetime, $index_starttimes, $indexinfo_expiretime;
+        $latest_completed_index, $fields, $indexinfo_updatetime, $index_starttimes, $indexinfo_expiretime, $index_spaceinfo;
 
     if (!isset($_SESSION['indices_uuids'])) {
         $_SESSION['indices_uuids'] = array();
@@ -271,7 +269,7 @@ function init()
     ) {
         list(
             $indices_all, $all_index_info, $indices_sorted, $completed_indices, $latest_completed_index, 
-            $fields, $index_starttimes
+            $fields, $index_starttimes, $index_spaceinfo
         ) = setIndexInfo();
 
         if (isset($_SESSION['indexinfo'])) {
@@ -283,6 +281,7 @@ function init()
             $latest_completed_index = (!is_null($latest_completed_index)) ? $latest_completed_index : $_SESSION['indexinfo']['latest_completed_index'];
             $fields = $_SESSION['indexinfo']['fields'];
             $index_starttimes = array_merge($_SESSION['indexinfo']['starttimes'], $index_starttimes);
+            $index_spaceinfo = array_merge($_SESSION['indexinfo']['spaceinfo'], $index_spaceinfo);
         }
 
         $_SESSION['indexinfo'] = [
@@ -293,7 +292,8 @@ function init()
             'completed_indices' => $completed_indices,
             'latest_completed_index' => $latest_completed_index,
             'fields' => $fields,
-            'starttimes' => $index_starttimes
+            'starttimes' => $index_starttimes,
+            'spaceinfo' => $index_spaceinfo
         ];
         $indexinfo_updatetime = $_SESSION['indexinfo']['update_time'] = new DateTime("now", new DateTimeZone($timezone));
     } else {
@@ -305,6 +305,7 @@ function init()
         $fields = $_SESSION['indexinfo']['fields'];
         $index_starttimes = $_SESSION['indexinfo']['starttimes'];
         $indexinfo_updatetime = $_SESSION['indexinfo']['update_time'];
+        $index_spaceinfo = $_SESSION['indexinfo']['spaceinfo'];
     }
 
     $indices_all = $_SESSION['indexinfo']['indices_all'];
@@ -315,6 +316,7 @@ function init()
     $fields = $_SESSION['indexinfo']['fields'];
     $index_starttimes = $_SESSION['indexinfo']['starttimes'];
     $indexinfo_updatetime = $_SESSION['indexinfo']['update_time'];
+    $index_spaceinfo = $_SESSION['indexinfo']['spaceinfo'];
     
     // check for index in url
     if (isset($_GET['index']) && $_GET['index'] != "") {
@@ -478,6 +480,7 @@ function setIndexInfo()
     $index_starttimes = array();
     $all_index_info = array();
     $fields = array();
+    $index_spaceinfo = array();
 
     foreach ($indices_all as $key => $val) {
         // get index uuid
@@ -578,6 +581,28 @@ function setIndexInfo()
             $indexsize = str_replace('b', '', $indexsize);
         }
         $all_index_info[$key]['totals']['indexsize'] = $indexsize;
+
+        // get disk space for each index
+        $searchParams['body'] = [
+            'size' => 100,
+            'query' => [
+                'match' => [
+                    'type' => 'spaceinfo'
+                ]
+            ]
+        ];
+
+        try {
+            $queryResponse = $client->search($searchParams);
+        } catch (Missing404Exception $e) {
+            handleError("Selected indices are no longer available.");
+        } catch (Exception $e) {
+            handleError('ES error: ' . $e->getMessage(), true);
+        }
+
+        foreach ($queryResponse['hits']['hits'] as $hit) {
+            $index_spaceinfo[$key][$hit['_source']['path']] = $hit['_source'];
+        }
     }
 
     // sort completed indices by creation_date
@@ -629,7 +654,7 @@ function setIndexInfo()
 
     return [
         $indices_all, $all_index_info, $indices_sorted, $completed_indices, $latest_completed_index, 
-        $fields, $index_starttimes
+        $fields, $index_starttimes, $index_spaceinfo
     ];
 }
 

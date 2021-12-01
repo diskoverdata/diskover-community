@@ -94,7 +94,12 @@ $(function () {
                 callbacks: {
                     label: function (tooltipItem, data) {
                         var i = tooltipItem.index;
-                        return data.labels[i] + ': ' + format(data.datasets[0].data[i]) + '';
+                            var total = data.datasets[0].data.reduce(function(previousValue, currentValue, currentIndex, array) {
+                                return previousValue + currentValue;
+                            });
+                            var currentValue = data.datasets[0].data[i];
+                            var percentage = parseFloat((currentValue/total*100).toFixed(1));
+                            return data.labels[i] + ': ' + format(currentValue) + ' (' + percentage +'%)';
                     }
                 }
             },
@@ -178,7 +183,12 @@ $(function () {
                 callbacks: {
                     label: function (tooltipItem, data) {
                         var i = tooltipItem.index;
-                        return data.labels[i] + ': ' + data.datasets[0].data[i].toLocaleString() + ' files';
+                        var total = data.datasets[0].data.reduce(function(previousValue, currentValue, currentIndex, array) {
+                            return previousValue + currentValue;
+                        });
+                        var currentValue = data.datasets[0].data[i];
+                        var percentage = parseFloat((currentValue/total*100).toFixed(1));
+                        return data.labels[i] + ': ' + currentValue.toLocaleString() + ' files (' + percentage +'%)';
                     }
                 }
             },
@@ -279,7 +289,9 @@ $(function () {
                 callbacks: {
                     label: function (tooltipItem, data) {
                         var i = tooltipItem.datasetIndex;
-                        return data.datasets[i].label + ': ' + format(data.datasets[i].size) + '';
+                        var currentValue = data.datasets[i].size
+                        var percentage = parseFloat((currentValue/totalsize*100).toFixed(1));
+                        return data.datasets[i].label + ': ' + format(currentValue) + ' (' + percentage +'%)';
                     }
                 }
             },

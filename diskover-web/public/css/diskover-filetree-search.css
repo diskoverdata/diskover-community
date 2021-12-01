@@ -18,19 +18,55 @@ https://www.diskoverdata.com/solutions/
 /* d3 file tree for search */
 
 .tree-wrapper {
-    margin-top: 5px;
-    height: 76vh;
-    overflow: auto;
+    margin-top: 70px;
+    height: calc(100% - 160px);
+    overflow-y: auto;
+    overflow-x: hidden;
     border: 1px solid #282828;
     border-radius: 5px;
     padding: 20px;
+    padding-left: 25px;
     background-color: #222222;
-    position: relative;
+    position: fixed;
+    width: 300px;
 }
 
-#search-results-wrapper {
-    margin-top: 5px;
+.search-results-wrapper {
+    padding-left: 10px;
+    margin-left: 300px;
+    width: calc(100% - 300px);
     overflow: auto;
+    display: block;
+}
+
+.search-results-wrapper-lg {
+    padding-left: 10px;
+    margin-left: 50px;
+    width: calc(100% - 50px);
+    overflow: auto;
+    display: block;
+}
+
+.tree-button-wrapper {
+    width: 300px;
+    position: fixed;
+    margin: 0px auto;
+    padding: 5px;
+    padding-left: 10px;
+    border: 1px solid #282828;
+    border-radius: 5px;
+    background-color: #222222;
+}
+
+.tree-button-wrapper-sm {
+    width: 50px;
+    position: fixed;
+    margin: 0px auto;
+    padding: 5px;
+    padding-left: 10px;
+    border: 1px solid #282828;
+    border-radius: 5px;
+    background-color: #222222;
 }
 
 #tree-wrapper::-webkit-scrollbar-track {
@@ -50,6 +86,18 @@ https://www.diskoverdata.com/solutions/
 #tree-wrapper::-webkit-scrollbar-thumb {
     background-color: #555;
     border-radius: 5px;
+}
+
+.tree-container {
+    position: absolute; 
+    left: 5px;
+    display: block;
+}
+
+.tree-container-toppaths {
+    overflow: auto;
+    border: 0;
+    margin: 0px auto;
 }
 
 .selected {

@@ -108,9 +108,9 @@ if (empty($_REQUEST['id'])) {
                 <div class="col-xs-12">
                     <?php
                     if ($doctype == 'directory') {
-                        $fullpathhref = "search.php?index=" . $esIndex . "&index2=" . $esIndex2 . "&submitted=true&p=1&q=parent_path:" . rawurlencode(escape_chars($fullpath)) . "&path=" . rawurlencode($fullpath);
+                        $fullpathhref = "search.php?index=" . $esIndex . "&submitted=true&p=1&q=parent_path:" . rawurlencode(escape_chars($fullpath)) . "&path=" . rawurlencode($fullpath);
                     } else {
-                        $fullpathhref = "search.php?index=" . $esIndex . "&index2=" . $esIndex2 . "&submitted=true&p=1&q=parent_path:" . rawurlencode(escape_chars($parentpath)) . " AND name:" . rawurlencode($filename) . "&path=" . rawurlencode($parentpath);
+                        $fullpathhref = "search.php?index=" . $esIndex . "&submitted=true&p=1&q=parent_path:" . rawurlencode(escape_chars($parentpath)) . " AND name:&quot;" . rawurlencode($filename) . "&quot;&path=" . rawurlencode($parentpath);
                     }
                     ?>
                     <h2 class="path"><?php echo ($doctype == 'file') ? '<i class="fas fa-file-alt" style="color:#738291;"></i>' : '<i class="fas fa-folder" style="color:#E9AC47;"></i>'; ?> <span id="filename"><a href="<?php echo $fullpathhref; ?>"><?php echo $filename; ?></a></span></h2>
@@ -130,8 +130,8 @@ if (empty($_REQUEST['id'])) {
                             <button title="search" class="btn btn-default dropdown-toggle btn-xs file-btns" type="button" data-toggle="dropdown"><i class="glyphicon glyphicon-search"></i>
                                 <span class="caret"></span></button>
                             <ul class="dropdown-menu">
-                                <li class="small"><a href="search.php?index=<?php echo $esIndex; ?>&amp;index2=<?php echo $esIndex2; ?>&amp;submitted=true&amp;p=1&amp;q=parent_path:<?php echo rawurlencode(escape_chars($fullpath)); ?>"><i class="glyphicon glyphicon-search"></i> search path (non-recursive)</a></li>
-                                <li class="small"><a href="search.php?index=<?php echo $esIndex; ?>&amp;index2=<?php echo $esIndex2; ?>&amp;submitted=true&amp;p=1&amp;q=parent_path:(<?php echo rawurlencode(escape_chars($fullpath)) . ' OR ' . rawurlencode($fullpath_wildcard); ?>)"><i class="glyphicon glyphicon-search"></i> search path (recursive)</a></li>
+                                <li class="small"><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=parent_path:<?php echo rawurlencode(escape_chars($fullpath)); ?>"><i class="glyphicon glyphicon-search"></i> search path (non-recursive)</a></li>
+                                <li class="small"><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=parent_path:(<?php echo rawurlencode(escape_chars($fullpath)) . ' OR ' . rawurlencode($fullpath_wildcard); ?>)"><i class="glyphicon glyphicon-search"></i> search path (recursive)</a></li>
                             </ul>
                         </div>
                         <br />
@@ -150,8 +150,8 @@ if (empty($_REQUEST['id'])) {
                         <button title="filter" class="btn btn-default dropdown-toggle btn-xs file-btns" type="button" data-toggle="dropdown"><i class="glyphicon glyphicon-search"></i>
                             <span class="caret"></span></button>
                         <ul class="dropdown-menu">
-                            <li class="small"><a href="search.php?index=<?php echo $esIndex; ?>&amp;index2=<?php echo $esIndex2; ?>&amp;submitted=true&amp;p=1&amp;q=parent_path:<?php echo rawurlencode(escape_chars($parentpath)); ?>"><i class="glyphicon glyphicon-search"></i> search path (non-recursive)</a></li>
-                            <li class="small"><a href="search.php?index=<?php echo $esIndex; ?>&amp;index2=<?php echo $esIndex2; ?>&amp;submitted=true&amp;p=1&amp;q=parent_path:(<?php echo rawurlencode(escape_chars($parentpath)) . ' OR ' . rawurlencode($parentpath_wildcard); ?>)"><i class="glyphicon glyphicon-search"></i> search path (recursive)</a></li>
+                            <li class="small"><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=parent_path:<?php echo rawurlencode(escape_chars($parentpath)); ?>"><i class="glyphicon glyphicon-search"></i> search path (non-recursive)</a></li>
+                            <li class="small"><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=parent_path:(<?php echo rawurlencode(escape_chars($parentpath)) . ' OR ' . rawurlencode($parentpath_wildcard); ?>)"><i class="glyphicon glyphicon-search"></i> search path (recursive)</a></li>
                         </ul>
                     </div>
                     <br /><br />
@@ -161,44 +161,10 @@ if (empty($_REQUEST['id'])) {
                 <div class="col-xs-6">
                     <ul class="list-group">
                         <li class="list-group-item">
-                            <span class="pull-right">&nbsp;
-                                <!-- show comparison file size -->
-                                <?php if ($esIndex2 != "") { ?>
-                                    <?php $fileinfo_index2 = get_index2_fileinfo($client, $esIndex2, $docsource['parent_path'], $docsource['name']);
-                                    if ($docsource['size'] > 0 && $fileinfo_index2[0] > 0) {
-                                        $filesize_change = number_format(changePercent($docsource['size'], $fileinfo_index2[0]), 1);
-                                    } else if ($docsource['size'] > 0 && $fileinfo_index2[0] == 0) {
-                                        $filesize_change = 100.0;
-                                    }
-                                    if ($filesize_change != 0) { ?>
-                                        <small><?php echo formatBytes($fileinfo_index2[0]); ?>
-                                            <span style="color:<?php echo $filesize_change > 0 ? "red" : "#29FE2F"; ?>;">(<?php echo $filesize_change > 0 ? '<i class="fa fa-caret-up"></i> +' : '<i class="fa fa-caret-down"></i>'; ?>
-                                                <?php echo $filesize_change; ?>%)</span></small>
-                                <?php }
-                                } ?>
-                                <!-- end show comparison file size -->
-                            </span>
                             <span class="badge"><?php echo formatBytes($docsource['size']); ?></span>
                             Size
                         </li>
                         <li class="list-group-item">
-                            <span class="pull-right">&nbsp;
-                                <!-- show comparison file size -->
-                                <?php if ($esIndex2 != "") { ?>
-                                    <?php
-                                    if ($docsource['size_du'] > 0 && $fileinfo_index2[1] > 0) {
-                                        $filesizedu_change = number_format(changePercent($docsource['size_du'], $fileinfo_index2[1]), 1);
-                                    } else if ($docsource['size_du'] > 0 && $fileinfo_index2[0] == 0) {
-                                        $filesizedu_change = 100.0;
-                                    }
-                                    if ($filesizedu_change != 0) { ?>
-                                        <small><?php echo formatBytes($fileinfo_index2[1]); ?>
-                                            <span style="color:<?php echo $filesizedu_change > 0 ? "red" : "#29FE2F"; ?>;">(<?php echo $filesizedu_change > 0 ? '<i class="fa fa-caret-up"></i> +' : '<i class="fa fa-caret-down"></i>'; ?>
-                                                <?php echo $filesizedu_change; ?>%)</span></small>
-                                <?php }
-                                } ?>
-                                <!-- end show comparison file size -->
-                            </span>
                             <span class="badge"><?php echo formatBytes($docsource['size_du']); ?></span>
                             Allocated
                         </li>
@@ -206,65 +172,14 @@ if (empty($_REQUEST['id'])) {
                             $items = $docsource['file_count'] + $docsource['dir_count'];
                         ?>
                             <li class="list-group-item">
-                                <span class="pull-right">&nbsp;
-                                    <!-- show comparison items -->
-                                    <?php if ($esIndex2 != "") { ?>
-                                        <?php
-                                        if ($items > 0 && $fileinfo_index2[2] > 0) {
-                                            $diritems_change = number_format(changePercent($items, $fileinfo_index2[2]), 1);
-                                        } else if ($items > 0 && $fileinfo_index2[2] == 0) {
-                                            $diritems_change = 100.0;
-                                        }
-                                        if ($diritems_change != 0) { ?>
-                                            <small><?php echo number_format($fileinfo_index2[2]); ?>
-                                                <span style="color:<?php echo $diritems_change > 0 ? "red" : "#29FE2F"; ?>;">(<?php echo $diritems_change > 0 ? '<i class="fa fa-caret-up"></i> +' : '<i class="fa fa-caret-down"></i>'; ?>
-                                                    <?php echo $diritems_change; ?>%)</span></small>
-                                    <?php }
-                                    } ?>
-                                    <!-- end show comparison items -->
-                                </span>
                                 <span class="badge"><?php echo number_format($items); ?></span>
                                 Items
                             </li>
                             <li class="list-group-item">
-                                <span class="pull-right">&nbsp;
-                                    <!-- show comparison items -->
-                                    <?php if ($esIndex2 != "") { ?>
-                                        <?php
-                                        if ($docsource['file_count'] > 0 && $fileinfo_index2[3] > 0) {
-                                            $diritems_files_change = number_format(changePercent($docsource['file_count'], $fileinfo_index2[3]), 1);
-                                        } else if ($docsource['file_count'] > 0 && $fileinfo_index2[3] == 0) {
-                                            $diritems_files_change = 100.0;
-                                        }
-                                        if ($diritems_files_change != 0) { ?>
-                                            <small><?php echo number_format($fileinfo_index2[3]); ?>
-                                                <span style="color:<?php echo $diritems_files_change > 0 ? "red" : "#29FE2F"; ?>;">(<?php echo $diritems_files_change > 0 ? '<i class="fa fa-caret-up"></i> +' : '<i class="fa fa-caret-down"></i>'; ?>
-                                                    <?php echo $diritems_files_change; ?>%)</span></small>
-                                    <?php }
-                                    } ?>
-                                    <!-- end show comparison items -->
-                                </span>
                                 <span class="badge"><?php echo number_format($docsource['file_count']); ?></span>
                                 Files
                             </li>
                             <li class="list-group-item">
-                                <span class="pull-right">&nbsp;
-                                    <!-- show comparison items -->
-                                    <?php if ($esIndex2 != "") { ?>
-                                        <?php
-                                        if ($docsource['dir_count'] > 0 && $fileinfo_index2[4] > 0) {
-                                            $diritems_subdirs_change = number_format(changePercent($docsource['dir_count'], $fileinfo_index2[4]), 1);
-                                        } else if ($docsource['dir_count'] > 0 && $fileinfo_index2[4] == 0) {
-                                            $diritems_subdirs_change = 100.0;
-                                        }
-                                        if ($diritems_subdirs_change != 0) { ?>
-                                            <small><?php echo number_format($fileinfo_index2[4]); ?>
-                                                <span style="color:<?php echo $diritems_subdirs_change > 0 ? "red" : "#29FE2F"; ?>;">(<?php echo $diritems_subdirs_change > 0 ? '<i class="fa fa-caret-up"></i> +' : '<i class="fa fa-caret-down"></i>'; ?>
-                                                    <?php echo $diritems_subdirs_change; ?>%)</span></small>
-                                    <?php }
-                                    } ?>
-                                    <!-- end show comparison items -->
-                                </span>
                                 <span class="badge"><?php echo number_format($docsource['dir_count']); ?></span>
                                 Folders
                             </li>
@@ -292,24 +207,28 @@ if (empty($_REQUEST['id'])) {
                             Hardlinks
                         </li>
                     </ul>
-                    <?php if ($showcostpergb) { ?>
-                        <ul class="list-group">
-                            <li class="list-group-item">
-                                <span class="badge">$ <?php echo number_format(round($docsource['costpergb'], 2), 2); ?></span>
-                                Cost per GB
-                            </li>
-                        </ul>
-                    <?php } ?>
                     <ul class="list-group">
                         <?php
                         if (count(Constants::EXTRA_FIELDS) > 0) {
                             foreach (Constants::EXTRA_FIELDS as $key => $value) {
                                 if (is_array($docsource[$value])) { ?>
                                     <li class="list-group-item">
-                                        <?php echo $value; ?>
-                                        <?php foreach ($docsource[$value] as $k => $v) { ?>
-                                            <span class="badge"><?php echo $k . ': ' . $v; ?></span><br />
-                                        <?php } ?>
+                                        <?php echo $key; ?>
+                                        <?php foreach ($docsource[$value] as $k => $v) {
+                                            if (is_array($v)) {
+                                                foreach ($v as $v_key => $v_val) {
+                                                    if (is_bool($v_val)) {
+                                                        $v_val = ($v_val) ? 'true' : 'false';
+                                                    } ?>
+                                                    <span class="badge"><?php echo $v_key . ': ' . $v_val; ?></span><br />
+                                                <?php }
+                                            } else {
+                                                if (is_bool($v)) {
+                                                    $v = ($v) ? 'true' : 'false';
+                                                } ?>
+                                                <span class="badge"><?php echo $k . ': ' . $v; ?></span><br />
+                                        <?php }
+                                        } ?>
                                     </li>
                                 <?php } else { ?>
                                     <li class="list-group-item">

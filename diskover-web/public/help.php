@@ -71,6 +71,7 @@ require "../src/diskover/Diskover.php";
 			<div class="col-xs-12">
 				<div class="alert alert-dismissible alert-info">
 					<i class="glyphicon glyphicon-info-sign"></i> For support and discussions, please join the diskover <a href="https://join.slack.com/t/diskoverworkspace/shared_invite/enQtNzQ0NjE1Njk5MjIyLWI4NWQ0MjFhYzQyMTRhMzk4NTQ3YjBlYjJiMDk1YWUzMTZmZjI1MTdhYTA3NzAzNTU0MDc5NDA2ZDI4OWRiMjM" target="_blank" class="alert-link">Slack workspace</a>. For any feedback/ issues, please submit an issue on <a href="https://github.com/diskoverdata/diskover-community/issues" target="_blank" class="alert-link">GitHub issues</a> page</a>.
+					<br>Documentation is located at <a href="https://docs.diskoverdata.com" target="_blank" class="alert-link">docs.diskoverdata.com</a>.
 				</div>
 			</div>
 		</div>
