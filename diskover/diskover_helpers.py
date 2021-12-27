@@ -85,44 +85,31 @@ def dir_excluded(path):
     if name.startswith('.') and u'.*' in exc_dirs:
         return True
     # skip any dirs that are found in reg exp checks including wildcard searches
-    found_dir = False
-    found_path = False
     for d in exc_dirs:
         if d == '.*':
             continue
-        if d.startswith('*') and d.endswith('*'):
-            d = d.replace('*', '')
-            if re.search(d, name):
-                found_dir = True
-                break
-            elif re.search(d, path):
-                found_path = True
-                break
-        elif d.startswith('*'):
-            d = d + '$'
-            if re.search(d, name):
-                found_dir = True
-                break
-            elif re.search(d, path):
-                found_path = True
-                break
-        elif d.endswith('*'):
-            d = '^' + d
-            if re.search(d, name):
-                found_dir = True
-                break
-            elif re.search(d, path):
-                found_path = True
-                break
+        
+        if d.startswith('*'):
+            d = d.lstrip('*')
+            
+        if d.endswith('/'):
+            d = d.rstrip('/')
+        
+        try:
+            res = re.search(d, name)
+        except re.error as e:
+            raise Exception(e)
         else:
-            if d.rstrip('/') == name:
-                found_dir = True
-                break
-            elif d.rstrip('/') == path:
-                found_path = True
-                break
-    if found_dir or found_path:
-        return True
+            if res:
+                return True
+            
+        try:
+            res = re.search(d, path)
+        except re.error as e:
+            raise Exception(e)
+        else:
+            if res:
+                return True
     return False
 
 
