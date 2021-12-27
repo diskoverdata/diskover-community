@@ -1,7 +1,7 @@
 #!/bin/sh
 #
 # diskover/diskover-web v2 community edition installer script for Centos 7
-# v0.1
+# v0.2
 # installs diskover v2 community edition from github or local tar.gz file
 #
 
@@ -46,7 +46,7 @@ if [ "$INSTALL_ELASTICSEARCH" = true ]
 then
     yum -y install java-1.8.0-openjdk.x86_64
     if [ $? -gt 0 ]; then echo "Error installing Java"; exit 1; fi
-    yum install -y https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.10.2-x86_64.rpm
+    yum install -y https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.16.1-x86_64.rpm
     if [ $? -gt 0 ]; then echo "Error installing Elasticsearch"; exit 1; fi
     firewall-cmd --add-port=9200/tcp --permanent
     firewall-cmd --reload
@@ -71,7 +71,7 @@ fi
 
 if [ "$INSTALL_KIBANA" = true ]
 then
-    yum install -y https://artifacts.elastic.co/downloads/kibana/kibana-7.10.2-x86_64.rpm
+    yum install -y https://artifacts.elastic.co/downloads/kibana/kibana-7.16.1-x86_64.rpm
     if [ $? -gt 0 ]; then echo "Error installing Kibana"; exit 1; fi
     if [ "$KIBANA_BIND_IP" != "localhost" ]
     then
