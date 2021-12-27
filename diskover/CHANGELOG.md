@@ -2,6 +2,8 @@
 
 # [2.0-rc.3] - 2021-12-26
 ### fixed
+- bug https://github.com/diskoverdata/diskover-community/issues/97
+    - Exception ValueError: too many values to unpack (expected 4)
 - if an unhandled error occurred, diskover would not exit without keyboard interupt
 - exception when using alt scanners
 ### added

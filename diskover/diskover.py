@@ -225,14 +225,14 @@ def get_tree_size(thread, root, top, path, docs, depth=0, maxdepth=999):
             if logtofile: logger_warn.error(logmsg)
             with crawl_thread_lock:
                 warnings += 1
-            return 0, 0, 0, 0, 0
+            return 0, 0, 0, 0
         except Exception as e:
             logmsg = '[{0}] ALT SCANNER EXCEPTION: {1}'.format(thread, e)
             logger.exception(logmsg)
             if logtofile: logger_warn.exception(logmsg)
             with crawl_thread_lock:
                 warnings += 1
-            return 0, 0, 0, 0, 0
+            return 0, 0, 0, 0
     else:
         # try to get os stat info for dir path
         try:
@@ -243,7 +243,7 @@ def get_tree_size(thread, root, top, path, docs, depth=0, maxdepth=999):
             if logtofile: logger_warn.warning(logmsg)
             with crawl_thread_lock:
                 warnings += 1
-            return 0, 0, 0, 0, 0
+            return 0, 0, 0, 0
     
         # restore times (atime/mtime)
         if restore_times:
