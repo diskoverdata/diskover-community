@@ -11,6 +11,7 @@
 - --threads cli option, overrides maxthreads config setting
 ### changed
 - maxthreads diskover config settings now default to auto set based on number of cpus when leaving config setting blank, see default/sample config file
+- improved crawl performance
 
 
 # [2.0-rc.2] - 2021-12-01

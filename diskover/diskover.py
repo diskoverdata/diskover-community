@@ -212,6 +212,7 @@ def get_tree_size(thread, root, top, path, docs, depth=0, maxdepth=999):
     f_skip_count = 0
     d_skip_count = 0
     tot_doc_count = 0
+    parent_path = None
     
     # use alt scanner
     # try to get stat info for dir path
@@ -336,10 +337,13 @@ def get_tree_size(thread, root, top, path, docs, depth=0, maxdepth=999):
                             else:
                                 owner, group = get_owner_group_names(f_stat.st_uid, f_stat.st_gid)
                             try:
+                                if parent_path is None:
+                                    parent_path = get_parent_path(entry.path)
+                                file_name = get_file_name(entry.name)
                                 data = {
-                                    'name': get_file_name(entry.name),
+                                    'name': file_name,
                                     'extension': os.path.splitext(entry.name)[1][1:].lower(),
-                                    'parent_path': get_parent_path(entry.path),
+                                    'parent_path': parent_path,
                                     'size': fsize,
                                     'size_du': fsize_du,
                                     'owner': owner,
