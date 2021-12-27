@@ -11,7 +11,7 @@ DISKOVER_WEB_PATH=/var/www/diskover-web
 # set to true for github update or false for local tar.gz
 GITHUB_UPDATE=true
 # set to path of local update file if not updating via github
-UPDATE_FILE=./diskover-v2-2.0-b.2.tar.gz
+UPDATE_FILE=./diskover-community-2.0-rc.2.tar.gz
 ########################
 
 echo

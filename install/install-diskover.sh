@@ -11,7 +11,7 @@ DISKOVER_WEB_PATH=/var/www/diskover-web
 # set to true for github install or false for local tar.gz
 GITHUB_INSTALL=true
 # set to path of local install file if not installing via github
-INSTALL_FILE=./diskover-v2-latest.tar.gz
+INSTALL_FILE=./diskover-community-2.0-rc.2.tar.gz
 # set to true or false for components you want to install
 INSTALL_DISKOVER=true
 INSTALL_DISKOVERWEB=true
