@@ -850,12 +850,12 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
     
     # check for cli options not available CE
     if options.addtoindex:
-        logmsg = 'Using --addtoindex cli option to add additional top paths to an index requires Diskover Pro version.'
+        logmsg = 'Using --addtoindex cli option to add additional top paths to an index requires diskover Pro version.'
         logger.error(logmsg)
         if logtofile: logger_warn.error(logmsg)
         sys.exit(1)
     if options.threaddepth:
-        logmsg = 'Using --threaddepth cli option to set crawl scan thread directory depth requires Diskover Essential version.'
+        logmsg = 'Using --threaddepth cli option to set crawl scan thread directory depth requires diskover Essential version.'
         logger.error(logmsg)
         if logtofile: logger_warn.error(logmsg)
         sys.exit(1)
@@ -863,7 +863,7 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
     # get top path arg
     if args:
         if len(args) > 1:
-            logmsg = 'Use only one tree_dir arg. Mutliple top paths in an index requires Diskover Pro version.'
+            logmsg = 'Use only one tree_dir arg. Mutliple top paths in an index requires diskover Pro version.'
             logger.error(logmsg)
             if logtofile: logger_warn.error(logmsg)
             sys.exit(1)
