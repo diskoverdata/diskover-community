@@ -1,7 +1,7 @@
 #!/bin/sh
 #
 # diskover v2 community edition update script (ce)
-# v0.1
+# v0.2
 # updates diskover v2 community edtion (ce) to latest version from github or local tar.gz file
 #
 
@@ -17,6 +17,7 @@ UPDATE_FILE=./diskover-v2-2.0-b.2.tar.gz
 echo
 echo Updating diskover..
 echo
+rm -f /tmp/diskover-v2-update.tar.gz > /dev/null 2>&1
 if [ "$GITHUB_UPDATE" = true ]
 then
   if [ ! -d "/tmp/diskover_install" ]
@@ -46,3 +47,4 @@ echo Update done.
 echo Cleaning up...
 cd /tmp
 rm -rf diskover_update > /dev/null 2>&1
+rm -f /tmp/diskover-v2-update.tar.gz > /dev/null 2>&1
