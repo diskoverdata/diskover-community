@@ -163,8 +163,8 @@ def start_bulk_upload(thread, root, docs):
     es_upload_start = time.time()
     try:
         bulk_upload(es, options.index, docs)
-    except BulkIndexError:
-        logmsg = 'FATAL ERROR: Elasticsearch bulk index error!'
+    except BulkIndexError as e:
+        logmsg = '[{0}] FATAL ERROR: Elasticsearch bulk index error! ({1})'.format(thread, e)
         logger.critical(logmsg, exc_info=1)
         if logtofile: logger_warn.critical(logmsg, exc_info=1)
         close_app_critical_error()
