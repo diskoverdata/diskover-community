@@ -38,7 +38,7 @@ from diskover_helpers import dir_excluded, file_excluded, \
     get_file_name, load_plugins, list_plugins, get_plugins_info, set_times, \
     get_mem_usage
 
-version = '2.0-rc.2 community edition (ce)'
+version = '2.0-rc.3 community edition (ce)'
 __version__ = version
 
 # Windows check
@@ -78,6 +78,8 @@ try:
     logtofile = config['logToFile'].get()
     logdir = config['logDirectory'].get()
     maxthreads = config['diskover']['maxthreads'].get()
+    if maxthreads is None:
+        maxthreads = int(os.cpu_count()) * 2
     exc_empty_dirs = config['diskover']['excludes']['emptydirs'].get()
     exc_empty_files = config['diskover']['excludes']['emptyfiles'].get()
     exc_files = config['diskover']['excludes']['files'].get()
@@ -136,7 +138,13 @@ def close_app():
     # close any plugins
     if plugins_enabled and plugins:
         for plugin in plugins:
-            plugin.close(tree_dir)
+            plugin.close(globals())
+    # alt scanner close
+    if alt_scanner:
+        try:
+            alt_scanner.close(globals())
+        except AttributeError:
+            pass
     # if any warnings, exit with custom exit code 64 to indicate index finished but with warnings
     if warnings > 0:
         sys.exit(64)
@@ -155,16 +163,17 @@ def start_bulk_upload(thread, root, docs):
     es_upload_start = time.time()
     try:
         bulk_upload(es, options.index, docs)
-    except BulkIndexError as e:
-        logmsg = '[{0}] ERROR: Elasticsearch bulk index error, exiting... ({1})'.format(thread, e)
-        logger.critical(logmsg, exc_info=0)
-        if logtofile: logger_warn.critical(logmsg, exc_info=0)
+    except BulkIndexError:
+        logmsg = 'FATAL ERROR: Elasticsearch bulk index error!'
+        logger.critical(logmsg, exc_info=1)
+        if logtofile: logger_warn.critical(logmsg, exc_info=1)
         close_app_critical_error()
-    es_upload_time = time.time() - es_upload_start
-    logger.debug('[{0}] bulk uploading completed in {1:.3f}s'.format(
-        thread, es_upload_time))
-    with crawl_thread_lock:
-        bulktime[root] += es_upload_time
+    else:
+        es_upload_time = time.time() - es_upload_start
+        logger.debug('[{0}] bulk uploading completed in {1:.3f}s'.format(
+            thread, es_upload_time))
+        with crawl_thread_lock:
+            bulktime[root] += es_upload_time
 
 
 def log_stats_thread(root):
@@ -559,6 +568,9 @@ def crawl(root):
         docs = []
         with crawl_thread_lock:
             scan_paths.append(top)
+        logger.debug('[{0}] starting crawl {1} (depth {2}, maxdepth {3})...'.format(thread, top, depth, maxdepth))
+        if options.verbose or options.vverbose:
+            logger.info('[{0}] starting crawl {1} (depth {2}, maxdepth {3})...'.format(thread, top, depth, maxdepth))
         size, size_du, file_count, dir_count = get_tree_size(thread, root, top, top, docs, depth, maxdepth)
         doc_count = len(docs)
         if doc_count > 0:
@@ -582,9 +594,9 @@ def crawl(root):
                     sizes[root]['dir_count'] += sizes[top]['dir_count']
                     sizes[root]['file_count'] += sizes[top]['file_count']
         
-        crawl_time = get_time(time.time() - crawl_start)                
+        crawl_time = get_time(time.time() - crawl_start)
         logger.info('[{0}] finished crawling {1} ({2} dirs, {3} files, {4}) in {5}'.format(
-                thread, top, sizes[top]['dir_count'], sizes[top]['file_count'], convert_size(sizes[top]['size']), crawl_time))
+                thread, top, dir_count, file_count, convert_size(size), crawl_time))
         with crawl_thread_lock:
             scan_paths.remove(top)
 
@@ -592,29 +604,38 @@ def crawl(root):
     scandir_walk_start = time.time()
 
     # find all subdirs at level 1
-    subdirs = []
+    subdir_list = []
     for entry in os.scandir(root):
         if entry.is_symlink():
             pass
         elif entry.is_dir() and not dir_excluded(entry.path):
-            subdirs.append(entry.path)
-    if len(subdirs) > 0:
-        logger.info('found {0} subdirs at level 1, starting threads...'.format(len(subdirs)))
+            subdir_list.append(entry.path)
+    if len(subdir_list) > 0:
+        logger.info('found {0} subdirs at level 1, starting threads...'.format(len(subdir_list)))
     else:
         logger.info('found 0 subdirs at level 1')
         
     with futures.ThreadPoolExecutor(max_workers=maxthreads) as executor:
         # Set up thread to crawl rootdir (not recursive)
-        results = futures.wait([executor.submit(crawl_thread, root, root, 0, 0)])
-        for result in results.done:
-            if result.exception() is not None:
-                raise result.exception()
+        future = executor.submit(crawl_thread, root, root, 0, 0)
+        try:
+            data = future.result()
+        except Exception as e:
+            logmsg = 'FATAL ERROR: an exception has occurred: {0}'.format(e)
+            logger.critical(logmsg, exc_info=1)
+            if logtofile: logger_warn.critical(logmsg, exc_info=1)
+            close_app_critical_error()
+        
         # Set up threads to crawl (recursive) from each of the level 1 subdirs
-        results = futures.wait([executor.submit(crawl_thread, root, subdir, 1, options.maxdepth) for subdir in subdirs])
-        del subdirs[:]
-        for result in results.done:
-            if result.exception() is not None:
-                raise result.exception()
+        futures_subdir = {executor.submit(crawl_thread, root, subdir, 1, options.maxdepth): subdir for subdir in subdir_list}
+        for future in futures.as_completed(futures_subdir):
+            try:
+                data = future.result()
+            except Exception as e:          
+                logmsg = 'FATAL ERROR: an exception has occurred: {0}'.format(e)
+                logger.critical(logmsg, exc_info=1)
+                if logtofile: logger_warn.critical(logmsg, exc_info=1)
+                close_app_critical_error()
 
     scandir_walk_time = time.time() - scandir_walk_start
     end_time = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
@@ -757,13 +778,17 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
     parser.add_option('-f', '--forcedropexisting', action='store_true', 
                         help='silently drop an existing index (if present)')
     parser.add_option('-a', '--addtoindex', action='store_true', 
-                        help='add metadata to existing index (if present) (Pro)')
+                        help='add metadata to existing index (if present) (PRO VER)')
     parser.add_option('-m', '--maxdepth', default=999, type=int, 
                         help='descend at most n directory levels below')
     parser.add_option('-l', '--listplugins', action='store_true', 
                         help='list plugins')
     parser.add_option('--altscanner', metavar='MODULENAME', 
                         help='use alternate scanner module in scanners/')
+    parser.add_option('--threads', type=int,
+                        help='crawl scan threads (overrides config maxthreads setting)')
+    parser.add_option('--threaddepth', type=int,
+                        help='crawl scan thread directory depth (overrides config threaddirdepth setting) (ESSENTIAL VER)')
     parser.add_option('-v', '--verbose', action='store_true',
                         help='verbose output')
     parser.add_option('-V', '--vverbose', action='store_true',
@@ -814,7 +839,7 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
             pass
          # call init function to create any connections to api, db, etc
         try:
-            alt_scanner.init()
+            alt_scanner.init(globals())
         except AttributeError:
             pass
     else:
@@ -823,9 +848,14 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
     # create Elasticsearch connection
     es = elasticsearch_connection()
     
-    # check for addtoindex
+    # check for cli options not available CE
     if options.addtoindex:
-        logmsg = 'Using -a to add additional top paths to an index requires diskover Pro version.'
+        logmsg = 'Using --addtoindex cli option to add additional top paths to an index requires Diskover Pro version.'
+        logger.error(logmsg)
+        if logtofile: logger_warn.error(logmsg)
+        sys.exit(1)
+    if options.threaddepth:
+        logmsg = 'Using --threaddepth cli option to set crawl scan thread directory depth requires Diskover Essential version.'
         logger.error(logmsg)
         if logtofile: logger_warn.error(logmsg)
         sys.exit(1)
@@ -833,7 +863,7 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
     # get top path arg
     if args:
         if len(args) > 1:
-            logmsg = 'Use only one tree_dir arg. Mutliple top paths in an index requires diskover Pro version.'
+            logmsg = 'Use only one tree_dir arg. Mutliple top paths in an index requires Diskover Pro version.'
             logger.error(logmsg)
             if logtofile: logger_warn.error(logmsg)
             sys.exit(1)
@@ -841,14 +871,14 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
         # check if we are using alternate scanner
         if options.altscanner:
             # check path for alt scanner
-            res = alt_scanner.check_dirpath(d)
+            res = alt_scanner.check_dirpath(tree_dir)
             if not res[0]:
                 logmsg = str(res[1])
                 logger.error(logmsg)
                 if logtofile: logger_warn.error(logmsg)
                 sys.exit(1)
             # convert path to absolute path
-            d = alt_scanner.abspath(d)
+            d = alt_scanner.abspath(tree_dir)
         else:
             if not os.path.exists(tree_dir):
                 logmsg = '{0} no such directory!'.format(tree_dir)
@@ -932,6 +962,12 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
         create_index(options.index, es)
 
         tune_index(es, options.index)
+        
+        # check for thread config override
+        if options.threads:
+            maxthreads = options.threads
+        
+        logger.info('maxthreads set to {0}'.format(maxthreads))
         
         bulktime[tree_dir] = 0.0
         dircount[tree_dir] = 1

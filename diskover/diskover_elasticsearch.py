@@ -166,11 +166,25 @@ def create_index(indexname, es):
                 'analyzer': {
                     'filename_analyzer': {
                         'tokenizer': 'filename_tokenizer',
-                        'filter': ['lowercase']
+                        'filter': [
+                            'camel_filter',
+                            'lowercase'
+                        ]
                     },
                     'path_analyzer': {
                         'tokenizer': 'path_tokenizer',
-                        'filter': ['lowercase']
+                        'filter': [
+                            'camel_filter',
+                            'lowercase'
+                        ]
+                    }
+                },
+                'filter': {
+                    'camel_filter': {
+                        'type': 'word_delimiter_graph',
+                        'generate_number_parts': 'false',
+                        'stem_english_possessive': 'false',
+                        'split_on_numerics': 'false'
                     }
                 }
             }

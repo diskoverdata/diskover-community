@@ -16,7 +16,9 @@ logDirectory: /tmp/
 diskover:
     # max number of crawl threads
     # a thread is created up to maxthreads for each directory at level 1 of tree dir arg
-    maxthreads: 20
+    # set to a number or leave blank to auto set based on number of cpus
+    #maxthreads: 20
+    maxthreads: 
     # block size used for du size
     blocksize: 512
     excludes:
