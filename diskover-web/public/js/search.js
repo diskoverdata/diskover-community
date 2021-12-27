@@ -472,6 +472,7 @@ $(function () {
             var top_dirs_data_size = []
             var top_dirs_colors = []
             var top_dirs_colors_border = []
+            var top_dirs_colors_map = []
 
             for (var i in data1) {
                 var name = data1[i].name;
@@ -480,6 +481,7 @@ $(function () {
                 var c = default_colors[i]
                 top_dirs_colors.push(c)
                 top_dirs_colors_border.push('#2F3338')
+                top_dirs_colors_map[name] = c
             }
 
             var topDirsBySizebarChartCanvas = $("#topDirsBySize-barChart")
@@ -511,6 +513,7 @@ $(function () {
                 },
                 scales: {
                     xAxes: [{
+                        stacked: true,
                         ticks: {
                             // Format size in the ticks
                             callback: function (value, index, values) {
@@ -548,7 +551,11 @@ $(function () {
                 var name = data1[i].name;
                 top_dirs_labels.push(basename(name))
                 top_dirs_data_count.push(data1[i].count)
-                var c = default_colors[i]
+                if (name in top_dirs_colors_map) {
+                    var c = top_dirs_colors_map[name]
+                } else {
+                    var c = default_colors[i]
+                }
                 top_dirs_colors.push(c)
                 top_dirs_colors_border.push('#2F3338')
             }
@@ -627,6 +634,7 @@ $(function () {
         var top_ext_data_size = []
         var top_ext_colors = []
         var top_ext_colors_border = []
+        var top_ext_colors_map = []
 
         for (var i in data2) {
             var name = data2[i].name;
@@ -638,6 +646,7 @@ $(function () {
             var c = default_colors[i]
             top_ext_colors.push(c)
             top_ext_colors_border.push('#2F3338')
+            top_ext_colors_map[name] = c
         }
 
         var topFileTypesBySizebarChartCanvas = $("#topFileTypesBySize-barChart")
@@ -669,6 +678,7 @@ $(function () {
             },
             scales: {
                 xAxes: [{
+                    stacked: true,
                     ticks: {
                         // Format size in the ticks
                         callback: function (value, index, values) {
@@ -708,7 +718,11 @@ $(function () {
             }
             top_ext_labels.push(name)
             top_ext_data_count.push(data2[i].count)
-            var c = default_colors[i]
+            if (name in top_ext_colors_map) {
+                var c = top_ext_colors_map[name]
+            } else {
+                var c = default_colors[i]
+            }
             top_ext_colors.push(c)
             top_ext_colors_border.push('#2F3338')
         }

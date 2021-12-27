@@ -445,6 +445,7 @@ $estime = number_format(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 4);
 
             // make data table
             $("#indices-table").DataTable({
+                "stateSave": true,
                 "lengthMenu": [10, 25, 50, 75, 100],
                 "pageLength": 25,
                 "columnDefs": [{

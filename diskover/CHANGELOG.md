@@ -1,6 +1,6 @@
 # Diskover v2 Community Edition Change Log
 
-# [2.0-rc.3] - 2021-12-
+# [2.0-rc.3] - 2021-12-26
 ### fixed
 - if an unhandled error occurred, diskover would not exit without keyboard interupt
 - exception when using alt scanners

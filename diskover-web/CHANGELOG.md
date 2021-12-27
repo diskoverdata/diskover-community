@@ -1,5 +1,14 @@
 # Diskover-web v2 Community Edition Change Log
 
+# [2.0-rc.3] - 2021-12-26
+### fixed
+- select indices table not saving sort order or show number of entries setting on page reload
+- issue when only single item on search results chart not showing bar in chart
+### added
+### changed
+- chart colors for items in bar and pie charts now match on dashboard and file search
+
+
 # [2.0-rc.2] - 2021-12-01
 ### fixed
 - issue with setting ES_HTTPS to TRUE in config file or env var

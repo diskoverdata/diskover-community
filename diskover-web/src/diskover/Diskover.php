@@ -26,7 +26,7 @@ error_reporting(E_ALL ^ E_NOTICE);
 /* Start Globals */
 
 // diskover-web version
-$VERSION = '2.0-rc.2 community edition (ce)';
+$VERSION = '2.0-rc.3 community edition (ce)';
 
 // array of constants names required in Constants.php config file
 $config_const = array(
