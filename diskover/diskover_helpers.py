@@ -169,20 +169,14 @@ def get_owner_group_names(uid, gid):
             owner = uid
         else:
             try:
-                # check if domain in name
-                if og_domain:
-                    # check if we should remove the domain from owner
-                    if og_keepdomain:
-                        owner = pwd.getpwuid(uid).pw_name
+                owner = pwd.getpwuid(uid).pw_name
+                # check if domain in name and if it should be removed
+                if og_domain and not og_keepdomain and og_domainsep in owner:
+                    if og_domainfirst:
+                        owner = owner.split(og_domainsep)[1]
                     else:
-                        if og_domainfirst:
-                            owner = pwd.getpwuid(uid).pw_name.split(og_domainsep)[1]
-                        else:
-                            owner = pwd.getpwuid(uid).pw_name.split(og_domainsep)[0]
-                else:
-                    owner = pwd.getpwuid(uid).pw_name
-            # if we can't find the owner's user name, use the uid number
-            except KeyError:
+                        owner = owner.split(og_domainsep)[0]
+            except Exception:
                 owner = uid
         with uidgid_lock:
             # store it in cache
@@ -200,20 +194,14 @@ def get_owner_group_names(uid, gid):
             group = gid
         else:
             try:
-                # check if domain in name
-                if og_domain:
-                    # check if we should remove the domain from group
-                    if og_keepdomain:
-                        group = grp.getgrgid(gid).gr_name
+                group = grp.getgrgid(gid).gr_name
+                # check if domain in name and if it should be removed
+                if og_domain and not og_keepdomain and og_domainsep in group:
+                    if og_domainfirst:
+                        group = group.split(og_domainsep)[1]
                     else:
-                        if og_domainfirst:
-                            group = grp.getgrgid(gid).gr_name.split(og_domainsep)[1]
-                        else:
-                            group = grp.getgrgid(gid).gr_name.split(og_domainsep)[0]
-                else:
-                    group = grp.getgrgid(gid).gr_name
-            # if we can't find the group's name, use the gid number
-            except KeyError:
+                        group = group.split(og_domainsep)[0]
+            except Exception:
                 group = gid
         with uidgid_lock:
             # store in cache
@@ -348,29 +336,36 @@ def escape_chars(text):
     return text_esc
 
 
-def handle_unicode(f):
+def handle_unicode(f, ignore_errors=False):
+    """Check file path can be encoded to utf-8 since this breaks bulk index uploads.
+    """
+    if ignore_errors:
+        err = 'replace'
+    else:
+        err = 'strict'
     try:
-        return f.encode('utf-8').decode('utf-8')
+        # try to encode utf-8
+        return f.encode('utf-8', errors=err).decode('utf-8')
     except UnicodeEncodeError:
         raise UnicodeError
 
 
-def get_file_name(file):
-    return handle_unicode(file)
+def get_file_name(file, ignore_errors=False):
+    return handle_unicode(file, ignore_errors=ignore_errors)
 
 
-def get_dir_name(path):
+def get_dir_name(path, ignore_errors=False):
     if replacepaths:
         path = replace_path(path)
     path = os.path.basename(path)
-    return handle_unicode(path)
+    return handle_unicode(path, ignore_errors=ignore_errors)
 
 
-def get_parent_path(path):
+def get_parent_path(path, ignore_errors=False):
     if replacepaths:
         path = replace_path(path)
     path = os.path.dirname(path)
-    return handle_unicode(path)
+    return handle_unicode(path, ignore_errors=ignore_errors)
 
 
 def isoutc_to_timestamp(utctime):

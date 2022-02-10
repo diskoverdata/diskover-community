@@ -38,7 +38,7 @@ from diskover_helpers import dir_excluded, file_excluded, \
     get_file_name, load_plugins, list_plugins, get_plugins_info, set_times, \
     get_mem_usage
 
-version = '2.0-rc.3 community edition (ce)'
+version = '2.0-rc.4 community edition (ce)'
 __version__ = version
 
 # Windows check
@@ -153,6 +153,16 @@ def close_app():
 
 def close_app_critical_error():
     """Handle exiting when a critical error exception occurs."""
+    # close any plugins
+    if plugins_enabled and plugins:
+        for plugin in plugins:
+            plugin.close(globals())
+    # alt scanner close
+    if alt_scanner:
+        try:
+            alt_scanner.close(globals())
+        except AttributeError:
+            pass
     os._exit(1)
 
 
@@ -336,33 +346,40 @@ def get_tree_size(thread, root, top, path, docs, depth=0, maxdepth=999):
                                 group = f_stat.st_gid
                             else:
                                 owner, group = get_owner_group_names(f_stat.st_uid, f_stat.st_gid)
+                            
+                            # check for bad Unicode utf-8 characters
                             try:
                                 if parent_path is None:
                                     parent_path = get_parent_path(entry.path)
                                 file_name = get_file_name(entry.name)
-                                data = {
-                                    'name': file_name,
-                                    'extension': os.path.splitext(entry.name)[1][1:].lower(),
-                                    'parent_path': parent_path,
-                                    'size': fsize,
-                                    'size_du': fsize_du,
-                                    'owner': owner,
-                                    'group': group,
-                                    'mtime': datetime.utcfromtimestamp(int(f_stat.st_mtime)).isoformat(),
-                                    'atime': datetime.utcfromtimestamp(int(f_stat.st_atime)).isoformat(),
-                                    'ctime': datetime.utcfromtimestamp(int(f_stat.st_ctime)).isoformat(),
-                                    'nlink': f_stat.st_nlink,
-                                    'ino': str(f_stat.st_ino),
-                                    'type': 'file'
-                                }
                             except UnicodeError:
-                                f_skip_count += 1
-                                logmsg = '[{0}] UNICODE ERROR skipping file {1}'.format(thread, entry.path)
+                                if parent_path is None:
+                                    parent_path = get_parent_path(entry.path, ignore_errors=True)
+                                file_name = get_file_name(entry.name, ignore_errors=True)
+                                logmsg = '[{0}] UNICODE WARNING {1}'.format(thread, os.path.join(parent_path, file_name))
                                 logger.warning(logmsg)
                                 if logtofile: logger_warn.warning(logmsg)
                                 with crawl_thread_lock:
                                     warnings += 1
-                                continue
+                                pass
+                            
+                            # index doc dict
+                            data = {
+                                'name': file_name,
+                                'extension': os.path.splitext(entry.name)[1][1:].lower(),
+                                'parent_path': parent_path,
+                                'size': fsize,
+                                'size_du': fsize_du,
+                                'owner': owner,
+                                'group': group,
+                                'mtime': datetime.utcfromtimestamp(int(f_stat.st_mtime)).isoformat(),
+                                'atime': datetime.utcfromtimestamp(int(f_stat.st_atime)).isoformat(),
+                                'ctime': datetime.utcfromtimestamp(int(f_stat.st_ctime)).isoformat(),
+                                'nlink': f_stat.st_nlink,
+                                'ino': str(f_stat.st_ino),
+                                'type': 'file'
+                            }
+
                             # check if using altscanner and if any additional meta data to add to data dict
                             if options.altscanner:
                                 try:
@@ -441,96 +458,103 @@ def get_tree_size(thread, root, top, path, docs, depth=0, maxdepth=999):
                 owner = d_stat.st_uid
                 group = d_stat.st_gid
             else:
-                owner, group = get_owner_group_names(d_stat.st_uid, d_stat.st_gid) 
+                owner, group = get_owner_group_names(d_stat.st_uid, d_stat.st_gid)
+                
+            # check for bad Unicode utf-8 characters
             try:
-                data = {
-                    'name': get_dir_name(path),
-                    'parent_path': get_parent_path(path),
-                    'size': size,
-                    'size_du': size_du,
-                    'file_count': files,
-                    'dir_count': dirs + 1,
-                    'mtime': datetime.utcfromtimestamp(int(d_stat.st_mtime)).isoformat(),
-                    'atime': datetime.utcfromtimestamp(int(d_stat.st_atime)).isoformat(),
-                    'ctime': datetime.utcfromtimestamp(int(d_stat.st_ctime)).isoformat(),
-                    'nlink': d_stat.st_nlink,
-                    'ino': str(d_stat.st_ino),
-                    'owner': owner,
-                    'group': group,
-                    'type': 'directory'
-                    }
+                file_name = get_dir_name(path)
+                parent_path = get_parent_path(path)
             except UnicodeError:
-                d_skip_count += 1
-                logmsg = '[{0}] UNICODE ERROR skipping directory {1}'.format(thread, path)
+                file_name = get_dir_name(path, ignore_errors=True)
+                parent_path = get_parent_path(path, ignore_errors=True)
+                logmsg = '[{0}] UNICODE WARNING {1}'.format(thread, os.path.join(parent_path, file_name))
                 logger.warning(logmsg)
                 if logtofile: logger_warn.warning(logmsg)
                 with crawl_thread_lock:
                     warnings += 1
-                if dirs > 0: dirs -= 1
                 pass
-            else:
-                # check if using altscanner and if any additional meta data to add to data dict
-                if options.altscanner:
+            
+            # index doc dict
+            data = {
+                'name': file_name,
+                'parent_path': parent_path,
+                'size': size,
+                'size_du': size_du,
+                'file_count': files,
+                'dir_count': dirs + 1,
+                'mtime': datetime.utcfromtimestamp(int(d_stat.st_mtime)).isoformat(),
+                'atime': datetime.utcfromtimestamp(int(d_stat.st_atime)).isoformat(),
+                'ctime': datetime.utcfromtimestamp(int(d_stat.st_ctime)).isoformat(),
+                'nlink': d_stat.st_nlink,
+                'ino': str(d_stat.st_ino),
+                'owner': owner,
+                'group': group,
+                'type': 'directory'
+                }
+
+            # check if using altscanner and if any additional meta data to add to data dict
+            if options.altscanner:
+                try:
+                    extrameta_dict = alt_scanner.add_meta(path, d_stat)
+                    if extrameta_dict is not None:
+                        data.update(extrameta_dict)
+                except Exception as e:
+                    logmsg = '[{0}] ALT SCANNER EXCEPTION {1}'.format(thread, e)
+                    logger.exception(logmsg)
+                    if logtofile: logger_warn.exception(logmsg)
+                    with crawl_thread_lock:
+                        warnings += 1
+                    pass
+            # check plugins for adding extra meta data to data dict
+            if plugins_enabled and plugins_dirs:
+                for plugin in plugins:
+                    # check if plugin is for directory doc
                     try:
-                        extrameta_dict = alt_scanner.add_meta(path, d_stat)
+                        if plugin.for_type('directory'):
+                            extrameta_dict = plugin.add_meta(path, d_stat)
+                            if extrameta_dict is not None:
+                                data.update(extrameta_dict)
+                    except (RuntimeWarning, RuntimeError) as e:
+                        err_message = e.args[0]
+                        if e.__class__ == RuntimeWarning:
+                            logmsg = '[{0}] PLUGIN WARNING: {1}'.format(thread, err_message)
+                            logger.warning(logmsg)
+                            if logtofile: logger_warn.warning(logmsg)
+                        else:
+                            logmsg = '[{0}] PLUGIN ERROR: {1}'.format(thread, err_message)
+                            logger.error(logmsg)
+                            if logtofile: logger_warn.error(logmsg)
+                        with crawl_thread_lock:
+                            warnings += 1
+                        extrameta_dict = e.args[1]
                         if extrameta_dict is not None:
                             data.update(extrameta_dict)
                     except Exception as e:
-                        logmsg = '[{0}] ALT SCANNER EXCEPTION {1}'.format(thread, e)
+                        logmsg = '[{0}] PLUGIN EXCEPTION: {1}'.format(thread, e)
                         logger.exception(logmsg)
                         if logtofile: logger_warn.exception(logmsg)
                         with crawl_thread_lock:
                             warnings += 1
                         pass
-                # check plugins for adding extra meta data to data dict
-                if plugins_enabled and plugins_dirs:
-                    for plugin in plugins:
-                        # check if plugin is for directory doc
-                        try:
-                            if plugin.for_type('directory'):
-                                extrameta_dict = plugin.add_meta(path, d_stat)
-                                if extrameta_dict is not None:
-                                    data.update(extrameta_dict)
-                        except (RuntimeWarning, RuntimeError) as e:
-                            err_message = e.args[0]
-                            if e.__class__ == RuntimeWarning:
-                                logmsg = '[{0}] PLUGIN WARNING: {1}'.format(thread, err_message)
-                                logger.warning(logmsg)
-                                if logtofile: logger_warn.warning(logmsg)
-                            else:
-                                logmsg = '[{0}] PLUGIN ERROR: {1}'.format(thread, err_message)
-                                logger.error(logmsg)
-                                if logtofile: logger_warn.error(logmsg)
-                            with crawl_thread_lock:
-                                warnings += 1
-                            extrameta_dict = e.args[1]
-                            if extrameta_dict is not None:
-                                data.update(extrameta_dict)
-                        except Exception as e:
-                            logmsg = '[{0}] PLUGIN EXCEPTION: {1}'.format(thread, e)
-                            logger.exception(logmsg)
-                            if logtofile: logger_warn.exception(logmsg)
-                            with crawl_thread_lock:
-                                warnings += 1
-                            pass
-                if depth > 0:
-                    # add file doc to docs list and upload to ES once it reaches certain size
-                    docs.append(data.copy())
-                    doc_count = len(docs)
-                    if doc_count >= es_chunksize:
-                        start_bulk_upload(thread, root, docs)
-                        tot_doc_count += doc_count
-                        docs.clear()
-                        
-                else:
-                    with crawl_thread_lock:
-                        sizes[root] = data.copy()
+                    
+            if depth > 0:
+                # add file doc to docs list and upload to ES once it reaches certain size
+                docs.append(data.copy())
+                doc_count = len(docs)
+                if doc_count >= es_chunksize:
+                    start_bulk_upload(thread, root, docs)
+                    tot_doc_count += doc_count
+                    docs.clear()
+                    
+            else:
+                with crawl_thread_lock:
+                    sizes[root] = data.copy()
         else:
             d_skip_count += 1
             logger.debug('[{0}] skipping empty dir {1}'.format(thread, path))
             if options.verbose or options.vverbose:
                 logger.info('[{0}] skipping empty dir {1}'.format(thread, path))
-            dirs -= 1
+            if dirs > 0: dirs -= 1
 
         with crawl_thread_lock:
             dircount[root] += d_count - d_skip_count
@@ -922,16 +946,16 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
 
     # check if no index supplied with -i and set default index name
     if options.index == 'diskover-<tree_dir>-<datetime>':
-        tree_dir_str = ''
-        tree_dir = tree_dir.replace(' ', '_')
+        tree_dir_str = tree_dir
+        tree_dir_str = tree_dir_str.replace(' ', '_')
         if IS_WIN:
             # replace any drive letter colon with _drive_
-            tree_dir = tree_dir.replace(':', '_drive')
+            tree_dir_str = tree_dir_str.replace(':', '_drive')
             # replace any backslace in drive letter or unc path with underscore
-            tree_dir_str += tree_dir.replace('\\', '_')
+            tree_dir_str = tree_dir_str.replace('\\', '_')
         else:
             # replace any forward slash with underscore
-            tree_dir_str += tree_dir.replace('/', '_')
+            tree_dir_str = tree_dir_str.replace('/', '_')
         options.index = 'diskover-' + tree_dir_str.lower().lstrip('_') + '-' + datetime.now().strftime("%y%m%d%H%M%S")
 
     # check if index exists
@@ -959,7 +983,10 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
     # init plugins
     if plugins_enabled and plugins:
         for plugin in plugins:
-            plugin.init(globals())
+            try:
+                plugin.init(globals())
+            except Exception:
+                raise
 
     try:
         logger.info('Creating index {0}...'.format(options.index))
@@ -999,3 +1026,8 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
     except KeyboardInterrupt:
         logger.info('*** Received keyboard interrupt, waiting for threads to complete ***')
         close_app()
+    except Exception as e:                    
+        logmsg = 'FATAL ERROR: an exception has occurred: {0}'.format(e)
+        logger.critical(logmsg, exc_info=1)
+        if logtofile: logger_warn.critical(logmsg, exc_info=1)
+        close_app_critical_error()
