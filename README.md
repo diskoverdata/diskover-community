@@ -22,6 +22,12 @@ diskover runs on Linux, macOS and Windows 10 and is written in Python. Diskover'
 <img width="366" height="234" src="http://www.diskoverdata.com/wp-content/uploads/2021/10/diskover_v2_ce_screenshot2.png" hspace="10" vspace="5" alt="diskover-web screenshot 2">
 </p>
 
+## Requirements
+- Python 3.5+
+- PHP 7.4 + PHP-FPM
+- Nginx
+- Elasticsearch 7.x
+
 ## Download
 ```sh
 git clone https://github.com/diskoverdata/diskover-community.git
