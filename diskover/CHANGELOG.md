@@ -7,6 +7,7 @@
 - UnicodeEncodeError exception when logging Unicode utf-8 file path warnings
 ### added
 ### changed
+- set number of scan maxthreads when empty/blank (default) in config to number of cpu cores
 - indexing unrecognized Unicode utf-8 characters in file name or parent path, the characters are replaced with a ? character and file gets indexed with a warning log message
     - previously the file/directory was not indexed and just skipped with a warning message
 

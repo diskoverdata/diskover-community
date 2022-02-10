@@ -79,7 +79,7 @@ try:
     logdir = config['logDirectory'].get()
     maxthreads = config['diskover']['maxthreads'].get()
     if maxthreads is None:
-        maxthreads = int(os.cpu_count()) * 2
+        maxthreads = int(os.cpu_count())
     exc_empty_dirs = config['diskover']['excludes']['emptydirs'].get()
     exc_empty_files = config['diskover']['excludes']['emptyfiles'].get()
     exc_files = config['diskover']['excludes']['files'].get()
