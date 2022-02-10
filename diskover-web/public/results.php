@@ -615,7 +615,7 @@ $hidecharts = getCookie('hidesearchcharts');
                                                                     if (is_bool($v_val)) {
                                                                         $v_val = ($v_val) ? 'true' : 'false';
                                                                     }
-                                                                    $ef_string .= $v_key . ': ' . $v_val . ', ';
+                                                                    $ef_string .= $k . '.' . $v_key . ': ' . $v_val . ', ';
                                                                 }
                                                             } else {
                                                                 if (is_bool($v)) {
@@ -624,7 +624,7 @@ $hidecharts = getCookie('hidesearchcharts');
                                                                 $ef_string .= $k . ': ' . $v . ', ';
                                                             }
                                                         }
-                                                        echo substr($ef_string, 0, 100) . ' ...';
+                                                        echo (strlen($ef_string) > 100) ? substr($ef_string, 0, 100) . ' ...' : $ef_string;
                                                     } elseif ($value == 'ctime') {  # ctime field
                                                         echo utcTimeToLocal($file[$value]);
                                                     } else {

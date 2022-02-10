@@ -253,11 +253,12 @@ $estime = number_format(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 4);
             $class = ($del_warning) ? "alert-warning" : "alert-success";
             echo '<div class="row"><div class="col-lg-6"><div class="alert alert-dismissible ' . $class . '">
             <button type="button" class="close" data-dismiss="alert">&times;</button>
-            <strong>' . $del_message . '</strong> <a href="selectindices.php?maxage=' . $maxage_str . '&namecontains=' . $_GET['namecontains'] . '&reloadindices" class="alert-link">Reload indices</a>.</div></div></div>';
-        } elseif (isset($alias_message)) {
-            echo '<div class="row"><div class="col-lg-6"><div class="alert alert-dismissible alert-success">
-            <button type="button" class="close" data-dismiss="alert">&times;</button>
-            <strong>' . $alias_message . '</strong> <a href="selectindices.php?maxage=' . $maxage_str . '&namecontains=' . $_GET['namecontains'] . '&reloadindices" class="alert-link">Reload indices</a>.</div></div></div>';
+            <strong>' . $del_message . '</strong> <a href="selectindices.php?maxage=' . $maxage_str . '&namecontains=' . $_GET['namecontains'] . '&reloadindices" class="alert-link">Reload indices</a>. Reloading in 3 seconds.</div></div></div>
+            <script type="text/javascript">
+            setTimeout(function(){
+                window.location.href = "selectindices.php?maxage=' . $maxage_str . '&namecontains=' . $_GET['namecontains'] . '&reloadindices";
+            }, 3000);
+            </script>';
         }
         ?>
         <h1 class="page-header">Indices</h1>

@@ -220,19 +220,19 @@ if (empty($_REQUEST['id'])) {
                                                     if (is_bool($v_val)) {
                                                         $v_val = ($v_val) ? 'true' : 'false';
                                                     } ?>
-                                                    <span class="badge"><?php echo $v_key . ': ' . $v_val; ?></span><br />
+                                                    <span class="badge badge-label"><?php echo $k . '.' . $v_key . ': ' . $v_val; ?></span><br />
                                                 <?php }
                                             } else {
                                                 if (is_bool($v)) {
                                                     $v = ($v) ? 'true' : 'false';
                                                 } ?>
-                                                <span class="badge"><?php echo $k . ': ' . $v; ?></span><br />
+                                                <span class="badge badge-label"><?php echo $k . ': ' . $v; ?></span><br />
                                         <?php }
                                         } ?>
                                     </li>
                                 <?php } else { ?>
                                     <li class="list-group-item">
-                                        <span class="badge"><?php echo $docsource[$value]; ?></span>
+                                        <span class="badge badge-label"><?php echo $docsource[$value]; ?></span>
                                         <?php echo $key; ?>
                                     </li>
                                 <?php } ?>

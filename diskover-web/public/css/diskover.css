@@ -470,3 +470,10 @@ input:checked+.nav-slider:before {
 .nav-slider.round:before {
     border-radius: 50%;
 }
+
+.badge-label {
+    display: inline;
+    overflow: visible;
+    overflow-wrap: break-word;
+    white-space: normal;
+}

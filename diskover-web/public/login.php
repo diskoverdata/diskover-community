@@ -16,12 +16,14 @@ https://www.diskoverdata.com/solutions/
 
 */
 
+ini_set('session.gc_maxlifetime', 604800);
+ini_set("session.cookie_lifetime", 604800);
 ob_start();
+session_start();
 require '../vendor/autoload.php';
-
 use diskover\Constants;
-
 // Set logging level
+//error_reporting(E_ALL);
 error_reporting(E_ERROR | E_PARSE);
 
 $msg = '';
@@ -31,20 +33,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['username']) && isset($
    // check login using diskover web config credentials
    if ($_POST['username'] == Constants::USER && $_POST['password'] == Constants::PASS) {
       if (isset($_POST['stayloggedin'])) {
-         // set server and client to keep session data for 7 days
-         ini_set('session.cookie_lifetime', 60 * 60 * 24 * 7);
-         ini_set('session.gc_maxlifetime', 60 * 60 * 24 * 7);
-         session_start();
          $_SESSION['stayloggedin'] = true;
       } else {
-         // set server and client to keep session data for 8 hours
-         ini_set('session.cookie_lifetime', 60 * 60 * 8);
-         ini_set('session.gc_maxlifetime', 60 * 60 * 8);
-         session_start();
          $_SESSION['stayloggedin'] = false;
       }
       $_SESSION['loggedin'] = true;
-      $_SESSION['timeout'] = microtime(true);
+      $_SESSION['last_activity'] = time();
       $_SESSION['username'] = $_POST['username'];
 
       header("location: index.php");
