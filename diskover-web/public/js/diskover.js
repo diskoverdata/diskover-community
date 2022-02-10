@@ -219,7 +219,7 @@ $(document).ready(function () {
             method: 'POST',
             success:function(response){
                 if(response == 'logout') {
-                    alert('Your session has been expired!');
+                    alert('Your session has expired, please login');
                     window.location.href="logout.php"
                 }
             }

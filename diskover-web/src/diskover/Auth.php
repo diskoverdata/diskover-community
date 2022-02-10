@@ -16,23 +16,18 @@ https://www.diskoverdata.com/solutions/
 
 */
 
+ini_set('session.gc_maxlifetime', 604800);
+ini_set("session.cookie_lifetime", 604800);
 session_start();
 use diskover\Constants;
 error_reporting(E_ALL ^ E_NOTICE);
 
 if (Constants::LOGIN_REQUIRED) {
-    // check if user is logged in and timeout not exceeded
-    if ($_SESSION['loggedin'] && $_SESSION['stayloggedin'] && microtime(true) - $_SESSION['timeout'] < 60 * 60 * 24 * 7) {
-        // reset timeout
-        $_SESSION['timeout'] = microtime(true);
-    } elseif ($_SESSION['loggedin'] && microtime(true) - $_SESSION['timeout'] < 60 * 60 * 8) {
-        // reset timeout
-        $_SESSION['timeout'] = microtime(true);
-    } else {
+    if (!isset($_SESSION['loggedin'])) {
         // user not logged in, redirect to login page
-        session_unset();
-        session_destroy();
         header("location: login.php");
         exit();
     }
+    // set last activity again so session extends
+    $_SESSION['last_activity'] = time();
 }
