@@ -34,9 +34,9 @@ git clone https://github.com/diskoverdata/diskover-community.git
 ## News/ Updates
 - v1 is now end of life and is no longer supported.
 
-## User Guide
+## Install/User Guide
 
-[Read the wiki](https://github.com/diskoverdata/diskover-community/wiki) for more documentation on how to install and use diskover.
+[Read the docs](https://docs.diskoverdata.com/) for more documentation on how to install and use diskover.
 
 ## Discussions/Support
 
