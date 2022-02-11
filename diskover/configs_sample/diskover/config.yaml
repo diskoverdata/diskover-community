@@ -67,8 +67,8 @@ diskover:
         uidgidonly: False
         # owner/group names contain domain name set to True
         domain: False
-        # character separator used on cifs/nfs mounts to separte user/group and domain name, usually \\ or @
-        domainsep: \\
+        # character separator used on cifs/nfs mounts to separte user/group and domain name, usually \ or @
+        domainsep: \
         # if domain name comes first before character separator, set this to True, otherwise False
         domainfirst: True
         # when indexing owner and group fields, keep the domain name
