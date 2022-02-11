@@ -362,7 +362,7 @@ $estime = number_format(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 4);
                 <div class="col-lg-12">
                     <p class="pull-right"><?php echo count($indices_filtered) . " indices found"; ?> (last updated <?php echo $indexinfo_updatetime->format('m/d/Y, h:i:s A T'); ?> <a href="selectindices.php?maxage=<?php echo $maxage_str ?>&namecontains=<?php echo $_GET['namecontains'] ?>&reloadindices">update</a>)</p>
                     <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" name="form-selectindex" id="form-selectindex">
-                        <table class="table table-striped table-hover" id="indices-table" data-order='[[ 4, "desc" ]]' style="width:100%">
+                        <table class="table table-striped table-hover table-condensed" id="indices-table" data-order='[[ 4, "desc" ]]' style="width:100%">
                             <thead>
                                 <tr>
                                     <th>Index</th>
