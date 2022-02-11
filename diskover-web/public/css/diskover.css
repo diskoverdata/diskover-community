@@ -471,9 +471,10 @@ input:checked+.nav-slider:before {
     border-radius: 50%;
 }
 
-.badge-label {
-    display: inline;
-    overflow: visible;
-    overflow-wrap: break-word;
-    white-space: normal;
+.extrafields {
+    font-size: small;
+    word-wrap: normal;
+    word-break: normal;
+    padding-top: 4px;
+    padding-bottom: 4px;
 }

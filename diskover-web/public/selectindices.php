@@ -103,8 +103,13 @@ if (isset($_GET['saved'])) {
 $disabled_indices = array();
 $indices_filtered = array();
 
+// update max index cookie
+if (isset($_GET['maxindex'])) {
+    createCookie('maxindex', $_GET['maxindex']);
+}
+
 // go through each index and determine which are done indexing
-foreach ($indices_all as $key => $val) {
+foreach ($es_index_info as $key => $val) {
     // continue if index creation time is older than max age
     if ($maxage_str != 'all') {
         $starttime = $all_index_info[$key]['start_at'];
@@ -167,7 +172,6 @@ foreach ($indices_all as $key => $val) {
             $queryResponse = $client->search($searchParams);
         } catch (Exception $e) {
             error_log('ES error: ' .$e->getMessage());
-            unset($indices_all[$key]);
             $ifk = array_search($key, $indices_filtered);
             unset($indices_filtered[$ifk]);
             unset($all_index_info[$key]);
@@ -278,6 +282,27 @@ $estime = number_format(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 4);
         </div>
         <div class="row">
             <div class="col-lg-12">
+            <div class="well well-sm">
+                        <div class="row">
+                        <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="get" class="form-horizontal" name="form-indexctrl">
+                            <input type="hidden" name="reloadindices" value="true">
+                            <div class="col-lg-6">
+                                <div class="form-group">
+                                    <label for="maxindex" class="col-lg-3 control-label">Max indices to load:</label>
+                                    <div class="col-lg-2">
+                                        <input class="form-control input-sm" name="maxindex" id="maxindex" value="<?php echo (isset($_GET['maxindex'])) ? $_GET['maxindex'] : getCookie('maxindex'); ?>">
+                                    </div>
+                                    <div class="col-lg-1">
+                                        <button type="submit" class="btn btn-primary btn-sm" onclick="setCookie('maxindex', $('#maxindex').val())">Save</button>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <span class="small" style="padding-left:5px"><i class="fas fa-info-circle"></i> Total <?php echo $esclient->getTotalIndices(); ?> indices, indices are loaded in order by creation date</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                        </div>
+                    </div>
                 <div class="well well-sm">
                     <div class="row">
                         <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="get" class="form-horizontal" name="form-indexfilter">

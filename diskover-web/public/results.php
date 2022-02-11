@@ -399,7 +399,7 @@ $hidecharts = getCookie('hidesearchcharts');
                                 <?php } else {
                                     $hiddencol[] = 'sizedu';
                                 } ?>
-                                <?php if (getCookie('hidefield_sizep') != "1") { ?><th data-resizable-column-id="sizep" class="text-nowrap" width="10%">% <span style="color:darkgray;font-size: 11px;"><i title="Percentage of total file size this page" class="glyphicon glyphicon-question-sign"></i></span></th>
+                                <?php if (getCookie('hidefield_sizep') != "1") { ?><th data-resizable-column-id="sizep" class="text-nowrap" width="7%">% <span style="color:darkgray;font-size: 11px;"><i title="Percentage of total file size this page" class="glyphicon glyphicon-question-sign"></i></span></th>
                                 <?php } else {
                                     $hiddencol[] = 'sizep';
                                 } ?>
@@ -612,16 +612,25 @@ $hidecharts = getCookie('hidesearchcharts');
                                                         foreach ($file[$value] as $k => $v) {
                                                             if (is_array($v)) {
                                                                 foreach ($v as $v_key => $v_val) {
-                                                                    if (is_bool($v_val)) {
-                                                                        $v_val = ($v_val) ? 'true' : 'false';
+                                                                    if (is_array($v_val)) {
+                                                                        foreach ($v_val as $v2_key => $v2_val) {
+                                                                            if (is_bool($v2_val)) {
+                                                                                $v2_val = ($v2_val) ? 'true' : 'false';
+                                                                            }
+                                                                            $ef_string .= $value . '.' . $k . '.' . $v2_key . ': ' . $v2_val . ', ';
+                                                                        }
+                                                                    } else {
+                                                                        if (is_bool($v_val)) {
+                                                                            $v_val = ($v_val) ? 'true' : 'false';
+                                                                        }
+                                                                        $ef_string .= $value . '.' . $k . '.' . $v_key . ': ' . $v_val . ', ';
                                                                     }
-                                                                    $ef_string .= $k . '.' . $v_key . ': ' . $v_val . ', ';
                                                                 }
                                                             } else {
                                                                 if (is_bool($v)) {
                                                                     $v = ($v) ? 'true' : 'false';
                                                                 }
-                                                                $ef_string .= $k . ': ' . $v . ', ';
+                                                                $ef_string .= $value . '.' . $k . ': ' . $v . ', ';
                                                             }
                                                         }
                                                         echo (strlen($ef_string) > 100) ? substr($ef_string, 0, 100) . ' ...' : $ef_string;
@@ -649,7 +658,7 @@ $hidecharts = getCookie('hidesearchcharts');
                                 <th class="text-nowrap">Size <?php echo sortURL('size'); ?></th>
                                 <?php if (getCookie('hidefield_sizedu') != "1") { ?><th class="text-nowrap">Allocated <?php echo sortURL('size_du'); ?></th>
                                 <?php } ?>
-                                <?php if (getCookie('hidefield_sizep') != "1") { ?><th class="text-nowrap" width="10%">% <span style="color:darkgray;font-size: 11px;"><i title="Percentage of total file size this page" class="glyphicon glyphicon-question-sign"></i></span></th>
+                                <?php if (getCookie('hidefield_sizep') != "1") { ?><th class="text-nowrap" width="7%">% <span style="color:darkgray;font-size: 11px;"><i title="Percentage of total file size this page" class="glyphicon glyphicon-question-sign"></i></span></th>
                                 <?php } ?>
                                 <?php if (getCookie('hidefield_modified') != "1") { ?><th class="text-nowrap">Date Modified <?php echo sortURL('mtime'); ?></th>
                                 <?php } ?>

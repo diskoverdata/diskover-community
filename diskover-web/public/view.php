@@ -115,7 +115,7 @@ if (empty($_REQUEST['id'])) {
                     ?>
                     <h2 class="path"><?php echo ($doctype == 'file') ? '<i class="fas fa-file-alt" style="color:#738291;"></i>' : '<i class="fas fa-folder" style="color:#E9AC47;"></i>'; ?> <span id="filename"><a href="<?php echo $fullpathhref; ?>"><?php echo $filename; ?></a></span></h2>
                     <div style="padding-bottom:10px"><a href="#" class="btn btn-default btn-xs file-btns" onclick="copyToClipboard('#filename')"><i class="glyphicon glyphicon-copy"></i> Copy file name</a></div>
-                    <h4 class="path">Full path: <span id="fullpath"><a href="<?php echo $fullpathhref; ?>"><?php echo $fullpath; ?></a></span></h4> <a href="#" class="btn btn-default btn-xs file-btns" onclick="copyToClipboard('#fullpath')"><i class="glyphicon glyphicon-copy"></i> Copy path</a>
+                    <h5 class="path">Full path: <span id="fullpath"><a href="<?php echo $fullpathhref; ?>"><?php echo $fullpath; ?></a></span></h5> <a href="#" class="btn btn-default btn-xs file-btns" onclick="copyToClipboard('#fullpath')"><i class="glyphicon glyphicon-copy"></i> Copy path</a>
                     <?php if ($_REQUEST['doctype'] == 'directory') { ?>
                         <div class="dropdown" style="display:inline-block;">
                             <button title="analytics" class="btn btn-default dropdown-toggle btn-xs file-btns" type="button" data-toggle="dropdown"><i class="glyphicon glyphicon-stats"></i>
@@ -207,38 +207,6 @@ if (empty($_REQUEST['id'])) {
                             Hardlinks
                         </li>
                     </ul>
-                    <ul class="list-group">
-                        <?php
-                        if (count(Constants::EXTRA_FIELDS) > 0) {
-                            foreach (Constants::EXTRA_FIELDS as $key => $value) {
-                                if (is_array($docsource[$value])) { ?>
-                                    <li class="list-group-item">
-                                        <?php echo $key; ?>
-                                        <?php foreach ($docsource[$value] as $k => $v) {
-                                            if (is_array($v)) {
-                                                foreach ($v as $v_key => $v_val) {
-                                                    if (is_bool($v_val)) {
-                                                        $v_val = ($v_val) ? 'true' : 'false';
-                                                    } ?>
-                                                    <span class="badge badge-label"><?php echo $k . '.' . $v_key . ': ' . $v_val; ?></span><br />
-                                                <?php }
-                                            } else {
-                                                if (is_bool($v)) {
-                                                    $v = ($v) ? 'true' : 'false';
-                                                } ?>
-                                                <span class="badge badge-label"><?php echo $k . ': ' . $v; ?></span><br />
-                                        <?php }
-                                        } ?>
-                                    </li>
-                                <?php } else { ?>
-                                    <li class="list-group-item">
-                                        <span class="badge badge-label"><?php echo $docsource[$value]; ?></span>
-                                        <?php echo $key; ?>
-                                    </li>
-                                <?php } ?>
-                        <?php }
-                        } ?>
-                    </ul>
                 </div>
                 <div class="col-xs-6">
                     <ul class="list-group">
@@ -258,11 +226,68 @@ if (empty($_REQUEST['id'])) {
                     <ul class="list-group">
                         <li class="list-group-item">
                             <span class="badge"><?php echo $docindex; ?></span>
-                            <a href="search.php?submitted=true&amp;p=1&amp;q=_index:<?php echo $docindex; ?>&amp;doctype=<?php echo $doctype; ?>">Index name</a>
+                            <a href="search.php?submitted=true&amp;p=1&amp;q=_index:<?php echo $docindex; ?>">Index name</a>
+                        </li>
+                    </ul>
+                    <ul class="list-group">
+                        <li class="list-group-item">
+                            <span class="badge"><?php echo $docid; ?></span>
+                            <a href="search.php?submitted=true&amp;p=1&amp;q=_id:<?php echo $docid; ?>">Doc id</a>
                         </li>
                     </ul>
                 </div>
             </div>
+            <?php if (count(Constants::EXTRA_FIELDS) > 0) { ?>
+            <div class="row">
+                <div class="col-xs-12">
+                    <h4>Extra fields</h4>
+                    <ul class="list-group">
+                        <?php foreach (Constants::EXTRA_FIELDS as $key => $value) {
+                                // check if field empty
+                                if (empty($docsource[$value])) {
+                                    echo '<li class="list-group-item">';
+                                    echo '<p class="list-group-item-text">No ' . $key . ' in doc</p>';
+                                    echo '</li>';
+                                    continue;
+                                }
+                                // check if object field type
+                                if (is_array($docsource[$value])) { ?>
+                                    <li class="list-group-item">
+                                        <h5 class="list-group-item-heading"><?php echo $key; ?></h5>
+                                        <?php foreach ($docsource[$value] as $k => $v) {
+                                            if (is_array($v)) {
+                                                foreach ($v as $v_key => $v_val) {
+                                                    if (is_array($v_val)) {
+                                                        foreach ($v_val as $v2_key => $v2_val) {
+                                                            if (is_bool($v2_val)) {
+                                                                $v2_val = ($v2_val) ? 'true' : 'false';
+                                                            } ?>
+                                                            <p class="list-group-item-text extrafields"><a href="search.php?submitted=true&amp;p=1&amp;q=<?php echo $value . '.' . $k . '.' . $v2_key . ': &quot;' . $v2_val; ?>&quot;&amp;doctype=<?php echo $_REQUEST['doctype']; ?>"><?php echo $value . '.' . $k . '.' . $v2_key . ': <strong>' . $v2_val . '</strong>'; ?></a></p>
+                                                    <?php }
+                                                    } else {
+                                                        if (is_bool($v_val)) {
+                                                            $v_val = ($v_val) ? 'true' : 'false';
+                                                        } ?>
+                                                        <p class="list-group-item-text extrafields"><a href="search.php?submitted=true&amp;p=1&amp;q=<?php echo $value . '.' . $k . '.' . $v_key . ': &quot;' . $v_val; ?>&quot;&amp;doctype=<?php echo $_REQUEST['doctype']; ?>"><?php echo $value . '.' . $k . '.' . $v_key . ': <strong>' . $v_val . '</strong>'; ?></a></p>
+                                                <?php } }
+                                            } else {
+                                                if (is_bool($v)) {
+                                                    $v = ($v) ? 'true' : 'false';
+                                                } ?>
+                                                <p class="list-group-item-text extrafields"><a href="search.php?submitted=true&amp;p=1&amp;q=<?php echo $value . '.' . $k . ': &quot;' . $v; ?>&quot;&amp;doctype=<?php echo $_REQUEST['doctype']; ?>"><?php echo $value . '.' . $k . ': <strong>' . $v . '</strong>'; ?></a></p>
+                                        <?php }
+                                        } ?>
+                                    </li>
+                                <?php } else { ?>
+                                    <li class="list-group-item">
+                                        <h5 class="list-group-item-heading"><?php echo $key; ?></h5>
+                                        <p class="list-group-item-text extrafields"><a href="search.php?submitted=true&amp;p=1&amp;q=<?php echo $value .' : &quot;' . $docsource[$value]; ?>&quot;&amp;doctype=<?php echo $_REQUEST['doctype']; ?>"><?php echo $value . ': <strong>' . $docsource[$value] . '</strong>'; ?></a></p>
+                                    </li>
+                        <?php } } ?>
+                    </ul>
+                </div>
+            </div>
+            <?php } ?>
         </div>
     </div>
     <?php include 'modals.php' ?>

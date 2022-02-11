@@ -70,4 +70,8 @@ class Constants {
     //    'Date Changed' => 'ctime'
     //];
     const EXTRA_FIELDS = [];
+    // Maximum number of indices to load by default, indices are loaded in order by creation date
+    // setting this too high can cause slow logins and other timeout issues
+    // This setting can bo overridden on indices page per user
+    const MAX_INDEX = '50';
 }
