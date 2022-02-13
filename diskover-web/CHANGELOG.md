@@ -7,13 +7,13 @@
 - issue with extra field value text on file view info page not wrapping when text string is very long
 - issue with extra field and object type not displaying correctly
 ### added
-- hashed login password to web config
 - password_hash.php - login password hash generator form
 - change password to settings page and warning if using default password
 - maxindex config setting to default/sample config, copy to your config
 - after deleting indices on select indices page, index list will reload automatically after 3 seconds
 ### changed
-- password required to be hashed in web config file, create new password hash with password_hash.php and update your config file
+- hashed login password to default/sample web config file
+- user login password required to be hashed in config file, create new password hash with password_hash.php and update your config file
 - reduced api calls to ES to check for new index info
 - improved file/directory view info page for extra fields
 
