@@ -1,15 +1,19 @@
 # Diskover-web v2 Community Edition Change Log
 
-# [2.0-rc.4] - 2022-02-11
+# [2.0-rc.4] - 2022-02-13
 ### fixed
 - reduced login time when many indices
 - issue with not staying logged in and getting logged out before login time limit expires
 - issue with extra field value text on file view info page not wrapping when text string is very long
 - issue with extra field and object type not displaying correctly
 ### added
+- hashed login password to web config
+- password_hash.php - login password hash generator form
+- change password to settings page and warning if using default password
 - maxindex config setting to default/sample config, copy to your config
 - after deleting indices on select indices page, index list will reload automatically after 3 seconds
 ### changed
+- password required to be hashed in web config file, create new password hash with password_hash.php and update your config file
 - reduced api calls to ES to check for new index info
 - improved file/directory view info page for extra fields
 

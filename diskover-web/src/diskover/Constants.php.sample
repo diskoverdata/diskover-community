@@ -41,8 +41,9 @@ class Constants {
     // login auth for diskover-web
     const LOGIN_REQUIRED = TRUE;
     // username and password to login
+    // new password hash can be generated with password_hash.php
     const USER = 'diskover';
-    const PASS = 'darkdata';
+    const PASS = '$2y$10$ORtWa3d62r3xDhXiSwAWhO7dZMFl5dztj56Zfy8J5EUWLwvsCtvLy'; // darkdata
     // default results per search page
     const SEARCH_RESULTS = 50;
     // default size field (size, size_du) to use for sizes on charts

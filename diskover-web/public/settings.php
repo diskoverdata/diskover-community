@@ -62,6 +62,17 @@ require "../src/diskover/Diskover.php";
         <h1 class="page-header"><i class="fas fa-user-cog"></i> Settings</h1>
         <div class="row">
             <div class="col-lg-12">
+                <?php if (Constants::LOGIN_REQUIRED) { ?>
+                <div class="well">
+                    <h4>Change Password</h4>
+                    <?php if (Constants::PASS == $_SESSION['DEFAULT_USER_PASSWORD']) { ?>
+                    <p><span class="text-danger"><i class="fas fa-exclamation-triangle"></i></span> Using default password, please <a href="password_hash.php" target="_blank">change your password</a>.</p>
+                    <?php } else { ?>
+                    <p><a href="password_hash.php" target="_blank">Change password</a></p>
+                    <?php } ?>
+                    <p class="small"><i class="glyphicon glyphicon-info-sign"></i> Password set in web config file.</p>
+                </div>
+                <?php } ?>
                 <div class="well">
                     <h4>New index notification</h4>
                     <input type="checkbox" name="notifynewindex" id="notifynewindex" onclick="setNotifyNewIndex()" <?php echo (getCookie('notifynewindex') == 1) ? 'checked' : ''; ?>> <label for="notifynewindex" class="control-label">Notify when newer index</label>

@@ -31,7 +31,7 @@ $msg = '';
 // login form submitted
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['username']) && isset($_POST['password'])) {
    // check login using diskover web config credentials
-   if ($_POST['username'] == Constants::USER && $_POST['password'] == Constants::PASS) {
+   if ($_POST['username'] == Constants::USER && password_verify($_POST['password'], Constants::PASS)) {
       if (isset($_POST['stayloggedin'])) {
          $_SESSION['stayloggedin'] = true;
       } else {
