@@ -300,6 +300,10 @@ $estime = number_format(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 4);
                                     </div>
                                 </div>
                             </div>
+                            <div class="col-lg-6">
+                                <label for="uselatestindices" class="control-label">Always use latest indices (auto select)</label>
+                                <input type="checkbox" name="uselatestindices" disabled> <span class="label label-info">Essential</span>
+                            </div>
                         </form>
                         </div>
                     </div>
