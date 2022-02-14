@@ -291,15 +291,17 @@ function indexInfo()
                 continue;
             }
 
-            $crawlfinished = false;
+            $startcount = 0;
+            $endcount = 0;
             foreach ($queryResponse['hits']['hits'] as $hit) {
                 $source = $hit['_source'];
                 // add to index_starttimes list
                 if (array_key_exists('start_at', $source)) {
                     $index_starttimes[$key][$source['path']] = $source['start_at'];
+                    $startcount += 1;
                 }
                 if (array_key_exists('end_at', $source)) {
-                    $crawlfinished = true;
+                    $endcount += 1;
                 }
                 // add to index_toppath list
                 if (array_key_exists($key, $index_toppath) && !in_array($source['path'], $index_toppath[$key])) {
@@ -325,8 +327,8 @@ function indexInfo()
                 ];
             }
 
-            // add to disabled_indices list if still being indexed (no end_at field in indexinfo docs)
-            if (!$crawlfinished) {
+            // add to disabled_indices list if still being indexed (end_at docs less than start_at docs)
+            if ($endcount < $startcount) {
                 $disabled_indices[] = $key;
             }
 
@@ -382,17 +384,19 @@ function indexInfo()
             }
         }
 
-        // sort completed indices by creation_date
-        krsort($indices_sorted);
+        if (!empty($indices_sorted)) {
+            // sort completed indices by creation_date
+            krsort($indices_sorted);
 
-        // get completed indices
-        // get all latest indices based on index's top path
-        foreach ($indices_sorted as $key => $val) {
-            if (!in_array($val, $disabled_indices)) {
-                if (is_null($latest_completed_index)) {
-                    $latest_completed_index = $val;
+            // get completed indices
+            // get all latest indices based on index's top path
+            foreach ($indices_sorted as $key => $val) {
+                if (!in_array($val, $disabled_indices)) {
+                    if (is_null($latest_completed_index)) {
+                        $latest_completed_index = $val;
+                    }
+                    $completed_indices[] = $val;
                 }
-                $completed_indices[] = $val;
             }
         }
 
