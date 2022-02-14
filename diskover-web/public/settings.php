@@ -70,7 +70,7 @@ require "../src/diskover/Diskover.php";
                     <?php } else { ?>
                     <p><a href="password_hash.php" target="_blank">Change password</a></p>
                     <?php } ?>
-                    <p class="small"><i class="glyphicon glyphicon-info-sign"></i> Password set in web config file.</p>
+                    <p class="small"><i class="glyphicon glyphicon-info-sign"></i> Set password hash in web config file.</p>
                 </div>
                 <?php } ?>
                 <div class="well">

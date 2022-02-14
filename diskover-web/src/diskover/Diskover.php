@@ -89,7 +89,13 @@ $timezone = getenv('TZ') ?: Constants::TIMEZONE;
 /* End Globals */
 
 
-// ES Client
+// get/set index info
+if (strpos($_SERVER['REQUEST_URI'], 'd3_data') === false && 
+    $_SERVER['SCRIPT_NAME'] !== 'searchkeypress.php') {
+    indexInfo();
+}
+
+
 class ESClient
 {
     public $client;
@@ -213,15 +219,245 @@ class ESClient
     {
         // Return total number of indices
         return $_SESSION['total_indices'];
-    }
+    }   
 }
 
 
-// set user type and init global vars, session vars, cookies, etc
-// don't init if d3 data page or search key press
-if (strpos($_SERVER['REQUEST_URI'], 'd3_data') === false && 
-    strpos($_SERVER['REQUEST_URI'], 'searchkeypress.php') === false) {
-    init();
+function indexInfo()
+{
+    global $esclient, $client, $timezone, $esIndex, $no_pathselect_pages, $es_index_info, $all_index_info, $indices_sorted, $completed_indices, 
+    $latest_completed_index, $fields, $indexinfo_updatetime, $index_starttimes, $indexinfo_expiretime, $index_spaceinfo;
+
+    $es_index_info = $esclient->getIndexInfo();
+
+    // Set latest index info if force reload or index session info time expired
+    if (isset($_GET['reloadindices']) || !isset($_SESSION['indexinfo']) ||
+    (isset($_SESSION['indexinfo']) && microtime(true) - $_SESSION['indexinfo']['update_time_ms'] > $indexinfo_expiretime)) {
+
+        $disabled_indices = array();
+        $indices_sorted = array();
+        $completed_indices = array();
+        $latest_completed_index = null;
+        $index_toppath = array();
+        $index_starttimes = array();
+        $all_index_info = array();
+        $fields = array();
+        $index_spaceinfo = array();
+
+        if (!isset($_SESSION['indices_uuids'])) {
+            $_SESSION['indices_uuids'] = array();
+        }
+
+        if (!isset($_SESSION['indices_doccount'])) {
+            $_SESSION['indices_doccount'] = array();
+        }
+
+        foreach ($es_index_info as $key => $val) {
+            // index uuid
+            $uuid = $val['uuid'];
+
+            // skip index which we already have index uuid and doc count has not changed
+            if (array_key_exists($uuid, $_SESSION['indices_uuids']) &&
+                $_SESSION['indices_doccount'][$key] == $val['docs_count']) {
+                continue;
+            } else {
+                $_SESSION['indices_uuids'][$uuid] = $key;
+                $_SESSION['indices_doccount'][$key] = $val['docs_count'];
+                unset($_SESSION['toppath']);
+            }
+
+            $searchParams['index'] = $key;
+            $searchParams['body'] = [
+                'size' => 2,
+                'query' => [
+                    'match' => ['type' => 'indexinfo']
+
+                ],
+                'sort' => ['start_at' => 'asc']
+            ];
+
+            // catch any errors searching doc in indices which might be corrupt or deleted
+            try {
+                $queryResponse = $client->search($searchParams);
+            } catch (Exception $e) {
+                handleError('ES error (index not found/ index error): ' . $e->getMessage(), false, false, false);
+                removeIndex($key, $uuid);
+                continue;
+            }
+
+            // if no indexinfo docs, remove it from indices array
+            if (sizeof($queryResponse['hits']['hits']) == 0) {
+                removeIndex($key, $uuid);
+                continue;
+            }
+
+            $crawlfinished = false;
+            foreach ($queryResponse['hits']['hits'] as $hit) {
+                $source = $hit['_source'];
+                // add to index_starttimes list
+                if (array_key_exists('start_at', $source)) {
+                    $index_starttimes[$key][$source['path']] = $source['start_at'];
+                }
+                if (array_key_exists('end_at', $source)) {
+                    $crawlfinished = true;
+                }
+                // add to index_toppath list
+                if (array_key_exists($key, $index_toppath) && !in_array($source['path'], $index_toppath[$key])) {
+                    $index_toppath[$key][] = $source['path'];
+                } else {
+                    $index_toppath[$key] = array($source['path']);
+                }
+                // add to all_index_info list
+                $all_index_info[$key] = [
+                    'path' => $source['path'],
+                    'start_at' => array_key_exists('start_at', $source) ? $source['start_at'] : $all_index_info[$key]['start_at'],
+                    'end_at' => $source['end_at'],
+                    'crawl_time' => $source['crawl_time'],
+                    'file_count' => $source['file_count'],
+                    'dir_count' => $source['dir_count'],
+                    'file_size' => $source['file_size']
+                ];
+                $all_index_info[$key]['totals'] = [
+                    'filecount' => $all_index_info[$key]['totals']['filecount'] + $source['file_count'],
+                    'filesize' => $all_index_info[$key]['totals']['filesize'] + $source['file_size'],
+                    'dircount' => $all_index_info[$key]['totals']['dircount'] + $source['dir_count'],
+                    'crawltime' => $all_index_info[$key]['totals']['crawltime'] + $source['crawl_time']
+                ];
+            }
+
+            // add to disabled_indices list if still being indexed (no end_at field in indexinfo docs)
+            if (!$crawlfinished) {
+                $disabled_indices[] = $key;
+            }
+
+            // add to indices_sorted using creation_date as key
+            $indices_sorted[$val['creation_date']] = $key;
+
+            // Get size of index
+            // convert to bytes
+            $indexsize = $val['store_size'];
+            if (strpos($indexsize, 'gb')) {
+                $indexsize = str_replace('gb', '', $indexsize);
+                $indexsize = $indexsize * 1024 * 1024 * 1024;
+            } elseif (strpos($indexsize, 'mb')) {
+                $indexsize = str_replace('mb', '', $indexsize);
+                $indexsize = $indexsize * 1024 * 1024;
+            } elseif (strpos($indexsize, 'kb')) {
+                $indexsize = str_replace('kb', '', $indexsize);
+                $indexsize = $indexsize * 1024;
+            } else {
+                $indexsize = str_replace('b', '', $indexsize);
+            }
+            $all_index_info[$key]['totals']['indexsize'] = $indexsize;
+
+            // get disk space for each index
+            $searchParams['body'] = [
+                'size' => 100,
+                'query' => [
+                    'match' => [
+                        'type' => 'spaceinfo'
+                    ]
+                ]
+            ];
+
+            try {
+                $queryResponse = $client->search($searchParams);
+            } catch (Missing404Exception $e) {
+                    deleteCookie('index');
+                    clearPaths();
+                    handleError("Selected indices are no longer available. Please select a different index.");
+            } catch (Exception $e) {
+                handleError('ES error: ' . $e->getMessage(), true);
+            }
+
+            foreach ($queryResponse['hits']['hits'] as $hit) {
+                $index_spaceinfo[$key][$hit['_source']['path']] = $hit['_source'];
+            }
+
+            // add all fields from index mappings to fields_all
+            foreach ($val['fields'] as $field) {
+                if (!in_array($field, $fields)) {
+                    $fields[] = $field;
+                }
+            }
+        }
+
+        // sort completed indices by creation_date
+        krsort($indices_sorted);
+
+        // get completed indices
+        // get all latest indices based on index's top path
+        foreach ($indices_sorted as $key => $val) {
+            if (!in_array($val, $disabled_indices)) {
+                if (is_null($latest_completed_index)) {
+                    $latest_completed_index = $val;
+                }
+                $completed_indices[] = $val;
+            }
+        }
+
+        // add any addtional fields which are not found in mappings
+        if (!isset($_SESSION['indexinfo']['fields'])) {
+            $fields[] = 'name.text';
+            $fields[] = 'parent_path.text';
+        }
+        // sort fields
+        asort($fields);
+
+        // merge existing session index info with new index info
+        if (isset($_SESSION['indexinfo'])) {
+            $all_index_info = array_merge($_SESSION['indexinfo']['all_index_info'], $all_index_info);
+            $indices_sorted = array_merge($_SESSION['indexinfo']['indices_sorted'], $indices_sorted);
+            $completed_indices = array_merge($_SESSION['indexinfo']['completed_indices'], $completed_indices);
+            $latest_completed_index = (!is_null($latest_completed_index)) ? $latest_completed_index : $_SESSION['indexinfo']['latest_completed_index'];
+            $fields = array_merge($_SESSION['indexinfo']['fields'], $fields);
+            $index_starttimes = array_merge($_SESSION['indexinfo']['starttimes'], $index_starttimes);
+            $index_spaceinfo = array_merge($_SESSION['indexinfo']['spaceinfo'], $index_spaceinfo);
+        }
+
+        $_SESSION['indexinfo'] = array(
+            'update_time_ms' => microtime(true),
+            'all_index_info' => $all_index_info,
+            'indices_sorted' => $indices_sorted,
+            'completed_indices' => $completed_indices,
+            'latest_completed_index' => $latest_completed_index,
+            'fields' => $fields,
+            'starttimes' => $index_starttimes,
+            'spaceinfo' => $index_spaceinfo
+        );
+        $indexinfo_updatetime = $_SESSION['indexinfo']['update_time'] = new DateTime("now", new DateTimeZone($timezone));
+    } else {
+        $all_index_info = $_SESSION['indexinfo']['all_index_info'];
+        $indices_sorted = $_SESSION['indexinfo']['indices_sorted'];
+        $completed_indices = $_SESSION['indexinfo']['completed_indices'];
+        $latest_completed_index = $_SESSION['indexinfo']['latest_completed_index'];
+        $fields = $_SESSION['indexinfo']['fields'];
+        $index_starttimes = $_SESSION['indexinfo']['starttimes'];
+        $indexinfo_updatetime = $_SESSION['indexinfo']['update_time'];
+        $index_spaceinfo = $_SESSION['indexinfo']['spaceinfo'];
+    }
+
+    // check for index in url
+    if (isset($_GET['index']) && $_GET['index'] != "") {
+        $esIndex = $_GET['index'];
+        createCookie('index', $esIndex);
+    } else {
+        // get index from cookie
+        $esIndex = getCookie('index');
+        // redirect to select indices page if esIndex is empty
+        if (!in_array(basename($_SERVER['PHP_SELF']), $no_pathselect_pages)) {
+            if (empty($esIndex)) {
+                header("location:selectindices.php");
+                exit();
+            }
+        }
+    }
+
+    notifyNewIndex();
+
+    checkIndices();
+
+    setPaths();
 }
 
 
@@ -324,93 +560,6 @@ function setPaths()
         createCookie('rootpath', $path);
         createCookie('parentpath', getParentDir($path));
     }
-}
-
-
-// Set vars and cookies for index, path, etc
-function init()
-{
-    global $esclient, $timezone, $esIndex, $no_pathselect_pages, $es_index_info, $all_index_info, $indices_sorted, $completed_indices, 
-        $latest_completed_index, $fields, $indexinfo_updatetime, $index_starttimes, $indexinfo_expiretime, $index_spaceinfo;
-
-    if (!isset($_SESSION['indices_uuids'])) {
-        $_SESSION['indices_uuids'] = array();
-    }
-
-    if (!isset($_SESSION['indices_doccount'])) {
-        $_SESSION['indices_doccount'] = array();
-    }
-
-    // Get latest index info from ES
-    $es_index_info = $esclient->getIndexInfo();
-
-    // Set latest index info if force reload or index session info time expired
-    if (isset($_GET['reloadindices']) || !isset($_SESSION['indexinfo']) ||
-        (isset($_SESSION['indexinfo']) && microtime(true) - $_SESSION['indexinfo']['update_time_ms'] > $indexinfo_expiretime)
-    ) {
-        list(
-            $all_index_info, $indices_sorted, $completed_indices, $latest_completed_index, 
-            $fields, $index_starttimes, $index_spaceinfo
-        ) = setIndexInfo();
-
-        if (isset($_SESSION['indexinfo'])) {
-            // merge existing with new index info
-            $es_index_info = array_merge($_SESSION['indexinfo']['es_index_info'], $es_index_info);
-            $all_index_info = array_merge($_SESSION['indexinfo']['all_index_info'], $all_index_info);
-            $indices_sorted = array_merge($_SESSION['indexinfo']['indices_sorted'], $indices_sorted);
-            $completed_indices = array_merge($_SESSION['indexinfo']['completed_indices'], $completed_indices);
-            $latest_completed_index = (!is_null($latest_completed_index)) ? $latest_completed_index : $_SESSION['indexinfo']['latest_completed_index'];
-            $fields = $_SESSION['indexinfo']['fields'];
-            $index_starttimes = array_merge($_SESSION['indexinfo']['starttimes'], $index_starttimes);
-            $index_spaceinfo = array_merge($_SESSION['indexinfo']['spaceinfo'], $index_spaceinfo);
-        }
-
-        $_SESSION['indexinfo'] = [
-            'update_time_ms' => microtime(true),
-            'es_index_info' => $es_index_info,
-            'all_index_info' => $all_index_info,
-            'indices_sorted' => $indices_sorted,
-            'completed_indices' => $completed_indices,
-            'latest_completed_index' => $latest_completed_index,
-            'fields' => $fields,
-            'starttimes' => $index_starttimes,
-            'spaceinfo' => $index_spaceinfo
-        ];
-        $indexinfo_updatetime = $_SESSION['indexinfo']['update_time'] = new DateTime("now", new DateTimeZone($timezone));
-    } else {
-        $es_index_info = $_SESSION['indexinfo']['es_index_info'];
-        $all_index_info = $_SESSION['indexinfo']['all_index_info'];
-        $indices_sorted = $_SESSION['indexinfo']['indices_sorted'];
-        $completed_indices = $_SESSION['indexinfo']['completed_indices'];
-        $latest_completed_index = $_SESSION['indexinfo']['latest_completed_index'];
-        $fields = $_SESSION['indexinfo']['fields'];
-        $index_starttimes = $_SESSION['indexinfo']['starttimes'];
-        $indexinfo_updatetime = $_SESSION['indexinfo']['update_time'];
-        $index_spaceinfo = $_SESSION['indexinfo']['spaceinfo'];
-    }
-    
-    // check for index in url
-    if (isset($_GET['index']) && $_GET['index'] != "") {
-        $esIndex = $_GET['index'];
-        createCookie('index', $esIndex);
-    } else {
-        // get index from cookie
-        $esIndex = getCookie('index');
-        // redirect to select indices page if esIndex is empty
-        if (!in_array(basename($_SERVER['PHP_SELF']), $no_pathselect_pages)) {
-            if (empty($esIndex)) {
-                header("location:selectindices.php");
-                exit();
-            }
-        }
-    }
-
-    notifyNewIndex();
-
-    // check if indices still exist or have been re-indexed
-    checkIndices();
-
-    setPaths();
 }
 
 
@@ -521,180 +670,6 @@ function notifyNewIndex()
     } else {
         createCookie('newindexnotification', 0);
     }
-}
-
-
-// sets index global and session vars
-function setIndexInfo()
-{
-    global $client, $es_index_info;
-
-    $disabled_indices = array();
-    $indices_sorted = array();
-    $completed_indices = array();
-    $latest_completed_index = null;
-    $index_toppath = array();
-    $index_starttimes = array();
-    $all_index_info = array();
-    $fields = array();
-    $index_spaceinfo = array();
-
-    foreach ($es_index_info as $key => $val) {
-        // index uuid
-        $uuid = $val['uuid'];
-
-        // skip index which we already have index uuid and doc count has not changed
-        if (array_key_exists($uuid, $_SESSION['indices_uuids']) &&
-            $_SESSION['indices_doccount'][$key] == $val['docs_count']
-        ) {
-            continue;
-        } else {
-            $_SESSION['indices_uuids'][$uuid] = $key;
-            $_SESSION['indices_doccount'][$key] = $val['docs_count'];
-            unset($_SESSION['toppath']);
-        }
-
-        $searchParams['index'] = $key;
-        $searchParams['body'] = [
-            'size' => 2,
-            'query' => [
-                'match' => ['type' => 'indexinfo']
-
-            ],
-            'sort' => ['start_at' => 'asc']
-        ];
-
-        // catch any errors searching doc in indices which might be corrupt or deleted
-        try {
-            $queryResponse = $client->search($searchParams);
-        } catch (Exception $e) {
-            handleError('ES error (index not found/ index error): ' . $e->getMessage(), false, false, false);
-            removeIndex($key, $uuid);
-            continue;
-        }
-
-        // if no indexinfo docs, remove it from indices array
-        if (sizeof($queryResponse['hits']['hits']) == 0) {
-            removeIndex($key, $uuid);
-            continue;
-        }
-
-        $crawlfinished = false;
-        foreach ($queryResponse['hits']['hits'] as $hit) {
-            $source = $hit['_source'];
-            // add to index_starttimes list
-            if (array_key_exists('start_at', $source)) {
-                $index_starttimes[$key][$source['path']] = $source['start_at'];
-            }
-            if (array_key_exists('end_at', $source)) {
-                $crawlfinished = true;
-            }
-            // add to index_toppath list
-            if (array_key_exists($key, $index_toppath) && !in_array($source['path'], $index_toppath[$key])) {
-                $index_toppath[$key][] = $source['path'];
-            } else {
-                $index_toppath[$key] = array($source['path']);
-            }
-            // add to all_index_info list
-            $all_index_info[$key] = [
-                'path' => $source['path'],
-                'start_at' => array_key_exists('start_at', $source) ? $source['start_at'] : $all_index_info[$key]['start_at'],
-                'end_at' => $source['end_at'],
-                'crawl_time' => $source['crawl_time'],
-                'file_count' => $source['file_count'],
-                'dir_count' => $source['dir_count'],
-                'file_size' => $source['file_size']
-            ];
-            $all_index_info[$key]['totals'] = [
-                'filecount' => $all_index_info[$key]['totals']['filecount'] + $source['file_count'],
-                'filesize' => $all_index_info[$key]['totals']['filesize'] + $source['file_size'],
-                'dircount' => $all_index_info[$key]['totals']['dircount'] + $source['dir_count'],
-                'crawltime' => $all_index_info[$key]['totals']['crawltime'] + $source['crawl_time']
-            ];
-        }
-
-        // add to disabled_indices list if still being indexed (no end_at field in indexinfo docs)
-        if (!$crawlfinished) {
-            $disabled_indices[] = $key;
-        }
-
-        // add to indices_sorted using creation_date as key
-        $indices_sorted[$val['creation_date']] = $key;
-
-        // Get size of index
-        // convert to bytes
-        $indexsize = $val['store_size'];
-        if (strpos($indexsize, 'gb')) {
-            $indexsize = str_replace('gb', '', $indexsize);
-            $indexsize = $indexsize * 1024 * 1024 * 1024;
-        } elseif (strpos($indexsize, 'mb')) {
-            $indexsize = str_replace('mb', '', $indexsize);
-            $indexsize = $indexsize * 1024 * 1024;
-        } elseif (strpos($indexsize, 'kb')) {
-            $indexsize = str_replace('kb', '', $indexsize);
-            $indexsize = $indexsize * 1024;
-        } else {
-            $indexsize = str_replace('b', '', $indexsize);
-        }
-        $all_index_info[$key]['totals']['indexsize'] = $indexsize;
-
-        // get disk space for each index
-        $searchParams['body'] = [
-            'size' => 100,
-            'query' => [
-                'match' => [
-                    'type' => 'spaceinfo'
-                ]
-            ]
-        ];
-
-        try {
-            $queryResponse = $client->search($searchParams);
-        } catch (Missing404Exception $e) {
-                deleteCookie('index');
-                clearPaths();
-                handleError("Selected indices are no longer available. Please select a different index.");
-        } catch (Exception $e) {
-            handleError('ES error: ' . $e->getMessage(), true);
-        }
-
-        foreach ($queryResponse['hits']['hits'] as $hit) {
-            $index_spaceinfo[$key][$hit['_source']['path']] = $hit['_source'];
-        }
-
-        // add all fields from index mappings to fields_all
-        foreach ($val['fields'] as $field) {
-            if (!in_array($field, $fields)) {
-                $fields[] = $field;
-            }
-        }
-    }
-
-    // sort completed indices by creation_date
-    krsort($indices_sorted);
-
-    // get completed indices
-    // get all latest indices based on index's top path
-    foreach ($indices_sorted as $key => $val) {
-        if (!in_array($val, $disabled_indices)) {
-            if (is_null($latest_completed_index)) {
-                $latest_completed_index = $val;
-            }
-            $completed_indices[] = $val;
-        }
-    }
-
-    // add any addtional fields which are not found in mappings
-    $fields[] = 'name.text';
-    $fields[] = 'parent_path.text';
-
-    // sort fields
-    asort($fields);
-
-    return [
-        $all_index_info, $indices_sorted, $completed_indices, $latest_completed_index, 
-        $fields, $index_starttimes, $index_spaceinfo
-    ];
 }
 
 
