@@ -64,7 +64,8 @@ require "../src/diskover/Diskover.php";
             <div class="col-lg-12">
                 <?php if (Constants::LOGIN_REQUIRED) { ?>
                 <div class="well">
-                    <h4>Change Password</h4>
+                    <h4>Profile</h4>
+                    <p><i class="glyphicon glyphicon-user"></i> Username: <?php echo $_SESSION['username']; ?><br>
                     <?php if (Constants::PASS == $_SESSION['DEFAULT_USER_PASSWORD']) { ?>
                     <p><span class="text-danger"><i class="fas fa-exclamation-triangle"></i></span> Using default password, please <a href="password_hash.php" target="_blank">change your password</a>.</p>
                     <?php } else { ?>
