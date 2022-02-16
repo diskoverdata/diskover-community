@@ -1,9 +1,9 @@
 # Diskover-web v2 Community Edition Change Log
 
-# [2.0-rc.4] - 2022-02-15
+# [2.0-rc.4] - 2022-02-16
 ### BREAKING CHANGES
 - added MAX_INDEX, INDEXINFO_CACHETIME, NEWINDEX_CHECKTIME settings to default/sample web config file, copy to your config file
-- web config password for diskover user required to be hashed, create hash with password_hash.php and update your config file
+- password for diskover user required to be hashed and stored in separate sqlite db outside of config, you will be prompted to change password at next login
 ### fixed
 - charts displaying more data than selected index
 - reduced login time when many indices
@@ -13,13 +13,11 @@
 - changing chart/tree filter settings such as SIZE_FIELD in config did not change until browser cookies were cleared
 ### added
 - MAX_INDEX, INDEXINFO_CACHETIME, NEWINDEX_CHECKTIME to default/sample web config file, copy to your config file
-- password_hash.php - login password hash generator form
-- change password to settings page and warning if using default password
+- change password to settings page
 - maxindex config setting to default/sample config, copy to your config
 - after deleting indices on select indices page, index list will reload automatically after 3 seconds
 ### changed
-- hashed login password to default/sample web config file
-- user login password required to be hashed in config file, create new password hash with password_hash.php and update your config file
+- user login password required to be hashed and stored in separate sqlite db outside of config
 - reduced api calls to ES to check for new index info
 - improved file/directory view info page for extra fields
 
