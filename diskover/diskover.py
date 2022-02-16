@@ -104,8 +104,7 @@ try:
 except confuse.NotFoundError as e:
     print('Config ERROR: {0}, check config for errors or missing settings from default config.'.format(e))
     sys.exit(1)
-
-sizes = {}
+    
 
 filecount = {}
 skipfilecount = {}
@@ -202,14 +201,13 @@ def log_stats_thread(root):
             root, total_doc_count[root], elapsed, dps))
 
 
-def get_tree_size(thread, root, top, path, docs, depth=0, maxdepth=999):
+def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdepth=999):
     """Return total size of all files in directory tree at path."""
     global filecount
     global skipfilecount
     global inodecount
     global dircount
     global skipdircount
-    global sizes
     global total_doc_count
     global warnings
 
@@ -223,6 +221,10 @@ def get_tree_size(thread, root, top, path, docs, depth=0, maxdepth=999):
     d_skip_count = 0
     tot_doc_count = 0
     parent_path = None
+    size_norecurs = 0
+    size_du_norecurs = 0
+    files_norecurs = 0
+    dirs_norecurs = 0
     
     # use alt scanner
     # try to get stat info for dir path
@@ -284,11 +286,12 @@ def get_tree_size(thread, root, top, path, docs, depth=0, maxdepth=999):
                 d_count += 1
                 if not dir_excluded(entry.path):
                     dirs += 1
+                    dirs_norecurs += 1
                     if maxdepth > 0:
                         if depth < maxdepth:
                             # recurse into subdir
                             if not quit:
-                                s, sdu, fc, dc = get_tree_size(thread, root, top, entry.path, docs, depth+1, maxdepth)
+                                s, sdu, fc, dc = get_tree_size(thread, root, top, entry.path, docs, sizes, inodes, depth+1, maxdepth)
                                 size += s
                                 size_du += sdu
                                 files += fc
@@ -336,8 +339,17 @@ def get_tree_size(thread, root, top, path, docs, depth=0, maxdepth=999):
                             fatime_sec > minatime and \
                             fatime_sec < maxatime:
                             size += fsize
-                            size_du += fsize_du
+                            size_norecurs += fsize
+                            # don't add size if inode in inodes list (hardlink)
+                            if f_stat.st_ino not in inodes:
+                                # add inode to inodes list if harlink count more than 1
+                                if f_stat.st_nlink > 1:
+                                    with crawl_thread_lock:
+                                        inodes.append(f_stat.st_ino)
+                                size_du += fsize_du
+                                size_du_norecurs += fsize_du
                             files += 1
+                            files_norecurs += 1
                             # get owner and group names
                             if IS_WIN:
                                 # for windows just set both owner and group to 0, this is what scandir returns for Windows
@@ -479,9 +491,14 @@ def get_tree_size(thread, root, top, path, docs, depth=0, maxdepth=999):
                 'name': file_name,
                 'parent_path': parent_path,
                 'size': size,
+                'size_norecurs': size_norecurs,
                 'size_du': size_du,
+                'size_du_norecurs': size_du_norecurs,
                 'file_count': files,
+                'file_count_norecurs': files_norecurs, 
                 'dir_count': dirs + 1,
+                'dir_count_norecurs': dirs_norecurs + 1,
+                'dir_depth': depth,
                 'mtime': datetime.utcfromtimestamp(int(d_stat.st_mtime)).isoformat(),
                 'atime': datetime.utcfromtimestamp(int(d_stat.st_atime)).isoformat(),
                 'ctime': datetime.utcfromtimestamp(int(d_stat.st_ctime)).isoformat(),
@@ -585,9 +602,10 @@ def get_tree_size(thread, root, top, path, docs, depth=0, maxdepth=999):
 def crawl(root):
     """Crawl the directory tree at top path."""
     global emptyindex
+    sizes = {}
+    inodes = []
 
-    def crawl_thread(root, top, depth, maxdepth):
-        global sizes
+    def crawl_thread(root, top, depth, maxdepth, sizes, inodes):
         global total_doc_count
         global scan_paths
         thread = current_thread().name
@@ -599,13 +617,14 @@ def crawl(root):
         logger.debug('[{0}] starting crawl {1} (depth {2}, maxdepth {3})...'.format(thread, top, depth, maxdepth))
         if options.verbose or options.vverbose:
             logger.info('[{0}] starting crawl {1} (depth {2}, maxdepth {3})...'.format(thread, top, depth, maxdepth))
-        size, size_du, file_count, dir_count = get_tree_size(thread, root, top, top, docs, depth, maxdepth)
+        size, size_du, file_count, dir_count = get_tree_size(thread, root, top, top, docs, sizes, inodes, depth, maxdepth)
         doc_count = len(docs)
         if doc_count > 0:
             start_bulk_upload(thread, root, docs)
             with crawl_thread_lock:
                 total_doc_count[root] += doc_count
             docs.clear()
+        inodes.clear()
         # Add sizes of subdir to root dir 
         if depth > 0:
             with crawl_thread_lock:
@@ -645,7 +664,7 @@ def crawl(root):
         
     with futures.ThreadPoolExecutor(max_workers=maxthreads) as executor:
         # Set up thread to crawl rootdir (not recursive)
-        future = executor.submit(crawl_thread, root, root, 0, 0)
+        future = executor.submit(crawl_thread, root, root, 0, 0, sizes, inodes)
         try:
             data = future.result()
         except Exception as e:
@@ -655,7 +674,7 @@ def crawl(root):
             close_app_critical_error()
         
         # Set up threads to crawl (recursive) from each of the level 1 subdirs
-        futures_subdir = {executor.submit(crawl_thread, root, subdir, 1, options.maxdepth): subdir for subdir in subdir_list}
+        futures_subdir = {executor.submit(crawl_thread, root, subdir, 1, options.maxdepth, sizes, inodes): subdir for subdir in subdir_list}
         for future in futures.as_completed(futures_subdir):
             try:
                 data = future.result()

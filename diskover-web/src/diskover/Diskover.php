@@ -43,7 +43,9 @@ $config_const = array(
     'SIZE_FIELD',
     'FILE_TYPES',
     'EXTRA_FIELDS',
-    'MAX_INDEX'
+    'MAX_INDEX',
+    'INDEXINFO_CACHETIME',
+    'NEWINDEX_CHECKTIME'
 );
 
 // sanity check of Constants.php config
@@ -75,12 +77,6 @@ $client = $esclient->createClient();
 
 // Set d3 vars
 setd3Vars();
-
-// time in seconds for index info session var to expire and force reload indices
-$indexinfo_expiretime = 600;
-
-// time in seconds to check Elasticsearch for new index info
-$esindex_checktime = 10;
 
 // timezone
 // check for env var TZ
@@ -195,10 +191,9 @@ class ESClient
 
     function getIndexInfo()
     {
-        global $esindex_checktime;
         // get index info from ES
         // only get new index info every 10 seconds
-        if (isset($_GET['reloadindices']) || !isset($_SESSION['es_index_info_time']) || time() - $_SESSION['es_index_info_time'] > $esindex_checktime) {
+        if (isset($_GET['reloadindices']) || !isset($_SESSION['es_index_info_time']) || time() - $_SESSION['es_index_info_time'] > Constants::NEWINDEX_CHECKTIME) {
             $this->refreshIndices();
             $indices_info_curl = $this->getIndicesInfoCurl();
             $indices_info_cat = $this->getIndicesInfoCat();
@@ -226,13 +221,13 @@ class ESClient
 function indexInfo()
 {
     global $esclient, $client, $timezone, $esIndex, $no_pathselect_pages, $es_index_info, $all_index_info, $indices_sorted, $completed_indices, 
-    $latest_completed_index, $fields, $indexinfo_updatetime, $index_starttimes, $indexinfo_expiretime, $index_spaceinfo;
+    $latest_completed_index, $fields, $indexinfo_updatetime, $index_starttimes, $index_spaceinfo;
 
     $es_index_info = $esclient->getIndexInfo();
 
     // Set latest index info if force reload or index session info time expired
     if (isset($_GET['reloadindices']) || !isset($_SESSION['indexinfo']) ||
-    (isset($_SESSION['indexinfo']) && microtime(true) - $_SESSION['indexinfo']['update_time_ms'] > $indexinfo_expiretime)) {
+    (isset($_SESSION['indexinfo']) && microtime(true) - $_SESSION['indexinfo']['update_time_ms'] > Constants::INDEXINFO_CACHETIME)) {
 
         $disabled_indices = array();
         $indices_sorted = array();
@@ -504,7 +499,7 @@ function setd3Vars() {
     $show_files = 0;
     $maxdepth = 2;
     $sizefield = getCookie('sizefield'); // size field to use
-    if ($sizefield === "") {
+    if ($sizefield === "" || $sizefield !== Constants::SIZE_FIELD) {
         $sizefield = Constants::SIZE_FIELD;
         createCookie('sizefield', $sizefield);
     }

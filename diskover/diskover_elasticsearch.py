@@ -212,14 +212,29 @@ def create_index(indexname, es):
                 'size': {
                     'type': 'long'
                 },
+                'size_norecurs': {
+                    'type': 'long'
+                },
                 'size_du': {
+                    'type': 'long'
+                },
+                'size_du_norecurs': {
                     'type': 'long'
                 },
                 'file_count': {
                     'type': 'long'
                 },
+                'file_count_norecurs': {
+                    'type': 'long'
+                },
                 'dir_count': {
                     'type': 'long'
+                },
+                'dir_count_norecurs': {
+                    'type': 'long'
+                },
+                'dir_depth': {
+                    'type': 'integer'
                 },
                 'owner': {
                     'type': 'keyword'

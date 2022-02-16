@@ -46,7 +46,7 @@ class Constants {
     const PASS = '$2y$10$ORtWa3d62r3xDhXiSwAWhO7dZMFl5dztj56Zfy8J5EUWLwvsCtvLy'; // darkdata
     // default results per search page
     const SEARCH_RESULTS = 50;
-    // default size field (size, size_du) to use for sizes on charts
+    // default size field (size, size_du) to use for sizes on file tree and charts
     const SIZE_FIELD = 'size';
     // default file types, used by quick search (file type) and dashboard file type usage chart
     // additional extensions can be added/removed from each file types list
@@ -74,5 +74,9 @@ class Constants {
     // Maximum number of indices to load by default, indices are loaded in order by creation date
     // setting this too high can cause slow logins and other timeout issues
     // This setting can bo overridden on indices page per user
-    const MAX_INDEX = '50';
+    const MAX_INDEX = 50;
+    // time in seconds for index info to be cached, clicking reload indices forces update 
+    const INDEXINFO_CACHETIME = 600;
+    // time in seconds to check Elasticsearch for new index info
+    const NEWINDEX_CHECKTIME = 10;
 }
