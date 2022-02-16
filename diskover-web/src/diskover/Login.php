@@ -77,6 +77,7 @@ class Login
         }
 
         $_SESSION['loggedin'] = true;
+        $_SESSION['last_activity'] = time();
         $_SESSION['timeout'] = microtime(true);
         $_SESSION['username'] = $this->user->username;
     }
