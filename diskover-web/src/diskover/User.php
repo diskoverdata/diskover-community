@@ -35,15 +35,11 @@ class User
 
     public function hashPassword($password): string
     {
-        // Pepper the password before hashing.
-        $peppered = hash_hmac('sha256', $password, Constants::PASSWORD_PEPPER);
-        return password_hash($peppered, PASSWORD_DEFAULT);
+        return password_hash($password, PASSWORD_DEFAULT);
     }
 
     public function validatePassword($password): bool
     {
-        // Pepper the password before verifying.
-        $peppered = hash_hmac('sha256', $password, Constants::PASSWORD_PEPPER);
-        return password_verify($peppered, $this->passHash);
+        return password_verify($password, $this->passHash);
     }
 }
