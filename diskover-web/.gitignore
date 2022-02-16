@@ -1,0 +1,7 @@
+# Diskover-web specific ignore file.
+
+# Default database location for user data.
+diskover.json
+
+# Constants configuation file.
+/src/diskover/Constants.php

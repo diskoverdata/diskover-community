@@ -1,6 +1,7 @@
 {
     "require": {
-        "elasticsearch/elasticsearch": "7.13.1"
+        "elasticsearch/elasticsearch": "^7.13.1",
+        "ext-json": "*"
     },
     "autoload": {
         "psr-4": { "diskover\\": "src/diskover/" }
