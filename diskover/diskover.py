@@ -326,6 +326,13 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
                         fsize_du = f_stat.st_sizedu
                     else:
                         fsize_du = f_stat.st_blocks * blocksize
+                    # set fsize_du to 0 if inode in inodes list (hardlink)
+                    if f_stat.st_ino in inodes:
+                        fsize_du = 0
+                    # add inode to inodes list if hardlink count > 1
+                    elif f_stat.st_nlink > 1:
+                        with crawl_thread_lock:
+                            inodes.append(f_stat.st_ino)
                     fmtime_sec = time.time() - f_stat.st_mtime
                     fctime_sec = time.time() - f_stat.st_ctime
                     fatime_sec = time.time() - f_stat.st_atime
@@ -340,14 +347,8 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
                             fatime_sec < maxatime:
                             size += fsize
                             size_norecurs += fsize
-                            # don't add size if inode in inodes list (hardlink)
-                            if f_stat.st_ino not in inodes:
-                                # add inode to inodes list if harlink count more than 1
-                                if f_stat.st_nlink > 1:
-                                    with crawl_thread_lock:
-                                        inodes.append(f_stat.st_ino)
-                                size_du += fsize_du
-                                size_du_norecurs += fsize_du
+                            size_du += fsize_du
+                            size_du_norecurs += fsize_du
                             files += 1
                             files_norecurs += 1
                             # get owner and group names

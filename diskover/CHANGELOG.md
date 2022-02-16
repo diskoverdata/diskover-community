@@ -9,7 +9,7 @@
 - dir_depth, size_norecurs, size_du_norecurs, file_count_norecurs, dir_count_norecurs to ES index field mappings
     - additional fields added to directory docs
 ### changed
-- hardlink files won’t be added to size_du (allocated size) of directories
+- hardlink files size_du (allocated size) set to 0 when same inode already in scan
 - set number of scan maxthreads when empty/blank (default) in config to number of cpu cores
 - indexing unrecognized Unicode utf-8 characters in file name or parent path, the characters are replaced with a ? character and file gets indexed with a warning log message
     - previously the file/directory was not indexed and just skipped with a warning message
