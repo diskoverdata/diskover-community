@@ -498,8 +498,9 @@ function setd3Vars() {
     // get show_files
     $show_files = 0;
     $maxdepth = 2;
+    // don't check if same as size_field in config, setting to override this on settings page
     $sizefield = getCookie('sizefield'); // size field to use
-    if ($sizefield === "" || $sizefield !== Constants::SIZE_FIELD) {
+    if ($sizefield === "") {
         $sizefield = Constants::SIZE_FIELD;
         createCookie('sizefield', $sizefield);
     }
