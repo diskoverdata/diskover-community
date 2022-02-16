@@ -31,6 +31,8 @@ if ($path !== "/") {
     $path = rtrim($path, '/');
 }
 
+$esIndex = (isset($_GET['index'])) ? $_GET['index'] : getCookie('index');
+
 
 function get_dir_info_dashboard($client, $index, $path) {
     // Get total directory size, count (files/subdirs), mtime from Elasticsearch (recursive) for path

@@ -5,6 +5,7 @@
 - added MAX_INDEX, INDEXINFO_CACHETIME, NEWINDEX_CHECKTIME settings to default/sample web config file, copy to your config file
 - web config password for diskover user required to be hashed, create hash with password_hash.php and update your config file
 ### fixed
+- charts displaying more data than selected index
 - reduced login time when many indices
 - issue with not staying logged in and getting logged out before login time limit expires
 - issue with extra field value text on file view info page not wrapping when text string is very long
