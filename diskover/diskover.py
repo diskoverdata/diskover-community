@@ -625,7 +625,6 @@ def crawl(root):
             with crawl_thread_lock:
                 total_doc_count[root] += doc_count
             docs.clear()
-        inodes.clear()
         # Add sizes of subdir to root dir 
         if depth > 0:
             with crawl_thread_lock:
