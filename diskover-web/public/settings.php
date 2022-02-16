@@ -171,6 +171,8 @@ require "../src/diskover/Diskover.php";
                     <h4>Elasticsearch Info</h4>
                     Connected to: <?php echo Constants::ES_HOST . ":" . Constants::ES_PORT ?><br />
                     Response time: <?php echo $es_responsetime ?><br />
+                    New index check time: <?php echo Constants::NEWINDEX_CHECKTIME ?> sec<br />
+                    Index info cache time: <?php echo Constants::INDEXINFO_CACHETIME ?> sec<br />
                 </div>
                 <div class="well">
                     <h4>Send anonymous usage data</h4>

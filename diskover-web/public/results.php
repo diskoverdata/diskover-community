@@ -17,7 +17,9 @@ https://www.diskoverdata.com/solutions/
 */
 
 require '../vendor/autoload.php';
+
 use diskover\Constants;
+
 error_reporting(E_ALL ^ E_NOTICE);
 
 
@@ -28,92 +30,127 @@ $toppath_name = ($_SESSION['rootpath'] == '/') ? '/' : basename($_SESSION['rootp
 $last_index_time = "Last indexed " . $toppath_name . " at " . $dt->format('m/d/Y, h:i:s A T');
 
 // display results
-if (!empty($results[$p]) && count($results[$p]) > 0) {
-    //print_r($_SERVER);
-    echo '<script type="text/javascript">
-  var loadtree = true;
-  </script>';
-    // es search query
-    $searchquery = $searchParams['body']['query']['query_string']['query'];
-    $searchquery_notype = str_replace(" AND type:(file OR directory)", "", $searchquery);
-    $searchquery_noext = preg_replace("/extension:\w+ AND /", "", $searchquery_notype);
+//print_r($_SERVER);
+echo '<script type="text/javascript">
+    var loadtree = true;
+    </script>';
+// es search query
+$searchquery = $searchParams['body']['query']['query_string']['query'];
+$searchquery_notype = str_replace(" AND type:(file OR directory)", "", $searchquery);
+$searchquery_noext = preg_replace("/extension:\w+ AND /", "", $searchquery_notype);
+// hide search tree
+$hidetree = getCookie('hidesearchtree');
+// hide directory charts
+$hidecharts = getCookie('hidesearchcharts');
 ?>
-    <div class="container-fluid" id="mainwindow" style="margin-top:70px">
-        <div class="alert alert-dismissible alert-success">
-            <button type="button" class="close" data-dismiss="alert">&times;</button>
-            <?php
-            $rs = $searchParams['size'];
-            $cp = $_GET['p'];
-            $ei = $rs * $cp;
-            $si = $ei - $rs + 1;
-            ?>
-            <i class="glyphicon glyphicon-search"></i> Showing <strong><?php echo $si; ?></strong> to <strong><?php echo $ei; ?></strong> of <?php echo number_format($total); ?> items found in <?php echo $estime ?> seconds.
-            <span>Results size: <?php echo formatBytes($total_size); ?> <span class="small">(this page)</span>.</span>
-            <span>Search query: <i><strong><?php echo $searchParams['body']['query']['query_string']['query'] ?></strong></i></span>
-        </div>
-        <div class="row">
-            <div class="col-lg-2">
-                <div id="tree-button-container">
-                    <a href="#" class="btn btn-default btn-sm" title="Top path" onclick="goToTreeTop()"><i class="glyphicon glyphicon-home"></i> Top</a>
-                    <a href="#" class="btn btn-default btn-sm" title="Up" onclick="goToTreeUp()"><i class="glyphicon glyphicon-circle-arrow-up"></i> Up</a>
-                    <a href="#" class="btn btn-default btn-sm" title="Back" onclick="goToTreeBack()"><i class="glyphicon glyphicon-arrow-left"></i></a>
-                    <a href="#" class="btn btn-default btn-sm" title="Forward" onclick="goToTreeForward()"><i class="glyphicon glyphicon-arrow-right"></i></a>
-                    <br><a href="#" class="btn btn-default btn-sm" title="Show/hide file tree" onclick="hideTree()"><i class="far fa-eye-slash"></i> Tree</a>
-                    <a href="#" class="btn btn-sm btn-default" title="Show/hide directory charts" onclick="hideCharts()"><i class="far fa-eye-slash"></i> Charts</a>
-                    <a href="#" class="btn btn-sm btn-default reload-results" title="Reload tree and chart data"><i class="glyphicon glyphicon-refresh"></i> Reload</a>
-                </div>
+<div class="container-fluid" id="mainwindow" style="margin-top:70px">
+    <div class="row">
+        <div class="col-lg-2 <?php echo ($hidetree == 0 || empty($hidetree)) ? 'tree-button-wrapper' : 'tree-button-wrapper-sm' ?>" id="tree-button-wrapper">
+            <div id="tree-button-container" style="display:<?php echo ($hidetree == 0 || empty($hidetree)) ? 'block' : 'none' ?>">
+                <a href="#" class="btn btn-default btn-sm" title="Top path" onclick="goToTreeTop()"><i class="glyphicon glyphicon-home"></i> Top</a>
+                <a href="#" class="btn btn-default btn-sm" title="Up" onclick="goToTreeUp()"><i class="glyphicon glyphicon-circle-arrow-up"></i> Up</a>
+                <a href="#" class="btn btn-default btn-sm" title="Back" onclick="goToTreeBack()"><i class="glyphicon glyphicon-arrow-left"></i></a>
+                <a href="#" class="btn btn-default btn-sm" title="Forward" onclick="goToTreeForward()"><i class="glyphicon glyphicon-arrow-right"></i></a>
+                <br><a href="#" class="btn btn-default btn-sm" title="Show/hide file tree" onclick="hideTree()"><i class="far fa-eye-slash"></i> Tree</a>
+                <a href="#" class="btn btn-sm btn-default" title="Show/hide directory charts" onclick="hideCharts()"><i class="far fa-eye-slash"></i> Charts</a>
+                <a href="#" class="btn btn-sm btn-default reload-results" title="Reload tree and chart data"><i class="glyphicon glyphicon-refresh"></i> Reload</a>
             </div>
-            <div class="col-lg-10">
-                <!-- split path links start -->
-                <ul class="breadcrumb">
+            <div id="tree-button-container-sm" style="display:<?php echo ($hidetree == 0 || empty($hidetree)) ? 'none' : 'block' ?>">
+                <a href="#" class="btn btn-default btn-sm" title="Top path" onclick="goToTreeTop()"><i class="glyphicon glyphicon-home"></i></a>
+                <a href="#" class="btn btn-default btn-sm" title="Up" onclick="goToTreeUp()"><i class="glyphicon glyphicon-circle-arrow-up"></i></a>
+                <a href="#" class="btn btn-default btn-sm" title="Back" onclick="goToTreeBack()"><i class="glyphicon glyphicon-arrow-left"></i></a>
+                <a href="#" class="btn btn-default btn-sm" title="Forward" onclick="goToTreeForward()"><i class="glyphicon glyphicon-arrow-right"></i></a>
+                <br><a href="#" class="btn btn-default btn-sm" title="Show/hide file tree" onclick="hideTree()"><i class="far fa-eye-slash"></i></a>
+                <a href="#" class="btn btn-sm btn-default" title="Show/hide directory charts" onclick="hideCharts()"><i class="far fa-eye-slash"></i></a>
+                <a href="#" class="btn btn-sm btn-default reload-results" title="Reload tree and chart data"><i class="glyphicon glyphicon-refresh"></i></a>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <?php
+        if ($hidetree == 0 || empty($hidetree)) { ?>
+            <div class="col-lg-2 tree-wrapper" id="tree-wrapper">
+                <!-- storage drive icons start -->
+                <div id="tree-container-toppaths" class="tree-container-toppaths">
                     <?php
-                    $splitpath = explode('/', $path);
-                    $x = substr_count($_SESSION['rootpath'], '/');
-                    $splitpath = array_slice($splitpath, $x);
-                    $pathfull = dirname($_SESSION['rootpath']);
-                    if ($pathfull == '/') $pathfull = '';
-                    $n = 0;
-                    foreach ($splitpath as $pathitem) {
-                        $pathfull .= '/' . $pathitem;
-                        $active = ($n == 0) ? 'style="font-weight:bolder"' : '';
-                        $ico = ($n == 0) ? '<i class="far fa-hdd"></i>' : '<i class="far fa-folder"></i>';
-                        echo '<li ' . $active . '><a title="' . $pathfull . '" href="search.php?index=' . $esIndex, '&amp;index2=' . $esIndex2 . '&amp;q=parent_path:' . rawurlencode(escape_chars($pathfull)) . '&amp;submitted=true&amp;p=1&amp;path=' . rawurlencode($pathfull) . '">' . $ico . ' ' . $pathitem . '</a></li>';
-                        $n += 1;
+                    $toppath = $_SESSION['rootpath'];
+                    $pathlabel = ($toppath == '/') ? $toppath : basename($toppath);
+                    $dt = new DateTime($index_starttimes[$esIndex][$toppath], new DateTimeZone('UTC'));
+                    $dt->setTimezone(new DateTimeZone($timezone));
+                    $index_time = $dt->format('m/d/Y, h:i:s A T');
+                    $title = $toppath . " | index " . $esIndex . " | last indexed " . $index_time;
+                    # get disk space info
+                    $space_total = $index_spaceinfo[$esIndex][$toppath]['total'];
+                    $space_available = $index_spaceinfo[$esIndex][$toppath]['available'];
+                    $space_used = $index_spaceinfo[$esIndex][$toppath]['used'];
+                    $available_percent = round($space_available / $space_total * 100);
+                    $used_percent = 100 - $available_percent;
+                    # color bar based on used percent
+                    if ($used_percent >= 80 && $used_percent < 90) {
+                        $barcolor = "#C9D66F";
+                    } elseif ($used_percent >= 90) {
+                        $barcolor = "#8A313D";
+                    } else {
+                        $barcolor = "#468147";
                     }
+                    $title_space = "Space used: " . formatBytes($space_used) . " (" . $used_percent . " %) | available: " . formatBytes($space_available) . " | total: " . formatBytes($space_total);
+                    echo "<span title=\"" . $title . "\" class=\"searchtree-toppath\" style=\"opacity:1; width:60%; float:left; display:block; font-weight:bold\"><a href=\"search.php?index=" . $esIndex . "&q=parent_path:" . rawurlencode(escape_chars($toppath)) . "&submitted=true&p=1&path=" . rawurlencode($toppath) . "\"><i class=\"far fa-hdd\" style=\"margin-right:5px; font-weight:bold\"></i> " . $pathlabel . "</a></span>
+                    <div title=\"" . $title_space . "\" class=\"progress\" style=\"width:75px; float:right; background-color:#121416; display:block; margin:0 auto; height:6px;top:9px;position:relative\">
+                        <div class=\"progress-bar\" style=\"opacity:1; background-color:" . $barcolor . "; width:" . $used_percent . "%\"></div>
+                    </div><div style=\"height:13px\"></div>";
                     ?>
-                </ul>
-                <!-- split path links end -->
-            </div>
-        </div>
-        <div class="row">
-            <?php
-            $hidetree = getCookie('hidesearchtree');
-            if ($hidetree == 0 || empty($hidetree)) { ?>
-                <div class="col-lg-2 tree-wrapper" id="tree-wrapper">
-                    <!-- storage drive icons start -->
-                    <div id="tree-container-toppath">
-                        <?php 
-                        $toppath = $_SESSION['rootpath'];
-                        $pathlabel = ($toppath == '/') ? $toppath : basename($toppath);
-                        $dt = new DateTime($index_starttimes[$esIndex][$toppath], new DateTimeZone('UTC'));
-                        $dt->setTimezone(new DateTimeZone($timezone));
-                        $index_time = $dt->format('m/d/Y, h:i:s A T');
-                        $title = $toppath . " | index " . $esIndex . " | last indexed " . $index_time;
-                        echo "<span title=\"" . $title . "\" class=\"searchtree-toppath\" style=\"font-weight:bold\"><a href=\"search.php?index=" . $esIndex . "&q=parent_path:" . rawurlencode(escape_chars($toppath)) . "&submitted=true&p=1&path=" . rawurlencode($toppath) . "\"><i class=\"far fa-hdd\" style=\"margin-right:5px; font-weight:bold\"></i> " . $pathlabel . "</a></span><br>\n";
-                        ?>
-                    </div>
-                    <!-- storage drive icons end -->
-                    <div id="tree-container" style="position:relative; left:-20px"></div>
                 </div>
-                <div class="col-lg-10" id="search-results-wrapper">
-                <?php } else { ?>
-                    <div class="col-lg-2 tree-wrapper" id="tree-wrapper" style="display:none;">
-                        <div id="tree-container"></div>
+                <!-- storage drive icons end -->
+                <div id="tree-container" class="tree-container"></div>
+            </div>
+            <div class="col-lg-10 search-results-wrapper" id="search-results-wrapper">
+            <?php } else { ?>
+                <div class="col-lg-2 tree-wrapper" id="tree-wrapper" style="display:none;">
+                    <div id="tree-container" class="tree-container"></div>
+                </div>
+                <div class="col-lg-12 search-results-wrapper-lg" id="search-results-wrapper">
+                <?php } ?>
+                <?php
+                // check for search results and if there are no results, display no results message 
+                if (!empty($results[$p]) && count($results[$p]) > 0) { ?>
+                    <!-- search results info -->
+                    <div class="alert alert-dismissible alert-success" id="results-info">
+                        <button type="button" class="close" data-dismiss="alert">&times;</button>
+                        <?php
+                        $rs = $searchParams['size'];
+                        $cp = $_GET['p'];
+                        $ei = $rs * $cp;
+                        $si = $ei - $rs + 1;
+                        ?>
+                        <i class="glyphicon glyphicon-search"></i> Showing <strong><?php echo $si; ?></strong> to <strong><?php echo $ei; ?></strong> of <?php echo number_format($total); ?> items found in <?php echo $estime ?> seconds.
+                        <span>Results size: <?php echo formatBytes($total_size); ?> <span class="small">(this page)</span>.</span>
+                        <span>Search query: <i><strong><?php echo $searchParams['body']['query']['query_string']['query'] ?></strong></i></span>
                     </div>
-                    <div class="col-lg-12" id="search-results-wrapper">
-                    <?php } ?>
+                    <!-- end search results info -->
+                    <!-- path breadcrumb -->
+                    <div id="path-breadcrumb-wrapper">
+                        <!-- split path links start -->
+                        <ul class="breadcrumb">
+                            <?php
+                            $splitpath = explode('/', $path);
+                            $x = substr_count($_SESSION['rootpath'], '/');
+                            $splitpath = array_slice($splitpath, $x);
+                            $pathfull = dirname($_SESSION['rootpath']);
+                            if ($pathfull == '/') $pathfull = '';
+                            $n = 0;
+                            foreach ($splitpath as $pathitem) {
+                                $pathfull .= '/' . $pathitem;
+                                $active = ($n == 0) ? 'style="font-weight:bolder"' : '';
+                                $ico = ($n == 0) ? '<i class="far fa-hdd"></i>' : '<i class="far fa-folder"></i>';
+                                echo '<li ' . $active . '><a title="' . $pathfull . '" href="search.php?index=' . $esIndex, '&amp;index2=' . $esIndex2 . '&amp;q=parent_path:' . rawurlencode(escape_chars($pathfull)) . '&amp;submitted=true&amp;p=1&amp;path=' . rawurlencode($pathfull) . '">' . $ico . ' ' . $pathitem . '</a></li>';
+                                $n += 1;
+                            }
+                            ?>
+                        </ul>
+                        <!-- split path links end -->
+                    </div>
+                    <!-- end path breadcrumb -->
                     <!-- directory charts -->
-                    <?php $hidecharts = getCookie('hidesearchcharts'); ?>
                     <div class="panel panel-default" id="searchCharts-container" style="display:<?php echo ($hidecharts == 0 || empty($hidecharts)) ? 'block' : 'none' ?>">
                         <div class="panel-heading">
                             <div id="dirdetails" style="font-size:13px"></div>
@@ -142,6 +179,7 @@ if (!empty($results[$p]) && count($results[$p]) > 0) {
                             </div>
                         </div>
                     </div>
+                    <!-- end directory charts -->
                     <!-- index time -->
                     <div class="small text-right" style="padding-bottom:10px"><i class="fas fa-clock"></i> <?php echo $last_index_time ?></div>
                     <!-- end index update time -->
@@ -205,7 +243,7 @@ if (!empty($results[$p]) && count($results[$p]) > 0) {
                             <!-- end share button -->
                             <!-- file action button -->
                             <div class="btn-group" style="display:inline-block;">
-                            <button title="file action" id="fileactionbutton" class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" disabled="disabled"><i class="fas fa-cogs"></i> File Action <span class="label label-info">Pro</span>
+                                <button title="file action" id="fileactionbutton" class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" disabled="disabled"><i class="fas fa-cogs"></i> File Action <span class="label label-info">Pro</span>
                                     <span class="caret"></span></button>
                                 <ul class="dropdown-menu">
                                     <li><a href="#">Pro version required</a></li>
@@ -361,7 +399,7 @@ if (!empty($results[$p]) && count($results[$p]) > 0) {
                                 <?php } else {
                                     $hiddencol[] = 'sizedu';
                                 } ?>
-                                <?php if (getCookie('hidefield_sizep') != "1") { ?><th data-resizable-column-id="sizep" class="text-nowrap" width="10%">% <span style="color:darkgray;font-size: 11px;"><i title="Percentage of total file size this page" class="glyphicon glyphicon-question-sign"></i></span></th>
+                                <?php if (getCookie('hidefield_sizep') != "1") { ?><th data-resizable-column-id="sizep" class="text-nowrap" width="7%">% <span style="color:darkgray;font-size: 11px;"><i title="Percentage of total file size this page" class="glyphicon glyphicon-question-sign"></i></span></th>
                                 <?php } else {
                                     $hiddencol[] = 'sizep';
                                 } ?>
@@ -395,13 +433,6 @@ if (!empty($results[$p]) && count($results[$p]) > 0) {
                                 <?php if (getCookie('hidefield_type') != "1") { ?><th data-resizable-column-id="type" class="text-nowrap">Type <?php echo sortURL('type'); ?></th>
                                 <?php } else {
                                     $hiddencol[] = 'type';
-                                } ?>
-                                <?php if ($showcostpergb) { ?>
-                                    <?php if (getCookie('hidefield_cost') != "1") { ?><th data-resizable-column-id="cost" class="text-nowrap">Cost <?php echo sortURL('costpergb'); ?></th>
-                                    <?php } else {
-                                        $hiddencol[] = 'cost';
-                                    } ?>
-                                <?php $numofcol += 1;
                                 } ?>
                                 <?php if (getCookie('hidefield_rating') != "1") { ?><th data-resizable-column-id="rating" class="text-nowrap">Rating <span style="color:darkgray;font-size: 11px;"><i title="Rating is based on last modified time, older is higher rating" class="glyphicon glyphicon-question-sign"></i></span></th>
                                 <?php } else {
@@ -463,14 +494,21 @@ if (!empty($results[$p]) && count($results[$p]) > 0) {
                                         $fullpaths[] = $fullpath;
                                         ?>
                                         <?php if ($file['type'] == 'directory') { ?>
-                                            <a href="search.php?index=<?php echo $esIndex; ?>&amp;index2=<?php echo $esIndex2; ?>&amp;q=parent_path:<?php echo rawurlencode(escape_chars($fullpath)); ?>&amp;submitted=true&amp;p=1&amp;path=<?php echo rawurlencode($fullpath); ?>">
+                                            <a href="search.php?index=<?php echo $esIndex; ?>&amp;q=parent_path:<?php echo rawurlencode(escape_chars($fullpath)); ?>&amp;submitted=true&amp;p=1&amp;path=<?php echo rawurlencode($fullpath); ?>">
                                                 <i class="fas fa-folder" style="color:#E9AC47;padding-right:3px;"></i>
-                                                <?php echo $filename; ?></a> <a href="view.php?id=<?php echo $result['_id'] . '&amp;docindex=' . $result['_index'] . '&amp;doctype=' . $file['type']; ?>"><button class="btn btn-default btn-xs" type="button" style="color:gray;font-size:11px;margin-left:3px;"><i title="directory info" class="glyphicon glyphicon-info-sign"></i></button></a>
+                                                <?php echo $filename; ?></a> 
                                         <?php } else { ?>
                                             <a href="view.php?id=<?php echo $result['_id'] . '&amp;docindex=' . $result['_index'] . '&amp;doctype=' . $file['type']; ?>"><i class="fas fa-file-alt" style="color:#738291;padding-right:3px;"></i> <?php echo $filename; ?>
                                             <?php } ?>
-                                            <!-- copy path button -->
-                                            <a href="#"><button onclick="copyToClipboardText('<?php echo $fullpath; ?>'); return false;" class="btn btn-default btn-xs" type="button" style="color:gray;font-size:11px;"><i title="copy path" class="glyphicon glyphicon-copy"></i></button></a>
+                                            <?php if ($file['type'] == 'directory') { ?>
+                                                <!-- directory view info button -->
+                                                <div style="display:block; float:right"><a href="view.php?id=<?php echo $result['_id'] . '&amp;docindex=' . $result['_index'] . '&amp;doctype=' . $file['type']; ?>"><button class="btn btn-default btn-xs" type="button" style="color:gray;font-size:11px;margin-left:3px;"><i title="directory info" class="glyphicon glyphicon-info-sign"></i></button></a>
+                                                <?php } else { ?>
+                                                    <div style="display:block; float:right">
+                                                    <?php } ?>
+                                                    <!-- copy path button -->
+                                                    <a href="#"><button onclick="copyToClipboardText('<?php echo $fullpath; ?>'); return false;" class="btn btn-default btn-xs" type="button" style="color:gray;font-size:11px;"><i title="copy path" class="glyphicon glyphicon-copy"></i></button></a>
+                                                </div>
                                     </td>
                                     <?php if (!in_array('path', $hiddencol)) { ?>
                                         <td class="path">
@@ -483,50 +521,17 @@ if (!empty($results[$p]) && count($results[$p]) > 0) {
                                                     <li class="small"><a href="#"><i class="glyphicon glyphicon-th-large"></i> load path in treemap <span class="label label-info">Essential</span></a></li>
                                                     <li class="small"><a href="#"><i class="glyphicon glyphicon-fire"></i> load path in heatmap <span class="label label-info">Pro</span></a></li>
                                                     <li class="divider"></li>
-                                                    <li class="small"><a href="search.php?index=<?php echo $esIndex; ?>&amp;index2=<?php echo $esIndex2; ?>&amp;submitted=true&amp;p=1&amp;q=parent_path:<?php echo rawurlencode(escape_chars($parentpath)); ?>"><i class="fas fa-search"></i> search path (non-recursive)</a></li>
-                                                    <li class="small"><a href="search.php?index=<?php echo $esIndex; ?>&amp;index2=<?php echo $esIndex2; ?>&amp;submitted=true&amp;p=1&amp;q=parent_path:(<?php echo rawurlencode(escape_chars($parentpath)) . ' OR ' . rawurlencode($parentpath_wildcard); ?>)"><i class="fas fa-search"></i> search path (recursive)</a></li>
+                                                    <li class="small"><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=parent_path:<?php echo rawurlencode(escape_chars($parentpath)); ?>"><i class="fas fa-search"></i> search path (non-recursive)</a></li>
+                                                    <li class="small"><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=parent_path:(<?php echo rawurlencode(escape_chars($parentpath)) . ' OR ' . rawurlencode($parentpath_wildcard); ?>)"><i class="fas fa-search"></i> search path (recursive)</a></li>
                                                 </ul>
                                             </div>
                                             <!-- end path buttons -->
-                                            <a class="pathdark" href="search.php?index=<?php echo $esIndex; ?>&amp;index2=<?php echo $esIndex2; ?>&amp;submitted=true&amp;p=1&amp;q=parent_path:<?php echo rawurlencode(escape_chars($parentpath)); ?>&amp;path=<?php echo rawurlencode($parentpath); ?>"><?php echo $file['parent_path']; ?></a>
+                                            <a class="pathdark" href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=parent_path:<?php echo rawurlencode(escape_chars($parentpath)); ?>&amp;path=<?php echo rawurlencode($parentpath); ?>"><?php echo $file['parent_path']; ?></a>
                                         </td>
                                     <?php } ?>
                                     <td class="text-nowrap"><?php echo formatBytes($file['size']); ?>
-                                        <!-- show comparison file size -->
-                                        <?php if ($esIndex2 != "") { ?>
-                                            <?php
-                                            $filesize_change = 0;
-                                            $fileinfo_index2 = get_index2_fileinfo($client, $esIndex2, $file['parent_path'], $file['name']);
-                                            if ($file['size'] > 0 && $fileinfo_index2[0] > 0) {
-                                                $filesize_change = number_format(changePercent($file['size'], $fileinfo_index2[0]), 1);
-                                            } else if ($file['size'] > 0 && $fileinfo_index2[0] == 0) {
-                                                $filesize_change = 100.0;
-                                            }
-                                            if ($filesize_change != 0) { ?>
-                                                <br><small><?php echo formatBytes($fileinfo_index2[0]); ?>
-                                                    <br><span style="color:<?php echo $filesize_change > 0 ? "red" : "#29FE2F"; ?>;">(<?php echo $filesize_change > 0 ? '<i class="fa fa-caret-up"></i> +' : '<i class="fa fa-caret-down"></i>'; ?>
-                                                        <?php echo $filesize_change; ?>%)</span></small>
-                                        <?php }
-                                        } ?>
-                                        <!-- end show comparison file size -->
                                     </td>
                                     <?php if (!in_array('sizedu', $hiddencol)) { ?><td class="text-nowrap"> <?php echo formatBytes($file['size_du']); ?>
-                                            <!-- show comparison file size -->
-                                            <?php if ($esIndex2 != "") { ?>
-                                                <?php
-                                                $filesizedu_change = 0;
-                                                if ($file['size_du'] > 0 && $fileinfo_index2[1] > 0) {
-                                                    $filesizedu_change = number_format(changePercent($file['size_du'], $fileinfo_index2[1]), 1);
-                                                } else if ($file['size_du'] > 0 && $fileinfo_index2[1] == 0) {
-                                                    $filesizedu_change = 100.0;
-                                                }
-                                                if ($filesizedu_change != 0) { ?>
-                                                    <br><small><?php echo formatBytes($fileinfo_index2[1]); ?>
-                                                        <br><span style="color:<?php echo $filesizedu_change > 0 ? "red" : "#29FE2F"; ?>;">(<?php echo $filesizedu_change > 0 ? '<i class="fa fa-caret-up"></i> +' : '<i class="fa fa-caret-down"></i>'; ?>
-                                                            <?php echo $filesizedu_change; ?>%)</span></small>
-                                            <?php }
-                                            } ?>
-                                            <!-- end show comparison file size -->
                                         </td><?php } ?>
                                     <?php if (!in_array('sizep', $hiddencol)) { ?><td>
                                             <?php $width = ($total_size > 0) ? $file['size'] / $total_size * 100 : 0; ?>
@@ -595,9 +600,6 @@ if (!empty($results[$p]) && count($results[$p]) > 0) {
                                         </td>
                                     <?php } ?>
                                     <!-- end type -->
-                                    <?php if ($showcostpergb) { ?>
-                                        <?php if (!in_array('cost', $hiddencol)) { ?><td class="text-nowrap">$ <?php echo number_format(round($file['costpergb'], 2), 2); ?></td><?php } ?>
-                                    <?php } ?>
                                     <?php if (!in_array('rating', $hiddencol)) { ?><td class="rating"><i class="fas fa-eraser" style="color:palevioletred; opacity:<?php echo $file_rating; ?>"></i></td><?php } ?>
                                     <!-- extra fields -->
                                     <?php
@@ -608,9 +610,30 @@ if (!empty($results[$p]) && count($results[$p]) > 0) {
                                                     <?php if (is_array($file[$value])) {
                                                         $ef_string = "";
                                                         foreach ($file[$value] as $k => $v) {
-                                                            $ef_string .= $k . ': ' . $v . ' ';
+                                                            if (is_array($v)) {
+                                                                foreach ($v as $v_key => $v_val) {
+                                                                    if (is_array($v_val)) {
+                                                                        foreach ($v_val as $v2_key => $v2_val) {
+                                                                            if (is_bool($v2_val)) {
+                                                                                $v2_val = ($v2_val) ? 'true' : 'false';
+                                                                            }
+                                                                            $ef_string .= $value . '.' . $k . '.' . $v2_key . ': ' . $v2_val . ', ';
+                                                                        }
+                                                                    } else {
+                                                                        if (is_bool($v_val)) {
+                                                                            $v_val = ($v_val) ? 'true' : 'false';
+                                                                        }
+                                                                        $ef_string .= $value . '.' . $k . '.' . $v_key . ': ' . $v_val . ', ';
+                                                                    }
+                                                                }
+                                                            } else {
+                                                                if (is_bool($v)) {
+                                                                    $v = ($v) ? 'true' : 'false';
+                                                                }
+                                                                $ef_string .= $value . '.' . $k . ': ' . $v . ', ';
+                                                            }
                                                         }
-                                                        echo substr($ef_string, 0, 100) . ' ...';
+                                                        echo (strlen($ef_string) > 100) ? substr($ef_string, 0, 100) . ' ...' : $ef_string;
                                                     } elseif ($value == 'ctime') {  # ctime field
                                                         echo utcTimeToLocal($file[$value]);
                                                     } else {
@@ -635,7 +658,7 @@ if (!empty($results[$p]) && count($results[$p]) > 0) {
                                 <th class="text-nowrap">Size <?php echo sortURL('size'); ?></th>
                                 <?php if (getCookie('hidefield_sizedu') != "1") { ?><th class="text-nowrap">Allocated <?php echo sortURL('size_du'); ?></th>
                                 <?php } ?>
-                                <?php if (getCookie('hidefield_sizep') != "1") { ?><th class="text-nowrap" width="10%">% <span style="color:darkgray;font-size: 11px;"><i title="Percentage of total file size this page" class="glyphicon glyphicon-question-sign"></i></span></th>
+                                <?php if (getCookie('hidefield_sizep') != "1") { ?><th class="text-nowrap" width="7%">% <span style="color:darkgray;font-size: 11px;"><i title="Percentage of total file size this page" class="glyphicon glyphicon-question-sign"></i></span></th>
                                 <?php } ?>
                                 <?php if (getCookie('hidefield_modified') != "1") { ?><th class="text-nowrap">Date Modified <?php echo sortURL('mtime'); ?></th>
                                 <?php } ?>
@@ -654,11 +677,6 @@ if (!empty($results[$p]) && count($results[$p]) > 0) {
                                 <?php } ?>
                                 <?php if (getCookie('hidefield_type') != "1") { ?><th class="text-nowrap">Type <?php echo sortURL('type'); ?></th>
                                 <?php } ?>
-                                <?php if ($showcostpergb) { ?>
-                                    <?php if (getCookie('hidefield_cost') != "1") { ?><th class="text-nowrap">Cost <?php echo sortURL('costpergb'); ?></th>
-                                    <?php } ?>
-                                <?php
-                                } ?>
                                 <?php if (getCookie('hidefield_rating') != "1") { ?><th class="text-nowrap">Rating <span style="color:darkgray;font-size: 11px;"><i title="Rating is based on last modified time, older is higher rating" class="glyphicon glyphicon-question-sign"></i></span></th>
                                 <?php } ?>
                                 <?php
@@ -731,57 +749,48 @@ if (!empty($results[$p]) && count($results[$p]) > 0) {
                                 } ?>
                         </ul>
                     </div>
+                <?php } else { ?>
+                    <div class="container-fluid" style="margin:10px; padding:10px">
+                        <div class="row">
+                            <div class="alert alert-dismissible alert-info col-xs-8">
+                                <button type="button" class="close" data-dismiss="alert">&times;</button>
+                                <i class="glyphicon glyphicon-exclamation-sign"></i> <strong>Sorry, no items found.</strong><br>Change a few things up and try searching again or search for <a class="alert-link" href="search.php?index=<?php echo $esIndex ?>&submitted=true&p=1&q=&path=">anything.</a><br>
+                                See <a class="alert-link" href="help.php">help</a> for search examples or try to <a class="alert-link" href="#" onclick="saveSearchFilters('clearall')">remove any search filters</a> or <a class="alert-link" href="#" onclick="resetSort()">reset sort order</a>. <a class="alert-link" href="#" onclick="window.history.back(); return false;">Go back</a><br>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="panel panel-default">
+                                <div class="panel-body">
+                                    <span>Search query: <strong><em><?php echo $searchParams['body']['query']['query_string']['query'] ?></em></strong></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                <?php } ?>
+                <hr>
+                <div class="row">
+                    <div class="col-lg-6">
+                        <div>
+                            <i class="fas fa-star" style="color:yellow"></i> <strong><a href="https://github.com/diskoverdata/diskover-community/stargazers" target="_blank">Star</a></strong> us on GitHub.
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="pull-right">
+                            <b>diskover-web</b> v<?php echo $VERSION; ?>
+                        </div>
                     </div>
                 </div>
-        </div>
+                <div class="row">
+                    <div class="col-lg-12">
+                        <div class="pull-right small text-primary">
+                            <?php
+                            $time = number_format(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 4);
+                            echo "ES Time: {$estime}, Page Load Time: {$time}";
+                            ?>
+                        </div>
+                    </div>
+                </div>
+                </div>
+            </div>
     </div>
-    <hr>
-    <div class="container-fluid">
-        <div class="row">
-            <div class="col-lg-6">
-                <div>
-                    <i class="fas fa-star" style="color:yellow"></i> <strong><a href="https://github.com/diskoverdata/diskover-community/stargazers" target="_blank">Star</a></strong> us on GitHub.
-                </div>
-            </div>
-            <div class="col-lg-6">
-                <div class="pull-right">
-                    <b>diskover-web</b> v<?php echo $VERSION; ?>
-                </div>
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-lg-12">
-                <div class="pull-right small text-primary">
-                    <?php
-                    $time = number_format(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 4);
-                    echo "ES Time: {$estime}, Page Load Time: {$time}";
-                    ?>
-                </div>
-            </div>
-        </div>
-    </div>
-<?php
-} // END if there are search results
-else {
-?>
-    <div class="container" style="margin-top:70px">
-        <div class="row">
-            <div class="alert alert-dismissible alert-info col-xs-8">
-                <button type="button" class="close" data-dismiss="alert">&times;</button>
-                <i class="glyphicon glyphicon-exclamation-sign"></i> <strong>Sorry, no items found.</strong><br>Change a few things up and try searching again or search for <a class="alert-link" href="search.php?index=<?php echo $esIndex ?>&index2=<?php echo $esIndex2 ?>&submitted=true&p=1&q=&path=">anything.</a><br>
-                See <a class="alert-link" href="help.php">help</a> for search examples or try to remove any search filters or <a class="alert-link" href="#" onclick="resetSort()">reset sort order</a>. <a class="alert-link" href="#" onclick="window.history.back(); return false;">Go back</a><br>
-            </div>
-        </div>
-        <div class="row">
-            <div class="panel panel-default">
-                <div class="panel-body">
-                    <span>Search query: <?php echo $searchParams['body']['query']['query_string']['query'] ?></span>
-                </div>
-            </div>
-        </div>
-    </div>
-<?php
-
-} // END elsif there are no search results
-
-?>
+</div>

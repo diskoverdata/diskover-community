@@ -103,8 +103,13 @@ if (isset($_GET['saved'])) {
 $disabled_indices = array();
 $indices_filtered = array();
 
+// update max index cookie
+if (isset($_GET['maxindex'])) {
+    createCookie('maxindex', $_GET['maxindex']);
+}
+
 // go through each index and determine which are done indexing
-foreach ($indices_all as $key => $val) {
+foreach ($es_index_info as $key => $val) {
     // continue if index creation time is older than max age
     if ($maxage_str != 'all') {
         $starttime = $all_index_info[$key]['start_at'];
@@ -167,7 +172,6 @@ foreach ($indices_all as $key => $val) {
             $queryResponse = $client->search($searchParams);
         } catch (Exception $e) {
             error_log('ES error: ' .$e->getMessage());
-            unset($indices_all[$key]);
             $ifk = array_search($key, $indices_filtered);
             unset($indices_filtered[$ifk]);
             unset($all_index_info[$key]);
@@ -253,11 +257,12 @@ $estime = number_format(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 4);
             $class = ($del_warning) ? "alert-warning" : "alert-success";
             echo '<div class="row"><div class="col-lg-6"><div class="alert alert-dismissible ' . $class . '">
             <button type="button" class="close" data-dismiss="alert">&times;</button>
-            <strong>' . $del_message . '</strong> <a href="selectindices.php?maxage=' . $maxage_str . '&namecontains=' . $_GET['namecontains'] . '&reloadindices" class="alert-link">Reload indices</a>.</div></div></div>';
-        } elseif (isset($alias_message)) {
-            echo '<div class="row"><div class="col-lg-6"><div class="alert alert-dismissible alert-success">
-            <button type="button" class="close" data-dismiss="alert">&times;</button>
-            <strong>' . $alias_message . '</strong> <a href="selectindices.php?maxage=' . $maxage_str . '&namecontains=' . $_GET['namecontains'] . '&reloadindices" class="alert-link">Reload indices</a>.</div></div></div>';
+            <strong>' . $del_message . '</strong> <a href="selectindices.php?maxage=' . $maxage_str . '&namecontains=' . $_GET['namecontains'] . '&reloadindices" class="alert-link">Reload indices</a>. Reloading in 3 seconds.</div></div></div>
+            <script type="text/javascript">
+            setTimeout(function(){
+                window.location.href = "selectindices.php?maxage=' . $maxage_str . '&namecontains=' . $_GET['namecontains'] . '&reloadindices";
+            }, 3000);
+            </script>';
         }
         ?>
         <h1 class="page-header">Indices</h1>
@@ -277,6 +282,31 @@ $estime = number_format(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 4);
         </div>
         <div class="row">
             <div class="col-lg-12">
+            <div class="well well-sm">
+                        <div class="row">
+                        <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="get" class="form-horizontal" name="form-indexctrl">
+                            <input type="hidden" name="reloadindices" value="true">
+                            <div class="col-lg-6">
+                                <div class="form-group">
+                                    <label for="maxindex" class="col-lg-3 control-label">Max indices to load:</label>
+                                    <div class="col-lg-2">
+                                        <input class="form-control input-sm" name="maxindex" id="maxindex" value="<?php echo (isset($_GET['maxindex'])) ? $_GET['maxindex'] : getCookie('maxindex'); ?>">
+                                    </div>
+                                    <div class="col-lg-1">
+                                        <button type="submit" class="btn btn-primary btn-sm" onclick="setCookie('maxindex', $('#maxindex').val())">Save</button>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <span class="small" style="padding-left:5px"><i class="fas fa-info-circle"></i> Total <?php echo $esclient->getTotalIndices(); ?> indices, indices are loaded in order by creation date</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <label for="uselatestindices" class="control-label">Always use latest indices (auto select)</label>
+                                <input type="checkbox" name="uselatestindices" disabled> <span class="label label-info">Essential</span>
+                            </div>
+                        </form>
+                        </div>
+                    </div>
                 <div class="well well-sm">
                     <div class="row">
                         <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="get" class="form-horizontal" name="form-indexfilter">
@@ -336,7 +366,7 @@ $estime = number_format(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 4);
                 <div class="col-lg-12">
                     <p class="pull-right"><?php echo count($indices_filtered) . " indices found"; ?> (last updated <?php echo $indexinfo_updatetime->format('m/d/Y, h:i:s A T'); ?> <a href="selectindices.php?maxage=<?php echo $maxage_str ?>&namecontains=<?php echo $_GET['namecontains'] ?>&reloadindices">update</a>)</p>
                     <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" name="form-selectindex" id="form-selectindex">
-                        <table class="table table-striped table-hover" id="indices-table" data-order='[[ 4, "desc" ]]' style="width:100%">
+                        <table class="table table-striped table-hover table-condensed" id="indices-table" data-order='[[ 4, "desc" ]]' style="width:100%">
                             <thead>
                                 <tr>
                                     <th>Index</th>
@@ -445,6 +475,7 @@ $estime = number_format(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 4);
 
             // make data table
             $("#indices-table").DataTable({
+                "stateSave": true,
                 "lengthMenu": [10, 25, 50, 75, 100],
                 "pageLength": 25,
                 "columnDefs": [{

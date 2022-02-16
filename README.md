@@ -22,21 +22,27 @@ diskover runs on Linux, macOS and Windows 10 and is written in Python. Diskover'
 <img width="366" height="234" src="http://www.diskoverdata.com/wp-content/uploads/2021/10/diskover_v2_ce_screenshot2.png" hspace="10" vspace="5" alt="diskover-web screenshot 2">
 </p>
 
+## Requirements
+- Python 3.5+
+- PHP 7.4 + PHP-FPM
+- Nginx
+- Elasticsearch 7.x
+
 ## Download
 ```sh
 git clone https://github.com/diskoverdata/diskover-community.git
 ```
-- diskover community edition (ce) v2.0-rc.1 has been released! See [releases](https://github.com/diskoverdata/diskover-community/releases) to download latest version. 
+- See [releases](https://github.com/diskoverdata/diskover-community/releases) to download latest version in zip or tar.gz. 
+- diskover ce v2 linuxserver.io docker container. Download on [docker hub](https://hub.docker.com/r/linuxserver/diskover) or [lsio github](https://github.com/linuxserver/docker-diskover).
 - no registration is required to download or use.
 - v1 indices are not compatible with v2, you will need to re-index.
 
 ## News/ Updates
-- v2 [linuxserver.io](https://linuxserver.io) docker hub container coming soon!
 - v1 is now end of life and is no longer supported.
 
-## User Guide
+## Install/User Guide
 
-[Read the wiki](https://github.com/diskoverdata/diskover-community/wiki) for more documentation on how to install and use diskover.
+[Read the docs](https://docs.diskoverdata.com/) for more documentation on how to install and use diskover.
 
 ## Discussions/Support
 

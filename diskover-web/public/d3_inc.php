@@ -31,6 +31,8 @@ if ($path !== "/") {
     $path = rtrim($path, '/');
 }
 
+$esIndex = (isset($_GET['index'])) ? $_GET['index'] : getCookie('index');
+
 
 function get_dir_info_dashboard($client, $index, $path) {
     // Get total directory size, count (files/subdirs), mtime from Elasticsearch (recursive) for path
@@ -191,7 +193,7 @@ function get_files($client, $index, $path, $filter, $time, $maxfiles=100) {
                     ]
                 ],
                 'sort' => [
-                    'size' => [
+                    $_COOKIE['sizefield'] => [
                     'order' => 'desc'
                     ],
                     'name' => [
@@ -287,7 +289,7 @@ function get_sub_dirs($client, $index, $path, $filter, $use_count, $sortdirs, $m
             ];
         } else {
             $searchParams['body']['sort'] = [
-                'size' => [
+                $_COOKIE['sizefield'] => [
                     'order' => 'desc'
                 ],
                 'name' => [

@@ -16,13 +16,16 @@ https://www.diskoverdata.com/solutions/
 
 */
 
+ini_set('session.gc_maxlifetime', 604800);
+ini_set("session.cookie_lifetime", 604800);
 ob_start();
+session_start();
 require '../vendor/autoload.php';
-
 use diskover\Constants;
 use diskover\Login;
 
 // Set logging level
+//error_reporting(E_ALL);
 error_reporting(E_ERROR | E_PARSE);
 
 $msg = '';

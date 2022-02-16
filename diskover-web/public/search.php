@@ -160,6 +160,9 @@ if (!empty($_GET['submitted'])) {
                         if (in_array($ext, $ext_onpage) !== false) {
                             $ext_onpage[$ext] = [1, $ext_size];
                         } else {
+                            if (!isset($ext_onpage[$ext])) {
+                                $ext_onpage[$ext] = [0,0];
+                            }
                             $ext_onpage[$ext][0] += 1;
                             $ext_onpage[$ext][1] += $ext_size;
                         }

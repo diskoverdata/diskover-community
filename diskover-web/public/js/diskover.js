@@ -211,6 +211,25 @@ $(document).ready(function () {
     if (sendanondata == "") {
         $('#sendanondataModal').modal('show');
     }
+
+    // check session hasn't expired
+    function check_session() {
+        $.ajax({
+            url: 'check_session.php',
+            method: 'POST',
+            success:function(response){
+                if(response == 'logout') {
+                    alert('Your session has expired, please login');
+                    window.location.href="logout.php"
+                }
+            }
+        });
+    }
+    // check session every 10 seconds
+    setInterval(function(){
+        check_session();
+    }, 10000);
+
 });
 
 // cookie functions

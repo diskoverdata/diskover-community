@@ -374,7 +374,7 @@ tbody a:hover {
     font-size: 12px;
 }
 
-#tree-container-toppath {
+#tree-container-toppaths {
     position: relative;
     left: -10px;
     top: -10px;
@@ -469,4 +469,12 @@ input:checked+.nav-slider:before {
 
 .nav-slider.round:before {
     border-radius: 50%;
+}
+
+.extrafields {
+    font-size: small;
+    word-wrap: normal;
+    word-break: normal;
+    padding-top: 4px;
+    padding-bottom: 4px;
 }

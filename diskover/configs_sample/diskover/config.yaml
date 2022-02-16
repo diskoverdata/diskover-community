@@ -16,18 +16,22 @@ logDirectory: /tmp/
 diskover:
     # max number of crawl threads
     # a thread is created up to maxthreads for each directory at level 1 of tree dir arg
-    maxthreads: 20
+    # set to a number or leave blank to auto set based on number of cpus
+    #maxthreads: 20
+    maxthreads: 
     # block size used for du size
     blocksize: 512
     excludes:
-        # directory names and absolute paths you want to exclude from crawl, 
-        # case-sensitive, can include wildcards 
-        # (.* or backup* or /dir/dirname* or *tmp or *tmp* etc)
+        # directory names and absolute paths you want to exclude from crawl
+        # directory excludes uses python re.search for string search (regex)
+        # directory excludes are case-sensitive
+        # Examples: .* or .backup or .backup* or /dir/dirname
         # to exclude none use empty list []
         dirs: [".*", ".snapshot", ".Snapshot", "~snapshot", "~Snapshot", ".zfs"]
         #dirs: []
-        # files you want to exclude from crawl, case-sensitive, 
+        # files you want to exclude from crawl 
         # can include wildcards (.*, *.doc or NULLEXT for files with no extension)
+        # file names are case-sensitive, extensions are not
         files: [".*", "Thumbs.db", ".DS_Store", "._.DS_Store", ".localized", "desktop.ini"]
         #files: []
         # exclude empty 0 byte files, set to True to exclude empty files or False to not exclude
@@ -63,8 +67,8 @@ diskover:
         uidgidonly: False
         # owner/group names contain domain name set to True
         domain: False
-        # character separator used on cifs/nfs mounts to separte user/group and domain name, usually \\ or @
-        domainsep: \\
+        # character separator used on cifs/nfs mounts to separte user/group and domain name, usually \ or @
+        domainsep: \
         # if domain name comes first before character separator, set this to True, otherwise False
         domainfirst: True
         # when indexing owner and group fields, keep the domain name

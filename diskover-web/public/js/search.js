@@ -31,12 +31,6 @@ $(document).ready(function () {
         store: window.store
     });
 
-    // set tree wrapper height dynamically
-    var h = $('#search-results-wrapper').height() - 50;
-    $('#tree-wrapper').css('min-height', '800px')
-    $('#tree-wrapper').css('max-height', h + 'px')
-    $('#tree-wrapper').height(h);
-
     // shift-select multiple checkboxes in search results table
     var chkboxShiftLastChecked = [];
 
@@ -168,13 +162,22 @@ function hideTree() {
     } else {
         var x = document.getElementById("tree-wrapper");
         var y = document.getElementById("search-results-wrapper");
+        var a = document.getElementById("tree-button-wrapper");
+        var b = document.getElementById("tree-button-container");
+        var c = document.getElementById("tree-button-container-sm");
         if (x.style.display === "none") {
             x.style.display = "block";
-            y.className = "col-md-10";
+            y.className = "col-md-10 search-results-wrapper";
+            a.className = "col-lg-2 tree-button-wrapper";
+            b.style.display = "block";
+            c.style.display = "none";
             setCookie('hidesearchtree', 0);
         } else {
             x.style.display = "none";
-            y.className = "col-md-12";
+            y.className = "col-md-12 search-results-wrapper-lg";
+            a.className = "col-lg-2 tree-button-wrapper-sm";
+            b.style.display = "none";
+            c.style.display = "block";
             setCookie('hidesearchtree', 1);
         }
     }
@@ -240,8 +243,9 @@ function getJSONFileTree() {
         spinner.stop();
         console.timeEnd('loadtime');
         // load file tree
-        updateTree(root, root);
-
+        if (getCookie('hidesearchtree') != 1) {
+            updateTree(root, root);
+        }
     });
 }
 
@@ -342,10 +346,12 @@ $(function () {
 
     /* ------- SEARCH RESULTS FILE TREE -------*/
 
-    if (getCookie('hidesearchtree') != 1) {
+    if (getCookie('hidesearchtree') != 1 || getCookie('hidesearchcharts') == 0) {
         // get json data for file tree
         getJSONFileTree();
+    }
 
+    if (getCookie('hidesearchtree') != 1) {
         var svg = d3.select("#tree-container")
             .append("svg")
             .append("g");
@@ -466,6 +472,7 @@ $(function () {
             var top_dirs_data_size = []
             var top_dirs_colors = []
             var top_dirs_colors_border = []
+            var top_dirs_colors_map = []
 
             for (var i in data1) {
                 var name = data1[i].name;
@@ -474,6 +481,7 @@ $(function () {
                 var c = default_colors[i]
                 top_dirs_colors.push(c)
                 top_dirs_colors_border.push('#2F3338')
+                top_dirs_colors_map[name] = c
             }
 
             var topDirsBySizebarChartCanvas = $("#topDirsBySize-barChart")
@@ -494,12 +502,18 @@ $(function () {
                     callbacks: {
                         label: function (tooltipItem, data1) {
                             var i = tooltipItem.index;
-                            return data1.labels[i] + ': ' + format(data1.datasets[0].data[i]) + '';
+                            var total = data1.datasets[0].data.reduce(function(previousValue, currentValue, currentIndex, array) {
+                                return previousValue + currentValue;
+                            });
+                            var currentValue = data1.datasets[0].data[i];
+                            var percentage = parseFloat((currentValue/total*100).toFixed(1));
+                            return data1.labels[i] + ': ' + format(currentValue) + ' (' + percentage +'%)';
                         }
                     }
                 },
                 scales: {
                     xAxes: [{
+                        stacked: true,
                         ticks: {
                             // Format size in the ticks
                             callback: function (value, index, values) {
@@ -537,7 +551,11 @@ $(function () {
                 var name = data1[i].name;
                 top_dirs_labels.push(basename(name))
                 top_dirs_data_count.push(data1[i].count)
-                var c = default_colors[i]
+                if (name in top_dirs_colors_map) {
+                    var c = top_dirs_colors_map[name]
+                } else {
+                    var c = default_colors[i]
+                }
                 top_dirs_colors.push(c)
                 top_dirs_colors_border.push('#2F3338')
             }
@@ -577,7 +595,12 @@ $(function () {
                     callbacks: {
                         label: function (tooltipItem, data1) {
                             var i = tooltipItem.index;
-                            return data1.labels[i] + ': ' + data1.datasets[0].data[i].toLocaleString() + '';
+                            var total = data1.datasets[0].data.reduce(function(previousValue, currentValue, currentIndex, array) {
+                                return previousValue + currentValue;
+                            });
+                            var currentValue = data1.datasets[0].data[i];
+                            var percentage = parseFloat((currentValue/total*100).toFixed(1));
+                            return data1.labels[i] + ': ' + currentValue.toLocaleString() + ' files (' + percentage +'%)';
                         }
                     }
                 },
@@ -611,6 +634,7 @@ $(function () {
         var top_ext_data_size = []
         var top_ext_colors = []
         var top_ext_colors_border = []
+        var top_ext_colors_map = []
 
         for (var i in data2) {
             var name = data2[i].name;
@@ -622,6 +646,7 @@ $(function () {
             var c = default_colors[i]
             top_ext_colors.push(c)
             top_ext_colors_border.push('#2F3338')
+            top_ext_colors_map[name] = c
         }
 
         var topFileTypesBySizebarChartCanvas = $("#topFileTypesBySize-barChart")
@@ -642,12 +667,18 @@ $(function () {
                 callbacks: {
                     label: function (tooltipItem, data2) {
                         var i = tooltipItem.index;
-                        return data2.labels[i] + ': ' + format(data2.datasets[0].data[i]) + '';
+                        var total = data2.datasets[0].data.reduce(function(previousValue, currentValue, currentIndex, array) {
+                            return previousValue + currentValue;
+                        });
+                        var currentValue = data2.datasets[0].data[i];
+                        var percentage = parseFloat((currentValue/total*100).toFixed(1));
+                        return data2.labels[i] + ': ' + format(currentValue) + ' (' + percentage +'%)';
                     }
                 }
             },
             scales: {
                 xAxes: [{
+                    stacked: true,
                     ticks: {
                         // Format size in the ticks
                         callback: function (value, index, values) {
@@ -687,7 +718,11 @@ $(function () {
             }
             top_ext_labels.push(name)
             top_ext_data_count.push(data2[i].count)
-            var c = default_colors[i]
+            if (name in top_ext_colors_map) {
+                var c = top_ext_colors_map[name]
+            } else {
+                var c = default_colors[i]
+            }
             top_ext_colors.push(c)
             top_ext_colors_border.push('#2F3338')
         }
@@ -729,7 +764,12 @@ $(function () {
                 callbacks: {
                     label: function (tooltipItem, data2) {
                         var i = tooltipItem.index;
-                        return data2.labels[i] + ': ' + data2.datasets[0].data[i].toLocaleString() + ' files';
+                        var total = data2.datasets[0].data.reduce(function(previousValue, currentValue, currentIndex, array) {
+                            return previousValue + currentValue;
+                        });
+                        var currentValue = data2.datasets[0].data[i];
+                        var percentage = parseFloat((currentValue/total*100).toFixed(1));
+                        return data2.labels[i] + ': ' + currentValue.toLocaleString() + ' files (' + percentage +'%)';
                     }
                 }
             },
@@ -819,7 +859,9 @@ $(function () {
                 callbacks: {
                     label: function (tooltipItem, data3) {
                         var i = tooltipItem.datasetIndex;
-                        return data3.datasets[i].label + ': ' + format(data3.datasets[i].size) + '';
+                        var currentValue = data3.datasets[i].size
+                        var percentage = parseFloat((currentValue/totalsize*100).toFixed(1));
+                        return data3.datasets[i].label + ': ' + format(currentValue) + ' (' + percentage +'%)';
                     }
                 }
             },

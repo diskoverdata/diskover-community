@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "a6572502dd84a70c4958e33cc4653778",
+    "content-hash": "4d7a4a3be2301b452f49716630599414",
     "packages": [
         {
             "name": "elasticsearch/elasticsearch",
@@ -66,6 +66,10 @@
                 "elasticsearch",
                 "search"
             ],
+            "support": {
+                "issues": "https://github.com/elastic/elasticsearch-php/issues",
+                "source": "https://github.com/elastic/elasticsearch-php/tree/v7.13.1"
+            },
             "time": "2021-06-15T18:36:52+00:00"
         },
         {
@@ -270,5 +274,6 @@
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": [],
-    "platform-dev": []
+    "platform-dev": [],
+    "plugin-api-version": "2.1.0"
 }

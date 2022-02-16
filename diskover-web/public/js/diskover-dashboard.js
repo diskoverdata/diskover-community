@@ -63,6 +63,7 @@ $(function () {
         var top_ext_data_size = []
         var top_ext_colors = []
         var top_ext_colors_border = []
+        var top_ext_colors_map = []
 
         for (var i in data) {
             var name = data[i].name;
@@ -74,6 +75,7 @@ $(function () {
             var c = default_colors[i]
             top_ext_colors.push(c)
             top_ext_colors_border.push('#2F3338')
+            top_ext_colors_map[name] = c
         }
 
         var topFileTypesBySizebarChartCanvas = $("#topFileTypesBySize-barChart")
@@ -94,7 +96,12 @@ $(function () {
                 callbacks: {
                     label: function (tooltipItem, data) {
                         var i = tooltipItem.index;
-                        return data.labels[i] + ': ' + format(data.datasets[0].data[i]) + '';
+                            var total = data.datasets[0].data.reduce(function(previousValue, currentValue, currentIndex, array) {
+                                return previousValue + currentValue;
+                            });
+                            var currentValue = data.datasets[0].data[i];
+                            var percentage = parseFloat((currentValue/total*100).toFixed(1));
+                            return data.labels[i] + ': ' + format(currentValue) + ' (' + percentage +'%)';
                     }
                 }
             },
@@ -137,7 +144,11 @@ $(function () {
             }
             top_ext_labels.push(name)
             top_ext_data_count.push(data[i].count)
-            var c = default_colors[i]
+            if (name in top_ext_colors_map) {
+                var c = top_ext_colors_map[name]
+            } else {
+                var c = default_colors[i]
+            }
             top_ext_colors.push(c)
             top_ext_colors_border.push('#2F3338')
         }
@@ -178,7 +189,12 @@ $(function () {
                 callbacks: {
                     label: function (tooltipItem, data) {
                         var i = tooltipItem.index;
-                        return data.labels[i] + ': ' + data.datasets[0].data[i].toLocaleString() + ' files';
+                        var total = data.datasets[0].data.reduce(function(previousValue, currentValue, currentIndex, array) {
+                            return previousValue + currentValue;
+                        });
+                        var currentValue = data.datasets[0].data[i];
+                        var percentage = parseFloat((currentValue/total*100).toFixed(1));
+                        return data.labels[i] + ': ' + currentValue.toLocaleString() + ' files (' + percentage +'%)';
                     }
                 }
             },
@@ -279,7 +295,9 @@ $(function () {
                 callbacks: {
                     label: function (tooltipItem, data) {
                         var i = tooltipItem.datasetIndex;
-                        return data.datasets[i].label + ': ' + format(data.datasets[i].size) + '';
+                        var currentValue = data.datasets[i].size
+                        var percentage = parseFloat((currentValue/totalsize*100).toFixed(1));
+                        return data.datasets[i].label + ': ' + format(currentValue) + ' (' + percentage +'%)';
                     }
                 }
             },
