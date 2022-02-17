@@ -66,7 +66,7 @@ require "../src/diskover/Diskover.php";
                 <div class="well">
                   <h4>Profile</h4>
                   <p><i class="glyphicon glyphicon-user"></i> Username: <?php echo $_SESSION['username']; ?></p>
-                  <p><i class="glyphicon glyphicon-lock"></i> Password: <a href="/password.php">Change Password</a></p>
+                  <p><i class="glyphicon glyphicon-lock"></i> Password: <a href="password.php">Change Password</a></p>
                 </div>
                 <?php endif; ?>
                 <div class="well">
