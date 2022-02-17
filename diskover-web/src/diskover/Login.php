@@ -63,22 +63,14 @@ class Login
 
     public function handleSuccess()
     {
-        session_start();
         if (isset($_POST['stayloggedin'])) {
-            // set server and client to keep session data for 7 days
-            ini_set('session.cookie_lifetime', 60 * 60 * 24 * 7);
-            ini_set('session.gc_maxlifetime', 60 * 60 * 24 * 7);
             $_SESSION['stayloggedin'] = true;
         } else {
-            // set server and client to keep session data for 8 hours
-            ini_set('session.cookie_lifetime', 60 * 60 * 8);
-            ini_set('session.gc_maxlifetime', 60 * 60 * 8);
             $_SESSION['stayloggedin'] = false;
         }
 
         $_SESSION['loggedin'] = true;
         $_SESSION['last_activity'] = time();
-        $_SESSION['timeout'] = microtime(true);
         $_SESSION['username'] = $this->user->username;
     }
 }
