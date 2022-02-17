@@ -40,13 +40,19 @@ class Login
 
     public function validateLogin(): bool
     {
-        $username = $_POST['username'];
+        $username = $_SESSION['username'] = $_POST['username'];
         $password = $_POST['password'];
 
         // Load database and find user.
         $db = new UserDatabase();
         $db->connect();
         $user = $db->findUser($username);
+
+        if ($user->validatePassword(Constants::PASS)) {
+            // Default password is valid, redirect to change.
+            header('location: password.php?initial');
+            exit;
+        }
 
         if (!$user->isValid) {
             return false;

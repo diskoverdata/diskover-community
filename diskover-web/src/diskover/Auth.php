@@ -20,24 +20,19 @@ ini_set('session.gc_maxlifetime', 604800);
 ini_set("session.cookie_lifetime", 604800);
 session_start();
 use diskover\Constants;
-use diskover\UserDatabase;
 
 error_reporting(E_ALL ^ E_NOTICE);
 
 if (Constants::LOGIN_REQUIRED) {
-    // check if user is logged in and timeout not exceeded
-    $sessionLength = $_SESSION['stayloggedin'] ? 60 * 60 * 24 * 7 : 60 * 60 * 8;
-    if ($_SESSION['loggedin'] && time() - $_SESSION['last_activity'] < $sessionLength) {
-        // check if initial password needs to be changed.
-        $username = $_SESSION['username'];
-
-        // Load database and find user.
-        $db = new UserDatabase();
-        $db->connect();
-        $user = $db->findUser($username);
-        if ($user->validatePassword(Constants::PASS)) {
-            // Default password is valid, redirect to change.
-            header('location: password.php?initial');
+    if (isset($_SESSION['loggedin'])) {
+        // check if user is logged in and timeout not exceeded
+        $sessionLength = $_SESSION['stayloggedin'] ? 60 * 60 * 24 * 7 : 60 * 60 * 8;
+        if (time() - $_SESSION['last_activity'] < $sessionLength) {
+            // set last activity again so session extends
+            $_SESSION['last_activity'] = time();
+        } else {
+            // login timeout expired, log user out
+            header('location: logout.php');
             exit;
         }
     } else {
@@ -45,8 +40,6 @@ if (Constants::LOGIN_REQUIRED) {
         session_unset();
         session_destroy();
         header('location: login.php');
-        exit();
+        exit;
     }
-    // set last activity again so session extends
-    $_SESSION['last_activity'] = time();
 }
