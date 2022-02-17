@@ -27,10 +27,7 @@ error_reporting(E_ALL ^ E_NOTICE);
 if (Constants::LOGIN_REQUIRED) {
     // check if user is logged in and timeout not exceeded
     $sessionLength = $_SESSION['stayloggedin'] ? 60 * 60 * 24 * 7 : 60 * 60 * 8;
-    if ($_SESSION['loggedin'] && microtime(true) - $_SESSION['timeout'] < $sessionLength) {
-        // reset timeout
-        $_SESSION['timeout'] = microtime(true);
-
+    if ($_SESSION['loggedin'] && time() - $_SESSION['last_activity'] < $sessionLength) {
         // check if initial password needs to be changed.
         $username = $_SESSION['username'];
 
