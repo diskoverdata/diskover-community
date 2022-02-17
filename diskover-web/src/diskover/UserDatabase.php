@@ -38,15 +38,14 @@ class UserDatabase
 
     protected function setupDatabase()
     {
-        $res = $this->db->query('SELECT * FROM users');
-
         // If the database users table is not empty, we have nothing to do here.
-        if ($res !== false) {
+        $res = $this->db->query("SELECT name FROM sqlite_master WHERE type='table' AND name='users'");
+        if ($row = $res->fetchArray()) {
             return;
         }
 
-        // Set up sqlite user table
-        $res = $this->db->exec("CREATE TABLE IF NOT EXISTS users (
+        // Set up sqlite user table if does not yet exist.
+        $this->db->exec("CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT, 
             username TEXT NOT NULL, 
             password TEXT NOT NULL
