@@ -16,41 +16,41 @@ https://www.diskoverdata.com/solutions/
 
 */
 
-// diskover-web community edition (ce) json user database
+// diskover-web community edition (ce) sqlite3 user database
 
 namespace diskover;
+use SQLite3;
 
 class UserDatabase
 {
-    private $data;
+    private $db;
 
-    // Consider moving to Constants.php
-    // Ensure file is not in /public/ folder.
-    private $databaseFilename = '../diskover.json';
+    private $databaseFilename = '../diskoverdb.sqlite3';
 
     public function connect()
     {
+        // Open sqlite database
+        $this->db = new SQLite3($this->databaseFilename);
+
         // Initial setup if necessary.
         $this->setupDatabase();
-
-        // Load data into memory.
-        $rawData = file_get_contents($this->databaseFilename);
-        $this->data = json_decode($rawData, JSON_OBJECT_AS_ARRAY);
     }
 
     protected function setupDatabase()
     {
-        // If the database file already exists, we have nothing to do here.
-        if (file_exists($this->databaseFilename)) {
+        $res = $this->db->query('SELECT * FROM users');
+
+        // If the database users table is not empty, we have nothing to do here.
+        if ($res !== false) {
             return;
         }
 
-        // Since the database file does not exist,
-        // create the file, and adjust the permissions.
-        // Note: Not using umask since it is not thread safe.
-        touch($this->databaseFilename);
-        // Fix permissions so only current user can read/write.
-        chmod($this->databaseFilename, 0600);
+        // Set up sqlite user table
+        $res = $this->db->exec("CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, 
+            username TEXT NOT NULL, 
+            password TEXT NOT NULL
+        )");
 
         // Grab config data and create initial user.
         $user = new User();
@@ -59,38 +59,34 @@ class UserDatabase
 
         // Add the user, and save the newly created entry.
         $this->addUser($user);
-        $this->writeDatabase();
     }
 
     protected function addUser(User $user)
     {
-        $this->data['users'][] = [
-            'username' => $user->username,
-            'password' => $user->passHash,
-        ];
+        $this->db->exec("INSERT INTO users ('username', 'password') 
+            VALUES ('$user->username', '$user->passHash')");
     }
 
-    protected function writeDatabase()
+    protected function closeDatabase()
     {
-        file_put_contents(
-            $this->databaseFilename,
-            json_encode($this->data)
-        );
+        $this->db->close();
     }
 
     public function findUser($username): User
     {
         $user = new User();
 
-        foreach($this->data['users'] as $userData) {
-            if ($userData['username'] !== $username) {
+        $res = $this->db->query('SELECT * FROM users');
+
+        while ($row = $res->fetchArray()) {
+            if ($row['username'] != $username) {
                 continue;
             }
 
             // Found a username match.
             $user->isValid = true;
-            $user->username = $userData['username'];
-            $user->passHash = $userData['password'];
+            $user->username = $row['username'];
+            $user->passHash = $row['password'];
         }
 
         return $user;
@@ -119,7 +115,7 @@ class UserDatabase
                 // They were attempting to change their password from the
                 // initial password change page, but the database password
                 // does not match the expected default password.
-                return 'Initial password has already been set.<br><a href="/login.php">Go to login page</a>';
+                return 'Initial password has already been set.<br><a href="login.php">Go to login page</a>';
             }
         } else {
             // This is not the initial password change, so validate
@@ -134,6 +130,11 @@ class UserDatabase
             return 'Passwords do not match.';
         }
 
+        // Ensure password not same as default.
+        if ($password1 === Constants::PASS) {
+            return 'Password same as default, use a different password.';
+        }
+
         // Consider additional complexity requirements.
         // For now, at least 8 characters.
         if (strlen($password1) < 8) {
@@ -145,7 +146,7 @@ class UserDatabase
         try {
             // Persist and save.
             $this->updateUser($user);
-            $this->writeDatabase();
+            //$this->closeDatabase();
         } catch(\Exception $e) {
             // This should not happen since the user was checked above.
             return 'Error, failed to find and update user.';
@@ -165,14 +166,10 @@ class UserDatabase
     {
         $foundUser = false;
 
-        foreach($this->data['users'] as $k => $userData) {
-            if ($userData['username'] !== $user->username) {
-                continue;
-            }
+        $res = $this->db->exec("UPDATE users SET password='$user->passHash' WHERE username = '$user->username'");
 
-            // Found a username match.
+        if ($res) {
             $foundUser = true;
-            $this->data['users'][$k]['password'] = $user->passHash;
         }
 
         if (!$foundUser) {

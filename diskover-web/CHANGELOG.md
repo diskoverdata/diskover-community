@@ -3,7 +3,7 @@
 # [2.0-rc.4] - 2022-02-16
 ### BREAKING CHANGES
 - added MAX_INDEX, INDEXINFO_CACHETIME, NEWINDEX_CHECKTIME settings to default/sample web config file, copy to your config file
-- password for diskover user required to be hashed and stored in separate sqlite db outside of config, you will be prompted to change password at next login
+- password for diskover user required to be hashed and stored in separate sqlite db, you will be prompted to change password at next login
 ### fixed
 - charts displaying more data than selected index
 - reduced login time when many indices
@@ -17,7 +17,7 @@
 - maxindex config setting to default/sample config, copy to your config
 - after deleting indices on select indices page, index list will reload automatically after 3 seconds
 ### changed
-- user login password required to be hashed and stored in separate sqlite db outside of config
+- user login password required to be hashed and stored in separate sqlite db
 - reduced api calls to ES to check for new index info
 - improved file/directory view info page for extra fields
 
