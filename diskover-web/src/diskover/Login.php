@@ -48,18 +48,18 @@ class Login
         $db->connect();
         $user = $db->findUser($username);
 
-        if ($user->validatePassword(Constants::PASS)) {
-            // Default password is valid, redirect to change.
-            header('location: password.php?initial');
-            exit;
-        }
-
         if (!$user->isValid) {
             return false;
         }
 
         if (!$user->validatePassword($password)) {
             return false;
+        }
+
+        if ($user->validatePassword(Constants::PASS)) {
+            // Default password is valid, redirect to change.
+            header('location: password.php?initial');
+            exit;
         }
 
         // Valid user!
