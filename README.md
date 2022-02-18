@@ -44,6 +44,10 @@ git clone https://github.com/diskoverdata/diskover-community.git
 
 [Read the docs](https://docs.diskoverdata.com/) for more documentation on how to install and use diskover.
 
+## Changelogs
+
+[Changelogs](https://docs.diskoverdata.com/diskover_changelogs/)
+
 ## Discussions/Support
 
 For discussions or support for diskover join the [diskover Slack workspace](https://join.slack.com/t/diskoverworkspace/shared_invite/enQtNzQ0NjE1Njk5MjIyLWI4NWQ0MjFhYzQyMTRhMzk4NTQ3YjBlYjJiMDk1YWUzMTZmZjI1MTdhYTA3NzAzNTU0MDc5NDA2ZDI4OWRiMjM).
