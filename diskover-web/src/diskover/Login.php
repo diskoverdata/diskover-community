@@ -58,6 +58,8 @@ class Login
 
         if ($user->validatePassword(Constants::PASS)) {
             // Default password is valid, redirect to change.
+            $_SESSION['loggedin'] = true;
+            $_SESSION['last_activity'] = time();
             header('location: password.php?initial');
             exit;
         }
