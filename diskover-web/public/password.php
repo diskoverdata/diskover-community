@@ -18,6 +18,7 @@ https://www.diskoverdata.com/solutions/
 
 ob_start();
 require '../vendor/autoload.php';
+require "../src/diskover/Auth.php";
 
 use diskover\Constants;
 use diskover\Login;
@@ -25,13 +26,6 @@ use diskover\UserDatabase;
 
 // Set logging level
 error_reporting(E_ERROR | E_PARSE);
-
-// Only allow if referer page is login or settings page.
-if (!strpos($_SERVER['HTTP_REFERER'], 'login.php') && 
-    !strpos($_SERVER['HTTP_REFERER'], 'settings.php')) {
-    header('location: login.php');
-    exit;
-}
 
 $initialPassword = isset($_GET['initial']);
 
