@@ -270,7 +270,7 @@ $estime = number_format(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 4);
             <div class="col-lg-6">
                 <div class="alert alert-dismissible alert-info">
                     <button type="button" class="close" data-dismiss="alert">&times;</button>
-                    <i class="glyphicon glyphicon-info-sign"></i> Please select one index in the Index column and click the Save selection button.
+                    <i class="glyphicon glyphicon-info-sign"></i> Please select one index in the Index column and click the Save selection button. diskover-web CE is limited to selecting and searching one index.
                 </div>
             </div>
             <div class="col-lg-6">
