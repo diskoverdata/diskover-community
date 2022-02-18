@@ -1,6 +1,6 @@
 # Diskover v2 Community Edition Change Log
 
-# [2.0-rc.4] - 2022-02-15
+# [2.0-rc.4] - 2022-02-18
 ### fixed
 - issue with scanning in Windows
 - issue with setting domain to True in ownersgroups section in diskover config would case the scan to fail
