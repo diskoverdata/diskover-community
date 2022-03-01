@@ -1,5 +1,12 @@
 # Diskover v2 Community Edition Change Log
 
+# [2.0-rc.4-1] - 2022-02-28
+### fixed
+- issue with slow indexing from hardlink checking, updated diskover.py to v2.0-rc.4-1
+### added
+### changed
+
+
 # [2.0-rc.4] - 2022-02-18
 ### fixed
 - issue with scanning in Windows

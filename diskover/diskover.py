@@ -38,7 +38,7 @@ from diskover_helpers import dir_excluded, file_excluded, \
     get_file_name, load_plugins, list_plugins, get_plugins_info, set_times, \
     get_mem_usage
 
-version = '2.0-rc.4 community edition (ce)'
+version = '2.0-rc.4-1 community edition (ce)'
 __version__ = version
 
 # Windows check
@@ -325,14 +325,15 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
                     elif options.altscanner:
                         fsize_du = f_stat.st_sizedu
                     else:
-                        fsize_du = f_stat.st_blocks * blocksize
-                    # set fsize_du to 0 if inode in inodes list (hardlink)
-                    if f_stat.st_ino in inodes:
-                        fsize_du = 0
+                        fsize_du = f_stat.st_blocks * blocksize    
                     # add inode to inodes list if hardlink count > 1
-                    elif f_stat.st_nlink > 1:
-                        with crawl_thread_lock:
-                            inodes.append(f_stat.st_ino)
+                    if f_stat.st_nlink > 1:
+                        # set fsize_du to 0 if inode in inodes list (hardlink)
+                        if f_stat.st_ino in inodes:
+                            fsize_du = 0
+                        else:
+                            with crawl_thread_lock:
+                                inodes.add(f_stat.st_ino)
                     fmtime_sec = time.time() - f_stat.st_mtime
                     fctime_sec = time.time() - f_stat.st_ctime
                     fatime_sec = time.time() - f_stat.st_atime
@@ -604,7 +605,7 @@ def crawl(root):
     """Crawl the directory tree at top path."""
     global emptyindex
     sizes = {}
-    inodes = []
+    inodes = set()
 
     def crawl_thread(root, top, depth, maxdepth, sizes, inodes):
         global total_doc_count
