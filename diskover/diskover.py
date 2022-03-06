@@ -38,7 +38,7 @@ from diskover_helpers import dir_excluded, file_excluded, \
     get_file_name, load_plugins, list_plugins, get_plugins_info, set_times, \
     get_mem_usage
 
-version = '2.0-rc.4-1 community edition (ce)'
+version = '2.0-rc.4-2 community edition (ce)'
 __version__ = version
 
 # Windows check
@@ -764,23 +764,28 @@ def log_setup():
         loglevel = logging.WARN
     logformat = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     if logtofile:
-        # create log file name using top dir names and datestamp
+        # create log file name using top dir name and datestamp
         treedirsstr = ''
         if args:
-            n = 1
-            dirs = args[0:]
-            x = len(dirs)
-            for d in dirs:
-                if d != '/':
-                    d = d.rstrip('/')
-                treedirsstr += os.path.basename(d)
-                if n < x:
-                    treedirsstr += '_'
-                n += 1
+            d_path = args[0]
+            if IS_WIN:
+                d, p = os.path.splitdrive(d_path)
+                # change any drive letter, example from P:\ to P_drive
+                if re.search('^[a-zA-Z]:', d) is not None:
+                    d_path = d.rstrip(':').upper() + '_drive' + p
+                    d_path = d_path.replace('\\', '_')
+                # change any unc paths, example \\stor1\share to _stor1_share
+                elif re.search('^\\\\', d_path) is not None:
+                    d_path = d_path.replace('\\', '_')
+                treedirsstr += d_path
+            else:
+                if d_path != '/':
+                    d_path = d_path.rstrip('/')
+                treedirsstr += os.path.basename(d_path)
         else:
             treedirsstr = os.path.basename(os.getcwd())
-        logfiletime = datetime.now().isoformat()
-        logname = 'diskover_' + treedirsstr + '_' + logfiletime + '.log'
+        logfiletime = datetime.now().strftime('%Y_%m_%d_%I_%M_%S')
+        logname = 'diskover_{0}_{1}.log'.format(treedirsstr, logfiletime)
         logfile = os.path.join(logdir, logname)
         handler_file = logging.FileHandler(logfile)
         handler_file.setFormatter(logging.Formatter(logformat))
@@ -934,9 +939,14 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
                 if logtofile: logger_warn.error(logmsg)
                 sys.exit(1)
             else:
-                if tree_dir != '/':
-                    tree_dir = tree_dir.rstrip('/')
-                tree_dir = os.path.abspath(tree_dir)
+                if IS_WIN:
+                    # check if only drive letter (C:) was used with no trailing slash
+                    if tree_dir.endswith(':'):
+                        tree_dir = os.path.join(tree_dir, '\\\\')
+                else:
+                    if tree_dir != '/':
+                        tree_dir = tree_dir.rstrip('/')
+                    tree_dir = os.path.abspath(tree_dir)
     elif not options.altscanner:
         # use current directory
         tree_dir = os.path.abspath(os.path.dirname(__file__))
