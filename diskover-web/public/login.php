@@ -28,6 +28,8 @@ use diskover\Login;
 //error_reporting(E_ALL);
 error_reporting(E_ERROR | E_PARSE);
 
+$VERSION = '2.0';
+
 $msg = '';
 
 // If they just changed their password.
@@ -67,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>diskover &mdash; Login</title>
+  <title>diskover ce &mdash; Login</title>
   <link rel="stylesheet" href="css/fontawesome-free/css/all.min.css" media="screen" />
   <link rel="stylesheet" href="css/bootswatch.min.css" media="screen" />
   <link rel="stylesheet" href="css/diskover.css" media="screen" />
@@ -96,6 +98,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
           text-align: center;
           color: #666666;
           font-size: 18px;
+      }
+
+      .version {
+          text-align: center;
+          color: #666666;
+          font-size: 12px;
           padding: 0 0 20px 0;
           border-bottom: 1px solid #000000;
       }
@@ -162,8 +170,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <body>
 <div class="login">
   <div class="login-logo"><img src="images/diskover.png" alt="diskover" width="249" height="189" /></div>
-  <h1>diskover Login</h1>
+  <h1>diskover</h1>
   <h4>community edition (ce)</h4>
+  <p class="version"><?php echo "v" . $VERSION; ?></p>
   <p class="login-error text-danger"><?php echo $msg; ?></p>
   <form action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>" method="post">
     <label class="input-label" for="username">
