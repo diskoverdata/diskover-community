@@ -2,7 +2,8 @@
 
 # [2.0-rc.5] - 2022-03-
 ### fixed
-- issue with windows and diskover logging
+- issue with enabling diskover logging in Windows causes exception
+- issue when scanning using just drive letter in Windows (example C:), would scan current directory
 ### added
 ### changed
 - log file names
