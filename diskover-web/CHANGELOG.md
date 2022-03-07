@@ -1,5 +1,14 @@
 # Diskover-web v2 Community Edition Change Log
 
+# [2.0-rc.5] - 2022-03-
+### BREAKING CHANGES
+### fixed
+- multiple ES queries delay when typing text into search bar
+- index fields getting added multiple times to filters and help page
+### added
+### changed
+
+
 # [2.0-rc.4] - 2022-02-18
 ### BREAKING CHANGES
 - added MAX_INDEX, INDEXINFO_CACHETIME, NEWINDEX_CHECKTIME settings to default/sample web config file, copy to your config file

@@ -26,7 +26,7 @@ error_reporting(E_ALL ^ E_NOTICE);
 /* Start Globals */
 
 // diskover-web version
-$VERSION = '2.0-rc.4 community edition (ce)';
+$VERSION = '2.0-rc.5 community edition (ce)';
 
 // array of constants names required in Constants.php config file
 $config_const = array(
@@ -87,7 +87,7 @@ $timezone = getenv('TZ') ?: Constants::TIMEZONE;
 
 // get/set index info
 if (strpos($_SERVER['REQUEST_URI'], 'd3_data') === false && 
-    $_SERVER['SCRIPT_NAME'] !== 'searchkeypress.php') {
+    strpos($_SERVER['REQUEST_URI'], 'searchkeypress.php') === false) {
     indexInfo();
 }
 
@@ -410,6 +410,8 @@ function indexInfo()
             $completed_indices = array_merge($_SESSION['indexinfo']['completed_indices'], $completed_indices);
             $latest_completed_index = (!is_null($latest_completed_index)) ? $latest_completed_index : $_SESSION['indexinfo']['latest_completed_index'];
             $fields = array_merge($_SESSION['indexinfo']['fields'], $fields);
+            // remove any duplicate fields
+            $fields = array_unique($fields);
             $index_starttimes = array_merge($_SESSION['indexinfo']['starttimes'], $index_starttimes);
             $index_spaceinfo = array_merge($_SESSION['indexinfo']['spaceinfo'], $index_spaceinfo);
         }

@@ -154,48 +154,32 @@ $(document).ready(function () {
     })
 
     // search items in ES on keypress on nav search
-    $("#searchnavinput").keyup(function () {
+    // delay for 1000 ms before searching ES for user input
+    $("#searchnavinput").keyup(delay(function (e) {
         if ($('#searchnavinput').val() === "") {
             $('#essearchreply-text-nav').html(searchnavhtml);
-            //$('#essearchreply-nav').hide();
-            timeit = 0;
             return false;
         }
-        var results;
-        // delay for 1000 ms before searching ES for user input
-        setTimeout(function () {
-            $.ajax({
-                type: 'GET',
-                url: 'searchkeypress.php',
-                data: $('#searchnav').serialize(),
-                success: function (data) {
-                    if (data != "") {
-                        // set width and position of search results div to match search input
-                        /*var w = $('#searchnavbox').width();
-                        var p = $('#searchnavbox').position();
-                        $("#essearchreply-nav").css({
-                            left: p.left,
-                            position: 'absolute'
-                        });
-                        $('#essearchreply-nav').width(w);*/
-                        $('#essearchreply-nav').show();
-                        $('#essearchreply-text-nav').html(data);
-                    } else {
-                        $('#essearchreply-text-nav').html("");
-                        $('#essearchreply-nav').hide();
-                    }
+        $.ajax({
+            type: 'GET',
+            url: 'searchkeypress.php',
+            data: $('#searchnav').serialize(),
+            success: function (data) {
+                if (data != "") {
+                    $('#essearchreply-nav').show();
+                    $('#essearchreply-text-nav').html(data);
+                } else {
+                    $('#essearchreply-text-nav').html("");
+                    $('#essearchreply-nav').hide();
                 }
-            });
-        }, 1000);
-        return false;
-    });
+            }
+        });
+    }, 1000));
 
     // hide search results pull down on body click
     $(document).on('click', '#mainwindow', function () {
         $("#searchnavinput").attr("placeholder", "Search");
         $('#essearchreply-nav').hide();
-        //$("#searchnavbox").hide();
-        //$("#searchbox").hide();
         // set search nav input background colour back to default
         $("#searchnavinput").attr('style', 'background-color: #373737 !important');
     });
@@ -231,6 +215,18 @@ $(document).ready(function () {
     }, 10000);
 
 });
+
+// delay function
+function delay(callback, ms) {
+    var timer = 0;
+    return function() {
+        var context = this, args = arguments;
+        clearTimeout(timer);
+        timer = setTimeout(function () {
+            callback.apply(context, args);
+        }, ms || 0);
+    };
+}
 
 // cookie functions
 function setCookie(cname, cvalue, exdays) {
