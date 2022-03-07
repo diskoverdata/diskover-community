@@ -41,7 +41,7 @@ class Constants {
     // login auth for diskover-web
     const LOGIN_REQUIRED = TRUE;
     // default username and password to login
-    // the password is no longer used after first login, a hashed password gets stored in separate db
+    // the password is no longer used after first login, a hashed password gets stored in separate sqlite db
     const USER = 'diskover';
     const PASS = 'darkdata';
     // default results per search page

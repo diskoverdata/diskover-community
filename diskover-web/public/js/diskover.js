@@ -174,7 +174,7 @@ $(document).ready(function () {
                 }
             }
         });
-    }, 1000));
+    }, 500));
 
     // hide search results pull down on body click
     $(document).on('click', '#mainwindow', function () {
