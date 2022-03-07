@@ -23,6 +23,7 @@ import time
 import logging
 import confuse
 import importlib
+import re
 from datetime import datetime, timedelta
 from threading import Thread, Lock, current_thread
 from concurrent import futures
@@ -38,7 +39,7 @@ from diskover_helpers import dir_excluded, file_excluded, \
     get_file_name, load_plugins, list_plugins, get_plugins_info, set_times, \
     get_mem_usage
 
-version = '2.0-rc.4-2 community edition (ce)'
+version = '2.0-rc.5 community edition (ce)'
 __version__ = version
 
 # Windows check
