@@ -797,7 +797,7 @@ def log_setup():
         handler_con.setFormatter(logging.Formatter(logformat))
         logger.addHandler(handler_con)
         # warnings log
-        logname_warn = 'diskover_' + treedirsstr + '_' + logfiletime + '_warnings.log'
+        logname_warn = 'diskover_{0}_{1}_warnings.log'.format(treedirsstr, logfiletime)
         logfile_warn = os.path.join(logdir, logname_warn)
         handler_warnfile = logging.FileHandler(logfile_warn)
         handler_warnfile.setFormatter(logging.Formatter(logformat))
