@@ -7,6 +7,9 @@
 ### added
 ### changed
 - log file names
+- updated Windows file owner plugin to v0.0.2
+    - added sid cache to improve performance
+    - primary group is also now indexed
 
 
 # [2.0-rc.4-1] - 2022-02-28
