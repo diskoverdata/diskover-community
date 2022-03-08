@@ -455,7 +455,7 @@ $estime = number_format(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 4);
                         <button type="button" class="btn btn-primary" id="deletebutton" onclick="checkIndexDel()"><i class="far fa-trash-alt"></i> Delete</button>
                     </form>
                 </div>
-            </div>
+            </div><br />
         <?php } ?>
     </div>
 
