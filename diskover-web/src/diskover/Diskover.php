@@ -47,9 +47,6 @@ $esIndex = $path = $toppath = $es_index_info = $all_index_info = $indices_sorted
 // file type groups
 $fileGroups_extensions = $config->FILE_TYPES;
 
-// pages to hide nav path select dropdown
-$no_pathselect_pages = array('selectindices.php', 'settings.php', 'help.php');
-
 // create ES client connection
 $esclient = new ESClient;
 $client = $esclient->createClient();
@@ -199,7 +196,7 @@ class ESClient
 
 function indexInfo()
 {
-    global $esclient, $client, $timezone, $esIndex, $no_pathselect_pages, $es_index_info, $all_index_info, $indices_sorted, $completed_indices, 
+    global $esclient, $client, $timezone, $esIndex, $es_index_info, $all_index_info, $indices_sorted, $completed_indices, 
     $latest_completed_index, $fields, $indexinfo_updatetime, $index_starttimes, $index_spaceinfo;
 
     $es_index_info = $esclient->getIndexInfo();
@@ -425,11 +422,9 @@ function indexInfo()
         // get index from cookie
         $esIndex = getCookie('index');
         // redirect to select indices page if esIndex is empty
-        if (!in_array(basename($_SERVER['PHP_SELF']), $no_pathselect_pages)) {
-            if (empty($esIndex)) {
-                header("location:selectindices.php");
-                exit();
-            }
+        if (empty($esIndex) && basename($_SERVER['PHP_SELF']) !== 'selectindices.php') {
+            header("location:selectindices.php");
+            exit();
         }
     }
 

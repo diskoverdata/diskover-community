@@ -5,7 +5,9 @@
 - multiple ES queries delay when typing text into search bar
 - index fields getting added multiple times to filters and help page
 ### added
+- defaults for config
 ### changed
+- if any missing config items are not in Constants.php (web config file), a default config value gets set and a message gets printed in web server error log
 
 
 # [2.0-rc.4] - 2022-02-18
