@@ -21,42 +21,23 @@ use diskover\Constants;
 use Elasticsearch\ClientBuilder;
 use Elasticsearch\Common\Exceptions\Missing404Exception;
 require 'version.php';
+require 'config_defaults.php';
 error_reporting(E_ALL ^ E_NOTICE);
 
 
 /* Start Globals */
 
-// array of constants names required in Constants.php config file
-$config_const = array(
-    'TIMEZONE',
-    'ES_HOST',
-    'ES_PORT',
-    'ES_USER',
-    'ES_PASS',
-    'ES_HTTPS',
-    'LOGIN_REQUIRED',
-    'USER',
-    'PASS',
-    'SEARCH_RESULTS',
-    'SIZE_FIELD',
-    'FILE_TYPES',
-    'EXTRA_FIELDS',
-    'MAX_INDEX',
-    'INDEXINFO_CACHETIME',
-    'NEWINDEX_CHECKTIME'
-);
-
-// sanity check of Constants.php config
-if (!isset($_SESSION['sanitycheck'])) {
-    $refl = new ReflectionClass('diskover\Constants');
-    $consts = $refl->getConstants();
-    foreach ($config_const as $const) {
-        if (!array_key_exists($const, $consts)) {
-            handleError('Missing config setting '.$const.'. Copy from default/sample config file Constants.php.sample.', true);
-            exit;
-        }
+// check for any missing config settings in Constants.php and if any are missing use default
+$config = new Constants;
+$refl = new ReflectionClass('diskover\Constants');
+$consts = $refl->getConstants();
+foreach ($config_defaults as $configkey => $configval) {
+    if (!array_key_exists($configkey, $consts)) {
+        error_log("Missing config setting $configkey. Using default.");
+        $config->{$configkey} = $configval;
+    } else {
+        $config->{$configkey} = $consts[$configkey];
     }
-    $_SESSION['sanitycheck'] = true;
 }
 
 $esIndex = $path = $toppath = $es_index_info = $all_index_info = $indices_sorted = $completed_indices = 
@@ -64,7 +45,7 @@ $esIndex = $path = $toppath = $es_index_info = $all_index_info = $indices_sorted
     $filter = $time = $use_count = $show_files = $maxdepth = $sizefield = null;
 
 // file type groups
-$fileGroups_extensions = Constants::FILE_TYPES;
+$fileGroups_extensions = $config->FILE_TYPES;
 
 // pages to hide nav path select dropdown
 $no_pathselect_pages = array('selectindices.php', 'settings.php', 'help.php');
@@ -78,7 +59,7 @@ setd3Vars();
 
 // timezone
 // check for env var TZ
-$timezone = getenv('TZ') ?: Constants::TIMEZONE;
+$timezone = getenv('TZ') ?: $config->TIMEZONE;
 
 /* End Globals */
 
@@ -104,9 +85,9 @@ class ESClient
         // check for any env vars to override config
         $hosts = array();
         $hosts[] = array(
-            'host' => getenv('ES_HOST') ?: Constants::ES_HOST, 'port' => getenv('ES_PORT') ?: Constants::ES_PORT,
-            'user' => getenv('ES_USER') ?: Constants::ES_USER, 'pass' => getenv('ES_PASS') ?: Constants::ES_PASS,
-            'scheme' => (getenv('ES_HTTPS') || Constants::ES_HTTPS) ? 'https' : 'http'
+            'host' => getenv('ES_HOST') ?: $GLOBALS['config']->ES_HOST, 'port' => getenv('ES_PORT') ?: $GLOBALS['config']->ES_PORT,
+            'user' => getenv('ES_USER') ?: $GLOBALS['config']->ES_USER, 'pass' => getenv('ES_PASS') ?: $GLOBALS['config']->ES_PASS,
+            'scheme' => (getenv('ES_HTTPS') || $GLOBALS['config']->ES_HTTPS) ? 'https' : 'http'
         );
         $client = ClientBuilder::create()->setHosts($hosts)->build();
         $this->client = $client;
@@ -159,7 +140,7 @@ class ESClient
         // cat array is sorted by creation date, limit the max number of indices to load
         $maxindex = getCookie('maxindex');
         if ($maxindex == '') {
-            $maxindex = Constants::MAX_INDEX;
+            $maxindex = $GLOBALS['config']->MAX_INDEX;
             createCookie('maxindex', $maxindex);
         }
         // only get diskover indices and sort by creation date
@@ -191,7 +172,7 @@ class ESClient
     {
         // get index info from ES
         // only get new index info every 10 seconds
-        if (isset($_GET['reloadindices']) || !isset($_SESSION['es_index_info_time']) || time() - $_SESSION['es_index_info_time'] > Constants::NEWINDEX_CHECKTIME) {
+        if (isset($_GET['reloadindices']) || !isset($_SESSION['es_index_info_time']) || time() - $_SESSION['es_index_info_time'] > $GLOBALS['config']->NEWINDEX_CHECKTIME) {
             $this->refreshIndices();
             $indices_info_curl = $this->getIndicesInfoCurl();
             $indices_info_cat = $this->getIndicesInfoCat();
@@ -225,7 +206,7 @@ function indexInfo()
 
     // Set latest index info if force reload or index session info time expired
     if (isset($_GET['reloadindices']) || !isset($_SESSION['indexinfo']) ||
-    (isset($_SESSION['indexinfo']) && microtime(true) - $_SESSION['indexinfo']['update_time_ms'] > Constants::INDEXINFO_CACHETIME)) {
+    (isset($_SESSION['indexinfo']) && microtime(true) - $_SESSION['indexinfo']['update_time_ms'] > $GLOBALS['config']->INDEXINFO_CACHETIME)) {
 
         $disabled_indices = array();
         $indices_sorted = array();
@@ -501,7 +482,7 @@ function setd3Vars() {
     // don't check if same as size_field in config, setting to override this on settings page
     $sizefield = getCookie('sizefield'); // size field to use
     if ($sizefield === "") {
-        $sizefield = Constants::SIZE_FIELD;
+        $sizefield = $GLOBALS['config']->SIZE_FIELD;
         createCookie('sizefield', $sizefield);
     }
 }
@@ -1153,7 +1134,7 @@ function index_restrictions()
     // Return if not ldap/ad user or if admin user
     if (
         !$_SESSION['ldaplogin'] || $_SESSION['ldapadmin'] ||
-        in_array($_SESSION['username'], CONSTANTS::ADMIN_USERS)
+        in_array($_SESSION['username'], $GLOBALS['config']->ADMIN_USERS)
     ) return;
 
     // Check what indices/paths the group is allowed to see
@@ -1165,11 +1146,11 @@ function curl_es($url, $request = null, $return_json = true)
 {
     global $es_responsetime;
 
-    $hostname = Constants::ES_HOST;
-    $port = Constants::ES_PORT;
-    $user = Constants::ES_USER;
-    $pass = Constants::ES_PASS;
-    $https = Constants::ES_HTTPS;
+    $hostname = $GLOBALS['config']->ES_HOST;
+    $port = $GLOBALS['config']->ES_PORT;
+    $user = $GLOBALS['config']->ES_USER;
+    $pass = $GLOBALS['config']->ES_PASS;
+    $https = $GLOBALS['config']->ES_HTTPS;
 
     // Get cURL resource
     $curl = curl_init();
