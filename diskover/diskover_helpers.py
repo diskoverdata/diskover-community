@@ -134,11 +134,6 @@ try:
 except confuse.NotFoundError as e:
     config_warn(e)
     plugins_files = config_defaults['diskover']['plugins']['files'].get()
-try:
-    es_timeout = config['databases']['elasticsearch']['timeout'].get()
-except confuse.NotFoundError as e:
-    config_warn(e)
-    es_timeout = config_defaults['databases']['elasticsearch']['timeout'].get()
     
 
 uids_owners = {}
