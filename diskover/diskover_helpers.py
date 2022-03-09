@@ -22,6 +22,7 @@ import confuse
 import re
 import math
 import importlib
+import warnings
 from datetime import datetime, timezone
 from threading import Lock
 if os.name == 'nt':
@@ -40,29 +41,105 @@ else:
 
 """Load yaml config file."""
 config = confuse.Configuration('diskover', __name__)
+config_filename = os.path.join(config.config_dir(), confuse.CONFIG_FILENAME)
+if not os.path.exists(config_filename):
+    print('Config file {0} not found! Copy from default config.'.format(config_filename))
+    sys.exit(1)
+    
+# load default config file
+config_defaults = confuse.Configuration('diskover', __name__)
+scriptpath = os.path.dirname(os.path.realpath(__file__))
+defaultconfig_filename = os.path.join(scriptpath, 'configs_sample/diskover/config.yaml')
+config_defaults.set_file(defaultconfig_filename)
 
+def config_warn(e):
+    warnings.warn('Config setting {}. Using default.'.format(e))
+
+# laod config values
 try:
     exc_dirs = config['diskover']['excludes']['dirs'].get()
+except confuse.NotFoundError as e:
+    config_warn(e)
+    exc_dirs = config_defaults['diskover']['excludes']['dirs'].get()
+try:
     exc_files = config['diskover']['excludes']['files'].get()
+except confuse.NotFoundError as e:
+    config_warn(e)
+    exc_files = config_defaults['diskover']['excludes']['files'].get()
+try:
     inc_dirs = config['diskover']['includes']['dirs'].get()
+except confuse.NotFoundError as e:
+    config_warn(e)
+    inc_dirs = config_defaults['diskover']['includes']['dirs'].get()
+try:
     inc_files = config['diskover']['includes']['files'].get()
+except confuse.NotFoundError as e:
+    config_warn(e)
+    inc_files = config_defaults['diskover']['includes']['files'].get()
+try:
     og_uidgidonly = config['diskover']['ownersgroups']['uidgidonly'].get()
+except confuse.NotFoundError as e:
+    config_warn(e)
+    og_uidgidonly = config_defaults['diskover']['ownersgroups']['uidgidonly'].get()
+try:
     og_domain = config['diskover']['ownersgroups']['domain'].get()
+except confuse.NotFoundError as e:
+    config_warn(e)
+    og_domain = config_defaults['diskover']['ownersgroups']['domain'].get()
+try:
     og_domainsep = config['diskover']['ownersgroups']['domainsep'].get()
+except confuse.NotFoundError as e:
+    config_warn(e)
+    og_domainsep = config_defaults['diskover']['ownersgroups']['domainsep'].get()
+try:
     og_domainfirst = config['diskover']['ownersgroups']['domainfirst'].get()
+except confuse.NotFoundError as e:
+    config_warn(e)
+    og_domainfirst = config_defaults['diskover']['ownersgroups']['domainfirst'].get()
+try:
     og_keepdomain = config['diskover']['ownersgroups']['keepdomain'].get()
+except confuse.NotFoundError as e:
+    config_warn(e)
+    og_keepdomain = config_defaults['diskover']['ownersgroups']['keepdomain'].get()
+try:
     replacepaths = config['diskover']['replacepaths']['replace'].get()
+except confuse.NotFoundError as e:
+    config_warn(e)
+    replacepaths = config_defaults['diskover']['replacepaths']['replace'].get()
+finally:
     if IS_WIN:
         replacepaths = True
+try:
     replacepaths_from = config['diskover']['replacepaths']['from'].get()
+except confuse.NotFoundError as e:
+    config_warn(e)
+    replacepaths_from = config_defaults['diskover']['replacepaths']['from'].get()
+try:
     replacepaths_to = config['diskover']['replacepaths']['to'].get()
+except confuse.NotFoundError as e:
+    config_warn(e)
+    replacepaths_to = config_defaults['diskover']['replacepaths']['to'].get()
+try:
     plugins_enabled = config['diskover']['plugins']['enable'].get()
+except confuse.NotFoundError as e:
+    config_warn(e)
+    plugins_enabled = config_defaults['diskover']['plugins']['enable'].get()
+try:
     plugins_dirs = config['diskover']['plugins']['dirs'].get()
+except confuse.NotFoundError as e:
+    config_warn(e)
+    plugins_dirs = config_defaults['diskover']['plugins']['dirs'].get()
+try:
     plugins_files = config['diskover']['plugins']['files'].get()
+except confuse.NotFoundError as e:
+    config_warn(e)
+    plugins_files = config_defaults['diskover']['plugins']['files'].get()
+try:
     es_timeout = config['databases']['elasticsearch']['timeout'].get()
 except confuse.NotFoundError as e:
-    print('Config ERROR: {0}, check config for errors or missing settings from default config.'.format(e))
-    sys.exit(1)
+    config_warn(e)
+    es_timeout = config_defaults['databases']['elasticsearch']['timeout'].get()
+    
 
 uids_owners = {}
 gids_groups = {}

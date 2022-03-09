@@ -97,7 +97,6 @@ diskover:
 databases:
     elasticsearch:
         # set host to your Elasticsearch hostname or IP
-        # if you have multiple ES hosts/nodes in your cluster, you can set multiple hosts using a list ['eshost1', 'eshost2']
         # if using AWS ES, set to your AWS ES endpoint name without http:// or https://
         # override with env var ES_HOST
         host: localhost

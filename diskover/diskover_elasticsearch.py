@@ -22,6 +22,7 @@ import confuse
 import requests
 import logging
 import elasticsearch
+import warnings
 from elasticsearch import helpers
 from elasticsearch.helpers.errors import BulkIndexError
 
@@ -32,32 +33,104 @@ logger = logging.getLogger(__name__)
 
 """Load yaml config file."""
 config = confuse.Configuration('diskover', __name__)
+config_filename = os.path.join(config.config_dir(), confuse.CONFIG_FILENAME)
+if not os.path.exists(config_filename):
+    print('Config file {0} not found! Copy from default config.'.format(config_filename))
+    sys.exit(1)
 
-# check for any env vars to override config
+# load default config file
+config_defaults = confuse.Configuration('diskover', __name__)
+scriptpath = os.path.dirname(os.path.realpath(__file__))
+defaultconfig_filename = os.path.join(scriptpath, 'configs_sample/diskover/config.yaml')
+config_defaults.set_file(defaultconfig_filename)
+
+def config_warn(e):
+    warnings.warn('Config setting {}. Using default.'.format(e))
+
+# laod config values
 try:
+    # check for any env vars to override config
     es_host = os.getenv('ES_HOST', config['databases']['elasticsearch']['host'].get())
+except confuse.NotFoundError as e:
+    config_warn(e)
+    es_host = config_defaults['databases']['elasticsearch']['host'].get()
+try:
     es_port = os.getenv('ES_PORT', config['databases']['elasticsearch']['port'].get())
+except confuse.NotFoundError as e:
+    config_warn(e)
+    es_port = config_defaults['databases']['elasticsearch']['port'].get()
+try:
     es_user = os.getenv('ES_USER', config['databases']['elasticsearch']['user'].get())
+except confuse.NotFoundError as e:
+    config_warn(e)
+    es_user = config_defaults['databases']['elasticsearch']['user'].get()
+finally:
     if not es_user:
         es_user = ""
+try:
     es_password = os.getenv('ES_PASS', config['databases']['elasticsearch']['password'].get())
+except confuse.NotFoundError as e:
+    config_warn(e)
+    es_password = config_defaults['databases']['elasticsearch']['password'].get()
+finally:
     if not es_password:
         es_password = ""
+try:
     es_https = os.getenv('ES_HTTPS', config['databases']['elasticsearch']['https'].get())
+except confuse.NotFoundError as e:
+    config_warn(e)
+    es_https = config_defaults['databases']['elasticsearch']['https'].get()
+try:
     es_httpcompress = config['databases']['elasticsearch']['httpcompress'].get()
+except confuse.NotFoundError as e:
+    config_warn(e)
+    es_httpcompress = config_defaults['databases']['elasticsearch']['httpcompress'].get()
+try:
     es_timeout = config['databases']['elasticsearch']['timeout'].get()
+except confuse.NotFoundError as e:
+    config_warn(e)
+    es_timeout = config_defaults['databases']['elasticsearch']['timeout'].get()
+try:
     es_maxsize = config['databases']['elasticsearch']['maxsize'].get()
+except confuse.NotFoundError as e:
+    config_warn(e)
+    es_maxsize = config_defaults['databases']['elasticsearch']['maxsize'].get()
+try:
     es_max_retries = config['databases']['elasticsearch']['maxretries'].get()
+except confuse.NotFoundError as e:
+    config_warn(e)
+    es_max_retries = config_defaults['databases']['elasticsearch']['maxretries'].get()
+try:
     es_scrollsize = config['databases']['elasticsearch']['scrollsize'].get()
+except confuse.NotFoundError as e:
+    config_warn(e)
+    es_scrollsize = config_defaults['databases']['elasticsearch']['scrollsize'].get()
+try:
     es_wait_status_yellow = config['databases']['elasticsearch']['wait'].get()
+except confuse.NotFoundError as e:
+    config_warn(e)
+    es_wait_status_yellow = config_defaults['databases']['elasticsearch']['wait'].get()
+try:
     es_chunksize = config['databases']['elasticsearch']['chunksize'].get()
+except confuse.NotFoundError as e:
+    config_warn(e)
+    es_chunksize = config_defaults['databases']['elasticsearch']['chunksize'].get()
+try:
     es_translogsize = config['databases']['elasticsearch']['translogsize'].get()
+except confuse.NotFoundError as e:
+    config_warn(e)
+    es_translogsize = config_defaults['databases']['elasticsearch']['translogsize'].get()
+try:
     es_translogsyncint = config['databases']['elasticsearch']['translogsyncint'].get()
+except confuse.NotFoundError as e:
+    config_warn(e)
+    es_translogsyncint = config_defaults['databases']['elasticsearch']['translogsyncint'].get()
+try:
     es_indexrefresh = config['databases']['elasticsearch']['indexrefresh'].get()
 except confuse.NotFoundError as e:
-    print(
-        'Config ERROR: {0}, check config for errors or missing settings from default config.'.format(e))
-    sys.exit(1)
+    config_warn(e)
+    es_indexrefresh = config_defaults['databases']['elasticsearch']['indexrefresh'].get()
+
 
 # load any available plugins
 plugins = load_plugins()

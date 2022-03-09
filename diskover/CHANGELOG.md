@@ -5,7 +5,9 @@
 - issue with enabling diskover logging in Windows causes exception
 - issue when scanning using just drive letter in Windows (example C:), would scan current directory
 ### added
+- defaults for config
 ### changed
+- if any missing config items are not in diskover config file, a default config value gets set and a warning message gets printed
 - log file names
 - updated Windows file owner plugin to v0.0.2
     - added sid cache to improve performance

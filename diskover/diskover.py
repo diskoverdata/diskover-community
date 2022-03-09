@@ -24,6 +24,7 @@ import logging
 import confuse
 import importlib
 import re
+import warnings
 from datetime import datetime, timedelta
 from threading import Thread, Lock, current_thread
 from concurrent import futures
@@ -75,37 +76,133 @@ if not os.path.exists(config_filename):
     print('Config file {0} not found! Copy from default config.'.format(config_filename))
     sys.exit(1)
 
+# load default config file
+config_defaults = confuse.Configuration('diskover', __name__)
+scriptpath = os.path.dirname(os.path.realpath(__file__))
+defaultconfig_filename = os.path.join(scriptpath, 'configs_sample/diskover/config.yaml')
+config_defaults.set_file(defaultconfig_filename)
+
+def config_warn(e):
+    warnings.warn('Config setting {}. Using default.'.format(e))
+
+# laod config values
 try:
     logtofile = config['logToFile'].get()
+except confuse.NotFoundError as e:
+    config_warn(e)
+    logtofile = config_defaults['logToFile'].get()
+try:
     logdir = config['logDirectory'].get()
+except confuse.NotFoundError as e:
+    config_warn(e)
+    logdir = config_defaults['logDirectory'].get()
+try:
     maxthreads = config['diskover']['maxthreads'].get()
+except confuse.NotFoundError as e:
+    config_warn(e)
+    maxthreads = config_defaults['diskover']['maxthreads'].get()
+finally:
     if maxthreads is None:
         maxthreads = int(os.cpu_count())
+try:
     exc_empty_dirs = config['diskover']['excludes']['emptydirs'].get()
+except confuse.NotFoundError as e:
+    config_warn(e)
+    exc_empty_dirs = config_defaults['diskover']['excludes']['emptydirs'].get()
+try:
     exc_empty_files = config['diskover']['excludes']['emptyfiles'].get()
+except confuse.NotFoundError as e:
+    config_warn(e)
+    exc_empty_files = config_defaults['diskover']['excludes']['emptyfiles'].get()
+try:
     exc_files = config['diskover']['excludes']['files'].get()
+except confuse.NotFoundError as e:
+    config_warn(e)
+    exc_files = config_defaults['diskover']['excludes']['files'].get()
+try:
     exc_dirs = config['diskover']['excludes']['dirs'].get()
+except confuse.NotFoundError as e:
+    config_warn(e)
+    exc_dirs = config_defaults['diskover']['excludes']['dirs'].get()
+try:
     minfilesize = config['diskover']['excludes']['minfilesize'].get()
+except confuse.NotFoundError as e:
+    config_warn(e)
+    minfilesize = config_defaults['diskover']['excludes']['minfilesize'].get()
+try:
     minmtime = config['diskover']['excludes']['minmtime'].get() * 86400
+except confuse.NotFoundError as e:
+    config_warn(e)
+    minmtime = config_defaults['diskover']['excludes']['minmtime'].get() * 86400
+try:
     maxmtime = config['diskover']['excludes']['maxmtime'].get() * 86400
+except confuse.NotFoundError as e:
+    config_warn(e)
+    maxmtime = config_defaults['diskover']['excludes']['maxmtime'].get() * 86400
+try:
     minctime = config['diskover']['excludes']['minctime'].get() * 86400
+except confuse.NotFoundError as e:
+    config_warn(e)
+    minctime = config_defaults['diskover']['excludes']['minctime'].get() * 86400
+try:
     maxctime = config['diskover']['excludes']['maxctime'].get() * 86400
+except confuse.NotFoundError as e:
+    config_warn(e)
+    maxctime = config_defaults['diskover']['excludes']['maxctime'].get() * 86400
+try:
     minatime = config['diskover']['excludes']['minatime'].get() * 86400
+except confuse.NotFoundError as e:
+    config_warn(e)
+    minatime = config_defaults['diskover']['excludes']['minatime'].get() * 86400
+try:
     maxatime = config['diskover']['excludes']['maxatime'].get() * 86400
+except confuse.NotFoundError as e:
+    config_warn(e)
+    maxatime = config_defaults['diskover']['excludes']['maxatime'].get() * 86400
+try:
     blocksize = config['diskover']['blocksize'].get()
+except confuse.NotFoundError as e:
+    config_warn(e)
+    blocksize = config_defaults['diskover']['blocksize'].get()
+try:
     replacepaths = config['diskover']['replacepaths']['replace'].get()
+except confuse.NotFoundError as e:
+    config_warn(e)
+    replacepaths = config_defaults['diskover']['replacepaths']['replace'].get()
+finally:
     if IS_WIN:
         replacepaths = True
+try:
     es_chunksize = config['databases']['elasticsearch']['chunksize'].get()
+except confuse.NotFoundError as e:
+    config_warn(e)
+    es_chunksize = config_defaults['databases']['elasticsearch']['chunksize'].get()
+try:
     es_timeout = config['databases']['elasticsearch']['timeout'].get()
+except confuse.NotFoundError as e:
+    config_warn(e)
+    es_timeout = config_defaults['databases']['elasticsearch']['timeout'].get()
+try:
     plugins_enabled = config['diskover']['plugins']['enable'].get()
+except confuse.NotFoundError as e:
+    config_warn(e)
+    plugins_enabled = config_defaults['diskover']['plugins']['enable'].get()
+try:
     plugins_dirs = config['diskover']['plugins']['dirs'].get()
+except confuse.NotFoundError as e:
+    config_warn(e)
+    plugins_dirs = config_defaults['diskover']['plugins']['dirs'].get()
+try:
     plugins_files = config['diskover']['plugins']['files'].get()
+except confuse.NotFoundError as e:
+    config_warn(e)
+    plugins_files = config_defaults['diskover']['plugins']['files'].get()
+try:
     restore_times = config['diskover']['other']['restoretimes'].get()
 except confuse.NotFoundError as e:
-    print('Config ERROR: {0}, check config for errors or missing settings from default config.'.format(e))
-    sys.exit(1)
-    
+    config_warn(e)
+    restore_times = config_defaults['diskover']['other']['restoretimes'].get()
+
 
 filecount = {}
 skipfilecount = {}
