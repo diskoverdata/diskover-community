@@ -1,6 +1,6 @@
 # Diskover v2 Community Edition Change Log
 
-# [2.0] - 2022-03-07
+# [2.0-rc.5] - 2022-03-
 ### fixed
 - issue with enabling diskover logging in Windows causes exception
 - issue when scanning using just drive letter in Windows (example C:), would scan current directory
