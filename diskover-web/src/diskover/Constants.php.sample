@@ -24,30 +24,39 @@ class Constants {
     // set to your local time zone https://www.php.net/manual/en/timezones.php
     // override with env var TZ
     const TIMEZONE = 'America/Vancouver';
+
     // Elasticsearch host/ip config
     // if you are using AWS ES set host to your Elasticsearch endpoint without http:// or https://
     // override with env var ES_HOST
     const ES_HOST = 'localhost';
+
     // default port for Elasticsearch is 9200 and AWS ES is 80 or 443
     // override with env var ES_PORT
     const ES_PORT = 9200;
+
     // for no username and password set ES_USER and ES_PASS to ''
     // override with env vars ES_USER and ES_PASS
     const ES_USER = '';
     const ES_PASS = '';
+
     // if your Elasticsearch cluster uses HTTP TLS/SSL, set ES_HTTPS to TRUE
     // override with env var ES_HTTPS
     const ES_HTTPS = FALSE;
+
     // login auth for diskover-web
     const LOGIN_REQUIRED = TRUE;
+
     // default username and password to login
     // the password is no longer used after first login, a hashed password gets stored in separate sqlite db
     const USER = 'diskover';
     const PASS = 'darkdata';
+
     // default results per search page
     const SEARCH_RESULTS = 50;
+
     // default size field (size, size_du) to use for sizes on file tree and charts
     const SIZE_FIELD = 'size';
+
     // default file types, used by quick search (file type) and dashboard file type usage chart
     // additional extensions can be added/removed from each file types list
     const FILE_TYPES = [
@@ -64,6 +73,7 @@ class Constants {
         'compressed' => ['7z', 'arj', 'deb', 'pkg', 'rar', 'rpm', 'tar', 'gz', 'z', 'zip'],
         'trash' => ['old', 'trash', 'tmp', 'temp', 'junk', 'recycle', 'delete', 'deleteme', 'clean', 'remove']
     ];
+
     // extra fields for search results and view file/dir info pages
     // key is description for field and value is ES field name
     // Example:
@@ -71,12 +81,15 @@ class Constants {
     //    'Date Changed' => 'ctime'
     //];
     const EXTRA_FIELDS = [];
+
     // Maximum number of indices to load by default, indices are loaded in order by creation date
     // setting this too high can cause slow logins and other timeout issues
     // This setting can bo overridden on indices page per user
     const MAX_INDEX = 50;
+
     // time in seconds for index info to be cached, clicking reload indices forces update
     const INDEXINFO_CACHETIME = 600;
+
     // time in seconds to check Elasticsearch for new index info
     const NEWINDEX_CHECKTIME = 10;
 }
