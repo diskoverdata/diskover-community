@@ -20,13 +20,11 @@ session_start();
 use diskover\Constants;
 use Elasticsearch\ClientBuilder;
 use Elasticsearch\Common\Exceptions\Missing404Exception;
+require 'version.php';
 error_reporting(E_ALL ^ E_NOTICE);
 
 
 /* Start Globals */
-
-// diskover-web version
-$VERSION = '2.0-rc.5 community edition (ce)';
 
 // array of constants names required in Constants.php config file
 $config_const = array(

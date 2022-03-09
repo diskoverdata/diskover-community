@@ -21,14 +21,12 @@ ini_set("session.cookie_lifetime", 604800);
 ob_start();
 session_start();
 require '../vendor/autoload.php';
+require '../src/diskover/version.php';
 use diskover\Login;
 
 // Set logging level
 //error_reporting(E_ALL);
 error_reporting(E_ERROR | E_PARSE);
-
-// diskover-web version to show on login page
-$VERSION = '2.0-rc.5';
 
 $msg = '';
 
@@ -171,7 +169,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <div class="login">
   <div class="login-logo"><img src="images/diskover.png" alt="diskover" width="249" height="189" /></div>
   <h1>diskover</h1>
-  <h4>community edition (ce)</h4>
   <p class="version"><?php echo "v" . $VERSION; ?></p>
   <p class="login-error text-danger"><?php echo $msg; ?></p>
   <form action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>" method="post">
