@@ -1,6 +1,6 @@
 # Diskover-web v2 Community Edition Change Log
 
-# [2.0] - 2022-03-07
+# [2.0-rc.5] - 2022-03-
 ### fixed
 - multiple ES queries delay when typing text into search bar
 - index fields getting added multiple times to filters and help page

@@ -21,14 +21,14 @@ ini_set("session.cookie_lifetime", 604800);
 ob_start();
 session_start();
 require '../vendor/autoload.php';
-use diskover\Constants;
 use diskover\Login;
 
 // Set logging level
 //error_reporting(E_ALL);
 error_reporting(E_ERROR | E_PARSE);
 
-$VERSION = '2.0';
+// diskover-web version to show on login page
+$VERSION = '2.0-rc.5';
 
 $msg = '';
 
@@ -96,13 +96,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
       .login h4 {
           text-align: center;
-          color: #666666;
+          color: darkgray;
           font-size: 18px;
       }
 
       .version {
           text-align: center;
-          color: #666666;
+          color: darkgray;
           font-size: 12px;
           padding: 0 0 20px 0;
           border-bottom: 1px solid #000000;
