@@ -37,10 +37,13 @@ all indexing plugins require six functions:
 
 """
 
-version = '0.0.2'
+import win32security
+
+version = '0.0.3'
 __version__ = version
 
-import win32security
+# include domain in owner/group names
+INC_DOMAIN = True
 
 sid_owner_cache = {}
 sid_group_cache = {}
@@ -101,7 +104,10 @@ def get_owner(filename):
             # lookup sid and cache values
             name, domain, type = win32security.LookupAccountSid(None, owner_sid)
             sid_owner_cache[owner_sid_str] = (name, domain, type)
-        owner = domain + '\\' + name
+        if INC_DOMAIN:
+            owner = domain + '\\' + name
+        else:
+            owner = name
     except Exception as e:
         raise RuntimeWarning('Error getting Windows owner for {0} ({1})'.format(filename, e), None)
     else:
@@ -122,7 +128,10 @@ def get_group(filename):
             # lookup sid and cache values
             name, domain, type = win32security.LookupAccountSid(None, primary_group_sid)
             sid_group_cache[group_sid_str] = (name, domain, type)
-        group = domain + '\\' + name
+        if INC_DOMAIN:
+            group = domain + '\\' + name
+        else:
+            group = name
     except Exception as e:
         raise RuntimeWarning('Error getting Windows primary group for {0} ({1})'.format(filename, e), None)
     else:

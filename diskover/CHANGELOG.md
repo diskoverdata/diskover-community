@@ -9,9 +9,10 @@
 ### changed
 - if any missing config items are not in diskover config file, a default config value gets set and a warning message gets printed
 - log file names
-- updated Windows file owner plugin to v0.0.2
+- updated Windows file owner plugin to v0.0.3
     - added sid cache to improve performance
     - primary group is also now indexed
+    - INC_DOMAIN variable at top of script to control if domain name is included in owner/group name
 
 
 # [2.0-rc.4-1] - 2022-02-28
