@@ -136,8 +136,9 @@ class ESClient
         // Get index info using cat
         // cat array is sorted by creation date, limit the max number of indices to load
         $maxindex = getCookie('maxindex');
-        if ($maxindex == '') {
-            $maxindex = $GLOBALS['config']->MAX_INDEX;
+        $maxindex_config = $GLOBALS['config']->MAX_INDEX;
+        if ($maxindex == '' || $maxindex < $maxindex_config) {
+            $maxindex = $maxindex_config;
             createCookie('maxindex', $maxindex);
         }
         // only get diskover indices and sort by creation date

@@ -4,11 +4,13 @@
 ### fixed
 - multiple ES queries delay when typing text into search bar
 - index fields getting added multiple times to filters and help page
+- increasing MAX_INDEX setting in config not updating maxindex user browser cookie if set lower
 ### added
 - defaults for config
 ### changed
 - improved table text wrapping on search results page
 - if any missing config items are not in Constants.php (web config file), a default config value gets set and a message gets printed in web server error log
+- MAX_INDEX setting in default/sample config to 100
 
 
 # [2.0-rc.4] - 2022-02-18

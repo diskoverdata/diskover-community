@@ -84,8 +84,9 @@ class Constants {
 
     // Maximum number of indices to load by default, indices are loaded in order by creation date
     // setting this too high can cause slow logins and other timeout issues
-    // This setting can bo overridden on indices page per user
-    const MAX_INDEX = 50;
+    // This setting can bo overridden on indices page per user and stored in maxindex cookie
+    // If MAX_INDEX is set higher than maxindex browser cookie, the cookie will be set to this value
+    const MAX_INDEX = 100;
 
     // time in seconds for index info to be cached, clicking reload indices forces update
     const INDEXINFO_CACHETIME = 600;
