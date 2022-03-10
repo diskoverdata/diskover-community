@@ -30,8 +30,9 @@ https://www.diskoverdata.com/solutions/
 }
 
 .path {
+    overflow-wrap: break-word;
     word-wrap: break-word;
-    word-break: break-all;
+    word-break: break-word;
 }
 
 .pathdark {
@@ -53,8 +54,8 @@ https://www.diskoverdata.com/solutions/
 }
 
 .results {
-    word-wrap: break-word;
-    word-break: break-all;
+    word-wrap: normal;
+    word-break: normal;
 }
 
 .results tr[visible='false'],

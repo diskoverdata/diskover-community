@@ -268,9 +268,9 @@ $path_escaped = escape_chars($_SESSION['rootpath']);
                                 ?>
                                     <tr>
                                         <td class="path"><a href="view.php?id=<?php echo $value['_id'] . '&amp;docindex=' . $value['_index'] . '&amp;doctype=file'; ?>"><i class="fas fa-file-alt" style="color:#738291;padding-right:3px;"></i> <?php echo $value['_source']['name']; ?></a></td>
-                                        <td ><?php echo formatBytes($value['_source']['size']); ?></td>
-                                        <td ><?php echo formatBytes($value['_source']['size_du']); ?></td>
-                                        <td ><?php echo utcTimeToLocal($value['_source']['atime']); ?></td>
+                                        <th><?php echo formatBytes($value['_source']['size']); ?></td>
+                                        <th><?php echo formatBytes($value['_source']['size_du']); ?></td>
+                                        <th><?php echo utcTimeToLocal($value['_source']['atime']); ?></td>
                                     </tr>
                                 <?php } ?>
                             </tbody>
@@ -334,10 +334,10 @@ $path_escaped = escape_chars($_SESSION['rootpath']);
                                                                                                                                                                                                                                                     } else {
                                                                                                                                                                                                                                                         echo $value['_source']['name'];
                                                                                                                                                                                                                                                     } ?></a></td>
-                                        <td ><?php echo utcTimeToLocal($value['_source']['mtime']); ?></td>
-                                        <td ><?php echo formatBytes($value['_source']['size']); ?></td>
-                                        <td ><?php echo formatBytes($value['_source']['size_du']); ?></td>
-                                        <td ><?php echo number_format($value['_source']['file_count'] + $value['_source']['dir_count']); ?></td>
+                                        <th><?php echo utcTimeToLocal($value['_source']['mtime']); ?></td>
+                                        <th><?php echo formatBytes($value['_source']['size']); ?></td>
+                                        <th><?php echo formatBytes($value['_source']['size_du']); ?></td>
+                                        <th><?php echo number_format($value['_source']['file_count'] + $value['_source']['dir_count']); ?></td>
                                     </tr>
                                 <?php } ?>
                             </tbody>

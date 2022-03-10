@@ -494,10 +494,9 @@ $hidecharts = getCookie('hidesearchcharts');
                                         ?>
                                         <?php if ($file['type'] == 'directory') { ?>
                                             <a href="search.php?index=<?php echo $esIndex; ?>&amp;q=parent_path:<?php echo rawurlencode(escape_chars($fullpath)); ?>&amp;submitted=true&amp;p=1&amp;path=<?php echo rawurlencode($fullpath); ?>">
-                                                <i class="fas fa-folder" style="color:#E9AC47;padding-right:3px;"></i>
-                                                <?php echo $filename; ?></a> 
+                                                <i class="fas fa-folder" style="color:#E9AC47;padding-right:3px;"></i>&nbsp;<?php echo $filename; ?></a> 
                                         <?php } else { ?>
-                                            <a href="view.php?id=<?php echo $result['_id'] . '&amp;docindex=' . $result['_index'] . '&amp;doctype=' . $file['type']; ?>"><i class="fas fa-file-alt" style="color:#738291;padding-right:3px;"></i> <?php echo $filename; ?>
+                                            <a href="view.php?id=<?php echo $result['_id'] . '&amp;docindex=' . $result['_index'] . '&amp;doctype=' . $file['type']; ?>"><i class="fas fa-file-alt" style="color:#738291;padding-right:3px;"></i>&nbsp;<?php echo $filename; ?>
                                             <?php } ?>
                                             <?php if ($file['type'] == 'directory') { ?>
                                                 <!-- directory view info button -->
@@ -512,7 +511,7 @@ $hidecharts = getCookie('hidesearchcharts');
                                     <?php if (!in_array('path', $hiddencol)) { ?>
                                         <td class="path">
                                             <!-- path buttons -->
-                                            <div class="dropdown pathdropdown" style="display:inline-block;">
+                                            <div class="dropdown pathdropdown pull-right" style="display:inline-block;">
                                                 <button title="more" class="btn btn-default dropdown-toggle btn-xs file-btns" type="button" data-toggle="dropdown"><i class="fas fa-ellipsis-v"></i>
                                                     <span class="caret"></span></button>
                                                 <ul class="dropdown-menu">
@@ -528,9 +527,9 @@ $hidecharts = getCookie('hidesearchcharts');
                                             <a class="pathdark" href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=parent_path:<?php echo rawurlencode(escape_chars($parentpath)); ?>&amp;path=<?php echo rawurlencode($parentpath); ?>"><?php echo $file['parent_path']; ?></a>
                                         </td>
                                     <?php } ?>
-                                    <td ><?php echo formatBytes($file['size']); ?>
+                                    <th><?php echo formatBytes($file['size']); ?>
                                     </td>
-                                    <?php if (!in_array('sizedu', $hiddencol)) { ?><td > <?php echo formatBytes($file['size_du']); ?>
+                                    <?php if (!in_array('sizedu', $hiddencol)) { ?><th> <?php echo formatBytes($file['size_du']); ?>
                                         </td><?php } ?>
                                     <?php if (!in_array('sizep', $hiddencol)) { ?><td>
                                             <?php $width = ($total_size > 0) ? $file['size'] / $total_size * 100 : 0; ?>
@@ -540,11 +539,11 @@ $hidecharts = getCookie('hidesearchcharts');
                                                 </div>
                                             <?php } ?>
                                         </td><?php } ?>
-                                    <?php if (!in_array('modified', $hiddencol)) { ?><td ><?php echo utcTimeToLocal($file['mtime']); ?></td><?php } ?>
-                                    <?php if (!in_array('accessed', $hiddencol)) { ?><td ><?php echo utcTimeToLocal($file['atime']); ?></td><?php } ?>
+                                    <?php if (!in_array('modified', $hiddencol)) { ?><th><?php echo utcTimeToLocal($file['mtime']); ?></td><?php } ?>
+                                    <?php if (!in_array('accessed', $hiddencol)) { ?><th><?php echo utcTimeToLocal($file['atime']); ?></td><?php } ?>
                                     <?php if ($_GET['doctype'] == 'directory' || $_GET['doctype'] == '') { ?>
                                         <?php if (!in_array('files', $hiddencol)) { ?>
-                                            <td >
+                                            <th>
                                                 <?php if ($file['type'] == 'directory') {
                                                     echo number_format($file['file_count']); ?>
                                                     <!-- show comparison file count -->
@@ -567,7 +566,7 @@ $hidecharts = getCookie('hidesearchcharts');
                                             </td>
                                         <?php } ?>
                                         <?php if (!in_array('folders', $hiddencol)) { ?>
-                                            <td >
+                                            <th>
                                                 <?php if ($file['type'] == 'directory') {
                                                     echo number_format($file['dir_count']); ?>
                                                     <!-- show comparison file count -->

@@ -7,6 +7,7 @@
 ### added
 - defaults for config
 ### changed
+- improved table text wrapping on search results page
 - if any missing config items are not in Constants.php (web config file), a default config value gets set and a message gets printed in web server error log
 
 
