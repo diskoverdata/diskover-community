@@ -47,7 +47,7 @@ $config_defaults = [
         'trash' => ['old', 'trash', 'tmp', 'temp', 'junk', 'recycle', 'delete', 'deleteme', 'clean', 'remove']
     ],
     'EXTRA_FIELDS' => [],
-    'MAX_INDEX' => 100,
+    'MAX_INDEX' => 250,
     'INDEXINFO_CACHETIME' => 600,
     'NEWINDEX_CHECKTIME' => 10
 ];

@@ -86,7 +86,7 @@ class Constants {
     // setting this too high can cause slow logins and other timeout issues
     // This setting can bo overridden on indices page per user and stored in maxindex cookie
     // If MAX_INDEX is set higher than maxindex browser cookie, the cookie will be set to this value
-    const MAX_INDEX = 100;
+    const MAX_INDEX = 250;
 
     // time in seconds for index info to be cached, clicking reload indices forces update
     const INDEXINFO_CACHETIME = 600;
