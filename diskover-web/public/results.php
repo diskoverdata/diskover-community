@@ -180,10 +180,6 @@ $hidecharts = getCookie('hidesearchcharts');
                         </div>
                     </div>
                     <!-- end directory charts -->
-                    <!-- index time -->
-                    <div class="small text-right" style="padding-bottom:10px"><i class="fas fa-clock"></i> <?php echo $last_index_time ?></div>
-                    <!-- end index update time -->
-                    <!-- end directory charts -->
                     <div class="panel panel-default" style="margin-bottom: 5px">
                         <div class="panel-body">
                             <div class="btn-group" style="display:inline-block;">
@@ -250,6 +246,9 @@ $hidecharts = getCookie('hidesearchcharts');
                                 </ul>
                             </div>
                             <!-- end file action button -->
+                            <!-- index update time -->
+                            <div class="small pull-right" style="padding-top:10px"><i class="fas fa-clock"></i> <?php echo $last_index_time ?></div>
+                            <!-- end index update time -->
                         </div>
                     </div>
                     <!-- extension buttons -->
