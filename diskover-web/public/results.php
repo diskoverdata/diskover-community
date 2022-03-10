@@ -398,7 +398,7 @@ $hidecharts = getCookie('hidesearchcharts');
                                 <?php } else {
                                     $hiddencol[] = 'sizedu';
                                 } ?>
-                                <?php if (getCookie('hidefield_sizep') != "1") { ?><th data-resizable-column-id="sizep" class="text-nowrap" width="7%">% <span style="color:darkgray;font-size: 11px;"><i title="Percentage of total file size this page" class="glyphicon glyphicon-question-sign"></i></span></th>
+                                <?php if (getCookie('hidefield_sizep') != "1") { ?><th data-resizable-column-id="sizep"  width="7%">% <span style="color:darkgray;font-size: 11px;"><i title="Percentage of total file size this page" class="glyphicon glyphicon-question-sign"></i></span></th>
                                 <?php } else {
                                     $hiddencol[] = 'sizep';
                                 } ?>
@@ -528,9 +528,9 @@ $hidecharts = getCookie('hidesearchcharts');
                                             <a class="pathdark" href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=parent_path:<?php echo rawurlencode(escape_chars($parentpath)); ?>&amp;path=<?php echo rawurlencode($parentpath); ?>"><?php echo $file['parent_path']; ?></a>
                                         </td>
                                     <?php } ?>
-                                    <td class="text-nowrap"><?php echo formatBytes($file['size']); ?>
+                                    <td ><?php echo formatBytes($file['size']); ?>
                                     </td>
-                                    <?php if (!in_array('sizedu', $hiddencol)) { ?><td class="text-nowrap"> <?php echo formatBytes($file['size_du']); ?>
+                                    <?php if (!in_array('sizedu', $hiddencol)) { ?><td > <?php echo formatBytes($file['size_du']); ?>
                                         </td><?php } ?>
                                     <?php if (!in_array('sizep', $hiddencol)) { ?><td>
                                             <?php $width = ($total_size > 0) ? $file['size'] / $total_size * 100 : 0; ?>
@@ -540,11 +540,11 @@ $hidecharts = getCookie('hidesearchcharts');
                                                 </div>
                                             <?php } ?>
                                         </td><?php } ?>
-                                    <?php if (!in_array('modified', $hiddencol)) { ?><td class="text-nowrap"><?php echo utcTimeToLocal($file['mtime']); ?></td><?php } ?>
-                                    <?php if (!in_array('accessed', $hiddencol)) { ?><td class="text-nowrap"><?php echo utcTimeToLocal($file['atime']); ?></td><?php } ?>
+                                    <?php if (!in_array('modified', $hiddencol)) { ?><td ><?php echo utcTimeToLocal($file['mtime']); ?></td><?php } ?>
+                                    <?php if (!in_array('accessed', $hiddencol)) { ?><td ><?php echo utcTimeToLocal($file['atime']); ?></td><?php } ?>
                                     <?php if ($_GET['doctype'] == 'directory' || $_GET['doctype'] == '') { ?>
                                         <?php if (!in_array('files', $hiddencol)) { ?>
-                                            <td class="text-nowrap">
+                                            <td >
                                                 <?php if ($file['type'] == 'directory') {
                                                     echo number_format($file['file_count']); ?>
                                                     <!-- show comparison file count -->
@@ -567,7 +567,7 @@ $hidecharts = getCookie('hidesearchcharts');
                                             </td>
                                         <?php } ?>
                                         <?php if (!in_array('folders', $hiddencol)) { ?>
-                                            <td class="text-nowrap">
+                                            <td >
                                                 <?php if ($file['type'] == 'directory') {
                                                     echo number_format($file['dir_count']); ?>
                                                     <!-- show comparison file count -->
@@ -650,11 +650,11 @@ $hidecharts = getCookie('hidesearchcharts');
                         </tbody>
                         <tfoot>
                             <tr>
-                                <th class="text-nowrap"></th>
-                                <th class="text-nowrap">Name <?php echo sortURL('name'); ?></th>
+                                <th></th>
+                                <th>Name <?php echo sortURL('name'); ?></th>
                                 <?php if (getCookie('hidefield_path') != "1") { ?><th class="text-nowrap">Path <?php echo sortURL('parent_path'); ?></th>
                                 <?php } ?>
-                                <th class="text-nowrap">Size <?php echo sortURL('size'); ?></th>
+                                <th>Size <?php echo sortURL('size'); ?></th>
                                 <?php if (getCookie('hidefield_sizedu') != "1") { ?><th class="text-nowrap">Allocated <?php echo sortURL('size_du'); ?></th>
                                 <?php } ?>
                                 <?php if (getCookie('hidefield_sizep') != "1") { ?><th class="text-nowrap" width="7%">% <span style="color:darkgray;font-size: 11px;"><i title="Percentage of total file size this page" class="glyphicon glyphicon-question-sign"></i></span></th>

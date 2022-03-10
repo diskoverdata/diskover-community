@@ -229,10 +229,10 @@ $path_escaped = escape_chars($_SESSION['rootpath']);
                         <table class="table table-striped table-hover">
                             <thead>
                                 <tr>
-                                    <th class="text-nowrap">Name</th>
-                                    <th class="text-nowrap">Size</th>
-                                    <th class="text-nowrap">Allocated</th>
-                                    <th class="text-nowrap">Last Accessed</th>
+                                    <th>Name</th>
+                                    <th>Size</th>
+                                    <th>Allocated</th>
+                                    <th>Last Accessed</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -268,9 +268,9 @@ $path_escaped = escape_chars($_SESSION['rootpath']);
                                 ?>
                                     <tr>
                                         <td class="path"><a href="view.php?id=<?php echo $value['_id'] . '&amp;docindex=' . $value['_index'] . '&amp;doctype=file'; ?>"><i class="fas fa-file-alt" style="color:#738291;padding-right:3px;"></i> <?php echo $value['_source']['name']; ?></a></td>
-                                        <td class="text-nowrap"><?php echo formatBytes($value['_source']['size']); ?></td>
-                                        <td class="text-nowrap"><?php echo formatBytes($value['_source']['size_du']); ?></td>
-                                        <td class="text-nowrap"><?php echo utcTimeToLocal($value['_source']['atime']); ?></td>
+                                        <td ><?php echo formatBytes($value['_source']['size']); ?></td>
+                                        <td ><?php echo formatBytes($value['_source']['size_du']); ?></td>
+                                        <td ><?php echo utcTimeToLocal($value['_source']['atime']); ?></td>
                                     </tr>
                                 <?php } ?>
                             </tbody>
@@ -290,11 +290,11 @@ $path_escaped = escape_chars($_SESSION['rootpath']);
                         <table class="table table-striped table-hover">
                             <thead>
                                 <tr>
-                                    <th class="text-nowrap">Name</th>
-                                    <th class="text-nowrap">Date Modified</th>
-                                    <th class="text-nowrap">Size</th>
-                                    <th class="text-nowrap">Allocated</th>
-                                    <th class="text-nowrap">Items</th>
+                                    <th>Name</th>
+                                    <th>Date Modified</th>
+                                    <th>Size</th>
+                                    <th>Allocated</th>
+                                    <th>Items</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -334,10 +334,10 @@ $path_escaped = escape_chars($_SESSION['rootpath']);
                                                                                                                                                                                                                                                     } else {
                                                                                                                                                                                                                                                         echo $value['_source']['name'];
                                                                                                                                                                                                                                                     } ?></a></td>
-                                        <td class="text-nowrap"><?php echo utcTimeToLocal($value['_source']['mtime']); ?></td>
-                                        <td class="text-nowrap"><?php echo formatBytes($value['_source']['size']); ?></td>
-                                        <td class="text-nowrap"><?php echo formatBytes($value['_source']['size_du']); ?></td>
-                                        <td class="text-nowrap"><?php echo number_format($value['_source']['file_count'] + $value['_source']['dir_count']); ?></td>
+                                        <td ><?php echo utcTimeToLocal($value['_source']['mtime']); ?></td>
+                                        <td ><?php echo formatBytes($value['_source']['size']); ?></td>
+                                        <td ><?php echo formatBytes($value['_source']['size_du']); ?></td>
+                                        <td ><?php echo number_format($value['_source']['file_count'] + $value['_source']['dir_count']); ?></td>
                                     </tr>
                                 <?php } ?>
                             </tbody>
