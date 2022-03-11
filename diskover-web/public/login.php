@@ -84,9 +84,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
         .login {
             width: 400px;
-            background-color: #1C1E21;
+            background-color: #060606;
             box-shadow: 0 0 9px 0 rgba(0, 0, 0, 0.3);
             margin: 100px auto;
+            border: 1px solid #202225;
+            border-radius: 10px;
         }
 
         .login h1 {
@@ -106,8 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             text-align: center;
             color: darkgray;
             font-size: 12px;
-            padding: 0 0 20px 0;
-            border-bottom: 1px solid #000000;
+            padding: 0;
         }
 
         .login-error {
@@ -150,9 +151,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
 
         .login form input[type="submit"] {
-            width: 100%;
+            width: 80%;
             padding: 15px;
             margin-top: 20px;
+            margin-bottom: 30px;
             border: 0;
             cursor: pointer;
             font-weight: bold;
@@ -160,6 +162,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             color: #ffffff !important;
             background-color: #3C4247 !important;
             transition: background-color 0.2s;
+            border-radius: 30px;
         }
 
         .login form input[type="submit"]:hover {
