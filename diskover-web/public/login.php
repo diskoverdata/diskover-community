@@ -152,7 +152,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
         .login form input[type="submit"] {
             width: 80%;
-            padding: 15px;
+            padding: 12px;
             margin-top: 20px;
             margin-bottom: 30px;
             border: 0;
@@ -190,7 +190,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <div class="checkbox">
                 <label><input type="checkbox" name="stayloggedin" id="stayloggedin"> Keep me logged in for 7 days</label>
             </div>
-            <input type="submit" id="loginbutton" value="Login" onclick="loadingShow()">
+            <input type="submit" id="loginbutton" value="Log In" onclick="loadingShow()">
         </form>
     </div>
     <div id="loading">

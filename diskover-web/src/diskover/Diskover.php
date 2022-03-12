@@ -133,15 +133,16 @@ class ESClient
 
     function getIndicesInfoCat()
     {
-        // Get index info using cat
-        // cat array is sorted by creation date, limit the max number of indices to load
+        $indices_cat_info_data = array();
+        
+        // Set maxindex
         $maxindex = getCookie('maxindex');
-        $maxindex_config = $GLOBALS['config']->MAX_INDEX;
-        if ($maxindex == '' || $maxindex < $maxindex_config) {
-            $maxindex = $maxindex_config;
+        if ($maxindex == '' || $maxindex < $GLOBALS['config']->MAX_INDEX) {
+            $maxindex = $GLOBALS['config']->MAX_INDEX;
             createCookie('maxindex', $maxindex);
         }
-        // only get diskover indices and sort by creation date
+
+        // Get all diskover indices from ES using cat and sort by creation date
         $params = array(
             'index' => 'diskover-*',
             's' => 'creation.date'
@@ -150,7 +151,6 @@ class ESClient
         $_SESSION['total_indices'] = sizeof($indices_cat_info);
         // slice array to only limited number of index
         $indices_cat_info_limited = array_slice($indices_cat_info, -$maxindex, $maxindex, true);
-        $indices_cat_info_data = array();
         foreach ($indices_cat_info_limited as $i) {
             $indices_cat_info_data[$i['index']] = [
                 'docs_count' => $i['docs.count'],

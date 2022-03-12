@@ -282,10 +282,9 @@ $estime = number_format(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 4);
         </div>
         <div class="row">
             <div class="col-lg-12">
-            <div class="well well-sm">
-                        <div class="row">
-                        <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="get" class="form-horizontal" name="form-indexctrl">
-                            <input type="hidden" name="reloadindices" value="true">
+                <div class="well well-sm">
+                    <div class="row">
+                        <form class="form-horizontal" name="form-uselatest" id="form-uselatest">
                             <div class="col-lg-6">
                                 <div class="form-group">
                                     <label for="maxindex" class="col-lg-3 control-label">Max indices to load:</label>
@@ -305,8 +304,8 @@ $estime = number_format(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 4);
                                 <input type="checkbox" name="uselatestindices" disabled> <span class="label label-info">Essential</span>
                             </div>
                         </form>
-                        </div>
                     </div>
+                </div>
                 <div class="well well-sm">
                     <div class="row">
                         <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="get" class="form-horizontal" name="form-indexfilter">
