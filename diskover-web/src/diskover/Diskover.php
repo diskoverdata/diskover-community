@@ -54,6 +54,9 @@ $client = $esclient->createClient();
 // Set d3 vars
 setd3Vars();
 
+// Pages to not redirect to select indices
+$selectindex_noredirect = array('selectindices.php', 'settings.php', 'help.php');
+
 // timezone
 // check for env var TZ
 $timezone = getenv('TZ') ?: $config->TIMEZONE;
@@ -198,12 +201,12 @@ class ESClient
 function indexInfo()
 {
     global $esclient, $client, $timezone, $esIndex, $es_index_info, $all_index_info, $indices_sorted, $completed_indices, 
-    $latest_completed_index, $fields, $indexinfo_updatetime, $index_starttimes, $index_spaceinfo;
+    $latest_completed_index, $fields, $indexinfo_updatetime, $index_starttimes, $index_spaceinfo, $selectindex_noredirect;
 
     $es_index_info = $esclient->getIndexInfo();
 
     // Set latest index info if force reload or index session info time expired
-    if (isset($_GET['reloadindices']) || !isset($_SESSION['indexinfo']) ||
+    if (isset($_GET['reloadindices']) || isset($_POST['reloadindices']) || !isset($_SESSION['indexinfo']) ||
     (isset($_SESSION['indexinfo']) && microtime(true) - $_SESSION['indexinfo']['update_time_ms'] > $GLOBALS['config']->INDEXINFO_CACHETIME)) {
 
         $disabled_indices = array();
@@ -423,7 +426,7 @@ function indexInfo()
         // get index from cookie
         $esIndex = getCookie('index');
         // redirect to select indices page if esIndex is empty
-        if (empty($esIndex) && basename($_SERVER['PHP_SELF']) !== 'selectindices.php') {
+        if (empty($esIndex) && !in_array(basename($_SERVER['PHP_SELF']), $selectindex_noredirect)) {
             header("location:selectindices.php");
             exit();
         }
