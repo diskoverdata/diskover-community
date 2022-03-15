@@ -18,8 +18,6 @@ https://www.diskoverdata.com/solutions/
 
 require '../vendor/autoload.php';
 
-use diskover\Constants;
-
 error_reporting(E_ALL ^ E_NOTICE);
 require "../src/diskover/Diskover.php";
 

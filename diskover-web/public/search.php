@@ -17,7 +17,6 @@ https://www.diskoverdata.com/solutions/
 */
 
 require '../vendor/autoload.php';
-use diskover\Constants;
 use Elasticsearch\Common\Exceptions\Missing404Exception;
 require "../src/diskover/Auth.php";
 require "../src/diskover/Diskover.php";
@@ -87,7 +86,7 @@ if (!empty($_GET['submitted'])) {
     } elseif (getCookie("resultsize") != "") {
         $searchParams['size'] = getCookie("resultsize");
     } else {
-        $searchParams['size'] = Constants::SEARCH_RESULTS;
+        $searchParams['size'] = $config->SEARCH_RESULTS;
     }
 
     // match all if search field empty

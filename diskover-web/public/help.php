@@ -18,9 +18,6 @@ https://www.diskoverdata.com/solutions/
 
 require '../vendor/autoload.php';
 
-use diskover\Constants;
-use Elasticsearch\Common\Exceptions\Missing404Exception;
-
 error_reporting(E_ALL ^ E_NOTICE);
 require "../src/diskover/Auth.php";
 require "../src/diskover/Diskover.php";

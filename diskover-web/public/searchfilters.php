@@ -16,7 +16,6 @@ https://www.diskoverdata.com/solutions/
 
 */
 
-use diskover\Constants;
 error_reporting(E_ALL ^ E_NOTICE);
 
 
@@ -53,7 +52,7 @@ if (!$savedfilters) {
 
 $filtercount = -2;
 foreach ($savedfilters as $filterkey => $filterval) {
-    if (($filterkey == 'doctype' && $filterval == 'all') || ($filterkey == 'searchpath' && $filterval == 'anypath')) continue;
+    if (($filterkey == 'doctype' && $filterval == 'all') || ($filterkey == 'searchpath' && $filterval == 'activetoppath')) continue;
     if ($filterval != null && !strpos($filterkey, 'operator')) $filtercount += 1;
     if ($filterkey == 'otherfields_input' && $filterval != null) $filtercount -= 1;
 }
@@ -94,8 +93,7 @@ if ($filtercount > 0) {
                                     <div class="col-xs-4">
                                         <label for="searchpath">Search path </label>
                                         <select id="searchpath" name="searchpath" class="form-control">
-                                            <option value="anypath" <?php echo $savedfilters['searchpath'] == "anypath" || $_REQUEST['searchpath'] == "" ? "selected" : ""; ?>>any top path</option>
-                                            <option value="activetoppath" <?php echo $savedfilters['searchpath'] == "activetoppath" ? "selected" : ""; ?>>active top path</option>
+                                            <option value="activetoppath" <?php echo $savedfilters['searchpath'] == "activetoppath" || $_REQUEST['searchpath'] == "" ? "selected" : ""; ?>>active top path</option>
                                             <option value="currentpath" <?php echo $savedfilters['searchpath'] == "currentpath" ? "selected" : ""; ?>>current directory path</option>
                                         </select>
                                     </div>

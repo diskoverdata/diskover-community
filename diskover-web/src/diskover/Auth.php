@@ -19,11 +19,14 @@ https://www.diskoverdata.com/solutions/
 ini_set('session.gc_maxlifetime', 604800);
 ini_set("session.cookie_lifetime", 604800);
 session_start();
-use diskover\Constants;
-
+use diskover\Config;
 error_reporting(E_ALL ^ E_NOTICE);
 
-if (Constants::LOGIN_REQUIRED) {
+// Create config object and get config values
+$cfg_obj = new Config();
+$config = $cfg_obj->getConfig();
+
+if ($config->LOGIN_REQUIRED) {
     if (isset($_SESSION['loggedin'])) {
         // check if user is logged in and timeout not exceeded
         $sessionLength = $_SESSION['stayloggedin'] ? 60 * 60 * 24 * 7 : 60 * 60 * 8;

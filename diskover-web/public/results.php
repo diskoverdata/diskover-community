@@ -17,8 +17,7 @@ https://www.diskoverdata.com/solutions/
 */
 
 require '../vendor/autoload.php';
-
-use diskover\Constants;
+require '../src/diskover/config_inc.php';
 
 error_reporting(E_ALL ^ E_NOTICE);
 
@@ -438,8 +437,8 @@ $hidecharts = getCookie('hidesearchcharts');
                                     $hiddencol[] = 'rating';
                                 } ?>
                                 <?php
-                                if (count(Constants::EXTRA_FIELDS) > 0) {
-                                    foreach (Constants::EXTRA_FIELDS as $key => $value) { ?>
+                                if (count($config->EXTRA_FIELDS) > 0) {
+                                    foreach ($config->EXTRA_FIELDS as $key => $value) { ?>
                                         <?php if (getCookie('hidefield_' . $value . '') != "1") { ?><th data-resizable-column-id="<?php echo $value ?>" class="text-nowrap"><?php echo $key ?> <?php echo sortURL($value); ?></th>
                                         <?php
                                         } else {
@@ -601,8 +600,8 @@ $hidecharts = getCookie('hidesearchcharts');
                                     <?php if (!in_array('rating', $hiddencol)) { ?><td class="rating"><i class="fas fa-eraser" style="color:palevioletred; opacity:<?php echo $file_rating; ?>"></i></td><?php } ?>
                                     <!-- extra fields -->
                                     <?php
-                                    if (count(Constants::EXTRA_FIELDS) > 0) {
-                                        foreach (Constants::EXTRA_FIELDS as $key => $value) {
+                                    if (count($config->EXTRA_FIELDS) > 0) {
+                                        foreach ($config->EXTRA_FIELDS as $key => $value) {
                                             if (!in_array($value, $hiddencol)) { ?>
                                                 <td>
                                                     <?php if (is_array($file[$value])) {
@@ -678,8 +677,8 @@ $hidecharts = getCookie('hidesearchcharts');
                                 <?php if (getCookie('hidefield_rating') != "1") { ?><th class="text-nowrap">Rating <span style="color:darkgray;font-size: 11px;"><i title="Rating is based on last modified time, older is higher rating" class="glyphicon glyphicon-question-sign"></i></span></th>
                                 <?php } ?>
                                 <?php
-                                if (count(Constants::EXTRA_FIELDS) > 0) {
-                                    foreach (Constants::EXTRA_FIELDS as $key => $value) { ?>
+                                if (count($config->EXTRA_FIELDS) > 0) {
+                                    foreach ($config->EXTRA_FIELDS as $key => $value) { ?>
                                         <?php if (getCookie('hidefield_' . $value . '') != "1") { ?><th class="text-nowrap"><?php echo $key ?> <?php echo sortURL($value); ?></th>
                                         <?php } ?>
                                 <?php

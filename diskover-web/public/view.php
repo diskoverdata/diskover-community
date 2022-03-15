@@ -17,7 +17,6 @@ https://www.diskoverdata.com/solutions/
 */
 
 require '../vendor/autoload.php';
-use diskover\Constants;
 use Elasticsearch\Common\Exceptions\Missing404Exception;
 require "../src/diskover/Auth.php";
 require "../src/diskover/Diskover.php";
@@ -237,12 +236,12 @@ if (empty($_REQUEST['id'])) {
                     </ul>
                 </div>
             </div>
-            <?php if (count(Constants::EXTRA_FIELDS) > 0) { ?>
+            <?php if (count($config->EXTRA_FIELDS) > 0) { ?>
             <div class="row">
                 <div class="col-xs-12">
                     <h4>Extra fields</h4>
                     <ul class="list-group">
-                        <?php foreach (Constants::EXTRA_FIELDS as $key => $value) {
+                        <?php foreach ($config->EXTRA_FIELDS as $key => $value) {
                                 // check if field empty
                                 if (empty($docsource[$value])) {
                                     echo '<li class="list-group-item">';

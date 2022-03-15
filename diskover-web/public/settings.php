@@ -17,7 +17,6 @@ https://www.diskoverdata.com/solutions/
 */
 
 require '../vendor/autoload.php';
-use diskover\Constants;
 require "../src/diskover/Auth.php";
 require "../src/diskover/Diskover.php";
 
@@ -62,7 +61,7 @@ require "../src/diskover/Diskover.php";
         <h1 class="page-header"><i class="fas fa-user-cog"></i> Settings</h1>
         <div class="row">
             <div class="col-lg-12">
-                <?php if (Constants::LOGIN_REQUIRED) : ?>
+                <?php if ($config->LOGIN_REQUIRED) : ?>
                 <div class="well">
                   <h4>Profile</h4>
                   <p><i class="glyphicon glyphicon-user"></i> Username: <?php echo $_SESSION['username']; ?></p>
@@ -141,7 +140,7 @@ require "../src/diskover/Diskover.php";
                         <input type="checkbox" class="form-check-input" id="hidefield_rating" onclick="setHideFields('rating');" <?php echo getCookie('hidefield_rating') == "1" ? "checked" : ""; ?>>
                         <label class="form-check-label" for="hidefield_rating">Rating</label>
                         <?php
-                        foreach (Constants::EXTRA_FIELDS as $k => $v) {
+                        foreach ($config->EXTRA_FIELDS as $k => $v) {
                             $ef_hf = "hidefield_" . $v;
                         ?>
                             <input type="checkbox" class="form-check-input" id="<?php echo $ef_hf ?>" onclick="setHideFields('<?php echo $v ?>')" <?php echo getCookie('' . $ef_hf . '') == "1" ? "checked" : ""; ?>>
@@ -169,10 +168,10 @@ require "../src/diskover/Diskover.php";
                 </div>
                 <div class="well">
                     <h4>Elasticsearch Info</h4>
-                    Connected to: <?php echo Constants::ES_HOST . ":" . Constants::ES_PORT ?><br />
+                    Connected to: <?php echo $config->ES_HOST . ":" . $config->ES_PORT ?><br />
                     Response time: <?php echo $es_responsetime ?><br />
-                    New index check time: <?php echo Constants::NEWINDEX_CHECKTIME ?> sec<br />
-                    Index info cache time: <?php echo Constants::INDEXINFO_CACHETIME ?> sec<br />
+                    New index check time: <?php echo $config->NEWINDEX_CHECKTIME ?> sec<br />
+                    Index info cache time: <?php echo $config->INDEXINFO_CACHETIME ?> sec<br />
                 </div>
                 <div class="well">
                     <h4>Send anonymous usage data</h4>

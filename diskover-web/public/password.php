@@ -20,7 +20,6 @@ ob_start();
 require '../vendor/autoload.php';
 require "../src/diskover/Auth.php";
 
-use diskover\Constants;
 use diskover\Login;
 use diskover\UserDatabase;
 

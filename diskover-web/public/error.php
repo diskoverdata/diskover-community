@@ -16,10 +16,8 @@ https://www.diskoverdata.com/solutions/
 
 */
 
-use diskover\Constants;
-
 require '../vendor/autoload.php';
-
+require '../src/diskover/config_inc.php';
 
 if (isset($_COOKIE['error'])) {
     $error = $_COOKIE['error'];
@@ -94,7 +92,7 @@ if (isset($_COOKIE['error'])) {
         <?php } else { ?>
         <p><a href="index.php?reloadindices">Reload index page</a></p>
         <?php } ?>
-        <?php if (Constants::LOGIN_REQUIRED) { ?>
+        <?php if ($config->LOGIN_REQUIRED) { ?>
         <p><a href="logout.php">Logout</a></p>
         <?php } ?>
     </div>

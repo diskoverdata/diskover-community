@@ -17,7 +17,6 @@ https://www.diskoverdata.com/solutions/
 */
 
 require '../vendor/autoload.php';
-use diskover\Constants;
 require "../src/diskover/Auth.php";
 require "../src/diskover/Diskover.php";
 
@@ -110,6 +109,11 @@ if (isset($_GET['maxindex'])) {
 
 // go through each index and determine which are done indexing
 foreach ($es_index_info as $key => $val) {
+    // check if index not in all_index_info
+    if (!array_key_exists($key, $all_index_info)) {
+        continue;
+    }
+    
     // continue if index creation time is older than max age
     if ($maxage_str != 'all') {
         $starttime = $all_index_info[$key]['start_at'];

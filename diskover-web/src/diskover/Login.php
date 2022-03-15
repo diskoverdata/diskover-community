@@ -40,6 +40,7 @@ class Login
 
     public function validateLogin(): bool
     {
+        require 'config_inc.php';
         $username = $_SESSION['username'] = $_POST['username'];
         $password = $_POST['password'];
 
@@ -56,7 +57,7 @@ class Login
             return false;
         }
 
-        if ($user->validatePassword(Constants::PASS)) {
+        if ($user->validatePassword($config->PASS)) {
             // Default password is valid, redirect to change.
             $_SESSION['loggedin'] = true;
             $_SESSION['last_activity'] = time();

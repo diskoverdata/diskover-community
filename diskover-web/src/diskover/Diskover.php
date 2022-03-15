@@ -17,28 +17,14 @@ https://www.diskoverdata.com/solutions/
 */
 
 session_start();
-use diskover\Constants;
 use Elasticsearch\ClientBuilder;
 use Elasticsearch\Common\Exceptions\Missing404Exception;
 require 'version.php';
-require 'config_defaults.php';
+require 'config_inc.php';
 error_reporting(E_ALL ^ E_NOTICE);
 
 
 /* Start Globals */
-
-// check for any missing config settings in Constants.php and if any are missing use default
-$config = new Constants;
-$refl = new ReflectionClass('diskover\Constants');
-$consts = $refl->getConstants();
-foreach ($config_defaults as $configkey => $configval) {
-    if (!array_key_exists($configkey, $consts)) {
-        error_log("Missing config setting $configkey. Using default.");
-        $config->{$configkey} = $configval;
-    } else {
-        $config->{$configkey} = $consts[$configkey];
-    }
-}
 
 $esIndex = $path = $toppath = $es_index_info = $all_index_info = $indices_sorted = $completed_indices = 
     $latest_completed_index = $fields = $indexinfo_updatetime = $index_starttimes = $es_responsetime = 

@@ -17,8 +17,7 @@ https://www.diskoverdata.com/solutions/
 */
 
 require '../vendor/autoload.php';
-
-use diskover\Constants;
+require '../src/diskover/config_inc.php';
 
 error_reporting(E_ALL ^ E_NOTICE);
 
@@ -125,7 +124,7 @@ error_reporting(E_ALL ^ E_NOTICE);
                                 <li class="dropdown-submenu">
                                     <a href="#">Type</a>
                                     <ul class="dropdown-menu">
-                                        <?php foreach (Constants::FILE_TYPES as $type_name => $type_extensions) {
+                                        <?php foreach ($config->FILE_TYPES as $type_name => $type_extensions) {
                                             $extensions = '(';
                                             $n = sizeof($type_extensions);
                                             $i = 0;
@@ -310,7 +309,7 @@ error_reporting(E_ALL ^ E_NOTICE);
                         <li><a href="https://diskoverdata.com/solutions/" target="_blank"><i class="fas fa-cart-plus"></i> Upgrade license</a></li>
                         <li class="divider"></li>
                         <li><a title="reload indices and get latest" href="<?php echo $_SERVER['REQUEST_URI'] . (parse_url($_SERVER['REQUEST_URI'], PHP_URL_QUERY) ? '&' : '?') . 'reloadindices'; ?>"><i class="glyphicon glyphicon-refresh"></i> Reload indices</a> <span class="small text-primary" style="padding-left:3px"><i class="fas fa-clock"></i> last updated <?php echo $indexinfo_updatetime->format('h:i:s A'); ?></span></li>
-                        <?php if (Constants::LOGIN_REQUIRED) { ?>
+                        <?php if ($config->LOGIN_REQUIRED) { ?>
                             <li class="divider"></li>
                             <li><a href="logout.php"><i class="glyphicon glyphicon-log-out"></i> Logout</a></li>
                         <?php } ?>
@@ -327,7 +326,7 @@ error_reporting(E_ALL ^ E_NOTICE);
                 } elseif (getCookie("resultsize") != "") {
                     $resultSize = getCookie("resultsize");
                 } else {
-                    $resultSize = Constants::SEARCH_RESULTS;
+                    $resultSize = $config->SEARCH_RESULTS;
                 } ?>
                 <input type="hidden" name="resultsize" value="<?php echo $resultSize; ?>" />
                 <input type="hidden" name="userinput" value="true" />
