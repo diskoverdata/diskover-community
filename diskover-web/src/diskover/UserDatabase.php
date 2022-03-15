@@ -24,11 +24,14 @@ use SQLite3;
 class UserDatabase
 {
     private $db;
-
-    private $databaseFilename = '../diskoverdb.sqlite3';
+    private $databaseFilename;
 
     public function connect()
     {
+        require 'config_inc.php';
+        // Get datbase file path from config
+        $this->databaseFilename = $config->DATABASE;
+
         // Open sqlite database
         $this->db = new SQLite3($this->databaseFilename);
 

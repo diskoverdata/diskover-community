@@ -93,4 +93,7 @@ class Constants {
 
     // time in seconds to check Elasticsearch for new index info
     const NEWINDEX_CHECKTIME = 10;
+
+    // sqlite database file path
+    const DATABASE = '../diskoverdb.sqlite3';
 }

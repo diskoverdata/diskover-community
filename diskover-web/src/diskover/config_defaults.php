@@ -49,5 +49,6 @@ $config_defaults = [
     'EXTRA_FIELDS' => [],
     'MAX_INDEX' => 250,
     'INDEXINFO_CACHETIME' => 600,
-    'NEWINDEX_CHECKTIME' => 10
+    'NEWINDEX_CHECKTIME' => 10,
+    'DATABASE' => '../diskoverdb.sqlite3'
 ];

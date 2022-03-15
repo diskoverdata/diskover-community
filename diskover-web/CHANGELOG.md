@@ -8,6 +8,7 @@
 - issue with select indices page and php warning message if new index not in cache
 ### added
 - defaults for config
+- DATABASE to default/sample config (Constants.php.sample), can be used to change sqlite database file path
 ### changed
 - improved table text wrapping on search results page
 - if any missing config items are not in Constants.php (web config file), a default config value gets set and a message gets printed in web server error log
