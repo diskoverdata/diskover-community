@@ -16,7 +16,7 @@ https://www.diskoverdata.com/solutions/
 
 */
 
-// diskover-web community edition (ce) login post handling
+// diskover-web community edition (ce) config handling
 
 namespace diskover;
 use diskover\Constants;
