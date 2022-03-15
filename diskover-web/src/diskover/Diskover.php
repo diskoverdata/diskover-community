@@ -26,7 +26,7 @@ error_reporting(E_ALL ^ E_NOTICE);
 
 /* Start Globals */
 
-$esIndex = $path = $toppath = $es_index_info = $all_index_info = $indices_sorted = $completed_indices = 
+$esIndex = $path = $toppath = $es_index_info = $all_index_info = $completed_indices = 
     $latest_completed_index = $fields = $indexinfo_updatetime = $index_starttimes = $es_responsetime = 
     $filter = $time = $use_count = $show_files = $maxdepth = $sizefield = null;
 
@@ -137,9 +137,11 @@ class ESClient
             's' => 'creation.date'
         );
         $indices_cat_info = $this->client->cat()->indices($params);
+        // reverse the array since cat indices has the newest at the end
+        $indices_cat_info = array_reverse($indices_cat_info);
         $_SESSION['total_indices'] = sizeof($indices_cat_info);
         // slice array to only limited number of index
-        $indices_cat_info_limited = array_slice($indices_cat_info, -$maxindex, $maxindex, true);
+        $indices_cat_info_limited = array_slice($indices_cat_info, 0, $maxindex);
         foreach ($indices_cat_info_limited as $i) {
             $indices_cat_info_data[$i['index']] = [
                 'docs_count' => $i['docs.count'],
@@ -186,7 +188,7 @@ class ESClient
 
 function indexInfo()
 {
-    global $esclient, $client, $timezone, $esIndex, $es_index_info, $all_index_info, $indices_sorted, $completed_indices, 
+    global $esclient, $client, $timezone, $esIndex, $es_index_info, $all_index_info, $completed_indices, 
     $latest_completed_index, $fields, $indexinfo_updatetime, $index_starttimes, $index_spaceinfo, $selectindex_noredirect;
 
     $es_index_info = $esclient->getIndexInfo();
@@ -196,7 +198,6 @@ function indexInfo()
     (isset($_SESSION['indexinfo']) && microtime(true) - $_SESSION['indexinfo']['update_time_ms'] > $GLOBALS['config']->INDEXINFO_CACHETIME)) {
 
         $disabled_indices = array();
-        $indices_sorted = array();
         $completed_indices = array();
         $latest_completed_index = null;
         $index_toppath = array();
@@ -293,9 +294,6 @@ function indexInfo()
                 $disabled_indices[] = $key;
             }
 
-            // add to indices_sorted using creation_date as key
-            $indices_sorted[$val['creation_date']] = $key;
-
             // Get size of index
             // convert to bytes
             $indexsize = $val['store_size'];
@@ -345,19 +343,13 @@ function indexInfo()
             }
         }
 
-        if (!empty($indices_sorted)) {
-            // sort completed indices by creation_date
-            krsort($indices_sorted);
-
-            // get completed indices
-            // get all latest indices based on index's top path
-            foreach ($indices_sorted as $key => $val) {
-                if (!in_array($val, $disabled_indices)) {
-                    if (is_null($latest_completed_index)) {
-                        $latest_completed_index = $val;
-                    }
-                    $completed_indices[] = $val;
+        // get all latest completed indices based on index's top paths
+        foreach ($all_index_info as $key => $val) {
+            if (!in_array($key, $disabled_indices)) {
+                if (is_null($latest_completed_index)) {
+                    $latest_completed_index = $key;
                 }
+                $completed_indices[] = $key;
             }
         }
 
@@ -372,7 +364,6 @@ function indexInfo()
         // merge existing session index info with new index info
         if (isset($_SESSION['indexinfo'])) {
             $all_index_info = array_merge($_SESSION['indexinfo']['all_index_info'], $all_index_info);
-            $indices_sorted = array_merge($_SESSION['indexinfo']['indices_sorted'], $indices_sorted);
             $completed_indices = array_merge($_SESSION['indexinfo']['completed_indices'], $completed_indices);
             $latest_completed_index = (!is_null($latest_completed_index)) ? $latest_completed_index : $_SESSION['indexinfo']['latest_completed_index'];
             $fields = array_merge($_SESSION['indexinfo']['fields'], $fields);
@@ -385,7 +376,6 @@ function indexInfo()
         $_SESSION['indexinfo'] = array(
             'update_time_ms' => microtime(true),
             'all_index_info' => $all_index_info,
-            'indices_sorted' => $indices_sorted,
             'completed_indices' => $completed_indices,
             'latest_completed_index' => $latest_completed_index,
             'fields' => $fields,
@@ -395,7 +385,6 @@ function indexInfo()
         $indexinfo_updatetime = $_SESSION['indexinfo']['update_time'] = new DateTime("now", new DateTimeZone($timezone));
     } else {
         $all_index_info = $_SESSION['indexinfo']['all_index_info'];
-        $indices_sorted = $_SESSION['indexinfo']['indices_sorted'];
         $completed_indices = $_SESSION['indexinfo']['completed_indices'];
         $latest_completed_index = $_SESSION['indexinfo']['latest_completed_index'];
         $fields = $_SESSION['indexinfo']['fields'];
@@ -540,9 +529,6 @@ function removeIndex($index, $uuid = null)
     unset($_SESSION['indices_uuids'][$uuid]);
     unset($_SESSION['indices_doccount'][$index]);
     unset($_SESSION['indexinfo']['all_index_info'][$index]);
-    if ($k = array_search($index, $_SESSION['indexinfo']['indices_sorted'])) {
-        unset($_SESSION['indexinfo']['indices_sorted'][$k]);
-    }
     if ($k = array_search($index, $_SESSION['indexinfo']['completed_indices'])) {
         unset($_SESSION['indexinfo']['completed_indices'][$k]);
     }

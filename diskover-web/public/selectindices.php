@@ -288,7 +288,8 @@ $estime = number_format(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 4);
             <div class="col-lg-12">
                 <div class="well well-sm">
                     <div class="row">
-                        <form class="form-horizontal" name="form-uselatest" id="form-uselatest">
+                        <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="get" class="form-horizontal" name="form-maxindex" id="form-maxindex">
+                            <input type="hidden" name="reloadindices" value="true">
                             <div class="col-lg-6">
                                 <div class="form-group">
                                     <label for="maxindex" class="col-lg-3 control-label">Max indices to load:</label>
@@ -296,18 +297,18 @@ $estime = number_format(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 4);
                                         <input class="form-control input-sm" name="maxindex" id="maxindex" value="<?php echo (isset($_GET['maxindex'])) ? $_GET['maxindex'] : getCookie('maxindex'); ?>">
                                     </div>
                                     <div class="col-lg-1">
-                                        <button type="submit" class="btn btn-primary btn-sm" onclick="setCookie('maxindex', $('#maxindex').val())">Save</button>
+                                        <button type="submit" class="btn btn-primary btn-sm">Save</button>
                                     </div>
                                     <div class="col-lg-6">
                                         <span class="small" style="padding-left:5px"><i class="fas fa-info-circle"></i> Total <?php echo $esclient->getTotalIndices(); ?> indices, indices are loaded in order by creation date</span>
                                     </div>
                                 </div>
                             </div>
+                            </form>
                             <div class="col-lg-6">
                                 <label for="uselatestindices" class="control-label">Always use latest indices (auto select)</label>
                                 <input type="checkbox" name="uselatestindices" disabled> <span class="label label-info">Essential</span>
                             </div>
-                        </form>
                     </div>
                 </div>
                 <div class="well well-sm">
