@@ -102,11 +102,6 @@ if (isset($_GET['saved'])) {
 $disabled_indices = array();
 $indices_filtered = array();
 
-// update max index cookie
-if (isset($_GET['maxindex'])) {
-    createCookie('maxindex', $_GET['maxindex']);
-}
-
 // go through each index and determine which are done indexing
 foreach ($es_index_info as $key => $val) {
     // check if index not in all_index_info
@@ -297,7 +292,7 @@ $estime = number_format(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 4);
                                         <input class="form-control input-sm" name="maxindex" id="maxindex" value="<?php echo (isset($_GET['maxindex'])) ? $_GET['maxindex'] : getCookie('maxindex'); ?>">
                                     </div>
                                     <div class="col-lg-1">
-                                        <button type="submit" class="btn btn-primary btn-sm">Save</button>
+                                        <button type="submit" class="btn btn-primary btn-sm" onclick="setCookie('maxindex', $('#maxindex').val())">Save</button>
                                     </div>
                                     <div class="col-lg-6">
                                         <span class="small" style="padding-left:5px"><i class="fas fa-info-circle"></i> Total <?php echo $esclient->getTotalIndices(); ?> indices, indices are loaded in order by creation date</span>
