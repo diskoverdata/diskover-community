@@ -40,7 +40,7 @@ from diskover_helpers import dir_excluded, file_excluded, \
     get_file_name, load_plugins, list_plugins, get_plugins_info, set_times, \
     get_mem_usage
 
-version = '2.0-rc.5 community edition (ce)'
+version = '2.0-rc.5-1 community edition (ce)'
 __version__ = version
 
 # Windows check
@@ -1001,7 +1001,7 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
     
     # check for cli options not available CE
     if options.addtoindex:
-        logmsg = 'Using --addtoindex cli option to add additional top paths to an index requires diskover Pro version.'
+        logmsg = 'Using --addtoindex cli option to add additional top paths to an index requires diskover Essential version.'
         logger.error(logmsg)
         if logtofile: logger_warn.error(logmsg)
         sys.exit(1)
@@ -1014,7 +1014,7 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
     # get top path arg
     if args:
         if len(args) > 1:
-            logmsg = 'Use only one tree_dir arg. Mutliple top paths in an index requires diskover Pro version.'
+            logmsg = 'Use only one tree_dir arg. Mutliple top paths in an index requires diskover Essential version.'
             logger.error(logmsg)
             if logtofile: logger_warn.error(logmsg)
             sys.exit(1)
@@ -1029,7 +1029,7 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
                 if logtofile: logger_warn.error(logmsg)
                 sys.exit(1)
             # convert path to absolute path
-            d = alt_scanner.abspath(tree_dir)
+            tree_dir = alt_scanner.abspath(tree_dir)
         else:
             if not os.path.exists(tree_dir):
                 logmsg = '{0} no such directory!'.format(tree_dir)
@@ -1044,7 +1044,7 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
                 else:
                     if tree_dir != '/':
                         tree_dir = tree_dir.rstrip('/')
-                    tree_dir = os.path.abspath(tree_dir)
+                tree_dir = os.path.abspath(tree_dir)
     elif not options.altscanner:
         # use current directory
         tree_dir = os.path.abspath(os.path.dirname(__file__))
