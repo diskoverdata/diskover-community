@@ -39,11 +39,11 @@ all indexing plugins require six functions:
 
 import win32security
 
-version = '0.0.3'
+version = '0.0.4'
 __version__ = version
 
 # include domain in owner/group names
-INC_DOMAIN = True
+INC_DOMAIN = False
 
 sid_owner_cache = {}
 sid_group_cache = {}
