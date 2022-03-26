@@ -487,29 +487,6 @@ def load_plugins():
         plugin_info['spec'].loader.exec_module(plugin_module)
         loaded_plugins.append(plugin_module)
     return loaded_plugins
-
-
-def plugins_init(plugins):
-    """Initialize plugins.
-    """
-    if not plugins:
-        return
-    for plugin in plugins:
-        res = plugin.init()
-        if res is not True:
-            print('{0} plugin init error: {1}'.format(plugin['name']), res)
-            sys.exit(1)
-            
-
-def plugins_close(plugins):
-    """Close plugins.
-    """
-    if not plugins:
-        return
-    for plugin in plugins:
-        res = plugin.stop()
-        if res is not True:
-            print('{0} plugin close error: {1}'.format(plugin['name']), res)
             
 
 def list_plugins():
