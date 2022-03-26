@@ -633,6 +633,8 @@ $hidecharts = getCookie('hidesearchcharts');
                                                         echo (strlen($ef_string) > 100) ? substr($ef_string, 0, 100) . ' ...' : $ef_string;
                                                     } elseif ($value == 'ctime') {  # ctime field
                                                         echo utcTimeToLocal($file[$value]);
+                                                    } elseif (is_bool($file[$value])) {  # bool field
+                                                        echo $file[$value] ? 'true' : 'false';
                                                     } else {
                                                         echo (strlen($file[$value]) > 100) ? substr($file[$value], 0, 100) . ' ...' : $file[$value];
                                                     } ?>

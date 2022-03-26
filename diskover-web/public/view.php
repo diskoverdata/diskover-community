@@ -277,10 +277,15 @@ if (empty($_REQUEST['id'])) {
                                         <?php }
                                         } ?>
                                     </li>
-                                <?php } else { ?>
+                                <?php } else { 
+                                    # bool field
+                                    if (is_bool($docsource[$value])) {
+                                        $docsource[$value] = ($docsource[$value]) ? 'true' : 'false';
+                                    }
+                                    ?>
                                     <li class="list-group-item">
                                         <h5 class="list-group-item-heading"><?php echo $key; ?></h5>
-                                        <p class="list-group-item-text extrafields"><a href="search.php?submitted=true&amp;p=1&amp;q=<?php echo $value .' : &quot;' . $docsource[$value]; ?>&quot;&amp;doctype=<?php echo $_REQUEST['doctype']; ?>"><?php echo $value . ': <strong>' . $docsource[$value] . '</strong>'; ?></a></p>
+                                        <p class="list-group-item-text extrafields"><a href="search.php?submitted=true&amp;p=1&amp;q=<?php echo $value .':&quot;' . $docsource[$value]; ?>&quot;&amp;doctype=<?php echo $_REQUEST['doctype']; ?>"><?php echo $value . ': <strong>' . $docsource[$value] . '</strong>'; ?></a></p>
                                     </li>
                         <?php } } ?>
                     </ul>
