@@ -1,5 +1,10 @@
 # Diskover v2 Community Edition Change Log
 
+# [2.0] - 2022-03-26
+### fixed
+- minor bug fixes and improvements
+
+
 # [2.0-rc.5-1] - 2022-03-20
 ### fixed
 - Windows scanning issue
