@@ -17,7 +17,6 @@ https://www.diskoverdata.com/solutions/
 */
 
 require '../vendor/autoload.php';
-require "../src/diskover/Diskover.php";
 require "d3_inc.php";
 
 // check if path in session cache
