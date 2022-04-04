@@ -38,9 +38,9 @@ from diskover_helpers import dir_excluded, file_excluded, \
     convert_size, get_time, get_owner_group_names, index_info_crawlstart, \
     index_info_crawlend, get_parent_path, get_dir_name, \
     get_file_name, load_plugins, list_plugins, get_plugins_info, set_times, \
-    get_mem_usage
+    get_mem_usage, get_win_path
 
-version = '2.0 community edition (ce)'
+version = '2.0.1 community edition (ce)'
 __version__ = version
 
 # Windows check
@@ -324,6 +324,9 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
     files_norecurs = 0
     dirs_norecurs = 0
     
+    if IS_WIN:
+        win_path = get_win_path(path)
+    
     # use alt scanner
     # try to get stat info for dir path
     if options.altscanner:
@@ -346,7 +349,10 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
     else:
         # try to get os stat info for dir path
         try:
-            d_stat = os.stat(path)
+            if IS_WIN:
+                d_stat = os.stat(win_path)
+            else:
+                d_stat = os.stat(path)
         except OSError as e:
             logmsg = '[{0}] OS ERROR: {1}'.format(thread, e)
             logger.warning(logmsg)
@@ -507,11 +513,16 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
                                     pass
                             # check plugins for adding extra meta data to data dict
                             if plugins_enabled and plugins_files:
+                                if IS_WIN:
+                                    win_entry_path = get_win_path(entry.path)
                                 for plugin in plugins:
                                     try:
                                         # check if plugin is for file doc
                                         if plugin.for_type('file'):
-                                            extrameta_dict = plugin.add_meta(entry.path, f_stat)
+                                            if IS_WIN:
+                                                extrameta_dict = plugin.add_meta(win_entry_path, f_stat)
+                                            else:
+                                                extrameta_dict = plugin.add_meta(entry.path, f_stat)
                                             if extrameta_dict is not None:
                                                 data.update(extrameta_dict)
                                     except (RuntimeWarning, RuntimeError) as e:
@@ -628,7 +639,10 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
                     # check if plugin is for directory doc
                     try:
                         if plugin.for_type('directory'):
-                            extrameta_dict = plugin.add_meta(path, d_stat)
+                            if IS_WIN:
+                                extrameta_dict = plugin.add_meta(win_path, d_stat)
+                            else:
+                                extrameta_dict = plugin.add_meta(path, d_stat)
                             if extrameta_dict is not None:
                                 data.update(extrameta_dict)
                     except (RuntimeWarning, RuntimeError) as e:
@@ -874,6 +888,7 @@ def log_setup():
                     d_path = d_path.replace('\\', '_')
                 # change any unc paths, example \\stor1\share to _stor1_share
                 elif re.search('^\\\\', d_path) is not None:
+                    d_path = d_path.rstrip('\\')
                     d_path = d_path.replace('\\', '_')
                 treedirsstr += d_path
             else:
@@ -1041,6 +1056,10 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
                     # check if only drive letter (C:) was used with no trailing slash
                     if tree_dir.endswith(':'):
                         tree_dir = os.path.join(tree_dir, '\\\\')
+                    elif re.search('^\\\\', tree_dir) is not None:
+                        # remove any trailing \ slash from UNC path
+                        tree_dir = tree_dir.rstrip('\\')
+                    tree_dir = os.path.realpath(tree_dir)
                 else:
                     if tree_dir != '/':
                         tree_dir = tree_dir.rstrip('/')

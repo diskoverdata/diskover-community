@@ -535,3 +535,13 @@ def get_mem_usage():
     else:
         # linux
         return convert_size(mem * 1024) # convert kb to bytes
+    
+
+def get_win_path(path):
+    """Returns a Windows extended device path to bypass normalization
+    Fixes Windows long paths and other path related issues such as trailing space
+    """
+    if path[:2] == '\\\\':
+        return '\\\\?\\UNC\\' + path[2:]
+    else:
+        return '\\\\?\\' + path

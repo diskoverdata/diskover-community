@@ -240,24 +240,26 @@ def create_index(indexname, es):
                     'filename_analyzer': {
                         'tokenizer': 'filename_tokenizer',
                         'filter': [
-                            'camel_filter',
+                            'word_filter',
                             'lowercase'
                         ]
                     },
                     'path_analyzer': {
                         'tokenizer': 'path_tokenizer',
                         'filter': [
-                            'camel_filter',
+                            'word_filter',
                             'lowercase'
                         ]
                     }
                 },
                 'filter': {
-                    'camel_filter': {
+                    'word_filter': {
                         'type': 'word_delimiter_graph',
                         'generate_number_parts': 'false',
                         'stem_english_possessive': 'false',
-                        'split_on_numerics': 'false'
+                        'split_on_numerics': 'false',
+                        'catenate_all': 'true',
+                        'preserve_original': 'true'
                     }
                 }
             }
