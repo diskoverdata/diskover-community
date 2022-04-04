@@ -54,6 +54,10 @@ For discussions or support for diskover join the [diskover Slack workspace](http
 
 For bugs about diskover, please use the [issues page](https://github.com/diskoverdata/diskover-community/issues).
 
+## Security
+
+See the [security file](https://github.com/diskoverdata/diskover-community/blob/master/SECURITY.md).
+
 ## License
 
 See the [license file](https://github.com/diskoverdata/diskover-community/blob/master/LICENSE).
