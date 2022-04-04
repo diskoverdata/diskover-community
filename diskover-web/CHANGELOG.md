@@ -1,5 +1,10 @@
 # Diskover-web v2 Community Edition Change Log
 
+# [2.0.1] - 2022-04-04
+### fixed
+- directories with trailing whitespace not returning any search results
+
+
 # [2.0] - 2022-03-26
 ### fixed
 - minor bug fixes and improvements

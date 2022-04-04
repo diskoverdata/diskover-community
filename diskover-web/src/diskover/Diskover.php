@@ -1032,8 +1032,12 @@ function sortSearchResults($request, $searchParams)
 // predict search request
 function predict_search($q)
 {
-    // remove any extra white space
-    $q = trim($q);
+    // remove any extra white space and check for escape character and space at end to not trim off trailing space
+    if (substr($q, -2) == '\ ') {
+        $q = ltrim($q);
+    } else {
+        $q = trim($q);
+    }
 
     $lucene = false;
 
