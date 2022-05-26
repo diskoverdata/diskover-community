@@ -38,9 +38,9 @@ from diskover_helpers import dir_excluded, file_excluded, \
     convert_size, get_time, get_owner_group_names, index_info_crawlstart, \
     index_info_crawlend, get_parent_path, get_dir_name, \
     get_file_name, load_plugins, list_plugins, get_plugins_info, set_times, \
-    get_mem_usage, get_win_path
+    get_mem_usage, get_win_path, rem_win_path
 
-version = '2.0.1 community edition (ce)'
+version = '2.0.2 community edition (ce)'
 __version__ = version
 
 # Windows check
@@ -266,7 +266,8 @@ def close_app_critical_error():
 def start_bulk_upload(thread, root, docs):
     global bulktime
     
-    logger.debug('[{0}] bulk uploading {1} docs to ES...'.format(thread, len(docs)))
+    if DEBUG:
+        logger.debug('[{0}] bulk uploading {1} docs to ES...'.format(thread, len(docs)))
     es_upload_start = time.time()
     try:
         bulk_upload(es, options.index, docs)
@@ -277,8 +278,9 @@ def start_bulk_upload(thread, root, docs):
         close_app_critical_error()
     else:
         es_upload_time = time.time() - es_upload_start
-        logger.debug('[{0}] bulk uploading completed in {1:.3f}s'.format(
-            thread, es_upload_time))
+        if DEBUG:
+            logger.debug('[{0}] bulk uploading completed in {1:.3f}s'.format(
+                thread, es_upload_time))
         with crawl_thread_lock:
             bulktime[root] += es_upload_time
 
@@ -324,9 +326,6 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
     files_norecurs = 0
     dirs_norecurs = 0
     
-    if IS_WIN:
-        win_path = get_win_path(path)
-    
     # use alt scanner
     # try to get stat info for dir path
     if options.altscanner:
@@ -347,12 +346,11 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
                 warnings += 1
             return 0, 0, 0, 0
     else:
+        if IS_WIN:
+            path = get_win_path(path)
         # try to get os stat info for dir path
         try:
-            if IS_WIN:
-                d_stat = os.stat(win_path)
-            else:
-                d_stat = os.stat(path)
+            d_stat = os.stat(path)
         except OSError as e:
             logmsg = '[{0}] OS ERROR: {1}'.format(thread, e)
             logger.warning(logmsg)
@@ -360,65 +358,69 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
             with crawl_thread_lock:
                 warnings += 1
             return 0, 0, 0, 0
-    
-        # restore times (atime/mtime)
-        if restore_times:
-            res, err = set_times(path, d_stat.st_atime, d_stat.st_mtime)
-            if not res:
-                logmsg = 'OS ERROR setting file times for {0} (error {1})'.format(path, err)
-                logger.warning(logmsg)
-                if logtofile: logger_warn.warning(logmsg)
-                with crawl_thread_lock:
-                    warnings += 1
 
     # scan directory
     try:
-        logger.debug('[{0}] Scanning path {1}...'.format(thread, path))
+        if DEBUG:
+            logger.debug('[{0}] Scanning path {1}...'.format(thread, path))
         if options.verbose or options.vverbose:
             logger.info('[{0}] Scanning path {1}...'.format(thread, path))
         for entry in os.scandir(path):
-            logger.debug('[{0}] Scanning dir entry {1}...'.format(thread, entry.path))
+            if DEBUG:
+                logger.debug('[{0}] Scanning dir entry {1}...'.format(thread, entry.path))
             if options.vverbose:
                 logger.info('[{0}] Scanning dir entry {1}...'.format(thread, entry.path))         
             
             if entry.is_symlink():
-                logger.debug('[{0}] skipping symlink {1}'.format(thread, entry.path))
+                if DEBUG:
+                    logger.debug('[{0}] skipping symlink {1}'.format(thread, entry.path))
                 if options.verbose or options.vverbose:
                     logger.info('[{0}] skipping symlink {1}'.format(thread, entry.path))
                 pass
             elif entry.is_dir():
                 d_count += 1
-                if not dir_excluded(entry.path):
+                if IS_WIN and not options.altscanner:
+                    dir_path = rem_win_path(entry.path)
+                else:
+                    dir_path = entry.path
+                if not dir_excluded(dir_path):
                     dirs += 1
                     dirs_norecurs += 1
                     if maxdepth > 0:
                         if depth < maxdepth:
                             # recurse into subdir
                             if not quit:
-                                s, sdu, fc, dc = get_tree_size(thread, root, top, entry.path, docs, sizes, inodes, depth+1, maxdepth)
+                                s, sdu, fc, dc = get_tree_size(thread, root, top, dir_path, docs, sizes, inodes, depth+1, maxdepth)
                                 size += s
                                 size_du += sdu
                                 files += fc
                                 dirs += dc
                         else:
-                            logger.debug('[{0}] not descending {1}, maxdepth {2} reached'.format(
-                                    thread, entry.path, maxdepth))
+                            if DEBUG:
+                                logger.debug('[{0}] not descending {1}, maxdepth {2} reached'.format(
+                                        thread, entry.path, maxdepth))
                             if options.verbose or options.vverbose:
                                 logger.info('[{0}] not descending {1}, maxdepth {2} reached'.format(
                                     thread, entry.path, maxdepth))
                 else:
-                    logger.debug('[{0}] skipping dir {1}'.format(thread, entry.path))
+                    if DEBUG:
+                        logger.debug('[{0}] skipping dir {1}'.format(thread, entry.path))
                     if options.verbose or options.vverbose:
                         logger.info('[{0}] skipping dir {1}'.format(thread, entry.path))
                     d_skip_count += 1
             else:
                 f_count += 1
                 if not file_excluded(entry.name):
+                    # get file stat info
                     f_stat = entry.stat()
-                    # restore times (atime/mtime)
+                    
+                    # restore file times (atime/mtime)
                     if restore_times and not options.altscanner:
-                        ret = set_times(entry.path, f_stat.st_atime, f_stat.st_mtime)
-                        if not ret:
+                        res, err = set_times(entry.path, f_stat.st_atime, f_stat.st_mtime)
+                        if not res:
+                            logmsg = 'OS ERROR setting file times for {0} (error {1})'.format(entry.path, err)
+                            logger.warning(logmsg)
+                            if logtofile: logger_warn.warning(logmsg)
                             with crawl_thread_lock:
                                 warnings += 1
 
@@ -438,9 +440,10 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
                         else:
                             with crawl_thread_lock:
                                 inodes.add(f_stat.st_ino)
-                    fmtime_sec = time.time() - f_stat.st_mtime
-                    fctime_sec = time.time() - f_stat.st_ctime
-                    fatime_sec = time.time() - f_stat.st_atime
+                    timenow = time.time()
+                    fmtime_sec = timenow - f_stat.st_mtime
+                    fctime_sec = timenow - f_stat.st_ctime
+                    fatime_sec = timenow - f_stat.st_atime
 
                     if not exc_empty_files or (exc_empty_files and fsize > 0):
                         if fsize >= minfilesize and \
@@ -513,16 +516,11 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
                                     pass
                             # check plugins for adding extra meta data to data dict
                             if plugins_enabled and plugins_files:
-                                if IS_WIN:
-                                    win_entry_path = get_win_path(entry.path)
                                 for plugin in plugins:
                                     try:
                                         # check if plugin is for file doc
                                         if plugin.for_type('file'):
-                                            if IS_WIN:
-                                                extrameta_dict = plugin.add_meta(win_entry_path, f_stat)
-                                            else:
-                                                extrameta_dict = plugin.add_meta(entry.path, f_stat)
+                                            extrameta_dict = plugin.add_meta(entry.path, f_stat)
                                             if extrameta_dict is not None:
                                                 data.update(extrameta_dict)
                                     except (RuntimeWarning, RuntimeError) as e:
@@ -557,17 +555,20 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
 
                         else:
                             f_skip_count += 1
-                            logger.debug('[{0}] skipping file {1}'.format(thread, entry.path))
+                            if DEBUG:
+                                logger.debug('[{0}] skipping file {1}'.format(thread, entry.path))
                             if options.verbose or options.vverbose:
                                 logger.info('[{0}] skipping file {1}'.format(thread, entry.path))
                     else:
                         f_skip_count += 1
-                        logger.debug('[{0}] skipping file {1}'.format(thread, entry.path))
+                        if DEBUG:
+                            logger.debug('[{0}] skipping file {1}'.format(thread, entry.path))
                         if options.verbose or options.vverbose:
                             logger.info('[{0}] skipping file {1}'.format(thread, entry.path))
                 else:
                     f_skip_count += 1
-                    logger.debug('[{0}] skipping file {1}'.format(thread, entry.path))
+                    if DEBUG:
+                        logger.debug('[{0}] skipping file {1}'.format(thread, entry.path))
                     if options.verbose or options.vverbose:
                         logger.info('[{0}] skipping file {1}'.format(thread, entry.path))
         
@@ -639,10 +640,7 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
                     # check if plugin is for directory doc
                     try:
                         if plugin.for_type('directory'):
-                            if IS_WIN:
-                                extrameta_dict = plugin.add_meta(win_path, d_stat)
-                            else:
-                                extrameta_dict = plugin.add_meta(path, d_stat)
+                            extrameta_dict = plugin.add_meta(path, d_stat)
                             if extrameta_dict is not None:
                                 data.update(extrameta_dict)
                     except (RuntimeWarning, RuntimeError) as e:
@@ -682,7 +680,8 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
                     sizes[root] = data.copy()
         else:
             d_skip_count += 1
-            logger.debug('[{0}] skipping empty dir {1}'.format(thread, path))
+            if DEBUG:
+                logger.debug('[{0}] skipping empty dir {1}'.format(thread, path))
             if options.verbose or options.vverbose:
                 logger.info('[{0}] skipping empty dir {1}'.format(thread, path))
             if dirs > 0: dirs -= 1
@@ -693,7 +692,17 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
             skipfilecount[root] += f_skip_count
             skipdircount[root] += d_skip_count
             total_doc_count[root] += tot_doc_count
-            inodecount[root] += d_count + f_count 
+            inodecount[root] += d_count + f_count
+        
+        # restore directory times (atime/mtime)
+        if restore_times and not options.altscanner:
+            res, err = set_times(path, d_stat.st_atime, d_stat.st_mtime)
+            if not res:
+                logmsg = 'OS ERROR setting file times for {0} (error {1})'.format(path, err)
+                logger.warning(logmsg)
+                if logtofile: logger_warn.warning(logmsg)
+                with crawl_thread_lock:
+                    warnings += 1
 
     except OSError as e:
         logmsg = '[{0}] OS ERROR: {1}'.format(thread, e)
@@ -728,7 +737,8 @@ def crawl(root):
         docs = []
         with crawl_thread_lock:
             scan_paths.append(top)
-        logger.debug('[{0}] starting crawl {1} (depth {2}, maxdepth {3})...'.format(thread, top, depth, maxdepth))
+        if DEBUG:
+            logger.debug('[{0}] starting crawl {1} (depth {2}, maxdepth {3})...'.format(thread, top, depth, maxdepth))
         if options.verbose or options.vverbose:
             logger.info('[{0}] starting crawl {1} (depth {2}, maxdepth {3})...'.format(thread, top, depth, maxdepth))
         size, size_du, file_count, dir_count = get_tree_size(thread, root, top, top, docs, sizes, inodes, depth, maxdepth)
@@ -861,15 +871,18 @@ def banner():
 
 def log_setup():
     """Setup logging for diskover."""
+    global DEBUG
     logger = logging.getLogger('diskover')
     logger_warn = logging.getLogger('diskover_warn')
     eslogger = logging.getLogger('elasticsearch')
     diskover_eslogger = logging.getLogger('diskover_elasticsearch')
     loglevel = config['logLevel'].get()
+    DEBUG = False
     if options.debug:
         loglevel = 'DEBUG'
     if loglevel == 'DEBUG':
         loglevel = logging.DEBUG
+        DEBUG = True
     elif loglevel == 'INFO':
         loglevel = logging.INFO
     else:
@@ -877,26 +890,22 @@ def log_setup():
     logformat = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     if logtofile:
         # create log file name using top dir name and datestamp
-        treedirsstr = ''
         if args:
             d_path = args[0]
-            if IS_WIN:
-                d, p = os.path.splitdrive(d_path)
-                # change any drive letter, example from P:\ to P_drive
-                if re.search('^[a-zA-Z]:', d) is not None:
-                    d_path = d.rstrip(':').upper() + '_drive' + p
-                    d_path = d_path.replace('\\', '_')
-                # change any unc paths, example \\stor1\share to _stor1_share
-                elif re.search('^\\\\', d_path) is not None:
-                    d_path = d_path.rstrip('\\')
-                    d_path = d_path.replace('\\', '_')
-                treedirsstr += d_path
-            else:
-                if d_path != '/':
-                    d_path = d_path.rstrip('/')
-                treedirsstr += os.path.basename(d_path)
+            if d_path == '.':
+                d_path = os.getcwd()
         else:
-            treedirsstr = os.path.basename(os.getcwd())
+            d_path = os.getcwd()
+        treedirsstr = ''
+        d_path = d_path.replace(' ', '_')
+        if IS_WIN:
+            # replace any drive letter colon with _drive_
+            d_path = d_path.replace(':', '_drive')
+            # replace any backslace in drive letter or unc path with underscore
+            treedirsstr += d_path.replace('\\', '_')
+        else:
+            # replace any forward slash with underscore
+            treedirsstr += d_path.replace('/', '_')
         logfiletime = datetime.now().strftime('%Y_%m_%d_%I_%M_%S')
         logname = 'diskover_{0}_{1}.log'.format(treedirsstr, logfiletime)
         logfile = os.path.join(logdir, logname)
@@ -904,6 +913,7 @@ def log_setup():
         handler_file.setFormatter(logging.Formatter(logformat))
         logger.setLevel(loglevel)
         logger.addHandler(handler_file)
+        logger.info('Logging output to {}'.format(logfile))
         # console logging
         handler_con = logging.StreamHandler()
         handler_con.setFormatter(logging.Formatter(logformat))
@@ -915,6 +925,7 @@ def log_setup():
         handler_warnfile.setFormatter(logging.Formatter(logformat))
         logger_warn.setLevel(logging.WARN)
         logger_warn.addHandler(handler_warnfile)
+        logger.info('Logging warnings to {}'.format(logfile_warn))
         # es logger
         eslogger.setLevel(logging.WARN)
         eslogger.addHandler(handler_file)

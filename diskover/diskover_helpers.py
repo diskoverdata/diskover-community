@@ -376,6 +376,7 @@ def index_info_crawlend(es, index, path, size, size_du, filecount, dircount, end
 def replace_path(path):
     """Replace paths and drive letters."""
     if IS_WIN:
+        path = rem_win_path(path)
         d, p = os.path.splitdrive(path)
         # change any drive letter, example from P:\ to /P_drive
         if re.search('^[a-zA-Z]:', path) is not None:
@@ -538,10 +539,17 @@ def get_mem_usage():
     
 
 def get_win_path(path):
-    """Returns a Windows extended device path to bypass normalization
-    Fixes Windows long paths and other path related issues such as trailing space
-    """
+    """Returns a Windows extended device path to bypass normalization.
+    Fixes Windows long paths and other path related issues such as trailing space."""
     if path[:2] == '\\\\':
         return '\\\\?\\UNC\\' + path[2:]
     else:
         return '\\\\?\\' + path
+
+
+def rem_win_path(path):
+    """Removes Windows extended device path from path."""
+    if '\\\\?\\UNC\\' in path:
+        return path.replace('\\\\?\\UNC\\', '')
+    else:
+        return path.replace('\\\\?\\', '')

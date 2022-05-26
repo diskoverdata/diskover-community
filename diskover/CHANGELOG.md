@@ -1,5 +1,15 @@
 # Diskover v2 Community Edition Change Log
 
+# [2.0.2] - 2022-05-27
+### fixed
+- logging issues in Windows
+- scanning issues in Windows
+- issue with restore times
+### changed
+- improved crawl performance
+- improved log naming
+
+
 # [2.0.1] - 2022-04-04
 ### fixed
 - issue with Windows scanning and long paths or paths with trailing space

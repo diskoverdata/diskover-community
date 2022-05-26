@@ -32,8 +32,18 @@ class UserDatabase
         // Get datbase file path from config
         $this->databaseFilename = $config->DATABASE;
 
-        // Open sqlite database
-        $this->db = new SQLite3($this->databaseFilename);
+        try {
+            // Open sqlite database
+            $this->db = new SQLite3($this->databaseFilename);
+        }
+        catch (\Exception $e) {
+            throw new \Exception('There was an error connecting to the database! ' . $e->getMessage());
+        }
+
+        // Check database file is writable
+        if (!is_writable($this->databaseFilename)) {
+            throw new \Exception($this->databaseFilename . ' is not writable!');
+        }
 
         // Initial setup if necessary.
         $this->setupDatabase();
@@ -49,11 +59,15 @@ class UserDatabase
         }
 
         // Set up sqlite user table if does not yet exist.
-        $this->db->exec("CREATE TABLE IF NOT EXISTS users (
+        $res = $this->db->exec("CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT, 
             username TEXT NOT NULL, 
             password TEXT NOT NULL
         )");
+
+        if (!$res) {
+            throw new \Exception('There was an error creating users table!');
+        }
 
         // Grab config data and create initial user.
         $user = new User();
