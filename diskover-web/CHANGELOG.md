@@ -1,6 +1,6 @@
 # Diskover-web v2 Community Edition Change Log
 
-# [2.0.2] - 2022-05-27
+# [2.0.2] - 2022-05-31
 ### added
 - sqlite db checks
 
