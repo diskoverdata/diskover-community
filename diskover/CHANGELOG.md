@@ -1,5 +1,10 @@
 # Diskover v2 Community Edition Change Log
 
+# [2.0.3] - 2022-07-20
+### fixed
+- Windows scanning issue causing directories not to be found (long path fix)
+
+
 # [2.0.2] - 2022-05-31
 ### fixed
 - logging issues in Windows

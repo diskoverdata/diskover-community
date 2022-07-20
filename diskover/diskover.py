@@ -40,7 +40,7 @@ from diskover_helpers import dir_excluded, file_excluded, \
     get_file_name, load_plugins, list_plugins, get_plugins_info, set_times, \
     get_mem_usage, get_win_path, rem_win_path
 
-version = '2.0.2 community edition (ce)'
+version = '2.0.3 community edition (ce)'
 __version__ = version
 
 # Windows check
@@ -838,9 +838,15 @@ def crawl(root):
         logger.info('*** walk du size {0} ***'.format(convert_size(sizes[root]['size_du'])))
         logger.info('*** walk dirs {0}, skipped {1} ***'.format(dircount[root], skipdircount[root]))
         logger.info('*** walk took {0} ***'.format(get_time(scandir_walk_time)))
-        logger.info('*** walk perf {0:.3f} inodes/s ***'.format(inodecount[root] / scandir_walk_time))
+        try:
+            logger.info('*** walk perf {0:.3f} inodes/s ***'.format(inodecount[root] / scandir_walk_time))
+        except ZeroDivisionError:
+            pass
         logger.info('*** docs indexed {0} ***'.format(total_doc_count[root]))
-        logger.info('*** indexing perf {0:.3f} docs/s ***'.format(total_doc_count[root] / scandir_walk_time))
+        try:
+            logger.info('*** indexing perf {0:.3f} docs/s ***'.format(total_doc_count[root] / scandir_walk_time))
+        except ZeroDivisionError:
+            pass
         logger.info('*** bulk uploads took {0} ***'.format(get_time(bulktime[root])))
         logger.info('*** warnings/errors {0} ***'.format(warnings))
         

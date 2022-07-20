@@ -1,5 +1,10 @@
 # Diskover-web v2 Community Edition Change Log
 
+# [2.0.3] - 2022-07-20
+### fixed
+- view file info page file and full path links not finding any search results when file name has double quote " in name
+
+
 # [2.0.2] - 2022-05-31
 ### added
 - sqlite db checks

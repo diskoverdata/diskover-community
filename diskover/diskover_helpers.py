@@ -541,8 +541,8 @@ def get_mem_usage():
 def get_win_path(path):
     """Returns a Windows extended device path to bypass normalization.
     Fixes Windows long paths and other path related issues such as trailing space."""
-    if path[:2] == '\\\\':
-        return '\\\\?\\UNC\\' + path[2:]
+    if path[:1] == '\\':
+        return '\\\\?\\UNC' + path[1:]
     else:
         return '\\\\?\\' + path
 
@@ -550,6 +550,6 @@ def get_win_path(path):
 def rem_win_path(path):
     """Removes Windows extended device path from path."""
     if '\\\\?\\UNC\\' in path:
-        return path.replace('\\\\?\\UNC\\', '')
+        return path.replace('\\\\?\\UNC', '\\')
     else:
         return path.replace('\\\\?\\', '')

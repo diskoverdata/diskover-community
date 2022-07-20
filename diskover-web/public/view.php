@@ -109,7 +109,7 @@ if (empty($_REQUEST['id'])) {
                     if ($doctype == 'directory') {
                         $fullpathhref = "search.php?index=" . $esIndex . "&submitted=true&p=1&q=parent_path:" . rawurlencode(escape_chars($fullpath)) . "&path=" . rawurlencode($fullpath);
                     } else {
-                        $fullpathhref = "search.php?index=" . $esIndex . "&submitted=true&p=1&q=parent_path:" . rawurlencode(escape_chars($parentpath)) . " AND name:&quot;" . rawurlencode($filename) . "&quot;&path=" . rawurlencode($parentpath);
+                        $fullpathhref = "search.php?index=" . $esIndex . "&submitted=true&p=1&q=parent_path:" . rawurlencode(escape_chars($parentpath)) . " AND name:&quot;" . rawurlencode(escape_chars($filename)) . "&quot;&path=" . rawurlencode($parentpath);
                     }
                     ?>
                     <h2 class="path"><?php echo ($doctype == 'file') ? '<i class="fas fa-file-alt" style="color:#738291;"></i>' : '<i class="fas fa-folder" style="color:#E9AC47;"></i>'; ?> <span id="filename"><a href="<?php echo $fullpathhref; ?>"><?php echo $filename; ?></a></span></h2>
