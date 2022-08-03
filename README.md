@@ -34,6 +34,7 @@ git clone https://github.com/diskoverdata/diskover-community.git
 ```
 - See [releases](https://github.com/diskoverdata/diskover-community/releases) to download latest stable version in zip or tar.gz. 
 - diskover ce v2 linuxserver.io docker container. Download on [docker hub](https://hub.docker.com/r/linuxserver/diskover) or [lsio github](https://github.com/linuxserver/docker-diskover).
+- diskover ce v2 on [AWS Marketplace](https://aws.amazon.com/marketplace/pp/prodview-ahatamjklfgk4?sr=0-1&ref_=beagle&applicationId=AWSMPContessa)
 
 ## News/ Updates
 - v1 is end of life and is no longer supported.
