@@ -65,4 +65,11 @@ spec:
             path: diskover.cfg
           name: {{ template "fullname" . }}-config
         name: diskover-config
-
+{{- if .Values.nodeSelector }}
+      nodeSelector:
+{{- toYaml .Values.nodeSelector | nindent 8 }}
+{{- end }}
+{{- if .Values.tolerations }}
+      tolerations:
+{{- toYaml .Values.tolerations | nindent 8 }}
+{{- end }}
