@@ -31,7 +31,7 @@ release: clean
 	sed -i -e "s/fsa-streamotion\/diskover/diskover/" values.yaml
 	helm dependency build
 	helm lint
-	helm init --client-only
+	helm init --client-only --stable-repo-url 'https://charts.helm.sh/stable'
 	helm package .
 	curl --fail -u$(CHARTMUSEUM_CREDS) -T "$(NAME)-$(shell sed -n 's/^version: //p' Chart.yaml).tgz" "$(CHART_REPOSITORY)/$(NAME)-$(shell sed -n 's/^version: //p' Chart.yaml).tgz"
 	rm -rf ${NAME}*.tgz%
