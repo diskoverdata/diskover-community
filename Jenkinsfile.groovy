@@ -1,6 +1,6 @@
 pipeline {
   agent {
-    label "dockerhub-maven"
+    label "streamotion-maven"
   }
 
   // parameters {
