@@ -61,3 +61,5 @@ resources:
     cpu: 1
     memory: 512Mi
 probePath: /actuator/health
+nodeSelector: []
+tolerations: {}
