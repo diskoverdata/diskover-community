@@ -15,6 +15,7 @@ else
 	exit -1
 endif
 	echo "  version: $(PREVIEW_VERSION)" >> requirements.yaml
+	helm init --client-only --stable-repo-url 'https://charts.helm.sh/stable'
 	jx step helm build
 
 print: 

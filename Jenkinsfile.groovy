@@ -1,6 +1,6 @@
 pipeline {
   agent {
-    label "dockerhub-maven"
+    label "streamotion-dockerhub"
   }
 
   // parameters {
@@ -15,6 +15,13 @@ pipeline {
   }
 
         stages {
+          stage('Generate Version File') {
+            steps {
+                container('maven') {
+                    sh "git config --global credential.helper store && jx step git credentials"
+                }
+            }
+        }
         stage('PR Build + PREVIEW') {
             when {
                 branch 'PR-*'

@@ -104,3 +104,4 @@ _config.yml
 /docs
 docs/
 _pages/
+*.iml
