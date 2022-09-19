@@ -4,7 +4,7 @@ diskover-web community edition (ce)
 https://github.com/diskoverdata/diskover-community/
 https://diskoverdata.com
 
-Copyright 2017-2021 Diskover Data, Inc.
+Copyright 2017-2022 Diskover Data, Inc.
 "Community" portion of Diskover made available under the Apache 2.0 License found here:
 https://www.diskoverdata.com/apache-license/
 
@@ -55,6 +55,7 @@ class Constants {
     const SEARCH_RESULTS = 50;
 
     // default size field (size, size_du) to use for sizes on file tree and charts
+    // if the file systems being indexed contain hardlinks, set this to size_du to use allocated sizes
     const SIZE_FIELD = 'size';
 
     // default file types, used by quick search (file type) and dashboard file type usage chart

@@ -4,7 +4,7 @@ diskover community edition (ce)
 https://github.com/diskoverdata/diskover-community/
 https://diskoverdata.com
 
-Copyright 2017-2021 Diskover Data, Inc.
+Copyright 2017-2022 Diskover Data, Inc.
 "Community" portion of Diskover made available under the Apache 2.0 License found here:
 https://www.diskoverdata.com/apache-license/
  
@@ -40,7 +40,7 @@ from diskover_helpers import dir_excluded, file_excluded, \
     get_file_name, load_plugins, list_plugins, get_plugins_info, set_times, \
     get_mem_usage, get_win_path, rem_win_path
 
-version = '2.0.3 community edition (ce)'
+version = '2.0.4 community edition (ce)'
 __version__ = version
 
 # Windows check
@@ -262,12 +262,16 @@ def close_app_critical_error():
             pass
     os._exit(1)
 
-
+            
 def start_bulk_upload(thread, root, docs):
+    """Bulk uploads docs to es index."""
     global bulktime
+    global warnings
+    
+    doccount = len(docs)
     
     if DEBUG:
-        logger.debug('[{0}] bulk uploading {1} docs to ES...'.format(thread, len(docs)))
+        logger.debug('[{0}] bulk uploading {1} docs to ES...'.format(thread, doccount))
     es_upload_start = time.time()
     try:
         bulk_upload(es, options.index, docs)
@@ -276,13 +280,32 @@ def start_bulk_upload(thread, root, docs):
         logger.critical(logmsg, exc_info=1)
         if logtofile: logger_warn.critical(logmsg, exc_info=1)
         close_app_critical_error()
-    else:
-        es_upload_time = time.time() - es_upload_start
-        if DEBUG:
-            logger.debug('[{0}] bulk uploading completed in {1:.3f}s'.format(
-                thread, es_upload_time))
+    except UnicodeEncodeError:
+        logmsg = '[{0}] Elasticsearch bulk index unicode encode error. Will try to index each doc individually.'.format(thread)
+        logger.warning(logmsg)
+        if logtofile: logger_warn.warning(logmsg)
         with crawl_thread_lock:
-            bulktime[root] += es_upload_time
+            warnings += 1
+        for doc in docs:
+            try:
+                es.index(options.index, doc)
+            except UnicodeEncodeError:
+                file = os.path.join(doc['parent_path'], doc['name'])
+                logmsg = '[{0}] Elasticsearch index unicode encode error for {1}'.format(thread, file)
+                logger.warning(logmsg)
+                if logtofile: logger_warn.warning(logmsg)
+                with crawl_thread_lock:
+                    warnings += 1
+                doccount -= 1
+                pass
+    es_upload_time = time.time() - es_upload_start
+    if DEBUG:
+        logger.debug('[{0}] bulk uploading {1} docs completed in {2:.3f}s'.format(
+            thread, doccount, es_upload_time))
+    with crawl_thread_lock:
+        bulktime[root] += es_upload_time
+    
+    return doccount
 
 
 def log_stats_thread(root):
@@ -549,7 +572,7 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
                             docs.append(data.copy())
                             doc_count = len(docs)
                             if doc_count >= es_chunksize:
-                                start_bulk_upload(thread, root, docs)
+                                doc_count = start_bulk_upload(thread, root, docs)
                                 tot_doc_count += doc_count
                                 docs.clear()
 
@@ -671,7 +694,7 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
                 docs.append(data.copy())
                 doc_count = len(docs)
                 if doc_count >= es_chunksize:
-                    start_bulk_upload(thread, root, docs)
+                    doc_count = start_bulk_upload(thread, root, docs)
                     tot_doc_count += doc_count
                     docs.clear()
                     
@@ -744,7 +767,7 @@ def crawl(root):
         size, size_du, file_count, dir_count = get_tree_size(thread, root, top, top, docs, sizes, inodes, depth, maxdepth)
         doc_count = len(docs)
         if doc_count > 0:
-            start_bulk_upload(thread, root, docs)
+            doc_count = start_bulk_upload(thread, root, docs)
             with crawl_thread_lock:
                 total_doc_count[root] += doc_count
             docs.clear()

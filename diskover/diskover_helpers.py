@@ -4,7 +4,7 @@ diskover community edition (ce)
 https://github.com/diskoverdata/diskover-community/
 https://diskoverdata.com
 
-Copyright 2017-2021 Diskover Data, Inc.
+Copyright 2017-2022 Diskover Data, Inc.
 "Community" portion of Diskover made available under the Apache 2.0 License found here:
 https://www.diskoverdata.com/apache-license/
  
@@ -389,6 +389,7 @@ def replace_path(path):
         path = path.replace('\\', '/')
     if replacepaths_from and replacepaths_to:
         path = path.replace(replacepaths_from, replacepaths_to, 1)
+        path = path.rstrip('/')
     return path
 
 

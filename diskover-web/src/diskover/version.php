@@ -4,7 +4,7 @@ diskover-web community edition (ce)
 https://github.com/diskoverdata/diskover-community/
 https://diskoverdata.com
 
-Copyright 2017-2021 Diskover Data, Inc.
+Copyright 2017-2022 Diskover Data, Inc.
 "Community" portion of Diskover made available under the Apache 2.0 License found here:
 https://www.diskoverdata.com/apache-license/
 
@@ -17,4 +17,4 @@ https://www.diskoverdata.com/solutions/
 */
 
 // diskover-web version
-$VERSION = '2.0.3 community edition (ce)';
+$VERSION = '2.0.4 community edition (ce)';

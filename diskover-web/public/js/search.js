@@ -3,7 +3,7 @@ diskover-web community edition (ce)
 https://github.com/diskoverdata/diskover-community/
 https://diskoverdata.com
 
-Copyright 2017-2021 Diskover Data, Inc.
+Copyright 2017-2022 Diskover Data, Inc.
 "Community" portion of Diskover made available under the Apache 2.0 License found here:
 https://www.diskoverdata.com/apache-license/
  
@@ -527,7 +527,23 @@ $(function () {
                     text: 'Top Directories by Size'
                 },
                 maintainAspectRatio: false,
-                responsive: true
+                responsive: true,
+                onClick: function(event, clickedElements) {
+                    if (clickedElements.length === 0) return;
+                    var e = clickedElements[0];
+                    var dir = this.data.labels[e._index];
+                    //var size = this.data.datasets[0].data[e._index];
+                    var pp = encodeURIComponent(escapeHTML(decodeURIComponent(path) + '\/' + dir));
+                    var pp_path = encodeURIComponent(decodeURIComponent(path + '\/' + dir));
+                    window.location.href = "search.php?submitted=true&p=1&q=parent_path:" + pp + "*&path=" + pp_path;
+                    return false;
+                },
+                onHover: function (event, legendItem, legend) {
+                    $("#topDirsBySize-barChart").css("cursor", "pointer");
+                },
+                onLeave: function (event, legendItem, legend) {
+                    $("#topDirsBySize-barChart").css("cursor", "default");
+                }
             }
 
             var topDirsBySizebarChart = new Chart(topDirsBySizebarChartCanvas, {
@@ -580,7 +596,7 @@ $(function () {
                         var dir = legendItem.text;
                         var pp = encodeURIComponent(escapeHTML(decodeURIComponent(path) + '\/' + dir));
                         var pp_path = encodeURIComponent(decodeURIComponent(path + '\/' + dir));
-                        window.location.href = "search.php?submitted=true&p=1&q=parent_path:" + pp + "&sort=size&sortorder=desc&sort2=name&sortorder2=asc&path=" + pp_path;
+                        window.location.href = "search.php?submitted=true&p=1&q=parent_path:" + pp + "*&path=" + pp_path;
                         return false;
                     },
                     onHover: function (event, legendItem, legend) {
@@ -609,7 +625,23 @@ $(function () {
                     text: 'Top Directories by Count'
                 },
                 maintainAspectRatio: false,
-                responsive: true
+                responsive: true,
+                onClick: function(event, clickedElements) {
+                    if (clickedElements.length === 0) return;
+                    var e = clickedElements[0];
+                    var dir = this.data.labels[e._index];
+                    //var size = this.data.datasets[0].data[e._index];
+                    var pp = encodeURIComponent(escapeHTML(decodeURIComponent(path) + '\/' + dir));
+                    var pp_path = encodeURIComponent(decodeURIComponent(path + '\/' + dir));
+                    window.location.href = "search.php?submitted=true&p=1&q=parent_path:" + pp + "*&path=" + pp_path;
+                    return false;
+                },
+                onHover: function (event, legendItem, legend) {
+                    $("#topDirsByCount-pieChart").css("cursor", "pointer");
+                },
+                onLeave: function (event, legendItem, legend) {
+                    $("#topDirsByCount-pieChart").css("cursor", "default");
+                }
             }
 
             var topDirsByCountpieChart = new Chart(topDirsByCountpieChartCanvas, {
@@ -692,7 +724,25 @@ $(function () {
                 text: 'Top File Types by Size'
             },
             maintainAspectRatio: false,
-            responsive: true
+            responsive: true,
+            onClick: function(event, clickedElements) {
+                if (clickedElements.length === 0) return;
+                var e = clickedElements[0];
+                var ext = this.data.labels[e._index];
+                //var size = this.data.datasets[0].data[e._index];
+                if (ext == "NULL (no ext)") {
+                    ext = "\"\"";
+                }
+                var pp = encodeURIComponent(escapeHTML(decodeURIComponent(path)));
+                window.location.href = "search.php?submitted=true&p=1&q=extension:" + ext + " AND parent_path:" + pp + "*&doctype=file";
+                return false;
+            },
+            onHover: function (event, legendItem, legend) {
+                $("#topFileTypesBySize-barChart").css("cursor", "pointer");
+            },
+            onLeave: function (event, legendItem, legend) {
+                $("#topFileTypesBySize-barChart").css("cursor", "default");
+            }
         }
 
         var topFileTypesBySizebarChart = new Chart(topFileTypesBySizebarChartCanvas, {
@@ -749,7 +799,7 @@ $(function () {
                         ext = "\"\"";
                     }
                     var pp = encodeURIComponent(escapeHTML(decodeURIComponent(path)));
-                    window.location.href = "search.php?submitted=true&p=1&q=extension:" + ext + " AND parent_path:" + pp + "*&sort=size&sortorder=desc&sort2=name&sortorder2=asc&doctype=file";
+                    window.location.href = "search.php?submitted=true&p=1&q=extension:" + ext + " AND parent_path:" + pp + "*&doctype=file";
                     return false;
                 },
                 onHover: function (event, legendItem, legend) {
@@ -778,7 +828,25 @@ $(function () {
                 text: 'Top File Types by Count'
             },
             maintainAspectRatio: false,
-            responsive: true
+            responsive: true,
+            onClick: function(event, clickedElements) {
+                if (clickedElements.length === 0) return;
+                var e = clickedElements[0];
+                var ext = this.data.labels[e._index];
+                //var size = this.data.datasets[0].data[e._index];
+                if (ext == "NULL (no ext)") {
+                    ext = "\"\"";
+                }
+                var pp = encodeURIComponent(escapeHTML(decodeURIComponent(path)));
+                window.location.href = "search.php?submitted=true&p=1&q=extension:" + ext + " AND parent_path:" + pp + "*&doctype=file";
+                return false;
+            },
+            onHover: function (event, legendItem, legend) {
+                $("#topFileTypesByCount-pieChart").css("cursor", "pointer");
+            },
+            onLeave: function (event, legendItem, legend) {
+                $("#topFileTypesByCount-pieChart").css("cursor", "default");
+            }
         }
 
         var topFileTypesByCountpieChart = new Chart(topFileTypesByCountpieChartCanvas, {
@@ -892,7 +960,34 @@ $(function () {
                 display: true,
                 text: 'File Age by Size'
             },
-            maintainAspectRatio: false
+            maintainAspectRatio: false,
+            onClick: function(event, clickedElements) {
+                if (clickedElements.length === 0) return;
+                var activeElement = mtimebarChart.getElementAtEvent(event);
+                var mtime = this.data.datasets[activeElement[0]._datasetIndex].label;
+                if (mtime == "0 - 30 days") {
+                    mtime = "[now/m-1M/d TO now/m}"
+                } else if (mtime == "30 - 90 days") {
+                    mtime = "[now/m-3M/d TO now/m-1M/d}"
+                } else if (mtime == "90 - 180 days") {
+                    mtime = "[now/m-6M/d TO now/m-3M/d}"
+                } else if (mtime == "180 days - 1 year") {
+                    mtime = "[now/m-1y/d TO now/m-6M/d}"
+                } else if (mtime == "1 - 2 years") {
+                    mtime = "[now/m-2y/d TO now/m-1y/d}"
+                } else if (mtime == "> 2 years") {
+                    mtime = "[* TO now/m-2y/d}"
+                }
+                var pp = encodeURIComponent(escapeHTML(decodeURIComponent(path)));
+                window.location.href = "search.php?submitted=true&p=1&q=mtime:" + mtime + " AND parent_path:" + pp + "*&doctype=file";
+                return false;
+            },
+            onHover: function (event, legendItem, legend) {
+                $("#mtime-barChart").css("cursor", "pointer");
+            },
+            onLeave: function (event, legendItem, legend) {
+                $("#mtime-barChart").css("cursor", "default");
+            }
         }
 
         var mtimebarChart = new Chart(mtimebarChartCanvas, {

@@ -1,5 +1,11 @@
 # Diskover v2 Community Edition Change Log
 
+# [2.0.4] - 2022-09-19
+### fixed
+- issue with replace paths config setting and using / as from path
+- issue with ES bulk indexing and unicode encode error caused scan to crash
+
+
 # [2.0.3] - 2022-07-20
 ### fixed
 - Windows scanning issue causing directories not to be found (long path fix)
