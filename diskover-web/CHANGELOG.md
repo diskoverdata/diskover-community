@@ -1,5 +1,12 @@
 # Diskover-web v2 Community Edition Change Log
 
+# [2.0.4] - 2022-09-19
+### added
+- all charts on search results page and dashboard are now clickable for searching results
+### changed
+- removed setting sort by size when clicking charts on search results and dashboard pages
+
+
 # [2.0.3] - 2022-07-20
 ### fixed
 - view file info page file and full path links not finding any search results when file name has double quote " in name

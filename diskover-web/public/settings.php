@@ -4,7 +4,7 @@ diskover-web community edition (ce)
 https://github.com/diskoverdata/diskover-community/
 https://diskoverdata.com
 
-Copyright 2017-2021 Diskover Data, Inc.
+Copyright 2017-2022 Diskover Data, Inc.
 "Community" portion of Diskover made available under the Apache 2.0 License found here:
 https://www.diskoverdata.com/apache-license/
 
@@ -95,7 +95,8 @@ require "../src/diskover/Diskover.php";
                                                                                                                                                                                                 } ?>" size="1">&nbsp;<button type="submit" id="changefilesizedecbutton" class="btn btn-primary" title="submit" onclick="setFileSizeDisplayDec()">Set </button>
                     <div class="form-check">
                         <input type="checkbox" class="form-check-input" id="sizedu" onclick="setSizeField()">
-                        <label class="form-check-label" for="sizedu">Use size_du (allocated size) instead of size for charts and file tree sizes</label>
+                        <label class="form-check-label" for="sizedu">Use size_du (allocated size) instead of size for charts and file tree sizes</label><br>
+                        <span class="small"><i class="glyphicon glyphicon-info-sign"></i> If the file systems being indexed contain hardlinks, check this to show allocated sizes.</span>
                     </div>
                 </div>
                 </div><div class="well">
@@ -176,7 +177,7 @@ require "../src/diskover/Diskover.php";
                 <div class="well">
                     <h4>Send anonymous usage data</h4>
                     <input type="checkbox" name="sendanondata" id="sendanondata" onclick="setSendAnonData()" <?php echo (getCookie('sendanondata') == 1) ? 'checked' : ''; ?>> <label for="sendanondata" class="control-label">Send anonymous data</label>
-                    <p class="small"><i class="glyphicon glyphicon-info-sign"></i>Send anonymous usage data to Diskover Data to help improve diskover. No personal information is sent.</p>
+                    <p class="small"><i class="glyphicon glyphicon-info-sign"></i> Send anonymous usage data to Diskover Data to help improve diskover. No personal information is sent.</p>
                 </div>
             </div>
         </div>

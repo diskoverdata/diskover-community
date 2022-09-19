@@ -4,7 +4,7 @@ diskover community edition (ce)
 https://github.com/diskoverdata/diskover-community/
 https://diskoverdata.com
 
-Copyright 2017-2021 Diskover Data, Inc.
+Copyright 2017-2022 Diskover Data, Inc.
 "Community" portion of Diskover made available under the Apache 2.0 License found here:
 https://www.diskoverdata.com/apache-license/
  
@@ -24,7 +24,6 @@ import logging
 import elasticsearch
 import warnings
 from elasticsearch import helpers
-from elasticsearch.helpers.errors import BulkIndexError
 
 from diskover_helpers import load_plugins
 
@@ -399,14 +398,9 @@ def bulk_upload(es, indexname, docs):
         # wait for es health to be at least yellow
         es.cluster.health(wait_for_status='yellow', request_timeout=es_timeout)
 
-    try:
-        # bulk load data to Elasticsearch index
-        helpers.bulk(es, docs, index=indexname,
-                     chunk_size=es_chunksize, request_timeout=es_timeout)
-    except BulkIndexError as e:
-        logger.critical(
-            'ERROR: Elasticsearch bulk index error! ({})'.format(e))
-        raise BulkIndexError(e)
+    # bulk load data to Elasticsearch index
+    helpers.bulk(es, docs, index=indexname,
+                    chunk_size=es_chunksize, request_timeout=es_timeout)
 
 
 def tune_index(es, indexname, defaults=False):
