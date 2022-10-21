@@ -203,9 +203,8 @@ $(document).ready(function () {
             method: 'POST',
             success:function(response){
                 if(response == 'logout') {
-                    alert('Your session has expired, please login');
-                    window.location.replace("logout.php");
-                    return false;
+                    window.location.replace("logout.php?inactive");
+                    return true;
                 }
             }
         });
