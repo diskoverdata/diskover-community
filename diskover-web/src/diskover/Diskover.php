@@ -548,6 +548,7 @@ function getRootPath($p)
     } elseif ($p != '/') {
         return getRootPath(dirname($p));
     }
+    return null;
 }
 
 

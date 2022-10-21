@@ -62,11 +62,13 @@ if (!empty($_GET['submitted'])) {
         $pp = ltrim($pp, '(');
         $path = rtrim($pp, '*)');
         $rootpath = getRootpath($path);
-        $_SESSION['rootpath'] = $rootpath;
-        createCookie('rootpath', $rootpath);
-        // set path cookie to update tree
-        createCookie('path', $path);
-        createCookie('parentpath', getParentDir($path));
+        if (!is_null($rootpath)) {
+            $_SESSION['rootpath'] = $rootpath;
+            createCookie('rootpath', $rootpath);
+            // set path cookie to update tree
+            createCookie('path', $path);
+            createCookie('parentpath', getParentDir($path));
+        }
     }
 
     // curent page
