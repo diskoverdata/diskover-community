@@ -1,5 +1,15 @@
 # Diskover v2 Community Edition Change Log
 
+# [2.0.5] - 2022-10-21
+### fixed
+- log file names having 12H format instead of 24H
+- issue with setting ES_HTTPS env var
+### added
+- Elasticsearch SSL verification setting (sslverification) to default/sample diskover config, copy to your config and set for your env
+    - ssl and certificate verification when connecting to ES
+    - can be set with ES_SSLVERIFICATION env var
+
+
 # [2.0.4] - 2022-09-19
 ### fixed
 - issue with replace paths config setting and using / as from path

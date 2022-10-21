@@ -27,6 +27,7 @@ $config_defaults = [
     'ES_USER' => '',
     'ES_PASS' => '',
     'ES_HTTPS' => FALSE,
+    'ES_SSLVERIFICATION' => TRUE,
     'LOGIN_REQUIRED' => TRUE,
     'USER' => 'diskover',
     'PASS' => 'darkdata',

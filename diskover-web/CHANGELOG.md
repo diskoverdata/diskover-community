@@ -1,5 +1,26 @@
 # Diskover-web v2 Community Edition Change Log
 
+# [2.0.5] - 2022-10-21
+### fixed
+- changing index in url params doesn't set the index or root path
+- path breadcrumb not updating when searching for path
+- issue when searching for a path using absolute path or parent_path index field, tree and charts not updating on search results page
+- issue with using multiple browser tabs and not staying logged in
+- having multiple browser tabs open and not being automatically logged out of all tabs when session timeout expires
+- php ES error: Trying to create too many scroll contexts. Must be less than or equal to: [500]
+- clicking on a search results page button with a large number would cause PHP to crash
+- file charts being displayed on search results page when directory contains no files
+- issue with setting env vars for es host, port, etc
+- other minor bug fixes and improvements
+### added
+- ES_SSLVERIFICATION setting to default/sample web config file src/Constants.php.sample, copy to your config and set for your env
+    - ssl and certificate verification when connecting to ES
+    - can be set with ES_SSLVERIFICATION env var
+### changed
+- reduced diskover-web search ES scroll time from 1m to 30s and clear scroll window after done searching
+- disabled search results page buttons > 1000 to prevent PHP crash
+
+
 # [2.0.4] - 2022-09-19
 ### added
 - all charts on search results page and dashboard are now clickable for searching results

@@ -660,141 +660,185 @@ $(function () {
         //- BAR/PIE EXT CHART -
         //----------------
 
-        // by size bar chart
+        // hide top dir chart if no files
+        if (data2.length === 0) {
+            $('#mtime-Chart-container').hide();
+            $('#topFileTypes-Chart-container').hide();
+        } else {
+            // by size bar chart
 
-        var top_ext_labels = []
-        var top_ext_data_size = []
-        var top_ext_colors = []
-        var top_ext_colors_border = []
-        var top_ext_colors_map = []
+            var top_ext_labels = []
+            var top_ext_data_size = []
+            var top_ext_colors = []
+            var top_ext_colors_border = []
+            var top_ext_colors_map = []
 
-        for (var i in data2) {
-            var name = data2[i].name;
-            if (name == '') {
-                name = 'NULL (no ext)'
-            }
-            top_ext_labels.push(name)
-            top_ext_data_size.push(data2[i].size)
-            var c = default_colors[i]
-            top_ext_colors.push(c)
-            top_ext_colors_border.push('#2F3338')
-            top_ext_colors_map[name] = c
-        }
-
-        var topFileTypesBySizebarChartCanvas = $("#topFileTypesBySize-barChart")
-        var topFileTypesbarData = {
-            labels: top_ext_labels,
-            datasets: [{
-                data: top_ext_data_size,
-                backgroundColor: top_ext_colors,
-                borderColor: top_ext_colors_border
-            }]
-        }
-        var topFileTypesbarOptions = {
-            legend: {
-                display: false,
-            },
-            tooltips: {
-                mode: 'label',
-                callbacks: {
-                    label: function (tooltipItem, data2) {
-                        var i = tooltipItem.index;
-                        var total = data2.datasets[0].data.reduce(function(previousValue, currentValue, currentIndex, array) {
-                            return previousValue + currentValue;
-                        });
-                        var currentValue = data2.datasets[0].data[i];
-                        var percentage = parseFloat((currentValue/total*100).toFixed(1));
-                        return data2.labels[i] + ': ' + format(currentValue) + ' (' + percentage +'%)';
-                    }
+            for (var i in data2) {
+                var name = data2[i].name;
+                if (name == '') {
+                    name = 'NULL (no ext)'
                 }
-            },
-            scales: {
-                xAxes: [{
-                    stacked: true,
-                    ticks: {
-                        // Format size in the ticks
-                        callback: function (value, index, values) {
-                            return format(value, '0');
+                top_ext_labels.push(name)
+                top_ext_data_size.push(data2[i].size)
+                var c = default_colors[i]
+                top_ext_colors.push(c)
+                top_ext_colors_border.push('#2F3338')
+                top_ext_colors_map[name] = c
+            }
+
+            var topFileTypesBySizebarChartCanvas = $("#topFileTypesBySize-barChart")
+            var topFileTypesbarData = {
+                labels: top_ext_labels,
+                datasets: [{
+                    data: top_ext_data_size,
+                    backgroundColor: top_ext_colors,
+                    borderColor: top_ext_colors_border
+                }]
+            }
+            var topFileTypesbarOptions = {
+                legend: {
+                    display: false,
+                },
+                tooltips: {
+                    mode: 'label',
+                    callbacks: {
+                        label: function (tooltipItem, data2) {
+                            var i = tooltipItem.index;
+                            var total = data2.datasets[0].data.reduce(function(previousValue, currentValue, currentIndex, array) {
+                                return previousValue + currentValue;
+                            });
+                            var currentValue = data2.datasets[0].data[i];
+                            var percentage = parseFloat((currentValue/total*100).toFixed(1));
+                            return data2.labels[i] + ': ' + format(currentValue) + ' (' + percentage +'%)';
                         }
                     }
-                }]
-            },
-            title: {
-                display: true,
-                text: 'Top File Types by Size'
-            },
-            maintainAspectRatio: false,
-            responsive: true,
-            onClick: function(event, clickedElements) {
-                if (clickedElements.length === 0) return;
-                var e = clickedElements[0];
-                var ext = this.data.labels[e._index];
-                //var size = this.data.datasets[0].data[e._index];
-                if (ext == "NULL (no ext)") {
-                    ext = "\"\"";
-                }
-                var pp = encodeURIComponent(escapeHTML(decodeURIComponent(path)));
-                window.location.href = "search.php?submitted=true&p=1&q=extension:" + ext + " AND parent_path:" + pp + "*&doctype=file";
-                return false;
-            },
-            onHover: function (event, legendItem, legend) {
-                $("#topFileTypesBySize-barChart").css("cursor", "pointer");
-            },
-            onLeave: function (event, legendItem, legend) {
-                $("#topFileTypesBySize-barChart").css("cursor", "default");
-            }
-        }
-
-        var topFileTypesBySizebarChart = new Chart(topFileTypesBySizebarChartCanvas, {
-            type: 'horizontalBar',
-            data: topFileTypesbarData,
-            options: topFileTypesbarOptions
-        })
-
-        // by count pie chart
-
-        var top_ext_labels = []
-        var top_ext_data_count = []
-        var top_ext_colors = []
-        var top_ext_colors_border = []
-
-        // re-sort data by top count
-        data2.sort((a, b) => (a.count > b.count) ? -1 : 1)
-
-        for (var i in data2) {
-            var name = data2[i].name;
-            if (name == '') {
-                name = 'NULL (no ext)'
-            }
-            top_ext_labels.push(name)
-            top_ext_data_count.push(data2[i].count)
-            if (name in top_ext_colors_map) {
-                var c = top_ext_colors_map[name]
-            } else {
-                var c = default_colors[i]
-            }
-            top_ext_colors.push(c)
-            top_ext_colors_border.push('#2F3338')
-        }
-
-        var topFileTypesByCountpieChartCanvas = $("#topFileTypesByCount-pieChart")
-        var topFileTypespieData = {
-            labels: top_ext_labels,
-            datasets: [{
-                data: top_ext_data_count,
-                backgroundColor: top_ext_colors,
-                borderColor: top_ext_colors_border
-            }]
-        }
-        var topFileTypespieOptions = {
-            legend: {
-                display: true,
-                position: 'right',
-                labels: {
-                    fontColor: '#C8C8C8'
                 },
-                onClick: function (event, legendItem, legend) {
-                    var ext = legendItem.text;
+                scales: {
+                    xAxes: [{
+                        stacked: true,
+                        ticks: {
+                            // Format size in the ticks
+                            callback: function (value, index, values) {
+                                return format(value, '0');
+                            }
+                        }
+                    }]
+                },
+                title: {
+                    display: true,
+                    text: 'Top File Types by Size'
+                },
+                maintainAspectRatio: false,
+                responsive: true,
+                onClick: function(event, clickedElements) {
+                    if (clickedElements.length === 0) return;
+                    var e = clickedElements[0];
+                    var ext = this.data.labels[e._index];
+                    //var size = this.data.datasets[0].data[e._index];
+                    if (ext == "NULL (no ext)") {
+                        ext = "\"\"";
+                    }
+                    var pp = encodeURIComponent(escapeHTML(decodeURIComponent(path)));
+                    window.location.href = "search.php?submitted=true&p=1&q=extension:" + ext + " AND parent_path:" + pp + "*&doctype=file";
+                    return false;
+                },
+                onHover: function (event, legendItem, legend) {
+                    $("#topFileTypesBySize-barChart").css("cursor", "pointer");
+                },
+                onLeave: function (event, legendItem, legend) {
+                    $("#topFileTypesBySize-barChart").css("cursor", "default");
+                }
+            }
+
+            var topFileTypesBySizebarChart = new Chart(topFileTypesBySizebarChartCanvas, {
+                type: 'horizontalBar',
+                data: topFileTypesbarData,
+                options: topFileTypesbarOptions
+            })
+
+            // by count pie chart
+
+            var top_ext_labels = []
+            var top_ext_data_count = []
+            var top_ext_colors = []
+            var top_ext_colors_border = []
+
+            // re-sort data by top count
+            data2.sort((a, b) => (a.count > b.count) ? -1 : 1)
+
+            for (var i in data2) {
+                var name = data2[i].name;
+                if (name == '') {
+                    name = 'NULL (no ext)'
+                }
+                top_ext_labels.push(name)
+                top_ext_data_count.push(data2[i].count)
+                if (name in top_ext_colors_map) {
+                    var c = top_ext_colors_map[name]
+                } else {
+                    var c = default_colors[i]
+                }
+                top_ext_colors.push(c)
+                top_ext_colors_border.push('#2F3338')
+            }
+
+            var topFileTypesByCountpieChartCanvas = $("#topFileTypesByCount-pieChart")
+            var topFileTypespieData = {
+                labels: top_ext_labels,
+                datasets: [{
+                    data: top_ext_data_count,
+                    backgroundColor: top_ext_colors,
+                    borderColor: top_ext_colors_border
+                }]
+            }
+            var topFileTypespieOptions = {
+                legend: {
+                    display: true,
+                    position: 'right',
+                    labels: {
+                        fontColor: '#C8C8C8'
+                    },
+                    onClick: function (event, legendItem, legend) {
+                        var ext = legendItem.text;
+                        if (ext == "NULL (no ext)") {
+                            ext = "\"\"";
+                        }
+                        var pp = encodeURIComponent(escapeHTML(decodeURIComponent(path)));
+                        window.location.href = "search.php?submitted=true&p=1&q=extension:" + ext + " AND parent_path:" + pp + "*&doctype=file";
+                        return false;
+                    },
+                    onHover: function (event, legendItem, legend) {
+                        $("#topFileTypesByCount-pieChart").css("cursor", "pointer");
+                    },
+                    onLeave: function (event, legendItem, legend) {
+                        $("#topFileTypesByCount-pieChart").css("cursor", "default");
+                    }
+                },
+                tooltips: {
+                    mode: 'label',
+                    callbacks: {
+                        label: function (tooltipItem, data2) {
+                            var i = tooltipItem.index;
+                            var total = data2.datasets[0].data.reduce(function(previousValue, currentValue, currentIndex, array) {
+                                return previousValue + currentValue;
+                            });
+                            var currentValue = data2.datasets[0].data[i];
+                            var percentage = parseFloat((currentValue/total*100).toFixed(1));
+                            return data2.labels[i] + ': ' + currentValue.toLocaleString() + ' files (' + percentage +'%)';
+                        }
+                    }
+                },
+                title: {
+                    display: true,
+                    text: 'Top File Types by Count'
+                },
+                maintainAspectRatio: false,
+                responsive: true,
+                onClick: function(event, clickedElements) {
+                    if (clickedElements.length === 0) return;
+                    var e = clickedElements[0];
+                    var ext = this.data.labels[e._index];
+                    //var size = this.data.datasets[0].data[e._index];
                     if (ext == "NULL (no ext)") {
                         ext = "\"\"";
                     }
@@ -808,96 +852,124 @@ $(function () {
                 onLeave: function (event, legendItem, legend) {
                     $("#topFileTypesByCount-pieChart").css("cursor", "default");
                 }
-            },
-            tooltips: {
-                mode: 'label',
-                callbacks: {
-                    label: function (tooltipItem, data2) {
-                        var i = tooltipItem.index;
-                        var total = data2.datasets[0].data.reduce(function(previousValue, currentValue, currentIndex, array) {
-                            return previousValue + currentValue;
-                        });
-                        var currentValue = data2.datasets[0].data[i];
-                        var percentage = parseFloat((currentValue/total*100).toFixed(1));
-                        return data2.labels[i] + ': ' + currentValue.toLocaleString() + ' files (' + percentage +'%)';
-                    }
-                }
-            },
-            title: {
-                display: true,
-                text: 'Top File Types by Count'
-            },
-            maintainAspectRatio: false,
-            responsive: true,
-            onClick: function(event, clickedElements) {
-                if (clickedElements.length === 0) return;
-                var e = clickedElements[0];
-                var ext = this.data.labels[e._index];
-                //var size = this.data.datasets[0].data[e._index];
-                if (ext == "NULL (no ext)") {
-                    ext = "\"\"";
-                }
-                var pp = encodeURIComponent(escapeHTML(decodeURIComponent(path)));
-                window.location.href = "search.php?submitted=true&p=1&q=extension:" + ext + " AND parent_path:" + pp + "*&doctype=file";
-                return false;
-            },
-            onHover: function (event, legendItem, legend) {
-                $("#topFileTypesByCount-pieChart").css("cursor", "pointer");
-            },
-            onLeave: function (event, legendItem, legend) {
-                $("#topFileTypesByCount-pieChart").css("cursor", "default");
             }
-        }
 
-        var topFileTypesByCountpieChart = new Chart(topFileTypesByCountpieChartCanvas, {
-            type: 'doughnut',
-            data: topFileTypespieData,
-            options: topFileTypespieOptions
-        })
-
-        //--------------------
-        //- END BAR/PIE EXT CHART -
-        //--------------------
-
-
-        //----------------
-        //- STACKED BAR MTIME CHART -
-        //----------------
-
-        var datasets = []
-
-        // get total size
-        var totalsize = 0;
-        for (var i in data3) {
-            totalsize += data3[i].size;
-        }
-
-        for (var i in data3) {
-            datasets.push({
-                label: data3[i].mtime,
-                data: [(data3[i].size / totalsize * 100).toFixed(1)],
-                size: data3[i].size,
-                backgroundColor: hot_cold_colors[i],
-                borderColor: '#2F3338'
+            var topFileTypesByCountpieChart = new Chart(topFileTypesByCountpieChartCanvas, {
+                type: 'doughnut',
+                data: topFileTypespieData,
+                options: topFileTypespieOptions
             })
-        }
 
-        datasets.reverse();
+            //--------------------
+            //- END BAR/PIE EXT CHART -
+            //--------------------
 
-        var mtimebarChartCanvas = $("#mtime-barChart")
-        var mtimebarData = {
-            labels: ['Last Modified'],
-            datasets: datasets
-        }
-        var mtimebarOptions = {
-            legend: {
-                display: true,
-                position: 'top',
-                labels: {
-                    fontColor: '#C8C8C8'
+
+            //----------------
+            //- STACKED BAR MTIME CHART -
+            //----------------
+
+            var datasets = []
+
+            // get total size
+            var totalsize = 0;
+            for (var i in data3) {
+                totalsize += data3[i].size;
+            }
+
+            for (var i in data3) {
+                datasets.push({
+                    label: data3[i].mtime,
+                    data: [(data3[i].size / totalsize * 100).toFixed(1)],
+                    size: data3[i].size,
+                    backgroundColor: hot_cold_colors[i],
+                    borderColor: '#2F3338'
+                })
+            }
+
+            datasets.reverse();
+
+            var mtimebarChartCanvas = $("#mtime-barChart")
+            var mtimebarData = {
+                labels: ['Last Modified'],
+                datasets: datasets
+            }
+            var mtimebarOptions = {
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: {
+                        fontColor: '#C8C8C8'
+                    },
+                    onClick: function (event, legendItem, legend) {
+                        var mtime = legendItem.text;
+                        if (mtime == "0 - 30 days") {
+                            mtime = "[now/m-1M/d TO now/m}"
+                        } else if (mtime == "30 - 90 days") {
+                            mtime = "[now/m-3M/d TO now/m-1M/d}"
+                        } else if (mtime == "90 - 180 days") {
+                            mtime = "[now/m-6M/d TO now/m-3M/d}"
+                        } else if (mtime == "180 days - 1 year") {
+                            mtime = "[now/m-1y/d TO now/m-6M/d}"
+                        } else if (mtime == "1 - 2 years") {
+                            mtime = "[now/m-2y/d TO now/m-1y/d}"
+                        } else if (mtime == "> 2 years") {
+                            mtime = "[* TO now/m-2y/d}"
+                        }
+                        var pp = encodeURIComponent(escapeHTML(decodeURIComponent(path)));
+                        window.location.href = "search.php?submitted=true&p=1&q=mtime:" + mtime + " AND parent_path:" + pp + "*&sort=size&sortorder=desc&sort2=name&sortorder2=asc&doctype=file";
+                        return false;
+                    },
+                    onHover: function (event, legendItem, legend) {
+                        $("#mtime-barChart").css("cursor", "pointer");
+                    },
+                    onLeave: function (event, legendItem, legend) {
+                        $("#mtime-barChart").css("cursor", "default");
+                    }
                 },
-                onClick: function (event, legendItem, legend) {
-                    var mtime = legendItem.text;
+                tooltips: {
+                    mode: 'single',
+                    callbacks: {
+                        label: function (tooltipItem, data3) {
+                            var i = tooltipItem.datasetIndex;
+                            var currentValue = data3.datasets[i].size
+                            var percentage = parseFloat((currentValue/totalsize*100).toFixed(1));
+                            return data3.datasets[i].label + ': ' + format(currentValue) + ' (' + percentage +'%)';
+                        }
+                    }
+                },
+                scales: {
+                    xAxes: [{
+                        display: true,
+                        stacked: true,
+                        gridLines: {
+                            display: false
+                        },
+                        ticks: {
+                            min: 0,
+                            max: 100,
+                            callback: function (value) {
+                                return value + '%'
+                            }
+                        }
+                    }],
+                    yAxes: [{
+                        display: false,
+                        stacked: true,
+                        gridLines: {
+                            display: false
+                        }
+                    }]
+                },
+                title: {
+                    display: true,
+                    text: 'File Age by Size'
+                },
+                maintainAspectRatio: false,
+                onClick: function(event, clickedElements) {
+                    if (clickedElements.length === 0) return;
+                    var activeElement = mtimebarChart.getElementAtEvent(event);
+                    var mtime = this.data.datasets[activeElement[0]._datasetIndex].label;
                     if (mtime == "0 - 30 days") {
                         mtime = "[now/m-1M/d TO now/m}"
                     } else if (mtime == "30 - 90 days") {
@@ -912,7 +984,7 @@ $(function () {
                         mtime = "[* TO now/m-2y/d}"
                     }
                     var pp = encodeURIComponent(escapeHTML(decodeURIComponent(path)));
-                    window.location.href = "search.php?submitted=true&p=1&q=mtime:" + mtime + " AND parent_path:" + pp + "*&sort=size&sortorder=desc&sort2=name&sortorder2=asc&doctype=file";
+                    window.location.href = "search.php?submitted=true&p=1&q=mtime:" + mtime + " AND parent_path:" + pp + "*&doctype=file";
                     return false;
                 },
                 onHover: function (event, legendItem, legend) {
@@ -921,84 +993,19 @@ $(function () {
                 onLeave: function (event, legendItem, legend) {
                     $("#mtime-barChart").css("cursor", "default");
                 }
-            },
-            tooltips: {
-                mode: 'single',
-                callbacks: {
-                    label: function (tooltipItem, data3) {
-                        var i = tooltipItem.datasetIndex;
-                        var currentValue = data3.datasets[i].size
-                        var percentage = parseFloat((currentValue/totalsize*100).toFixed(1));
-                        return data3.datasets[i].label + ': ' + format(currentValue) + ' (' + percentage +'%)';
-                    }
-                }
-            },
-            scales: {
-                xAxes: [{
-                    display: true,
-                    stacked: true,
-                    gridLines: {
-                        display: false
-                    },
-                    ticks: {
-                        min: 0,
-                        max: 100,
-                        callback: function (value) {
-                            return value + '%'
-                        }
-                    }
-                }],
-                yAxes: [{
-                    display: false,
-                    stacked: true,
-                    gridLines: {
-                        display: false
-                    }
-                }]
-            },
-            title: {
-                display: true,
-                text: 'File Age by Size'
-            },
-            maintainAspectRatio: false,
-            onClick: function(event, clickedElements) {
-                if (clickedElements.length === 0) return;
-                var activeElement = mtimebarChart.getElementAtEvent(event);
-                var mtime = this.data.datasets[activeElement[0]._datasetIndex].label;
-                if (mtime == "0 - 30 days") {
-                    mtime = "[now/m-1M/d TO now/m}"
-                } else if (mtime == "30 - 90 days") {
-                    mtime = "[now/m-3M/d TO now/m-1M/d}"
-                } else if (mtime == "90 - 180 days") {
-                    mtime = "[now/m-6M/d TO now/m-3M/d}"
-                } else if (mtime == "180 days - 1 year") {
-                    mtime = "[now/m-1y/d TO now/m-6M/d}"
-                } else if (mtime == "1 - 2 years") {
-                    mtime = "[now/m-2y/d TO now/m-1y/d}"
-                } else if (mtime == "> 2 years") {
-                    mtime = "[* TO now/m-2y/d}"
-                }
-                var pp = encodeURIComponent(escapeHTML(decodeURIComponent(path)));
-                window.location.href = "search.php?submitted=true&p=1&q=mtime:" + mtime + " AND parent_path:" + pp + "*&doctype=file";
-                return false;
-            },
-            onHover: function (event, legendItem, legend) {
-                $("#mtime-barChart").css("cursor", "pointer");
-            },
-            onLeave: function (event, legendItem, legend) {
-                $("#mtime-barChart").css("cursor", "default");
             }
+
+            var mtimebarChart = new Chart(mtimebarChartCanvas, {
+                type: 'horizontalBar',
+                data: mtimebarData,
+                options: mtimebarOptions
+            })
+
+            //--------------------
+            //- END STACKED BAR MTIME CHART -
+            //--------------------
+
         }
-
-        var mtimebarChart = new Chart(mtimebarChartCanvas, {
-            type: 'horizontalBar',
-            data: mtimebarData,
-            options: mtimebarOptions
-        })
-
-        //--------------------
-        //- END STACKED BAR MTIME CHART -
-        //--------------------
 
     }
 

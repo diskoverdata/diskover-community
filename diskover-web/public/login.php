@@ -18,6 +18,7 @@ https://www.diskoverdata.com/solutions/
 
 ini_set('session.gc_maxlifetime', 604800);
 ini_set("session.cookie_lifetime", 604800);
+session_set_cookie_params(604800, "/");
 ob_start();
 session_start();
 require '../vendor/autoload.php';
@@ -30,6 +31,11 @@ use diskover\Login;
 error_reporting(E_ERROR | E_PARSE);
 
 $msg = '';
+
+// If they were inactive session timeout
+if (isset($_GET['inactive'])) {
+    $msg = 'Your session has timed out from inactivy. Please log in again.';
+ }
 
 // If they just changed their password.
 if (isset($_GET['changed'])) {

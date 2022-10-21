@@ -113,6 +113,9 @@ databases:
         # for AWS ES, you will most likely want to set this to True
         # override with env var ES_HTTPS
         https: False
+        # set sslverification to False if you do not want to verify SSL or True to verify (default)
+        # override with env var ES_SSLVERIFICATION
+        sslverification: True
         # compress http data
         # for AWS ES, you will most likely want to set this to True
         httpcompress: False

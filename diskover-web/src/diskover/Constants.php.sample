@@ -43,6 +43,11 @@ class Constants {
     // override with env var ES_HTTPS
     const ES_HTTPS = FALSE;
 
+    // Elasticsearch SSL Verification
+    // set to TRUE (default) to verify SSL or FALSE to not verify ssl when connecting to ES
+    // override with env var ES_SSLVERIFICATION
+    const ES_SSLVERIFICATION = TRUE;
+
     // login auth for diskover-web
     const LOGIN_REQUIRED = TRUE;
 

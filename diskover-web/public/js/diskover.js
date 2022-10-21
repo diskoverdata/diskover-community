@@ -28,7 +28,7 @@ const SIZE_FIELD = 'size';
 
 
 var index = ($_GET('index')) ? $_GET('index') : getCookie('index');
-var path = ($_GET('path')) ? $_GET('path') : getCookie('path');
+var path = getCookie('path');
 // replace any + character from space
 path = path.replace(/\+/g, '%20');
 // replace any + character from space

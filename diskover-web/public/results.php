@@ -369,7 +369,10 @@ $hidecharts = getCookie('hidesearchcharts');
                                         echo '<li><a href="' . $nextpageurl . '">';
                                     } ?>&raquo;</a></li>
                                     <?php if ($end < $last) {
-                                        echo '<li><a href="' . $lastpageurl . '">' . $last . '</a></li>';
+                                        // disable last page button if too many pages (to prevent php crash)
+                                        $lastpagedisabled = ($last > 1000) ? ' class="disabled" title="disabled due to too many page results, narrow your search"' : '';
+                                        $lastpageurl = ($last > 1000) ? '#' : $lastpageurl;
+                                        echo '<li'.$lastpagedisabled.'><a href="' . $lastpageurl . '">' . $last . '</a></li>';
                                     } ?>
                                     <?php
                                     $i = $p * $limit - $limit;
@@ -744,7 +747,10 @@ $hidecharts = getCookie('hidesearchcharts');
                                     echo '<li><a href="' . $nextpageurl . '">';
                                 } ?>&raquo;</a></li>
                                 <?php if ($end < $last) {
-                                    echo '<li><a href="' . $lastpageurl . '">' . $last . '</a></li>';
+                                    // disable last page button if too many pages (to prevent php crash)
+                                    $lastpagedisabled = ($last > 1000) ? ' class="disabled" title="disabled due to too many page results, narrow your search"' : '';
+                                    $lastpageurl = ($last > 1000) ? '#' : $lastpageurl;
+                                    echo '<li'.$lastpagedisabled.'><a href="' . $lastpageurl . '">' . $last . '</a></li>';
                                 } ?>
                         </ul>
                     </div>

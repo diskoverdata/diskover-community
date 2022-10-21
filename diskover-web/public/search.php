@@ -53,6 +53,22 @@ if (!empty($_GET['submitted'])) {
     // get request string from predict_search
     $request = predict_search($searchquery);
 
+    // check for path in search query and update paths in session and cookies
+    if (!isset($_GET['path']) && strpos($request, 'parent_path:') !== false) {
+        // parse out actual path from es query string
+        $pp = explode('parent_path:', $request)[1];
+        $pp = preg_replace('/ (AND|OR) .*/i', '', $pp);
+        $pp = str_replace('\\', '', $pp);
+        $pp = ltrim($pp, '(');
+        $path = rtrim($pp, '*)');
+        $rootpath = getRootpath($path);
+        $_SESSION['rootpath'] = $rootpath;
+        createCookie('rootpath', $rootpath);
+        // set path cookie to update tree
+        createCookie('path', $path);
+        createCookie('parentpath', getParentDir($path));
+    }
+
     // curent page
     $p = $_GET['p'];
 
@@ -78,7 +94,7 @@ if (!empty($_GET['submitted'])) {
     }
 
     // Scroll parameter alive time
-    $searchParams['scroll'] = "1m";
+    $searchParams['scroll'] = "30s";
 
     // search size (number of results to return per page)
     if (isset($_GET['resultsize'])) {

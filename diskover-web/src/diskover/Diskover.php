@@ -73,9 +73,13 @@ class ESClient
         $hosts[] = array(
             'host' => getenv('ES_HOST') ?: $GLOBALS['config']->ES_HOST, 'port' => getenv('ES_PORT') ?: $GLOBALS['config']->ES_PORT,
             'user' => getenv('ES_USER') ?: $GLOBALS['config']->ES_USER, 'pass' => getenv('ES_PASS') ?: $GLOBALS['config']->ES_PASS,
-            'scheme' => (getenv('ES_HTTPS') || $GLOBALS['config']->ES_HTTPS) ? 'https' : 'http'
+            'scheme' => (strtolower(getenv('ES_HTTPS')) === "true" || $GLOBALS['config']->ES_HTTPS) ? 'https' : 'http'
         );
-        $client = ClientBuilder::create()->setHosts($hosts)->build();
+        if (strtolower(getenv('ES_SSLVERIFICATION')) === "false" || !$GLOBALS['config']->ES_SSLVERIFICATION) {
+            $client = ClientBuilder::create()->setHosts($hosts)->setSSLVerification(false)->build();
+        } else {
+            $client = ClientBuilder::create()->setHosts($hosts)->build();
+        }
         $this->client = $client;
         return $this->client;
     }
@@ -393,18 +397,36 @@ function indexInfo()
         $index_spaceinfo = $_SESSION['indexinfo']['spaceinfo'];
     }
 
+    $esIndex_cookie = getCookie('index');
+
     // check for index in url
     if (isset($_GET['index']) && $_GET['index'] != "") {
         $esIndex = $_GET['index'];
         createCookie('index', $esIndex);
     } else {
-        // get index from cookie
-        $esIndex = getCookie('index');
+        $esIndex = $esIndex_cookie;
         // redirect to select indices page if esIndex is empty
         if (empty($esIndex) && !in_array(basename($_SERVER['PHP_SELF']), $selectindex_noredirect)) {
             header("location:selectindices.php");
             exit();
         }
+    }
+
+    // check if user changed index in url params and delete path cookies/session vars and reload the page
+    if ($esIndex_cookie != "" && $esIndex_cookie != $esIndex) {
+        deleteCookie('index');
+        clearPaths();
+        // set usecache to false (flush chart/file tree cache)
+        createCookie('usecache', 0);
+        $query = $_GET;
+        $query['index'] = $esIndex;
+        $query['q'] = "";
+        $query['path'] = "";
+        $query_result = http_build_query($query);
+        $url = $_SERVER['PHP_SELF'] . "?" . $query_result;
+        // reload page
+        header("location:" . $url);
+        exit();
     }
 
     notifyNewIndex();
@@ -514,6 +536,17 @@ function setPaths()
         $_SESSION['rootpath'] = $path;
         createCookie('rootpath', $path);
         createCookie('parentpath', getParentDir($path));
+    }
+}
+
+
+// finds root path from path
+function getRootPath($p)
+{
+    if ($p == $_SESSION['toppath']) {
+        return $p;
+    } elseif ($p != '/') {
+        return getRootPath(dirname($p));
     }
 }
 
@@ -1063,14 +1096,14 @@ function predict_search($q)
             $pathnowild = rtrim($request, '\*');
             // update path cookie to update tree
             $cookiepath = str_replace('\\', '', $pathnowild);
-            setCookie('path', $cookiepath);
+            createCookie('path', $cookiepath);
             $request = 'parent_path:' . $pathnowild . '*';
         } elseif (preg_match('/^.*\.\w{3,4}$/', $request)) { // file
             $request = 'parent_path:' . rtrim(dirname($request), '\/') . ' AND name:' . rtrim(basename($request), '\/');
         } else { // directory
             // update path cookie to update tree
             $cookiepath = str_replace('\\', '', $request);
-            setCookie('path', $cookiepath);
+            createCookie('path', $cookiepath);
             $request = 'parent_path:' . $request;
         }
         // NOT es field query such as name:filename
@@ -1121,11 +1154,12 @@ function curl_es($url, $request = null, $return_json = true)
 {
     global $es_responsetime;
 
-    $hostname = $GLOBALS['config']->ES_HOST;
-    $port = $GLOBALS['config']->ES_PORT;
-    $user = $GLOBALS['config']->ES_USER;
-    $pass = $GLOBALS['config']->ES_PASS;
-    $https = $GLOBALS['config']->ES_HTTPS;
+    $hostname = getenv('ES_HOST') ?: $GLOBALS['config']->ES_HOST;
+    $port = getenv('ES_PORT') ?: $GLOBALS['config']->ES_PORT;
+    $user = getenv('ES_USER') ?: $GLOBALS['config']->ES_USER;
+    $pass = getenv('ES_PASS') ?: $GLOBALS['config']->ES_PASS;
+    $scheme = (strtolower(getenv('ES_HTTPS')) === "true" || $GLOBALS['config']->ES_HTTPS) ? 'https' : 'http';
+    $sslverify = (strtolower(getenv('ES_SSLVERIFICATION')) === "false" || !$GLOBALS['config']->ES_SSLVERIFICATION) ? FALSE : TRUE;
 
     // Get cURL resource
     $curl = curl_init();
@@ -1133,15 +1167,15 @@ function curl_es($url, $request = null, $return_json = true)
     curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 10);
     curl_setopt($curl, CURLOPT_TIMEOUT, 30);
+    if (!$sslverify) {
+        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
+        curl_setopt($curl, CURLOPT_SSL_VERIFYSTATUS, false);
+    }
     if ($request === "DELETE") {
         curl_setopt($curl, CURLOPT_CUSTOMREQUEST, 'DELETE');
     } elseif ($request === "POST") {
         curl_setopt($curl, CURLOPT_CUSTOMREQUEST, 'POST');
-    }
-    if ($https) {
-        $scheme = 'https';
-    } else {
-        $scheme = 'http';
     }
     $curl_url = $scheme . '://' . $hostname . ':' . $port . $url;
     curl_setopt($curl, CURLOPT_URL, $curl_url);

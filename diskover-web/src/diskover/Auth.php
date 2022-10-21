@@ -18,6 +18,7 @@ https://www.diskoverdata.com/solutions/
 
 ini_set('session.gc_maxlifetime', 604800);
 ini_set("session.cookie_lifetime", 604800);
+session_set_cookie_params(604800, "/");
 session_start();
 require 'config_inc.php';
 
@@ -32,7 +33,7 @@ if ($config->LOGIN_REQUIRED) {
             $_SESSION['last_activity'] = time();
         } else {
             // login timeout expired, log user out
-            header('location: logout.php');
+            header('location: logout.php?inactive');
             exit;
         }
     } else {

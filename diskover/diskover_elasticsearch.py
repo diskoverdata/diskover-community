@@ -75,10 +75,29 @@ finally:
     if not es_password:
         es_password = ""
 try:
-    es_https = os.getenv('ES_HTTPS', config['databases']['elasticsearch']['https'].get())
+    es_https_env = os.getenv('ES_HTTPS')
+    if es_https_env is not None:
+        if es_https_env.lower() == "true":
+            es_https = True
+        elif es_https_env.lower() == "false":
+            es_https = False
+    else:
+        es_https = config['databases']['elasticsearch']['https'].get()
 except confuse.NotFoundError as e:
     config_warn(e)
     es_https = config_defaults['databases']['elasticsearch']['https'].get()
+try:
+    es_sslverify_env = os.getenv('ES_SSLVERIFICATION')
+    if es_sslverify_env is not None:
+        if es_sslverify_env.lower() == "true":
+            es_sslverify = True
+        elif es_sslverify_env.lower() == "false":
+            es_sslverify = False
+    else:
+        es_sslverify = config['databases']['elasticsearch']['sslverification'].get()
+except confuse.NotFoundError as e:
+    config_warn(e)
+    es_sslverify = config_defaults['databases']['elasticsearch']['sslverification'].get()
 try:
     es_httpcompress = config['databases']['elasticsearch']['httpcompress'].get()
 except confuse.NotFoundError as e:
@@ -130,7 +149,6 @@ except confuse.NotFoundError as e:
     config_warn(e)
     es_indexrefresh = config_defaults['databases']['elasticsearch']['indexrefresh'].get()
 
-
 # load any available plugins
 plugins = load_plugins()
 
@@ -161,19 +179,27 @@ def elasticsearch_connection():
         scheme = 'http'
     url = scheme + '://' + es_host + ':' + str(es_port)
     try:
-        r = requests.get(url, auth=(es_user, es_password))
+        if (es_sslverify):
+            r = requests.get(url, auth=(es_user, es_password))
+        else:
+            import urllib3
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+            r = requests.get(url, auth=(es_user, es_password), verify=False)
     except Exception as e:
-        print(
-            'Error connecting to Elasticsearch, check config and Elasticsearch is running.\n\nError: {0}'.format(e))
+        print('Error connecting to Elasticsearch, check config and Elasticsearch is running.\n\nError: {0}'.format(e))
         sys.exit(1)
 
     # Check if we are using HTTP TLS/SSL
     if es_https:
+        if (es_sslverify):
+            verifycerts = True
+        else:
+            verifycerts = False
         es = elasticsearch.Elasticsearch(
             hosts=es_host,
             port=es_port,
             http_auth=(es_user, es_password),
-            scheme="https", use_ssl=True, verify_certs=True,
+            scheme="https", use_ssl=True, verify_certs=verifycerts,
             connection_class=elasticsearch.RequestsHttpConnection,
             timeout=es_timeout, maxsize=es_maxsize,
             max_retries=es_max_retries, retry_on_timeout=True, http_compress=es_httpcompress)

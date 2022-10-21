@@ -40,7 +40,7 @@ from diskover_helpers import dir_excluded, file_excluded, \
     get_file_name, load_plugins, list_plugins, get_plugins_info, set_times, \
     get_mem_usage, get_win_path, rem_win_path
 
-version = '2.0.4 community edition (ce)'
+version = '2.0.5 community edition (ce)'
 __version__ = version
 
 # Windows check
@@ -935,7 +935,7 @@ def log_setup():
         else:
             # replace any forward slash with underscore
             treedirsstr += d_path.replace('/', '_')
-        logfiletime = datetime.now().strftime('%Y_%m_%d_%I_%M_%S')
+        logfiletime = datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
         logname = 'diskover_{0}_{1}.log'.format(treedirsstr, logfiletime)
         logfile = os.path.join(logdir, logname)
         handler_file = logging.FileHandler(logfile)
