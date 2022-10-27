@@ -1,0 +1,14 @@
+# diskover ftp alt scanner config file
+# copy to ~/.config/diskover_scandir_ftp/ on Linux
+# '~/Application Support/diskover_scandir_ftp/' on macOS
+# %APPDATA%/diskover_scandir_ftp/ on Windows
+appName: diskover_scandir_ftp
+
+user:
+password:
+host:
+port: 21
+active: true
+ftp_over_tls: false
+storage_size: 1.074e+11
+debug: 0
