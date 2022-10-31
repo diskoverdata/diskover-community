@@ -270,7 +270,7 @@ class FTPServer:
             self.stat(path)
         except ftputil.error.RootDirError:
             return (True, None)
-        except ftputil.error.PermanentError:
+        except ftputil.error.PermanentError as e:
             if e.errno == 550:
                 return (False, '{0} no such directory!'.format(path))
             else:
