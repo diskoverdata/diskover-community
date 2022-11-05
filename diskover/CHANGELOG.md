@@ -1,5 +1,10 @@
 # Diskover v2 Community Edition Change Log
 
+# [2.0.6] - 2022-11-06
+### changed
+- better handling of errors when importing alternate scanner modules
+
+
 # [2.0.5] - 2022-10-21
 ### fixed
 - log file names having 12H format instead of 24H

@@ -40,7 +40,7 @@ from diskover_helpers import dir_excluded, file_excluded, \
     get_file_name, load_plugins, list_plugins, get_plugins_info, set_times, \
     get_mem_usage, get_win_path, rem_win_path
 
-version = '2.0.5 community edition (ce)'
+version = '2.0.6 community edition (ce)'
 __version__ = version
 
 # Windows check
@@ -219,6 +219,16 @@ crawl_tree_queue = Queue()
 
 quit = False
 emptyindex = False
+
+
+class AltScannerError(Exception):
+    def __init__(self, message):
+        self.message = message
+        super().__init__(self.message)
+        logmsg = 'ALT SCANNER EXCEPTION {0}'.format(self.message)
+        logger.exception(logmsg)
+        if logtofile: logger_warn.exception(logmsg)
+        sys.exit(1)
 
 
 def close_app():
@@ -1028,13 +1038,8 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
         try:
             full_module_name = 'scanners.' + options.altscanner
             alt_scanner = importlib.import_module(full_module_name)
-        except ModuleNotFoundError:
-            logmsg = 'Alternate scanner {0} not found!'.format(options.altscanner)
-            logger.error(logmsg)
-            if logtofile: logger_warn.error(logmsg)
-            sys.exit(1)
-        except Exception:
-            raise
+        except Exception as e:
+            raise AltScannerError(e)
         logger.info('Using alternate scanner {0}'.format(alt_scanner))
         # point os.scandir() to scandir() in alt scanner module
         os.scandir = alt_scanner.scandir
@@ -1043,11 +1048,15 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
             alt_scanner.log_setup(loglevel, logformat, logtofile, handler_file, handler_warnfile, handler_con)
         except AttributeError:
             pass
+        except Exception as e:
+            raise AltScannerError(e)
          # call init function to create any connections to api, db, etc
         try:
             alt_scanner.init(globals())
         except AttributeError:
             pass
+        except Exception as e:
+            raise AltScannerError(e)
     else:
         alt_scanner = None
 

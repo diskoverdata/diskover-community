@@ -22,7 +22,6 @@ session_unset();
 session_destroy();
 // Delete any path cookies
 setcookie('path');
-setcookie('prevpath');
 setcookie('rootpath');
 setcookie('parentpath');
 setcookie('toppath');

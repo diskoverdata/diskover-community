@@ -1,5 +1,14 @@
 # Diskover-web v2 Community Edition Change Log
 
+# [2.0.6] - 2022-11-06
+### fixed
+- issue searching for full paths to hidden dot files/folders and files with double extensions (e.g. tar.gz)
+- issue searching for full file path
+- issue with rootpath not updating and directory searches showing no results
+- es search error [ids] unknown field [type]
+- occasional php fatal error when search contains parent_path field
+
+
 # [2.0.5] - 2022-10-21
 ### fixed
 - changing index in url params doesn't set the index or root path

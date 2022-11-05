@@ -35,7 +35,7 @@ if (empty($_REQUEST['id'])) {
         $searchParams['body'] = [
             'query' => [
                 'ids' => [
-                    'type' => '_doc',
+                    //'type' => '_doc',
                     'values' => [ $_REQUEST['id'] ]
                 ]
             ]

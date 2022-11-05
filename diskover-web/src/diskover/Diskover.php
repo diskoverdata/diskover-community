@@ -499,19 +499,12 @@ function setPaths()
             $path = get_es_path($esIndex, 1);
             $_SESSION['rootpath'] = $path;
             createCookie('rootpath', $path);
-            createCookie('prevpath', $path);
             createCookie('parentpath', getParentDir($path));
         }
     }
     // remove any trailing slash (unless root)
     if ($path !== "/") {
         $path = rtrim($path, '/');
-    }
-    createCookie('path', $path);
-    createCookie('parentpath', getParentDir($path));
-    // check rootpath session is set
-    if (!isset($_SESSION['rootpath'])) {
-        $_SESSION['rootpath'] = $path;
     }
     
     $toppath = $_SESSION['toppath'];
@@ -526,15 +519,11 @@ function setPaths()
         $_SESSION['toppath'] = $toppath;
     }
 
-    $prevpath = getCookie('prevpath');
-
-    // update prevpath to be current path
-    createCookie('prevpath', $path);
-
-    // update rootpath session and cookie and parentpath if path changed
-    if ($path == $toppath && $path != $prevpath) {
-        $_SESSION['rootpath'] = $path;
-        createCookie('rootpath', $path);
+    $rootpath = getRootpath($path);
+    if (!is_null($rootpath)) {
+        $_SESSION['rootpath'] = $rootpath;
+        createCookie('rootpath', $rootpath);
+        createCookie('path', $path);
         createCookie('parentpath', getParentDir($path));
     }
 }
@@ -632,7 +621,6 @@ function checkIndices()
 function clearPaths() {
     deleteCookie('path');
     deleteCookie('rootpath');
-    deleteCookie('prevpath');
     deleteCookie('parentpath');
     unset($_SESSION['rootpath']);
     unset($_SESSION['toppath']);
@@ -1095,17 +1083,17 @@ function predict_search($q)
         // check for wildcard at end of path
         if (preg_match('/^.*\\*$/', $request)) {
             $pathnowild = rtrim($request, '\*');
-            // update path cookie to update tree
             $cookiepath = str_replace('\\', '', $pathnowild);
             createCookie('path', $cookiepath);
             $request = 'parent_path:' . $pathnowild . '*';
-        } elseif (preg_match('/^.*\.\w{3,4}$/', $request)) { // file
+        } elseif (preg_match('/(^.*\.\w{3,4}(\.\w{2}){0,1}$)|(^.*\/\..*$)/', $request)) { // file
             $request = 'parent_path:' . rtrim(dirname($request), '\/') . ' AND name:' . rtrim(basename($request), '\/');
+            $cookiepath = rtrim(dirname($q), '/');
+            createCookie('path', $cookiepath);
         } else { // directory
-            // update path cookie to update tree
             $cookiepath = str_replace('\\', '', $request);
             createCookie('path', $cookiepath);
-            $request = 'parent_path:' . $request;
+            $request = '(parent_path:' . rtrim(dirname($request), '\/')  . ' AND name:' . rtrim(basename($request), '\/') . ') OR parent_path:' . $request;
         }
         // NOT es field query such as name:filename
     } elseif (preg_match('/(\w+):/i', $q) == false && !empty($q)) {
