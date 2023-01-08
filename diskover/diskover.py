@@ -31,6 +31,7 @@ from concurrent import futures
 from queue import Queue
 from random import choice
 from elasticsearch.helpers.errors import BulkIndexError
+from elasticsearch.exceptions import TransportError
 
 from diskover_elasticsearch import elasticsearch_connection, \
     check_index_exists, create_index, bulk_upload, tune_index
@@ -40,7 +41,7 @@ from diskover_helpers import dir_excluded, file_excluded, \
     get_file_name, load_plugins, list_plugins, get_plugins_info, set_times, \
     get_mem_usage, get_win_path, rem_win_path
 
-version = '2.0.6 community edition (ce)'
+version = '2.0.7 community edition (ce)'
 __version__ = version
 
 # Windows check
@@ -245,13 +246,22 @@ def close_app():
     # close any plugins
     if plugins_enabled and plugins:
         for plugin in plugins:
-            plugin.close(globals())
+            try:
+                plugin.close(globals())
+            except AttributeError:
+                pass
+            except Exception as e:
+                logger.exception(e, exc_info=1)
+                if logtofile: logger_warn.exception(e, exc_info=1)
     # alt scanner close
     if alt_scanner:
         try:
             alt_scanner.close(globals())
         except AttributeError:
             pass
+        except Exception as e:
+            logger.exception(e, exc_info=1)
+            if logtofile: logger_warn.exception(e, exc_info=1)
     # if any warnings, exit with custom exit code 64 to indicate index finished but with warnings
     if warnings > 0:
         sys.exit(64)
@@ -263,13 +273,25 @@ def close_app_critical_error():
     # close any plugins
     if plugins_enabled and plugins:
         for plugin in plugins:
-            plugin.close(globals())
+            try:
+                plugin.close(globals())
+            except AttributeError:
+                pass
+            except Exception as e:
+                logger.exception(e, exc_info=1)
+                if logtofile: logger_warn.exception(e, exc_info=1)
     # alt scanner close
     if alt_scanner:
         try:
             alt_scanner.close(globals())
         except AttributeError:
             pass
+        except Exception as e:
+            logger.exception(e, exc_info=1)
+            if logtofile: logger_warn.exception(e, exc_info=1)
+    logmsg = 'CRITICAL ERROR EXITING'
+    logger.critical(logmsg)
+    if logtofile: logger_warn.critical(logmsg)
     os._exit(1)
 
             
@@ -285,8 +307,8 @@ def start_bulk_upload(thread, root, docs):
     es_upload_start = time.time()
     try:
         bulk_upload(es, options.index, docs)
-    except BulkIndexError as e:
-        logmsg = '[{0}] FATAL ERROR: Elasticsearch bulk index error! ({1})'.format(thread, e)
+    except (BulkIndexError, TransportError) as e:
+        logmsg = '[{0}] FATAL ERROR: Elasticsearch bulk index/transport error! ({1})'.format(thread, e)
         logger.critical(logmsg, exc_info=1)
         if logtofile: logger_warn.critical(logmsg, exc_info=1)
         close_app_critical_error()

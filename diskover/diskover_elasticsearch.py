@@ -372,8 +372,14 @@ def create_index(indexname, es):
                 'free': {
                     'type': 'long'
                 },
+                'free_percent': {
+                    'type': 'float'
+                },
                 'available': {
                     'type': 'long'
+                },
+                'available_percent': {
+                    'type': 'float'
                 },
                 'file_size': {
                     'type': 'long'

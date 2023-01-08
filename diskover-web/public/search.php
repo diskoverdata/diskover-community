@@ -54,7 +54,7 @@ if (!empty($_GET['submitted'])) {
     $request = predict_search($searchquery);
 
     // check for path in search query and update paths in session and cookies
-    if (!isset($_GET['path']) && strpos($request, 'parent_path:\/') !== false) {
+    if (empty($_GET['path']) && strpos($request, 'parent_path:\/') !== false && substr_count($request, 'parent_path:\/') === 1) {
         // parse out actual path from es query string
         $pp = explode('parent_path:', $request)[1];
         $pp = preg_replace('/ (AND|OR) .*/i', '', $pp);
@@ -65,7 +65,6 @@ if (!empty($_GET['submitted'])) {
         if (!is_null($rootpath)) {
             $_SESSION['rootpath'] = $rootpath;
             createCookie('rootpath', $rootpath);
-            // set path cookie to update tree
             createCookie('path', $path);
             createCookie('parentpath', getParentDir($path));
             $_GET['path'] = $path;
@@ -144,9 +143,18 @@ if (!empty($_GET['submitted'])) {
         // Send search query to Elasticsearch and get scroll id and first page of results
         $queryResponse = $client->search($searchParams);
     } catch (Missing404Exception $e) {
-        handleError("Selected indices are no longer available.");
+        handleError("Selected indices are no longer available. Please select a different index.");
     } catch (Exception $e) {
-        handleError('ES error: ' . $e->getMessage(), false);
+        // reset sort order and reload page if error contains reason that we can not sort
+        $error_arr = json_decode($e->getMessage(), true);
+        $error_reason = $error_arr['error']['root_cause'][0]['reason'];
+        if (strpos($error_reason, "No mapping found for") !== false) {
+            resetSort('nomapping');
+        } elseif (strpos($error_reason, "Text fields are not optimised") !== false) {
+            resetSort('textfield');
+        } else {
+            handleError('ES error: ' . $e->getMessage(), false);
+        }
     }
 
     // set total hits
@@ -188,6 +196,11 @@ if (!empty($_GET['submitted'])) {
                 }
             }
             arsort($ext_onpage);
+            // clear current scroll window
+            if (!empty($scroll_id)) {
+                $client->clearScroll(array('scroll_id' => $scroll_id));
+                $scroll_id = null;
+            }
             // end loop
             break;
         }
@@ -197,7 +210,7 @@ if (!empty($_GET['submitted'])) {
         $queryResponse = $client->scroll([
             "body" => [
                 "scroll_id" => $scroll_id,
-                "scroll" => "1m"
+                "scroll" => "30s"
             ]
         ]);
 

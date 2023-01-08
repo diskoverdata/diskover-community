@@ -322,7 +322,7 @@ error_reporting(E_ALL ^ E_NOTICE);
                 <input type="hidden" name="submitted" value="true" />
                 <input type="hidden" name="p" value="1" />
                 <?php if (isset($_REQUEST['resultsize'])) {
-                    $resultSize = $_REQUEST['resultsize'];
+                    $resultSize = htmlspecialchars($_REQUEST['resultsize']);
                 } elseif (getCookie("resultsize") != "") {
                     $resultSize = getCookie("resultsize");
                 } else {

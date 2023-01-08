@@ -1,5 +1,16 @@
 # Diskover-web v2 Community Edition Change Log
 
+# [2.0.7] - 2023-01-08
+### fixed
+- Cross-Site Scripting (XSS) vulnerability in nav.php
+- php warning when reloading indices and there is a corrupt index
+- delete index not working on indices page
+### added
+- show multi-fields on help page fields section and filter fields, e.g. field.subfield
+- user alert when trying to sort on a field not found in index or trying to sort on a text field
+- index name to delete prompt when deleting index on indices page
+
+
 # [2.0.6] - 2022-11-06
 ### fixed
 - issue searching for full paths to hidden dot files/folders and files with double extensions (e.g. tar.gz)

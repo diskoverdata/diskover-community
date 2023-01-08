@@ -293,12 +293,22 @@ def index_info_crawlstart(es, index, path, start, ver, altscanner):
         mount_path = path
         if replacepaths:
             mount_path = replace_path(mount_path)
+        # Check if too large for long field mapping used by total
+        maxlongint = 18446744073709551615
+        if total > maxlongint:
+            total = maxlongint
+        if free > maxlongint:
+            free = maxlongint
+        if available > maxlongint:
+            available = maxlongint
         data = {
             'path': mount_path,
             'total': total,
             'used': total - free,
             'free': free,
+            'free_percent': round((total-(total-free))/total*100, 6),
             'available': available,
+            'available_percent': round((total-(total-available))/total*100, 6),
             'type': 'spaceinfo'
         }
         es.index(index=index, body=data)
@@ -336,12 +346,22 @@ def index_info_crawlstart(es, index, path, start, ver, altscanner):
                 available = available_bytes.value
             if replacepaths:
                 mount_path = replace_path(mount_path)
+            # Check if too large for long field mapping used by total
+            maxlongint = 18446744073709551615
+            if total > maxlongint:
+                total = maxlongint
+            if free > maxlongint:
+                free = maxlongint
+            if available > maxlongint:
+                available = maxlongint
             data = {
                 'path': mount_path,
                 'total': total,
                 'used': total - free,
                 'free': free,
+                'free_percent': round((total-(total-free))/total*100, 6),
                 'available': available,
+                'available_percent': round((total-(total-available))/total*100, 6),
                 'type': 'spaceinfo'
             }
             es.index(index=index, body=data)

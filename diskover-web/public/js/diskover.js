@@ -757,18 +757,17 @@ function clipboardNotice() {
 
 // delete index check
 function checkIndexDel() {
-    var indices = document.getElementsByClassName('indexcheck');
-    var checked = 0;
+    var indices = document.getElementsByName('delindices_arr[]');
+    var checked = document.getElementsByName('delindices_arr[]').length;
+    var indices_names = [];
     Array.from(indices).forEach(function(item, index){
-        if($(item).prop("checked") == true){
-            checked += 1;
-        }
+        indices_names.push(item.value);
     });
     if (checked == 0) {
         alert("select at least one index")
         return false;
     }
-    if (confirm('Are you sure you want to remove the selected indices?')) {
+    if (confirm('Are you sure you want to remove the selected ' + checked + ' indices? (' + indices_names.join(", ") + ')')) {
         // submit form
         $('#form-deleteindex').submit();
     } else {
@@ -780,36 +779,6 @@ function checkIndexDel() {
 function checkForceIndexDel(i) {
     if (confirm('Are you sure you want to force remove this index? Check that the indexing process is no longer running before doing this!')) {
         location.href = 'selectindices.php?forcedelindex='+i
-    } else {
-        return false;
-    }
-}
-
-// index alias check
-function checkIndexAlias() {
-    var indices = document.getElementsByClassName('indexcheck');
-    var checked = 0;
-    Array.from(indices).forEach(function(item, index){
-        if($(item).prop("checked") == true){
-            checked += 1;
-        }
-    });
-    if (checked == 0) {
-        alert("select at least one index")
-        return false;
-    }
-    if (!$('#aliasname').val()) {
-        alert("no alias name")
-        return false;
-    }
-    if ($('#aliasname').val().substring(0, 9) !== "diskover-" || $('#aliasname').val().length < 10) {
-        console.log($('#aliasname').val().substring(0, 9))
-        alert("alias name needs to start with diskover-")
-        return false;
-    }
-    if (confirm('Are you sure you want to change the selected indices alias?')) {
-        // submit form
-        return true;
     } else {
         return false;
     }
@@ -833,26 +802,16 @@ function checkSelectedIndex() {
 }
 
 function addHidden() {
-    var item = document.getElementsByClassName('indexcheck');
-    if($(item).prop("checked") == true){
-        var id = 'hidden_index_del_' + item.value;
-        $('#form-deleteindex').append('<input type="hidden" name="delindices_arr[]" value="' + item.value + '" id="' + id + '" />');
-    } else {
-        var id = 'hidden_index_del_' + item.value;
-        $('#' + id).remove();
-    }
-}
-
-function toggleHiddenInput(item) {
-    if($(item).prop("checked") == true){
-        var id = 'hidden_index_del_' + item.value;
-        if (!$('#' + id).length) {
+    var indices = document.getElementsByClassName('indexcheck');
+    Array.from(indices).forEach(function(item, index){
+        if($(item).prop("checked") == true){
+            var id = 'hidden_index_del_' + item.value;
             $('#form-deleteindex').append('<input type="hidden" name="delindices_arr[]" value="' + item.value + '" id="' + id + '" />');
+        } else {
+            var id = 'hidden_index_del_' + item.value;
+            $('#' + id).remove();
         }
-    } else {
-        var id = 'hidden_index_del_' + item.value;
-        $('#' + id).remove();
-    }
+    });
 }
 
 function checkSelected() {

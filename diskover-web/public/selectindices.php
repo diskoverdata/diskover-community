@@ -401,7 +401,7 @@ $estime = number_format(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 4);
                                         echo "<tr>
                                         <td>";
                                         if (!$disabled) {
-                                            echo "<input onclick=\"toggleHiddenInput(this)\" type=\"radio\" name=\"index\" id=\"index_" . $val . "\" class=\"indexcheck\" value=\"" . $val . "\" $checked></td>";
+                                            echo "<input onclick=\"addHidden()\" type=\"radio\" name=\"index\" id=\"index_" . $val . "\" class=\"indexcheck\" value=\"" . $val . "\" $checked></td>";
                                         } else {
                                             echo "<a href=\"#\" title=\"force delete\" onclick=\"checkForceIndexDel('" . $val . "')\" class=\"btn btn-xs btn-primary\"><i class=\"far fa-trash-alt\"></i>";
                                         }

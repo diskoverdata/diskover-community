@@ -1,5 +1,14 @@
 # Diskover v2 Community Edition Change Log
 
+# [2.0.7] - 2023-01-08
+### fixed
+- python error when indexing spaceinfo doc and total disk space > max size for ES long field mapping (AWS storage gateway)
+- exception handling for Elasticsearch exception TransportError during bulk uploads
+- exception handling for close function call for plugins and alt scanners
+### added
+- free_percent and available_percent to spaceinfo doc and to es index mappings
+
+
 # [2.0.6] - 2022-11-06
 ### changed
 - better handling of errors when importing alternate scanner modules

@@ -94,7 +94,9 @@ class ESClient
             'total',
             'used',
             'free',
+            'free_percent',
             'available',
+            'available_percent',
             'file_size',
             'file_size_du',
             'file_count',
@@ -113,6 +115,15 @@ class ESClient
             foreach ($val['mappings']['properties'] as $fieldname => $fieldtype) {
                 if (!in_array($fieldname, $field_exclusions)) {
                     $fields[] = $fieldname;
+                }
+                // check for multi-field add add additional sub-fields fieldname.subfield
+                if (array_key_exists('properties', $val['mappings']['properties'][$fieldname])) {
+                    foreach ($val['mappings']['properties'][$fieldname]['properties'] as $k => $v) {
+                        $field = $fieldname . '.' . $k;
+                        if (!in_array($field, $field_exclusions)) {
+                            $fields[] = $field;
+                        }
+                    }
                 }
             }
             $indices_curl_info_data[$key] = [
