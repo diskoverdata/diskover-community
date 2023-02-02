@@ -11,7 +11,9 @@ appName: diskover
 logLevel: INFO
 logToFile: False
 #logToFile: True
-logDirectory: /tmp/
+logDirectory: /var/log/diskover/
+# Windows: 
+#logDirectory: C:\Program Files\diskover\logs
 
 diskover:
     # max number of crawl threads

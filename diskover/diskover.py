@@ -41,7 +41,7 @@ from diskover_helpers import dir_excluded, file_excluded, \
     get_file_name, load_plugins, list_plugins, get_plugins_info, set_times, \
     get_mem_usage, get_win_path, rem_win_path
 
-version = '2.0.7 community edition (ce)'
+version = '2.1.0 community edition (ce)'
 __version__ = version
 
 # Windows check
@@ -232,6 +232,16 @@ class AltScannerError(Exception):
         sys.exit(1)
 
 
+class PluginError(Exception):
+    def __init__(self, message):
+        self.message = message
+        super().__init__(self.message)
+        logmsg = 'PLUGIN EXCEPTION {0}'.format(self.message)
+        logger.exception(logmsg)
+        if logtofile: logger_warn.exception(logmsg)
+        sys.exit(1)
+        
+
 def close_app():
     """Handle exiting cleanly when a keyboard interupt/sigint occurs."""
     global quit
@@ -246,19 +256,16 @@ def close_app():
     # close any plugins
     if plugins_enabled and plugins:
         for plugin in plugins:
-            try:
-                plugin.close(globals())
-            except AttributeError:
-                pass
-            except Exception as e:
-                logger.exception(e, exc_info=1)
-                if logtofile: logger_warn.exception(e, exc_info=1)
+            if hasattr(plugin, 'close'):
+                try:
+                    plugin.close(globals())
+                except Exception as e:
+                    logger.exception(e, exc_info=1)
+                    if logtofile: logger_warn.exception(e, exc_info=1)
     # alt scanner close
-    if alt_scanner:
+    if alt_scanner and hasattr(alt_scanner, 'close'):
         try:
             alt_scanner.close(globals())
-        except AttributeError:
-            pass
         except Exception as e:
             logger.exception(e, exc_info=1)
             if logtofile: logger_warn.exception(e, exc_info=1)
@@ -273,19 +280,16 @@ def close_app_critical_error():
     # close any plugins
     if plugins_enabled and plugins:
         for plugin in plugins:
-            try:
-                plugin.close(globals())
-            except AttributeError:
-                pass
-            except Exception as e:
-                logger.exception(e, exc_info=1)
-                if logtofile: logger_warn.exception(e, exc_info=1)
+            if hasattr(plugin, 'close'):
+                try:
+                    plugin.close(globals())
+                except Exception as e:
+                    logger.exception(e, exc_info=1)
+                    if logtofile: logger_warn.exception(e, exc_info=1)
     # alt scanner close
-    if alt_scanner:
+    if alt_scanner and hasattr(alt_scanner, 'close'):
         try:
             alt_scanner.close(globals())
-        except AttributeError:
-            pass
         except Exception as e:
             logger.exception(e, exc_info=1)
             if logtofile: logger_warn.exception(e, exc_info=1)
@@ -653,6 +657,18 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
                     warnings += 1
                 pass
             
+            # handle timestamp errors in s3fs and possibly other fuse mounts
+            try:
+                mtime = datetime.utcfromtimestamp(int(d_stat.st_mtime)).isoformat()
+            except ValueError:
+                logmsg = '[{0}] TIMESTAMP WARNING {1}'.format(thread, os.path.join(parent_path, file_name))
+                logger.warning(logmsg)
+                if logtofile: logger_warn.warning(logmsg)
+                with crawl_thread_lock:
+                    warnings += 1
+                mtime = "1970-01-01T00:00:00"
+                pass
+            
             # index doc dict
             data = {
                 'name': file_name,
@@ -666,7 +682,7 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
                 'dir_count': dirs + 1,
                 'dir_count_norecurs': dirs_norecurs + 1,
                 'dir_depth': depth,
-                'mtime': datetime.utcfromtimestamp(int(d_stat.st_mtime)).isoformat(),
+                'mtime': mtime,
                 'atime': datetime.utcfromtimestamp(int(d_stat.st_atime)).isoformat(),
                 'ctime': datetime.utcfromtimestamp(int(d_stat.st_ctime)).isoformat(),
                 'nlink': d_stat.st_nlink,
@@ -1066,19 +1082,17 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
         # point os.scandir() to scandir() in alt scanner module
         os.scandir = alt_scanner.scandir
         # call log_setup function to set up any logging for scanner
-        try:
-            alt_scanner.log_setup(loglevel, logformat, logtofile, handler_file, handler_warnfile, handler_con)
-        except AttributeError:
-            pass
-        except Exception as e:
-            raise AltScannerError(e)
+        if hasattr(alt_scanner, 'log_setup'):
+            try:
+                alt_scanner.log_setup(loglevel, logformat, logtofile, handler_file, handler_warnfile, handler_con)
+            except Exception as e:
+                raise AltScannerError(e)
          # call init function to create any connections to api, db, etc
-        try:
-            alt_scanner.init(globals())
-        except AttributeError:
-            pass
-        except Exception as e:
-            raise AltScannerError(e)
+        if hasattr(alt_scanner, 'init'):
+            try:
+                alt_scanner.init(globals())
+            except Exception as e:
+                raise AltScannerError(e)
     else:
         alt_scanner = None
 
@@ -1146,6 +1160,8 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
 
     # check if tree_dir is empty or all items excluded
     dc = 0
+    if IS_WIN and not options.altscanner:
+        tree_dir = get_win_path(tree_dir)
     for entry in os.scandir(tree_dir):
         if entry.is_symlink():
             pass
@@ -1198,13 +1214,22 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
     else:
         logger.info('No plugins loaded')
 
-    # init plugins
+    # init and print plugins
     if plugins_enabled and plugins:
         for plugin in plugins:
-            try:
-                plugin.init(globals())
-            except Exception:
-                raise
+            if hasattr(plugin, 'init'):
+                try:
+                    plugin.init(globals())
+                except Exception as e:
+                    raise PluginError(e)
+    # print plugins
+    if plugins_enabled and plugins:
+        plugins_list = ''
+        for pi in get_plugins_info():
+            plugins_list = plugins_list + pi['name'] + ' '
+        logger.info('Plugins loaded: {0}'.format(plugins_list))
+    else:
+        logger.info('No plugins loaded')
 
     try:
         logger.info('Creating index {0}...'.format(options.index))

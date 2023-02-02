@@ -294,7 +294,7 @@ def index_info_crawlstart(es, index, path, start, ver, altscanner):
         if replacepaths:
             mount_path = replace_path(mount_path)
         # Check if too large for long field mapping used by total
-        maxlongint = 18446744073709551615
+        maxlongint = 9007199254740992  # 8 PB
         if total > maxlongint:
             total = maxlongint
         if free > maxlongint:
@@ -347,7 +347,7 @@ def index_info_crawlstart(es, index, path, start, ver, altscanner):
             if replacepaths:
                 mount_path = replace_path(mount_path)
             # Check if too large for long field mapping used by total
-            maxlongint = 18446744073709551615
+            maxlongint = 9007199254740992  # 8 PB
             if total > maxlongint:
                 total = maxlongint
             if free > maxlongint:
@@ -407,6 +407,7 @@ def replace_path(path):
             path = '/' + d.lstrip('\\') + p
         # change any windows path separator \ to /
         path = path.replace('\\', '/')
+        path = path.rstrip('/')
     if replacepaths_from and replacepaths_to:
         path = path.replace(replacepaths_from, replacepaths_to, 1)
         path = path.rstrip('/')

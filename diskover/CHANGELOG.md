@@ -1,8 +1,19 @@
 # Diskover v2 Community Edition Change Log
 
+# [2.1.0] - 2023-02-02
+### fixed
+- python error when indexing spaceinfo doc and total disk space > max size for ES long field mapping (s3fs mount)
+- trailing slashes not geting removed from paths in Windows
+- catching AttributeError exceptions in alt scanner log_setup, init, close functions
+- python error when scanning s3fs fuse mount and directory modified time (mtime) timestamp invalid
+### added
+- Windows path examples for log directory to diskover default/sample config file
+### changed
+- default log directory in diskover default/sample config from /tmp/ to /var/log/diskover/, create directory first before enabling logToFile
+
+
 # [2.0.7] - 2023-01-08
 ### fixed
-- python error when indexing spaceinfo doc and total disk space > max size for ES long field mapping (AWS storage gateway)
 - exception handling for Elasticsearch exception TransportError during bulk uploads
 - exception handling for close function call for plugins and alt scanners
 ### added
