@@ -29,18 +29,22 @@ $toppath_name = ($_SESSION['rootpath'] == '/') ? '/' : basename($_SESSION['rootp
 $last_index_time = "Last indexed " . $toppath_name . " at " . $dt->format('m/d/Y, h:i:s A T');
 
 // display results
-//print_r($_SERVER);
 echo '<script type="text/javascript">
     var loadtree = true;
     </script>';
+
 // es search query
 $searchquery = $searchParams['body']['query']['query_string']['query'];
+$searchquery_encoded = rawurlencode($searchquery);
 $searchquery_notype = str_replace(" AND type:(file OR directory)", "", $searchquery);
 $searchquery_noext = preg_replace("/extension:\w+ AND /", "", $searchquery_notype);
+
 // hide search tree
 $hidetree = getCookie('hidesearchtree');
+
 // hide directory charts
 $hidecharts = getCookie('hidesearchcharts');
+
 ?>
 <div class="container-fluid" id="mainwindow" style="margin-top:70px">
     <div class="row">
@@ -123,7 +127,7 @@ $hidecharts = getCookie('hidesearchcharts');
                         ?>
                         <i class="glyphicon glyphicon-search"></i> Showing <strong><?php echo $si; ?></strong> to <strong><?php echo $ei; ?></strong> of <?php echo number_format($total); ?> items found in <?php echo $estime ?> seconds.
                         <span>Results size: <?php echo formatBytes($total_size); ?> <span class="small">(this page)</span>.</span>
-                        <span>Search query: <i><strong><?php echo $searchParams['body']['query']['query_string']['query'] ?></strong></i></span>
+                        <span>Search query: <i><strong><?php echo $searchquery ?></strong></i> &nbsp;<a href="#" class="btn btn-xs btn-default" style="text-decoration:none;" title="edit search query" onclick="$('#searchnavinput').val(decodeURIComponent('<?php echo $searchquery_encoded; ?>')); $('#searchnavinput').focus();"><i class="glyphicon glyphicon-edit"></i> Edit</a></span>
                     </div>
                     <!-- end search results info -->
                     <!-- path breadcrumb -->
@@ -498,11 +502,11 @@ $hidecharts = getCookie('hidesearchcharts');
                                             <a href="search.php?index=<?php echo $esIndex; ?>&amp;q=parent_path:<?php echo rawurlencode(escape_chars($fullpath)); ?>&amp;submitted=true&amp;p=1&amp;path=<?php echo rawurlencode($fullpath); ?>">
                                                 <i class="fas fa-folder" style="color:#E9AC47;padding-right:3px;"></i>&nbsp;<?php echo $filename; ?></a> 
                                         <?php } else { ?>
-                                            <a href="view.php?id=<?php echo $result['_id'] . '&amp;docindex=' . $result['_index'] . '&amp;doctype=' . $file['type']; ?>"><i class="fas fa-file-alt" style="color:#738291;padding-right:3px;"></i>&nbsp;<?php echo $filename; ?>
+                                            <a href="view.php?id=<?php echo $result['_id'] . '&amp;docindex=' . $result['_index'] . '&amp;doctype=' . $file['type']; ?>" target="_blank"><i class="fas fa-file-alt" style="color:#738291;padding-right:3px;"></i>&nbsp;<?php echo $filename; ?>
                                             <?php } ?>
                                             <?php if ($file['type'] == 'directory') { ?>
                                                 <!-- directory view info button -->
-                                                <div style="display:block; float:right"><a href="view.php?id=<?php echo $result['_id'] . '&amp;docindex=' . $result['_index'] . '&amp;doctype=' . $file['type']; ?>"><button class="btn btn-default btn-xs" type="button" style="color:gray;font-size:11px;margin-left:3px;"><i title="directory info" class="glyphicon glyphicon-info-sign"></i></button></a>
+                                                <div style="display:block; float:right"><a href="view.php?id=<?php echo $result['_id'] . '&amp;docindex=' . $result['_index'] . '&amp;doctype=' . $file['type']; ?>" target="_blank"><button class="btn btn-default btn-xs" type="button" style="color:gray;font-size:11px;margin-left:3px;"><i title="directory info" class="glyphicon glyphicon-info-sign"></i></button></a>
                                                 <?php } else { ?>
                                                     <div style="display:block; float:right">
                                                     <?php } ?>
@@ -521,8 +525,8 @@ $hidecharts = getCookie('hidesearchcharts');
                                                     <li class="small"><a href="#"><i class="glyphicon glyphicon-th-large"></i> load path in treemap <span class="label label-info">Essential</span></a></li>
                                                     <li class="small"><a href="#"><i class="glyphicon glyphicon-fire"></i> load path in heatmap <span class="label label-info">Pro</span></a></li>
                                                     <li class="divider"></li>
-                                                    <li class="small"><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=parent_path:<?php echo rawurlencode(escape_chars($parentpath)); ?>"><i class="fas fa-search"></i> search path (non-recursive)</a></li>
-                                                    <li class="small"><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=parent_path:(<?php echo rawurlencode(escape_chars($parentpath)) . ' OR ' . rawurlencode($parentpath_wildcard); ?>)"><i class="fas fa-search"></i> search path (recursive)</a></li>
+                                                    <li class="small"><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=parent_path:<?php echo rawurlencode(escape_chars($parentpath)); ?>" target="_blank"><i class="fas fa-search"></i> search path (non-recursive)</a></li>
+                                                    <li class="small"><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=parent_path:(<?php echo rawurlencode(escape_chars($parentpath)) . ' OR ' . rawurlencode($parentpath_wildcard); ?>)" target="_blank"><i class="fas fa-search"></i> search path (recursive)</a></li>
                                                 </ul>
                                             </div>
                                             <!-- end path buttons -->
@@ -606,7 +610,7 @@ $hidecharts = getCookie('hidesearchcharts');
                                     if (count($config->EXTRA_FIELDS) > 0) {
                                         foreach ($config->EXTRA_FIELDS as $key => $value) {
                                             if (!in_array($value, $hiddencol)) { ?>
-                                                <td>
+                                                <td class="extrafields-wrap">
                                                     <?php if (is_array($file[$value])) {
                                                         $ef_string = "";
                                                         foreach ($file[$value] as $k => $v) {
@@ -766,7 +770,7 @@ $hidecharts = getCookie('hidesearchcharts');
                         <div class="row">
                             <div class="panel panel-default">
                                 <div class="panel-body">
-                                    <span>Search query: <strong><em><?php echo $searchParams['body']['query']['query_string']['query'] ?></em></strong></span>
+                                    <span>Search query: <i><strong><?php echo $searchquery ?></strong></i> &nbsp;<a href="#" class="btn btn-xs btn-default" style="text-decoration:none;" title="edit search query" onclick="$('#searchnavinput').val(decodeURIComponent('<?php echo $searchquery_encoded; ?>')); $('#searchnavinput').focus();"><i class="glyphicon glyphicon-edit"></i> Edit</a></span>
                                 </div>
                             </div>
                         </div>

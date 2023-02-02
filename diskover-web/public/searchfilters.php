@@ -23,7 +23,6 @@ $savedfilters = getCookieToArray('searchfilters');
 if (!$savedfilters) {
     $savedfilters = array();
     $savedfilters['doctype'] = null;
-    $savedfilters['searchpath'] = null;
     $savedfilters['nofilterdirs'] = null;
     $savedfilters['file_size_bytes_low'] = null;
     $savedfilters['file_size_bytes_low_unit'] = null;
@@ -45,6 +44,8 @@ if (!$savedfilters) {
     $savedfilters['extensions'] = null;
     $savedfilters['extension_operator'] = null;
     $savedfilters['extension'] = null;
+    $savedfilters['filetype'] = null;
+    $savedfilters['filetype_operator'] = null;
     $savedfilters['otherfields'] = null;
     $savedfilters['otherfields_operator'] = null;
     $savedfilters['otherfields_input'] = null;
@@ -52,7 +53,7 @@ if (!$savedfilters) {
 
 $filtercount = -2;
 foreach ($savedfilters as $filterkey => $filterval) {
-    if (($filterkey == 'doctype' && $filterval == 'all') || ($filterkey == 'searchpath' && $filterval == 'activetoppath')) continue;
+    if ($filterkey == 'doctype' && $filterval == 'all') continue;
     if ($filterval != null && !strpos($filterkey, 'operator')) $filtercount += 1;
     if ($filterkey == 'otherfields_input' && $filterval != null) $filtercount -= 1;
 }
@@ -81,21 +82,16 @@ if ($filtercount > 0) {
                     <fieldset>
                         <div class="well well-sm">
                             <div class="container">
-                                <div class="row">
-                                    <div class="col-xs-4">
-                                        <label for="doctype">Doc type </label>
-                                        <select id="doctype" name="doctype" class="form-control">
-                                            <option value="" <?php echo $savedfilters['doctype'] == "" ? "selected" : ""; ?>>all</option>
-                                            <option value="file" <?php echo $savedfilters['doctype'] == "file" ? "selected" : ""; ?>>file</option>
-                                            <option value="directory" <?php echo $savedfilters['doctype'] == "directory" ? "selected" : ""; ?>>directory</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-xs-4">
-                                        <label for="searchpath">Search path </label>
-                                        <select id="searchpath" name="searchpath" class="form-control">
-                                            <option value="activetoppath" <?php echo $savedfilters['searchpath'] == "activetoppath" || $_REQUEST['searchpath'] == "" ? "selected" : ""; ?>>active top path</option>
-                                            <option value="currentpath" <?php echo $savedfilters['searchpath'] == "currentpath" ? "selected" : ""; ?>>current directory path</option>
-                                        </select>
+                                <div class="form-group">
+                                    <div class="row">
+                                        <div class="col-xs-4">
+                                            <label for="doctype">Doc type </label>
+                                            <select id="doctype" name="doctype" class="form-control">
+                                                <option value="" <?php echo $savedfilters['doctype'] == "" ? "selected" : ""; ?>>all</option>
+                                                <option value="file" <?php echo $savedfilters['doctype'] == "file" ? "selected" : ""; ?>>file</option>
+                                                <option value="directory" <?php echo $savedfilters['doctype'] == "directory" ? "selected" : ""; ?>>directory</option>
+                                            </select>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -115,6 +111,7 @@ if ($filtercount > 0) {
                                                 <option value="KB" <?php echo ($savedfilters['file_size_bytes_low_unit'] == "KB") ? "selected" : "" ?>>KB</option>
                                                 <option value="MB" <?php echo ($savedfilters['file_size_bytes_low_unit'] == "MB") ? "selected" : "" ?>>MB</option>
                                                 <option value="GB" <?php echo ($savedfilters['file_size_bytes_low_unit'] == "GB") ? "selected" : "" ?>>GB</option>
+                                                <option value="TB" <?php echo ($savedfilters['file_size_bytes_low_unit'] == "TB") ? "selected" : "" ?>>TB</option>
                                             </select>
                                         </div>
                                         <div class="col-xs-2">
@@ -128,6 +125,7 @@ if ($filtercount > 0) {
                                                 <option value="KB" <?php echo ($savedfilters['file_size_bytes_high_unit'] == "KB") ? "selected" : "" ?>>KB</option>
                                                 <option value="MB" <?php echo ($savedfilters['file_size_bytes_high_unit'] == "MB") ? "selected" : "" ?>>MB</option>
                                                 <option value="GB" <?php echo ($savedfilters['file_size_bytes_high_unit'] == "GB") ? "selected" : "" ?>>GB</option>
+                                                <option value="TB" <?php echo ($savedfilters['file_size_bytes_high_unit'] == "TB") ? "selected" : "" ?>>TB</option>
                                             </select>
                                         </div>
                                     </div>
@@ -140,6 +138,7 @@ if ($filtercount > 0) {
                                                 <option value=""></option>
                                                 <option value="*" <?php echo ($savedfilters['last_mod_time_low'] == "*") ? "selected" : "" ?>>any time (*)</option>
                                                 <option value="now/m-1d/d" <?php echo ($savedfilters['last_mod_time_low'] == "now/m-1d/d") ? "selected" : "" ?>>1 day ago</option>
+                                                <option value="now/m-2d/d" <?php echo ($savedfilters['last_mod_time_low'] == "now/m-2d/d") ? "selected" : "" ?>>2 days ago</option>
                                                 <option value="now/m-1w/d" <?php echo ($savedfilters['last_mod_time_low'] == "now/m-1w/d") ? "selected" : "" ?>>1 week ago</option>
                                                 <option value="now/m-2w/d" <?php echo ($savedfilters['last_mod_time_low'] == "now/m-2w/d") ? "selected" : "" ?>>2 weeks ago</option>
                                                 <option value="now/m-1M/d" <?php echo ($savedfilters['last_mod_time_low'] == "now/m-1M/d") ? "selected" : "" ?>>1 month ago</option>
@@ -150,6 +149,7 @@ if ($filtercount > 0) {
                                                 <option value="now/m-2y/d" <?php echo ($savedfilters['last_mod_time_low'] == "now/m-2y/d") ? "selected" : "" ?>>2 years ago</option>
                                                 <option value="now/m-3y/d" <?php echo ($savedfilters['last_mod_time_low'] == "now/m-3y/d") ? "selected" : "" ?>>3 years ago</option>
                                                 <option value="now/m-5y/d" <?php echo ($savedfilters['last_mod_time_low'] == "now/m-5y/d") ? "selected" : "" ?>>5 years ago</option>
+                                                <option value="now/m-10y/d" <?php echo ($savedfilters['last_mod_time_low'] == "now/m-10y/d") ? "selected" : "" ?>>10 years ago</option>
                                             </select>
                                         </div>
                                         <div class="col-xs-4">
@@ -158,6 +158,7 @@ if ($filtercount > 0) {
                                                 <option value=""></option>
                                                 <option value="now/m" <?php echo ($savedfilters['last_mod_time_high'] == "now/m") ? "selected" : "" ?>>now</option>
                                                 <option value="now/m-1d/d" <?php echo ($savedfilters['last_mod_time_high'] == "now/m-1d/d") ? "selected" : "" ?>>1 day ago</option>
+                                                <option value="now/m-2d/d" <?php echo ($savedfilters['last_mod_time_high'] == "now/m-2d/d") ? "selected" : "" ?>>2 days ago</option>
                                                 <option value="now/m-1w/d" <?php echo ($savedfilters['last_mod_time_high'] == "now/m-1w/d") ? "selected" : "" ?>>1 week ago</option>
                                                 <option value="now/m-2w/d" <?php echo ($savedfilters['last_mod_time_high'] == "now/m-2w/d") ? "selected" : "" ?>>2 weeks ago</option>
                                                 <option value="now/m-1M/d" <?php echo ($savedfilters['last_mod_time_high'] == "now/m-1M/d") ? "selected" : "" ?>>1 month ago</option>
@@ -168,6 +169,7 @@ if ($filtercount > 0) {
                                                 <option value="now/m-2y/d" <?php echo ($savedfilters['last_mod_time_high'] == "now/m-2y/d") ? "selected" : "" ?>>2 years ago</option>
                                                 <option value="now/m-3y/d" <?php echo ($savedfilters['last_mod_time_high'] == "now/m-3y/d") ? "selected" : "" ?>>3 years ago</option>
                                                 <option value="now/m-5y/d" <?php echo ($savedfilters['last_mod_time_high'] == "now/m-5y/d") ? "selected" : "" ?>>5 years ago</option>
+                                                <option value="now/m-10y/d" <?php echo ($savedfilters['last_mod_time_high'] == "now/m-10y/d") ? "selected" : "" ?>>10 years ago</option>
                                             </select>
                                         </div>
                                     </div>
@@ -180,6 +182,7 @@ if ($filtercount > 0) {
                                                 <option value=""></option>
                                                 <option value="*)" <?php echo ($savedfilters['last_accessed_time_low'] == "*") ? "selected" : "" ?>>any time (*)</option>
                                                 <option value="now/m-1d/d" <?php echo ($savedfilters['last_accessed_time_low'] == "now/m-1d/d") ? "selected" : "" ?>>1 day ago</option>
+                                                <option value="now/m-2d/d" <?php echo ($savedfilters['last_accessed_time_low'] == "now/m-2d/d") ? "selected" : "" ?>>2 days ago</option>
                                                 <option value="now/m-1w/d" <?php echo ($savedfilters['last_accessed_time_low'] == "now/m-1w/d") ? "selected" : "" ?>>1 week ago</option>
                                                 <option value="now/m-2w/d" <?php echo ($savedfilters['last_accessed_time_low'] == "now/m-2w/d") ? "selected" : "" ?>>2 weeks ago</option>
                                                 <option value="now/m-1M/d" <?php echo ($savedfilters['last_accessed_time_low'] == "now/m-1M/d") ? "selected" : "" ?>>1 month ago</option>
@@ -190,6 +193,7 @@ if ($filtercount > 0) {
                                                 <option value="now/m-2y/d" <?php echo ($savedfilters['last_accessed_time_low'] == "now/m-2y/d") ? "selected" : "" ?>>2 years ago</option>
                                                 <option value="now/m-3y/d" <?php echo ($savedfilters['last_accessed_time_low'] == "now/m-3y/d") ? "selected" : "" ?>>3 years ago</option>
                                                 <option value="now/m-5y/d" <?php echo ($savedfilters['last_accessed_time_low'] == "now/m-5y/d") ? "selected" : "" ?>>5 years ago</option>
+                                                <option value="now/m-10y/d" <?php echo ($savedfilters['last_accessed_time_low'] == "now/m-10y/d") ? "selected" : "" ?>>10 years ago</option>
                                             </select>
                                         </div>
                                         <div class="col-xs-4">
@@ -198,6 +202,7 @@ if ($filtercount > 0) {
                                                 <option value=""></option>
                                                 <option value="now/m" <?php echo ($savedfilters['last_accessed_time_high'] == "now/m") ? "selected" : "" ?>>now</option>
                                                 <option value="now/m-1d/d" <?php echo ($savedfilters['last_accessed_time_high'] == "now/m-1d/d") ? "selected" : "" ?>>1 day ago</option>
+                                                <option value="now/m-2d/d" <?php echo ($savedfilters['last_accessed_time_high'] == "now/m-2d/d") ? "selected" : "" ?>>2 days ago</option>
                                                 <option value="now/m-1w/d" <?php echo ($savedfilters['last_accessed_time_high'] == "now/m-1w/d") ? "selected" : "" ?>>1 week ago</option>
                                                 <option value="now/m-2w/d" <?php echo ($savedfilters['last_accessed_time_high'] == "now/m-2w/d") ? "selected" : "" ?>>2 weeks ago</option>
                                                 <option value="now/m-1M/d" <?php echo ($savedfilters['last_accessed_time_high'] == "now/m-1M/d") ? "selected" : "" ?>>1 month ago</option>
@@ -208,6 +213,7 @@ if ($filtercount > 0) {
                                                 <option value="now/m-2y/d" <?php echo ($savedfilters['last_accessed_time_high'] == "now/m-2y/d") ? "selected" : "" ?>>2 years ago</option>
                                                 <option value="now/m-3y/d" <?php echo ($savedfilters['last_accessed_time_high'] == "now/m-3y/d") ? "selected" : "" ?>>3 years ago</option>
                                                 <option value="now/m-5y/d" <?php echo ($savedfilters['last_accessed_time_high'] == "now/m-5y/d") ? "selected" : "" ?>>5 years ago</option>
+                                                <option value="now/m-10y/d" <?php echo ($savedfilters['last_accessed_time_high'] == "now/m-10y/d") ? "selected" : "" ?>>10 years ago</option>
                                             </select>
                                         </div>
                                     </div>
@@ -220,6 +226,7 @@ if ($filtercount > 0) {
                                                 <option value=""></option>
                                                 <option value="*" <?php echo ($savedfilters['last_changed_time_low'] == "*") ? "selected" : "" ?>>any time (*)</option>
                                                 <option value="now/m-1d/d" <?php echo ($savedfilters['last_changed_time_low'] == "now/m-1d/d") ? "selected" : "" ?>>1 day ago</option>
+                                                <option value="now/m-2d/d" <?php echo ($savedfilters['last_changed_time_low'] == "now/m-2d/d") ? "selected" : "" ?>>2 days ago</option>
                                                 <option value="now/m-1w/d" <?php echo ($savedfilters['last_changed_time_low'] == "now/m-1w/d") ? "selected" : "" ?>>1 week ago</option>
                                                 <option value="now/m-2w/d" <?php echo ($savedfilters['last_changed_time_low'] == "now/m-2w/d") ? "selected" : "" ?>>2 weeks ago</option>
                                                 <option value="now/m-1M/d" <?php echo ($savedfilters['last_changed_time_low'] == "now/m-1M/d") ? "selected" : "" ?>>1 month ago</option>
@@ -230,6 +237,7 @@ if ($filtercount > 0) {
                                                 <option value="now/m-2y/d" <?php echo ($savedfilters['last_changed_time_low'] == "now/m-2y/d") ? "selected" : "" ?>>2 years ago</option>
                                                 <option value="now/m-3y/d" <?php echo ($savedfilters['last_changed_time_low'] == "now/m-3y/d") ? "selected" : "" ?>>3 years ago</option>
                                                 <option value="now/m-5y/d" <?php echo ($savedfilters['last_changed_time_low'] == "now/m-5y/d") ? "selected" : "" ?>>5 years ago</option>
+                                                <option value="now/m-10y/d" <?php echo ($savedfilters['last_changed_time_low'] == "now/m-10y/d") ? "selected" : "" ?>>10 years ago</option>
                                             </select>
                                         </div>
                                         <div class="col-xs-4">
@@ -238,6 +246,7 @@ if ($filtercount > 0) {
                                                 <option value=""></option>
                                                 <option value="now/m" <?php echo ($savedfilters['last_changed_time_high'] == "now/m") ? "selected" : "" ?>>now</option>
                                                 <option value="now/m-1d/d" <?php echo ($savedfilters['last_changed_time_high'] == "now/m-1d/d") ? "selected" : "" ?>>1 day ago</option>
+                                                <option value="now/m-2d/d" <?php echo ($savedfilters['last_changed_time_high'] == "now/m-2d/d") ? "selected" : "" ?>>2 days ago</option>
                                                 <option value="now/m-1w/d" <?php echo ($savedfilters['last_changed_time_high'] == "now/m-1w/d") ? "selected" : "" ?>>1 week ago</option>
                                                 <option value="now/m-2w/d" <?php echo ($savedfilters['last_changed_time_high'] == "now/m-2w/d") ? "selected" : "" ?>>2 weeks ago</option>
                                                 <option value="now/m-1M/d" <?php echo ($savedfilters['last_changed_time_high'] == "now/m-1M/d") ? "selected" : "" ?>>1 month ago</option>
@@ -248,6 +257,7 @@ if ($filtercount > 0) {
                                                 <option value="now/m-2y/d" <?php echo ($savedfilters['last_changed_time_high'] == "now/m-2y/d") ? "selected" : "" ?>>2 years ago</option>
                                                 <option value="now/m-3y/d" <?php echo ($savedfilters['last_changed_time_high'] == "now/m-3y/d") ? "selected" : "" ?>>3 years ago</option>
                                                 <option value="now/m-5y/d" <?php echo ($savedfilters['last_changed_time_high'] == "now/m-5y/d") ? "selected" : "" ?>>5 years ago</option>
+                                                <option value="now/m-10y/d" <?php echo ($savedfilters['last_changed_time_high'] == "now/m-10y/d") ? "selected" : "" ?>>10 years ago</option>
                                             </select>
                                         </div>
                                     </div>
@@ -327,6 +337,21 @@ if ($filtercount > 0) {
                                         </div>
                                     </div>
                                 </div>
+                                <div class="form-group">
+                                    <div class="row">
+                                        <div class="col-xs-8">
+                                            <label for="filetype">File type </label><br>
+                                            <select class="form-control" name="filetype_operator" id="filetype_operator" style="width:100px; display: inline">
+                                                <option value="is" <?php echo ($savedfilters['filetype_operator'] == "is") ? "selected" : "" ?>>is</option>
+                                                <option value="isnot" <?php echo ($savedfilters['filetype_operator'] == "isnot") ? "selected" : "" ?>>is not</option>
+                                            </select>
+                                            <?php foreach ($config->FILE_TYPES as $type_name => $type_extensions) { ?>
+                                                <label><input name="filetype" type="checkbox" value="<?php echo $type_name ?>" <?php echo ($savedfilters['filetype'] && in_array($type_name, $savedfilters['filetype'])) ? "checked" : "" ?>>
+                                                        <?php echo $type_name ?></label>
+                                            <?php } ?>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <div class="well well-sm">
@@ -365,6 +390,12 @@ if ($filtercount > 0) {
                                         <input name="nofilterdirs" id="nofilterdirs" type="checkbox" <?php echo ($savedfilters['nofilterdirs'] == "on") ? "checked" : "" ?>>
                                         Exclude folders</label><br>
                                         <span class="small"><i class="fas fa-info-circle"></i> Don't apply filters to directory docs</span>
+                                </div>
+                                <div class="col-xs-6">
+                                    <label>
+                                        <input name="filtercharts" id="filtercharts" type="checkbox" <?php echo (getCookie('filtercharts') == 1) ? "checked" : "" ?>>
+                                        Filter charts</label><br>
+                                        <span class="small"><i class="fas fa-info-circle"></i> Apply filters to charts on search results and dashboard</span>
                                 </div>
                             </div>
                         </div>

@@ -21,9 +21,16 @@ session_set_cookie_params(604800, "/");
 session_start();
 error_reporting(E_ALL ^ E_NOTICE);
 
-// check if session timeout exceeded
-if ((isset($_SESSION['last_activity']) && isset($_SESSION['stayloggedin']) && $_SESSION['stayloggedin']) && (time() - $_SESSION['last_activity'] > 604800)) {
-    echo "logout";
-} elseif (isset($_SESSION['last_activity']) && time() - $_SESSION['last_activity'] > 28800) {
-    echo "logout";
+// check if session timeout exceeded and if so, log user out by responding with logout to ajax post request in diskover.js
+if (isset($_POST)) {
+    if ($_SESSION['stayloggedin'] && time() - $_SESSION['last_activity'] > 604800) {
+        echo "logout";
+    } elseif (!$_SESSION['stayloggedin'] && time() - $_SESSION['last_activity'] > 28800) {
+        echo "logout";
+    } else {
+        // update session to keep it active
+        $_SESSION['loggedin'] = true;
+        // respond with time since last activity
+        echo time() - $_SESSION['last_activity'];
+    }
 }

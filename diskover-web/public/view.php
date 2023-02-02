@@ -112,9 +112,9 @@ if (empty($_REQUEST['id'])) {
                         $fullpathhref = "search.php?index=" . $esIndex . "&submitted=true&p=1&q=parent_path:" . rawurlencode(escape_chars($parentpath)) . " AND name:&quot;" . rawurlencode(escape_chars($filename)) . "&quot;&path=" . rawurlencode($parentpath);
                     }
                     ?>
-                    <h2 class="path"><?php echo ($doctype == 'file') ? '<i class="fas fa-file-alt" style="color:#738291;"></i>' : '<i class="fas fa-folder" style="color:#E9AC47;"></i>'; ?> <span id="filename"><a href="<?php echo $fullpathhref; ?>"><?php echo $filename; ?></a></span></h2>
+                    <h2 class="path"><?php echo ($doctype == 'file') ? '<i class="fas fa-file-alt" style="color:#738291;"></i>' : '<i class="fas fa-folder" style="color:#E9AC47;"></i>'; ?> <span id="filename"><a href="<?php echo $fullpathhref; ?>" target="_blank"><?php echo $filename; ?></a></span></h2>
                     <div style="padding-bottom:10px"><a href="#" class="btn btn-default btn-xs file-btns" onclick="copyToClipboard('#filename')"><i class="glyphicon glyphicon-copy"></i> Copy file name</a></div>
-                    <h5 class="path">Full path: <span id="fullpath"><a href="<?php echo $fullpathhref; ?>"><?php echo $fullpath; ?></a></span></h5> <a href="#" class="btn btn-default btn-xs file-btns" onclick="copyToClipboard('#fullpath')"><i class="glyphicon glyphicon-copy"></i> Copy path</a>
+                    <h5 class="path">Full path: <span id="fullpath"><a href="<?php echo $fullpathhref; ?>" target="_blank"><?php echo $fullpath; ?></a></span></h5> <a href="#" class="btn btn-default btn-xs file-btns" onclick="copyToClipboard('#fullpath')"><i class="glyphicon glyphicon-copy"></i> Copy path</a>
                     <?php if ($_REQUEST['doctype'] == 'directory') { ?>
                         <div class="dropdown" style="display:inline-block;">
                             <button title="analytics" class="btn btn-default dropdown-toggle btn-xs file-btns" type="button" data-toggle="dropdown"><i class="glyphicon glyphicon-stats"></i>
@@ -129,13 +129,13 @@ if (empty($_REQUEST['id'])) {
                             <button title="search" class="btn btn-default dropdown-toggle btn-xs file-btns" type="button" data-toggle="dropdown"><i class="glyphicon glyphicon-search"></i>
                                 <span class="caret"></span></button>
                             <ul class="dropdown-menu">
-                                <li class="small"><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=parent_path:<?php echo rawurlencode(escape_chars($fullpath)); ?>"><i class="glyphicon glyphicon-search"></i> search path (non-recursive)</a></li>
-                                <li class="small"><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=parent_path:(<?php echo rawurlencode(escape_chars($fullpath)) . ' OR ' . rawurlencode($fullpath_wildcard); ?>)"><i class="glyphicon glyphicon-search"></i> search path (recursive)</a></li>
+                                <li class="small"><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=parent_path:<?php echo rawurlencode(escape_chars($fullpath)); ?>" target="_blank"><i class="glyphicon glyphicon-search"></i> search path (non-recursive)</a></li>
+                                <li class="small"><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=parent_path:(<?php echo rawurlencode(escape_chars($fullpath)) . ' OR ' . rawurlencode($fullpath_wildcard); ?>)" target="_blank"><i class="glyphicon glyphicon-search"></i> search path (recursive)</a></li>
                             </ul>
                         </div>
                         <br />
                     <?php } ?>
-                    <h5 class="path"><i class="fas fa-folder" style="color:#E9AC47;"></i> <span style="color:gray">Parent path: <span id="parentpath"><a href="search.php?submitted=true&p=1&q=parent_path:<?php echo rawurlencode(escape_chars($parentpath)); ?>&path=<?php echo rawurlencode($parentpath); ?>"><?php echo $parentpath; ?></a></span> </span></h5> <a href="#" class="btn btn-default btn-xs file-btns" onclick="copyToClipboard('#parentpath')"><i class="glyphicon glyphicon-copy"></i> Copy path</a>
+                    <h5 class="path"><i class="fas fa-folder" style="color:#E9AC47;"></i> <span style="color:gray">Parent path: <span id="parentpath"><a href="search.php?submitted=true&p=1&q=parent_path:<?php echo rawurlencode(escape_chars($parentpath)); ?>&path=<?php echo rawurlencode($parentpath); ?>" target="_blank"><?php echo $parentpath; ?></a></span> </span></h5> <a href="#" class="btn btn-default btn-xs file-btns" onclick="copyToClipboard('#parentpath')"><i class="glyphicon glyphicon-copy"></i> Copy path</a>
                     <div class="dropdown" style="display:inline-block;">
                         <button title="analytics" class="btn btn-default dropdown-toggle btn-xs file-btns" type="button" data-toggle="dropdown"><i class="glyphicon glyphicon-stats"></i>
                             <span class="caret"></span></button>
@@ -149,8 +149,8 @@ if (empty($_REQUEST['id'])) {
                         <button title="filter" class="btn btn-default dropdown-toggle btn-xs file-btns" type="button" data-toggle="dropdown"><i class="glyphicon glyphicon-search"></i>
                             <span class="caret"></span></button>
                         <ul class="dropdown-menu">
-                            <li class="small"><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=parent_path:<?php echo rawurlencode(escape_chars($parentpath)); ?>"><i class="glyphicon glyphicon-search"></i> search path (non-recursive)</a></li>
-                            <li class="small"><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=parent_path:(<?php echo rawurlencode(escape_chars($parentpath)) . ' OR ' . rawurlencode($parentpath_wildcard); ?>)"><i class="glyphicon glyphicon-search"></i> search path (recursive)</a></li>
+                            <li class="small"><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=parent_path:<?php echo rawurlencode(escape_chars($parentpath)); ?>" target="_blank"><i class="glyphicon glyphicon-search"></i> search path (non-recursive)</a></li>
+                            <li class="small"><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=parent_path:(<?php echo rawurlencode(escape_chars($parentpath)) . ' OR ' . rawurlencode($parentpath_wildcard); ?>)" target="_blank"><i class="glyphicon glyphicon-search"></i> search path (recursive)</a></li>
                         </ul>
                     </div>
                     <br /><br />
@@ -186,20 +186,20 @@ if (empty($_REQUEST['id'])) {
                         <?php if ($_REQUEST['doctype'] == 'file') { ?>
                             <li class="list-group-item">
                                 <span class="badge"><?php echo $docsource['extension']; ?></span>
-                                <a href="search.php?submitted=true&amp;p=1&amp;q=extension:<?php echo $docsource['extension']; ?>&amp;doctype=<?php echo $_REQUEST['doctype']; ?>">Extension</a>
+                                <a href="search.php?submitted=true&amp;p=1&amp;q=extension:<?php echo $docsource['extension']; ?>&amp;doctype=<?php echo $_REQUEST['doctype']; ?>" target="_blank">Extension</a>
                             </li>
                         <?php } ?>
                         <li class="list-group-item">
                             <span class="badge"><?php echo $docsource['owner']; ?></span>
-                            <a href="search.php?submitted=true&amp;p=1&amp;q=owner:<?php echo $docsource['owner']; ?>&amp;doctype=<?php echo $_REQUEST['doctype']; ?>">Owner</a>
+                            <a href="search.php?submitted=true&amp;p=1&amp;q=owner:<?php echo $docsource['owner']; ?>&amp;doctype=<?php echo $_REQUEST['doctype']; ?>" target="_blank">Owner</a>
                         </li>
                         <li class="list-group-item">
                             <span class="badge"><?php echo $docsource['group']; ?></span>
-                            <a href="search.php?submitted=true&amp;p=1&amp;q=group:<?php echo $docsource['group']; ?>&amp;doctype=<?php echo $_REQUEST['doctype']; ?>">Group</a>
+                            <a href="search.php?submitted=true&amp;p=1&amp;q=group:<?php echo $docsource['group']; ?>&amp;doctype=<?php echo $_REQUEST['doctype']; ?>" target="_blank">Group</a>
                         </li>
                         <li class="list-group-item">
                             <span class="badge"><?php echo $docsource['ino']; ?></span>
-                            <a href="search.php?submitted=true&amp;p=1&amp;q=ino:<?php echo $docsource['ino']; ?>&amp;doctype=<?php echo $_REQUEST['doctype']; ?>">Inode</a>
+                            <a href="search.php?submitted=true&amp;p=1&amp;q=ino:<?php echo $docsource['ino']; ?>&amp;doctype=<?php echo $_REQUEST['doctype']; ?>" target="_blank">Inode</a>
                         </li>
                         <li class="list-group-item">
                             <span class="badge"><?php echo $docsource['nlink']; ?></span>
@@ -225,13 +225,13 @@ if (empty($_REQUEST['id'])) {
                     <ul class="list-group">
                         <li class="list-group-item">
                             <span class="badge"><?php echo $docindex; ?></span>
-                            <a href="search.php?submitted=true&amp;p=1&amp;q=_index:<?php echo $docindex; ?>">Index name</a>
+                            <a href="search.php?submitted=true&amp;p=1&amp;q=_index:<?php echo $docindex; ?>" target="_blank">Index name</a>
                         </li>
                     </ul>
                     <ul class="list-group">
                         <li class="list-group-item">
                             <span class="badge"><?php echo $docid; ?></span>
-                            <a href="search.php?submitted=true&amp;p=1&amp;q=_id:<?php echo $docid; ?>">Doc id</a>
+                            <a href="search.php?submitted=true&amp;p=1&amp;q=_id:<?php echo $docid; ?>" target="_blank">Doc id</a>
                         </li>
                     </ul>
                 </div>
@@ -261,19 +261,21 @@ if (empty($_REQUEST['id'])) {
                                                             if (is_bool($v2_val)) {
                                                                 $v2_val = ($v2_val) ? 'true' : 'false';
                                                             } ?>
-                                                            <p class="list-group-item-text extrafields"><a href="search.php?submitted=true&amp;p=1&amp;q=<?php echo $value . '.' . $k . '.' . $v2_key . ': &quot;' . $v2_val; ?>&quot;&amp;doctype=<?php echo $_REQUEST['doctype']; ?>"><?php echo $value . '.' . $k . '.' . $v2_key . ': <strong>' . $v2_val . '</strong>'; ?></a></p>
+                                                            <p class="list-group-item-text extrafields"><a href="search.php?submitted=true&amp;p=1&amp;q=<?php echo $value . '.' . $k . '.' . $v2_key . ': &quot;' . $v2_val; ?>&quot;&amp;doctype=<?php echo $_REQUEST['doctype']; ?>" target="_blank"><?php echo $value . '.' . $k . '.' . $v2_key . ': <strong>' . $v2_val . '</strong>'; ?></a></p>
                                                     <?php }
                                                     } else {
                                                         if (is_bool($v_val)) {
                                                             $v_val = ($v_val) ? 'true' : 'false';
                                                         } ?>
-                                                        <p class="list-group-item-text extrafields"><a href="search.php?submitted=true&amp;p=1&amp;q=<?php echo $value . '.' . $k . '.' . $v_key . ': &quot;' . $v_val; ?>&quot;&amp;doctype=<?php echo $_REQUEST['doctype']; ?>"><?php echo $value . '.' . $k . '.' . $v_key . ': <strong>' . $v_val . '</strong>'; ?></a></p>
+                                                        <p class="list-group-item-text extrafields"><a href="search.php?submitted=true&amp;p=1&amp;q=<?php echo $value . '.' . $k . '.' . $v_key . ': &quot;' . $v_val; ?>&quot;&amp;doctype=<?php echo $_REQUEST['doctype']; ?>" target="_blank"><?php echo $value . '.' . $k . '.' . $v_key . ': <strong>' . $v_val . '</strong>'; ?></a></p>
                                                 <?php } }
                                             } else {
                                                 if (is_bool($v)) {
                                                     $v = ($v) ? 'true' : 'false';
-                                                } ?>
-                                                <p class="list-group-item-text extrafields"><a href="search.php?submitted=true&amp;p=1&amp;q=<?php echo $value . '.' . $k . ': &quot;' . $v; ?>&quot;&amp;doctype=<?php echo $_REQUEST['doctype']; ?>"><?php echo $value . '.' . $k . ': <strong>' . $v . '</strong>'; ?></a></p>
+                                                } 
+                                                $ef_string = $value . '.' . $k . ': <strong>' . $v . '</strong>';
+                                                ?>
+                                                <p class="list-group-item-text extrafields"><a href="search.php?submitted=true&amp;p=1&amp;q=<?php echo $value . '.' . $k . ': &quot;' . $v; ?>&quot;&amp;doctype=<?php echo $_REQUEST['doctype']; ?>" target="_blank"><?php echo $ef_string; ?></a></p>
                                         <?php }
                                         } ?>
                                     </li>

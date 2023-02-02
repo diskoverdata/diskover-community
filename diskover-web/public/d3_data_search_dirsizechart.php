@@ -19,9 +19,18 @@ https://www.diskoverdata.com/solutions/
 require '../vendor/autoload.php';
 require "d3_inc.php";
 
+// get size or count
+if (isset($_GET['usecount']) && $_GET['usecount'] == 1) {
+    $usecount = 1;
+    $ses_str = 'count';
+} else {
+    $usecount = 0;
+    $ses_str = 'size';
+}
+
 // check if path in session cache
-if ($_SESSION["diskover_cache_dirsize_search"][$esIndex][$path] && $_GET['usecache'] == 1) {
-    $data = $_SESSION["diskover_cache_dirsize_search"][$esIndex][$path];
+if ($_SESSION["diskover_cache_dirsize_search_" . $ses_str][$esIndex][$path] && $_GET['usecache'] == 1) {
+    $data = $_SESSION["diskover_cache_dirsize_search_" . $ses_str][$esIndex][$path];
 } else {
     // get mtime in ES format
     $time = gettime($time);
@@ -37,11 +46,12 @@ if ($_SESSION["diskover_cache_dirsize_search"][$esIndex][$path] && $_GET['usecac
         "count_subdirs" => $dirinfo[3],
         "modified" => $dirinfo[4],
         "type" => 'directory',
-        "children" => walk_tree($client, $esIndex, $path, $filter, $time, $depth = 0, $maxdepth = 1, $use_count, $show_files, $sortdirs = 1, $maxdirs = 10)
+        "children" => walk_tree($client, $esIndex, $path, $filter, $time, $depth = 0, $maxdepth = 1, 
+            $use_count = $usecount, $show_files, $sortdirs = 1, $maxdirs = 10, $maxfiles = 10, $filtercharts = true)
     ];
 
     // cache path data in session
-    $_SESSION["diskover_cache_dirsize_search"][$esIndex][$path] = $data;
+    $_SESSION["diskover_cache_dirsize_search_" . $ses_str][$esIndex][$path] = $data;
 }
 
 echo json_encode($data);

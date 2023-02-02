@@ -61,14 +61,7 @@ if (!empty($_GET['submitted'])) {
         $pp = str_replace('\\', '', $pp);
         $pp = ltrim($pp, '(');
         $path = rtrim($pp, '*)');
-        $rootpath = getRootpath($path);
-        if (!is_null($rootpath)) {
-            $_SESSION['rootpath'] = $rootpath;
-            createCookie('rootpath', $rootpath);
-            createCookie('path', $path);
-            createCookie('parentpath', getParentDir($path));
-            $_GET['path'] = $path;
-        }
+        setRootPath($path);
     }
 
     // curent page

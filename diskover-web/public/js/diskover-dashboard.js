@@ -49,33 +49,29 @@ $(function () {
     var spinner = new Spinner(opts).spin(document.getElementById('topFileTypes-Chart-container'));
 
     // load json data from Elasticsearch
-    var data_url = 'd3_data_pie_ext_dashboard.php?path=' + encodeURIComponent(path) + '&usecache=' + usecache;
+    var data_url = 'd3_data_pie_ext_dashboard.php?usecache=' + usecache;
     d3.json(data_url, function (error, data) {
-        //console.log(data);
-
-        //data = data.children.slice(0, 10);
+        // by size bar chart
 
         data = data.children;
 
-        // by size bar chart
-
         var top_ext_labels = []
         var top_ext_data_size = []
+        var top_ext_data_size_count = []
         var top_ext_colors = []
         var top_ext_colors_border = []
-        var top_ext_colors_map = []
 
-        for (var i in data) {
-            var name = data[i].name;
+        for (var i in data['top_extensions_bysize']) {
+            var name = data['top_extensions_bysize'][i].name;
             if (name == '') {
                 name = 'NULL (no ext)'
             }
             top_ext_labels.push(name)
-            top_ext_data_size.push(data[i].size)
+            top_ext_data_size.push(data['top_extensions_bysize'][i].size)
+            top_ext_data_size_count.push(data['top_extensions_bysize'][i].count)
             var c = default_colors[i]
             top_ext_colors.push(c)
             top_ext_colors_border.push('#2F3338')
-            top_ext_colors_map[name] = c
         }
 
         var topFileTypesBySizebarChartCanvas = $("#topFileTypesBySize-barChart")
@@ -101,7 +97,8 @@ $(function () {
                             });
                             var currentValue = data.datasets[0].data[i];
                             var percentage = parseFloat((currentValue/total*100).toFixed(1));
-                            return data.labels[i] + ': ' + format(currentValue) + ' (' + percentage +'%)';
+                            var currentCount = top_ext_data_size_count[i];
+                            return data.labels[i] + ': ' + format(currentValue) + ' (' + percentage +'%) (' + numberWithCommas(currentCount) + ' items)';
                     }
                 }
             },
@@ -127,8 +124,8 @@ $(function () {
                 if (ext == "NULL (no ext)") {
                     ext = "\"\"";
                 }
-                var pp = encodeURIComponent(escapeHTML(decodeURIComponent(path)));
-                window.location.href = "search.php?submitted=true&p=1&q=extension:" + ext + " AND parent_path:" + pp + "*&doctype=file";
+                var pp = encodeURIComponent(escapeHTML(decodeURIComponent(rootpath)));
+                window.open("search.php?submitted=true&p=1&q=extension:" + ext + " AND parent_path:" + pp + "*&doctype=file&path=" + encodeURIComponent(rootpath));
                 return false;
             },
             onHover: function (event, legendItem, legend) {
@@ -149,24 +146,22 @@ $(function () {
 
         var top_ext_labels = []
         var top_ext_data_count = []
+        var top_ext_data_count_size = []
         var top_ext_colors = []
         var top_ext_colors_border = []
 
         // re-sort data by top count
-        data.sort((a, b) => (a.count > b.count) ? -1 : 1)
+        //data.sort((a, b) => (a.count > b.count) ? -1 : 1)
 
-        for (var i in data) {
-            var name = data[i].name;
+        for (var i in data['top_extensions_bycount']) {
+            var name = data['top_extensions_bycount'][i].name;
             if (name == '') {
                 name = 'NULL (no ext)'
             }
             top_ext_labels.push(name)
-            top_ext_data_count.push(data[i].count)
-            if (name in top_ext_colors_map) {
-                var c = top_ext_colors_map[name]
-            } else {
-                var c = default_colors[i]
-            }
+            top_ext_data_count.push(data['top_extensions_bycount'][i].count)
+            top_ext_data_count_size.push(data['top_extensions_bycount'][i].size)
+            var c = default_colors[i]
             top_ext_colors.push(c)
             top_ext_colors_border.push('#2F3338')
         }
@@ -192,7 +187,7 @@ $(function () {
                     if (ext == "NULL (no ext)") {
                         ext = "\"\"";
                     }
-                    window.location.href = "search.php?submitted=true&p=1&q=extension:" + ext + " AND parent_path:" + encodeURIComponent(escapeHTML(path)) +"*&doctype=file";
+                    window.open("search.php?submitted=true&p=1&q=extension:" + ext + " AND parent_path:" + encodeURIComponent(escapeHTML(rootpath)) +"*&doctype=file&path=" + encodeURIComponent(rootpath));
                     return false;
                 },
                 onHover: function (event, legendItem, legend) {
@@ -212,7 +207,8 @@ $(function () {
                         });
                         var currentValue = data.datasets[0].data[i];
                         var percentage = parseFloat((currentValue/total*100).toFixed(1));
-                        return data.labels[i] + ': ' + currentValue.toLocaleString() + ' files (' + percentage +'%)';
+                        var currentSize = top_ext_data_count_size[i];
+                        return data.labels[i] + ': ' + currentValue.toLocaleString() + ' files (' + percentage +'%) (' + format(currentSize) + ')';
                     }
                 }
             },
@@ -228,8 +224,8 @@ $(function () {
                 if (ext == "NULL (no ext)") {
                     ext = "\"\"";
                 }
-                var pp = encodeURIComponent(escapeHTML(decodeURIComponent(path)));
-                window.location.href = "search.php?submitted=true&p=1&q=extension:" + ext + " AND parent_path:" + pp + "*&doctype=file";
+                var pp = encodeURIComponent(escapeHTML(decodeURIComponent(rootpath)));
+                window.open("search.php?submitted=true&p=1&q=extension:" + ext + " AND parent_path:" + pp + "*&doctype=file&path=" + encodeURIComponent(rootpath));
                 return false;
             },
             onHover: function (event, legendItem, legend) {
@@ -263,9 +259,8 @@ $(function () {
     var spinner2 = new Spinner(opts).spin(document.getElementById('mtime-Chart-container'));
 
     // load json data from Elasticsearch
-    var data_url2 = 'd3_data_bar_mtime_dashboard.php?path=' + encodeURIComponent(path) + '&usecache=' + usecache;
+    var data_url2 = 'd3_data_bar_mtime_dashboard.php?usecache=' + usecache;
     d3.json(data_url2, function (error, data) {
-        //console.log(data);
 
         data = data.children;
         
@@ -273,8 +268,10 @@ $(function () {
 
         // get total size
         var totalsize = 0;
+        var totalcount = 0;
         for (var i in data) {
             totalsize += data[i].size;
+            totalcount += data[i].count;
         }
 
         for (var i in data) {
@@ -282,6 +279,7 @@ $(function () {
                 label: data[i].mtime,
                 data: [(data[i].size / totalsize * 100).toFixed(1)],
                 size: data[i].size,
+                count: data[i].count,
                 backgroundColor: hot_cold_colors[i],
                 borderColor: '#2F3338'
             })
@@ -316,7 +314,7 @@ $(function () {
                     } else if (mtime == "> 2 years") {
                         mtime = "[* TO now/m-2y/d}"
                     }
-                    window.location.href = "search.php?submitted=true&p=1&q=mtime:" + mtime + " AND parent_path:" + encodeURIComponent(escapeHTML(path)) +"*&doctype=file";
+                    window.open("search.php?submitted=true&p=1&q=mtime:" + mtime + " AND parent_path:" + encodeURIComponent(escapeHTML(rootpath)) +"* AND " + sizefield + ":>=" + filter + "&doctype=file&path=" + encodeURIComponent(rootpath));
                     return false;
                 },
                 onHover: function (event, legendItem, legend) {
@@ -331,9 +329,10 @@ $(function () {
                 callbacks: {
                     label: function (tooltipItem, data) {
                         var i = tooltipItem.datasetIndex;
-                        var currentValue = data.datasets[i].size
+                        var currentValue = data.datasets[i].size;
+                        var currentCount = data.datasets[i].count;
                         var percentage = parseFloat((currentValue/totalsize*100).toFixed(1));
-                        return data.datasets[i].label + ': ' + format(currentValue) + ' (' + percentage +'%)';
+                        return data.datasets[i].label + ': ' + format(currentValue) + ' (' + percentage +'%) (' + numberWithCommas(currentCount) + ' items)';
                     }
                 }
             },
@@ -378,8 +377,8 @@ $(function () {
                 } else if (mtime == "> 2 years") {
                     mtime = "[* TO now/m-2y/d}"
                 }
-                var pp = encodeURIComponent(escapeHTML(decodeURIComponent(path)));
-                window.location.href = "search.php?submitted=true&p=1&q=mtime:" + mtime + " AND parent_path:" + pp + "*&doctype=file";
+                var pp = encodeURIComponent(escapeHTML(decodeURIComponent(rootpath)));
+                window.open("search.php?submitted=true&p=1&q=mtime:" + mtime + " AND parent_path:" + pp + "* AND " + sizefield + ":>=" + filter + "&doctype=file&path=" + encodeURIComponent(rootpath));
                 return false;
             },
             onHover: function (event, legendItem, legend) {

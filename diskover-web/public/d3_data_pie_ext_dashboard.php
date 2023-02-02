@@ -24,14 +24,17 @@ require "d3_inc.php";
 if ($_SESSION["diskover_cache_chartfileext_dashboard"][$esIndex][$_SESSION['rootpath']] && $_GET['usecache'] == 1) {
   $data = $_SESSION["diskover_cache_chartfileext_dashboard"][$esIndex][$_SESSION['rootpath']];
 } else {
+  // get mtime in ES format
+  $time = gettime($time);
+  
   // get dir total size and file count
-  $dirinfo = get_dir_info_dashboard($client, $esIndex, $_SESSION['rootpath']);
+  $dirinfo = get_dir_info($client, $esIndex, $_SESSION['rootpath']);
 
   $data = [
     "name" => $_SESSION['rootpath'],
     "size" => $dirinfo[0],
     "count" => $dirinfo[2],
-    "children" => get_file_ext_dashboard($client, $esIndex, $_SESSION['rootpath'])
+    "children" => get_file_ext($client, $esIndex, $_SESSION['rootpath'], $filter, $time)
   ];
 
   // cache path data in session

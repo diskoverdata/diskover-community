@@ -93,13 +93,22 @@ require "../src/diskover/Diskover.php";
                                                                                                                                                                                                 } else {
                                                                                                                                                                                                     echo '1';
                                                                                                                                                                                                 } ?>" size="1">&nbsp;<button type="submit" id="changefilesizedecbutton" class="btn btn-primary" title="submit" onclick="setFileSizeDisplayDec()">Set </button>
-                    <div class="form-check">
-                        <input type="checkbox" class="form-check-input" id="sizedu" onclick="setSizeField()">
-                        <label class="form-check-label" for="sizedu">Use size_du (allocated size) instead of size for charts and file tree sizes</label><br>
-                        <span class="small"><i class="glyphicon glyphicon-info-sign"></i> If the file systems being indexed contain hardlinks, check this to show allocated sizes.</span>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="sizedu" onclick="setSizeField()">
+                            <label class="form-check-label" for="sizedu">Use size_du (allocated size) instead of size for charts and file tree sizes</label><br>
+                            <span class="small"><i class="glyphicon glyphicon-info-sign"></i> If the file systems being indexed contain hardlinks, check this to show allocated sizes.</span>
+                        </div>
                     </div>
                 </div>
-                </div><div class="well">
+                <div class="well">
+                    <h4>Filter charts</h4>
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="filterchart" onclick="setFilterCharts()">
+                        <label class="form-check-label" for="filterchart">Use filters on charts</label><br>
+                        <span class="small"><i class="glyphicon glyphicon-info-sign"></i> Apply any filters to search results and dashboard charts.</span>
+                    </div>
+                </div>
+                <div class="well">
                     <h4>Use predictive search</h4>
                     <div class="form-check">
                         <input type="checkbox" class="form-check-input" id="wildcardsearch" onclick="setWildcardSearch()">
@@ -218,6 +227,12 @@ require "../src/diskover/Diskover.php";
             document.getElementById('wildcardsearch').checked = true;
         } else {
             document.getElementById('wildcardsearch').checked = false;
+        }
+        // set filter charts checkbox
+        if (getCookie('filtercharts') == 1) {
+            document.getElementById('filterchart').checked = true;
+        } else {
+            document.getElementById('filterchart').checked = false;
         }
     </script>
 </body>

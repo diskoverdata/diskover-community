@@ -62,43 +62,118 @@ error_reporting(E_ALL ^ E_NOTICE);
                                         <li class="dropdown-submenu">
                                             <a href="#">Modified</a>
                                             <ul class="dropdown-menu">
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-1w/d]&amp;doctype=file">Date modified >1 week</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-2w/d]&amp;doctype=file">Date modified >2 weeks</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-1M/d]&amp;doctype=file">Date modified >1 month</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-2M/d]&amp;doctype=file">Date modified >2 months</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-3M/d]&amp;doctype=file">Date modified >3 months</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-6M/d]&amp;doctype=file">Date modified >6 months</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-1y/d]&amp;doctype=file">Date modified >1 year</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-2y/d]&amp;doctype=file">Date modified >2 years</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-3y/d]&amp;doctype=file">Date modified >3 years</a></li>
+                                                <li class="dropdown-submenu">
+                                                    <a href="#">Older than</a>
+                                                    <ul class="dropdown-menu">
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-1d/d]&amp;doctype=file">Date modified >1 day</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-2d/d]&amp;doctype=file">Date modified >2 days</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-1w/d]&amp;doctype=file">Date modified >1 week</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-2w/d]&amp;doctype=file">Date modified >2 weeks</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-1M/d]&amp;doctype=file">Date modified >1 month</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-2M/d]&amp;doctype=file">Date modified >2 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-3M/d]&amp;doctype=file">Date modified >3 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-6M/d]&amp;doctype=file">Date modified >6 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-1y/d]&amp;doctype=file">Date modified >1 year</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-2y/d]&amp;doctype=file">Date modified >2 years</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-3y/d]&amp;doctype=file">Date modified >3 years</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-5y/d]&amp;doctype=file">Date modified >5 years</a></li>
+                                                    </ul>
+                                                </li>
+                                                <li class="dropdown-submenu">
+                                                    <a href="#">Newer than</a>
+                                                    <ul class="dropdown-menu">
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[now/m-1d/d TO now/m]&amp;doctype=file">Date modified <1 day</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[now/m-2d/d TO now/m]&amp;doctype=file">Date modified <2 days</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[now/m-1w/d TO now/m]&amp;doctype=file">Date modified <1 week</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[now/m-2w/d TO now/m]&amp;doctype=file">Date modified <2 weeks</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[now/m-1M/d TO now/m]&amp;doctype=file">Date modified <1 month</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[now/m-2M/d TO now/m]&amp;doctype=file">Date modified <2 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[now/m-3M/d TO now/m]&amp;doctype=file">Date modified <3 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[now/m-6M/d TO now/m]&amp;doctype=file">Date modified <6 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[now/m-1y/d TO now/m]&amp;doctype=file">Date modified <1 year</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[now/m-2y/d TO now/m]&amp;doctype=file">Date modified <2 years</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[now/m-3y/d TO now/m]&amp;doctype=file">Date modified <3 years</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[now/m-5y/d TO now/m]&amp;doctype=file">Date modified <5 years</a></li>
+                                                    </ul>
+                                                </li>
                                             </ul>
                                         </li>
                                         <li class="dropdown-submenu">
                                             <a href="#">Accessed</a>
                                             <ul class="dropdown-menu">
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-1w/d]&amp;doctype=file">Last accessed >1 week</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-2w/d]&amp;doctype=file">Last accessed >2 weeks</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-1M/d]&amp;doctype=file">Last accessed >1 month</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-2M/d]&amp;doctype=file">Last accessed >2 months</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-3M/d]&amp;doctype=file">Last accessed >3 months</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-6M/d]&amp;doctype=file">Last accessed >6 months</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-1y/d]&amp;doctype=file">Last accessed >1 year</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-2y/d]&amp;doctype=file">Last accessed >2 years</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-3y/d]&amp;doctype=file">Last accessed >3 years</a></li>
+                                                <li class="dropdown-submenu">
+                                                    <a href="#">Older than</a>
+                                                    <ul class="dropdown-menu">
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-1d/d]&amp;doctype=file">Last accessed >1 day</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-2d/d]&amp;doctype=file">Last accessed >2 days</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-1w/d]&amp;doctype=file">Last accessed >1 week</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-2w/d]&amp;doctype=file">Last accessed >2 weeks</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-1M/d]&amp;doctype=file">Last accessed >1 month</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-2M/d]&amp;doctype=file">Last accessed >2 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-3M/d]&amp;doctype=file">Last accessed >3 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-6M/d]&amp;doctype=file">Last accessed >6 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-1y/d]&amp;doctype=file">Last accessed >1 year</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-2y/d]&amp;doctype=file">Last accessed >2 years</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-3y/d]&amp;doctype=file">Last accessed >3 years</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-5y/d]&amp;doctype=file">Last accessed >5 years</a></li>
+                                                    </ul>
+                                                </li>
+                                                <li class="dropdown-submenu">
+                                                    <a href="#">Newer than</a>
+                                                    <ul class="dropdown-menu">
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[now/m-1d/d TO now/m]&amp;doctype=file">Last accessed <1 day</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[now/m-2d/d TO now/m]&amp;doctype=file">Last accessed <2 days</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[now/m-1w/d TO now/m]&amp;doctype=file">Last accessed <1 week</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[now/m-2w/d TO now/m]&amp;doctype=file">Last accessed <2 weeks</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[now/m-1M/d TO now/m]&amp;doctype=file">Last accessed <1 month</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[now/m-2M/d TO now/m]&amp;doctype=file">Last accessed <2 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[now/m-3M/d TO now/m]&amp;doctype=file">Last accessed <3 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[now/m-6M/d TO now/m]&amp;doctype=file">Last accessed <6 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[now/m-1y/d TO now/m]&amp;doctype=file">Last accessed <1 year</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[now/m-2y/d TO now/m]&amp;doctype=file">Last accessed <2 years</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[now/m-3y/d TO now/m]&amp;doctype=file">Last accessed <3 years</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[now/m-5y/d TO now/m]&amp;doctype=file">Last accessed <5 years</a></li>
+                                                    </ul>
+                                                </li>
                                             </ul>
                                         </li>
                                         <li class="dropdown-submenu">
                                             <a href="#">Changed</a>
                                             <ul class="dropdown-menu">
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-1w/d]&amp;doctype=file">Date changed >1 week</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-2w/d]&amp;doctype=file">Date changed >2 weeks</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-1M/d]&amp;doctype=file">Date changed >1 month</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-2M/d]&amp;doctype=file">Date changed >2 months</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-3M/d]&amp;doctype=file">Date changed >3 months</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-6M/d]&amp;doctype=file">Date changed >6 months</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-1y/d]&amp;doctype=file">Date changed >1 year</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-2y/d]&amp;doctype=file">Date changed >2 years</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-3y/d]&amp;doctype=file">Date changed >3 years</a></li>
+                                                <li class="dropdown-submenu">
+                                                    <a href="#">Older than</a>
+                                                    <ul class="dropdown-menu">
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-1d/d]">Date changed >1 day</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-2d/d]">Date changed >2 days</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-1w/d]">Date changed >1 week</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-2w/d]">Date changed >2 weeks</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-1M/d]">Date changed >1 month</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-2M/d]">Date changed >2 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-3M/d]">Date changed >3 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-6M/d]">Date changed >6 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-1y/d]">Date changed >1 year</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-2y/d]">Date changed >2 years</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-3y/d]">Date changed >3 years</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-5y/d]">Date changed >5 years</a></li>
+                                                    </ul>
+                                                </li>
+                                                <li class="dropdown-submenu">
+                                                    <a href="#">Newer than</a>
+                                                    <ul class="dropdown-menu">
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[now/m-1d/d TO now/m]">Date changed <1 day</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[now/m-2d/d TO now/m]">Date changed <2 days</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[now/m-1w/d TO now/m]">Date changed <1 week</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[now/m-2w/d TO now/m]">Date changed <2 weeks</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[now/m-1M/d TO now/m]">Date changed <1 month</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[now/m-2M/d TO now/m]">Date changed <2 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[now/m-3M/d TO now/m]">Date changed <3 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[now/m-6M/d TO now/m]">Date changed <6 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[now/m-1y/d TO now/m]">Date changed <1 year</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[now/m-2y/d TO now/m]">Date changed <2 years</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[now/m-3y/d TO now/m]">Date changed <3 years</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[now/m-5y/d TO now/m]">Date changed <5 years</a></li>
+                                                    </ul>
+                                                </li>
                                             </ul>
                                         </li>
                                     </ul>
@@ -106,19 +181,48 @@ error_reporting(E_ALL ^ E_NOTICE);
                                 <li class="dropdown-submenu">
                                     <a href="#">Size</a>
                                     <ul class="dropdown-menu">
-                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>1&amp;doctype=file">Size >1 byte</a></li>
-                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>1024&amp;doctype=file">Size >1 KB</a></li>
-                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>65536&amp;doctype=file">Size >64 KB</a></li>
-                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>262144&amp;doctype=file">Size >256 KB</a></li>
-                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>524288&amp;doctype=file">Size >512 KB</a></li>
-                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>1048576&amp;doctype=file">Size >1 MB</a></li>
-                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>10485760&amp;doctype=file">Size >10 MB</a></li>
-                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>26214400&amp;doctype=file">Size >25 MB</a></li>
-                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>52428800&amp;doctype=file">Size >50 MB</a></li>
-                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>104857600&amp;doctype=file">Size >100 MB</a></li>
-                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>262144000&amp;doctype=file">Size >250 MB</a></li>
-                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>524288000&amp;doctype=file">Size >500 MB</a></li>
-                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>1048576000&amp;doctype=file">Size >1 GB</a></li>
+                                        <li class="dropdown-submenu">
+                                            <a href="#">Smaller than</a>
+                                            <ul class="dropdown-menu">
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:<1&amp;doctype=file">Size <1 byte</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:<1024&amp;doctype=file">Size <1 KB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:<65536&amp;doctype=file">Size <64 KB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:<262144&amp;doctype=file">Size <256 KB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:<524288&amp;doctype=file">Size <512 KB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:<1048576&amp;doctype=file">Size <1 MB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:<10485760&amp;doctype=file">Size <10 MB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:<26214400&amp;doctype=file">Size <25 MB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:<52428800&amp;doctype=file">Size <50 MB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:<104857600&amp;doctype=file">Size <100 MB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:<262144000&amp;doctype=file">Size <250 MB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:<524288000&amp;doctype=file">Size <500 MB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:<1048576000&amp;doctype=file">Size <1 GB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:<2097152000&amp;doctype=file">Size <2 GB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:<5242880000&amp;doctype=file">Size <5 GB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:<10485760000&amp;doctype=file">Size <10 GB</a></li>
+                                            </ul>
+                                        </li>
+                                        <li class="dropdown-submenu">
+                                            <a href="#">Larger than</a>
+                                            <ul class="dropdown-menu">
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>1&amp;doctype=file">Size >1 byte</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>1024&amp;doctype=file">Size >1 KB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>65536&amp;doctype=file">Size >64 KB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>262144&amp;doctype=file">Size >256 KB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>524288&amp;doctype=file">Size >512 KB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>1048576&amp;doctype=file">Size >1 MB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>10485760&amp;doctype=file">Size >10 MB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>26214400&amp;doctype=file">Size >25 MB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>52428800&amp;doctype=file">Size >50 MB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>104857600&amp;doctype=file">Size >100 MB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>262144000&amp;doctype=file">Size >250 MB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>524288000&amp;doctype=file">Size >500 MB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>1048576000&amp;doctype=file">Size >1 GB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>2097152000&amp;doctype=file">Size >2 GB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>5242880000&amp;doctype=file">Size >5 GB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>10485760000&amp;doctype=file">Size >10 GB</a></li>
+                                            </ul>
+                                        </li>
                                     </ul>
                                 </li>
                                 <li class="dropdown-submenu">
@@ -142,58 +246,136 @@ error_reporting(E_ALL ^ E_NOTICE);
                                     </ul>
                                 </li>
                                 <li class="divider"></li>
+                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:<=52428800&amp;doctype=file">Small files (<50 MB)</a></li>
+                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>=52428800&amp;doctype=file">Large files (>50 MB)</a></li>
+                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:0&amp;doctype=file">Empty files (0 bytes)</a></li>
                                 <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=nlink:>1&amp;doctype=file">Hardlinks >1</a></li>
-                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:0&amp;doctype=file">Empty (0 b) files</a></li>
                                 <li><a href="#">Duplicate files <span class="label label-info">Essential</span></a></li>
-                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-6M/d] AND atime:[* TO now/m-6M/d]&amp;doctype=file">Recommended to remove</a></li>
+                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-6M/d] AND atime:[* TO now/m-6M/d]&amp;doctype=file">Old files</a></li>
+                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[now/m-6M/d TO now/m] AND atime:[now/m-6M/d TO now/m]&amp;doctype=file">New files</a></li>
                             </ul>
                         </li>
                         <li class="dropdown-submenu">
                             <a tabindex="-2" href="#">Directories</a>
                             <ul class="dropdown-menu">
                                 <li class="dropdown-submenu">
-                                    <a href="#">Date</a>
+                                <a href="#">Date</a>
                                     <ul class="dropdown-menu">
                                         <li class="dropdown-submenu">
                                             <a href="#">Modified</a>
                                             <ul class="dropdown-menu">
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-1w/d]&amp;doctype=directory">Date modified >1 week</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-2w/d]&amp;doctype=directory">Date modified >2 weeks</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-1M/d]&amp;doctype=directory">Date modified >1 month</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-2M/d]&amp;doctype=directory">Date modified >2 months</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-3M/d]&amp;doctype=directory">Date modified >3 months</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-6M/d]&amp;doctype=directory">Date modified >6 months</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-1y/d]&amp;doctype=directory">Date modified >1 year</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-2y/d]&amp;doctype=directory">Date modified >2 years</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-3y/d]&amp;doctype=directory">Date modified >3 years</a></li>
+                                                <li class="dropdown-submenu">
+                                                    <a href="#">Older than</a>
+                                                    <ul class="dropdown-menu">
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-1d/d]&amp;doctype=directory">Date modified >1 day</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-2d/d]&amp;doctype=directory">Date modified >2 days</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-1w/d]&amp;doctype=directory">Date modified >1 week</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-2w/d]&amp;doctype=directory">Date modified >2 weeks</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-1M/d]&amp;doctype=directory">Date modified >1 month</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-2M/d]&amp;doctype=directory">Date modified >2 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-3M/d]&amp;doctype=directory">Date modified >3 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-6M/d]&amp;doctype=directory">Date modified >6 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-1y/d]&amp;doctype=directory">Date modified >1 year</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-2y/d]&amp;doctype=directory">Date modified >2 years</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-3y/d]&amp;doctype=directory">Date modified >3 years</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-5y/d]&amp;doctype=directory">Date modified >5 years</a></li>
+                                                    </ul>
+                                                </li>
+                                                <li class="dropdown-submenu">
+                                                    <a href="#">Newer than</a>
+                                                    <ul class="dropdown-menu">
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[now/m-1d/d TO now/m]&amp;doctype=directory">Date modified <1 day</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[now/m-2d/d TO now/m]&amp;doctype=directory">Date modified <2 days</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[now/m-1w/d TO now/m]&amp;doctype=directory">Date modified <1 week</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[now/m-2w/d TO now/m]&amp;doctype=directory">Date modified <2 weeks</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[now/m-1M/d TO now/m]&amp;doctype=directory">Date modified <1 month</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[now/m-2M/d TO now/m]&amp;doctype=directory">Date modified <2 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[now/m-3M/d TO now/m]&amp;doctype=directory">Date modified <3 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[now/m-6M/d TO now/m]&amp;doctype=directory">Date modified <6 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[now/m-1y/d TO now/m]&amp;doctype=directory">Date modified <1 year</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[now/m-2y/d TO now/m]&amp;doctype=directory">Date modified <2 years</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[now/m-3y/d TO now/m]&amp;doctype=directory">Date modified <3 years</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[now/m-5y/d TO now/m]&amp;doctype=directory">Date modified <5 years</a></li>
+                                                    </ul>
+                                                </li>
                                             </ul>
                                         </li>
                                         <li class="dropdown-submenu">
                                             <a href="#">Accessed</a>
                                             <ul class="dropdown-menu">
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-1w/d]&amp;doctype=directory">Last accessed >1 week</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-2w/d]&amp;doctype=directory">Last accessed >2 weeks</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-1M/d]&amp;doctype=directory">Last accessed >1 month</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-2M/d]&amp;doctype=directory">Last accessed >2 months</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-3M/d]&amp;doctype=directory">Last accessed >3 months</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-6M/d]&amp;doctype=directory">Last accessed >6 months</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-1y/d]&amp;doctype=directory">Last accessed >1 year</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-2y/d]&amp;doctype=directory">Last accessed >2 years</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-3y/d]&amp;doctype=directory">Last accessed >3 years</a></li>
+                                                <li class="dropdown-submenu">
+                                                    <a href="#">Older than</a>
+                                                    <ul class="dropdown-menu">
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-1d/d]&amp;doctype=file">Last accessed >1 day</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-2d/d]&amp;doctype=file">Last accessed >2 days</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-1w/d]&amp;doctype=file">Last accessed >1 week</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-2w/d]&amp;doctype=file">Last accessed >2 weeks</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-1M/d]&amp;doctype=file">Last accessed >1 month</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-2M/d]&amp;doctype=file">Last accessed >2 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-3M/d]&amp;doctype=file">Last accessed >3 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-6M/d]&amp;doctype=file">Last accessed >6 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-1y/d]&amp;doctype=file">Last accessed >1 year</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-2y/d]&amp;doctype=file">Last accessed >2 years</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-3y/d]&amp;doctype=file">Last accessed >3 years</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-5y/d]&amp;doctype=file">Last accessed >5 years</a></li>
+                                                    </ul>
+                                                </li>
+                                                <li class="dropdown-submenu">
+                                                    <a href="#">Newer than</a>
+                                                    <ul class="dropdown-menu">
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[now/m-1d/d TO now/m]&amp;doctype=file">Last accessed <1 day</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[now/m-2d/d TO now/m]&amp;doctype=file">Last accessed <2 days</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[now/m-1w/d TO now/m]&amp;doctype=file">Last accessed <1 week</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[now/m-2w/d TO now/m]&amp;doctype=file">Last accessed <2 weeks</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[now/m-1M/d TO now/m]&amp;doctype=file">Last accessed <1 month</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[now/m-2M/d TO now/m]&amp;doctype=file">Last accessed <2 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[now/m-3M/d TO now/m]&amp;doctype=file">Last accessed <3 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[now/m-6M/d TO now/m]&amp;doctype=file">Last accessed <6 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[now/m-1y/d TO now/m]&amp;doctype=file">Last accessed <1 year</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[now/m-2y/d TO now/m]&amp;doctype=file">Last accessed <2 years</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[now/m-3y/d TO now/m]&amp;doctype=file">Last accessed <3 years</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[now/m-5y/d TO now/m]&amp;doctype=file">Last accessed <5 years</a></li>
+                                                    </ul>
+                                                </li>
                                             </ul>
                                         </li>
                                         <li class="dropdown-submenu">
                                             <a href="#">Changed</a>
                                             <ul class="dropdown-menu">
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-1w/d]&amp;doctype=directory">Date changed >1 week</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-2w/d]&amp;doctype=directory">Date changed >2 weeks</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-1M/d]&amp;doctype=directory">Date changed >1 month</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-2M/d]&amp;doctype=directory">Date changed >2 months</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-3M/d]&amp;doctype=directory">Date changed >3 months</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-6M/d]&amp;doctype=directory">Date changed >6 months</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-1y/d]&amp;doctype=directory">Date changed >1 year</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-2y/d]&amp;doctype=directory">Date changed >2 years</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-3y/d]&amp;doctype=directory">Date changed >3 years</a></li>
+                                                <li class="dropdown-submenu">
+                                                    <a href="#">Older than</a>
+                                                    <ul class="dropdown-menu">
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-1d/d]">Date changed >1 day</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-2d/d]">Date changed >2 days</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-1w/d]">Date changed >1 week</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-2w/d]">Date changed >2 weeks</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-1M/d]">Date changed >1 month</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-2M/d]">Date changed >2 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-3M/d]">Date changed >3 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-6M/d]">Date changed >6 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-1y/d]">Date changed >1 year</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-2y/d]">Date changed >2 years</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-3y/d]">Date changed >3 years</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-5y/d]">Date changed >5 years</a></li>
+                                                    </ul>
+                                                </li>
+                                                <li class="dropdown-submenu">
+                                                    <a href="#">Newer than</a>
+                                                    <ul class="dropdown-menu">
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[now/m-1d/d TO now/m]">Date changed <1 day</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[now/m-2d/d TO now/m]">Date changed <2 days</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[now/m-1w/d TO now/m]">Date changed <1 week</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[now/m-2w/d TO now/m]">Date changed <2 weeks</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[now/m-1M/d TO now/m]">Date changed <1 month</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[now/m-2M/d TO now/m]">Date changed <2 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[now/m-3M/d TO now/m]">Date changed <3 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[now/m-6M/d TO now/m]">Date changed <6 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[now/m-1y/d TO now/m]">Date changed <1 year</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[now/m-2y/d TO now/m]">Date changed <2 years</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[now/m-3y/d TO now/m]">Date changed <3 years</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[now/m-5y/d TO now/m]">Date changed <5 years</a></li>
+                                                    </ul>
+                                                </li>
                                             </ul>
                                         </li>
                                     </ul>
@@ -201,24 +383,56 @@ error_reporting(E_ALL ^ E_NOTICE);
                                 <li class="dropdown-submenu">
                                     <a href="#">Size</a>
                                     <ul class="dropdown-menu">
-                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>1&amp;doctype=directory">Size >1 byte</a></li>
-                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>1024&amp;doctype=directory">Size >1 KB</a></li>
-                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>65536&amp;doctype=directory">Size >64 KB</a></li>
-                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>262144&amp;doctype=directory">Size >256 KB</a></li>
-                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>524288&amp;doctype=directory">Size >512 KB</a></li>
-                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>1048576&amp;doctype=directory">Size >1 MB</a></li>
-                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>10485760&amp;doctype=directory">Size >10 MB</a></li>
-                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>26214400&amp;doctype=directory">Size >25 MB</a></li>
-                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>52428800&amp;doctype=directory">Size >50 MB</a></li>
-                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>104857600&amp;doctype=directory">Size >100 MB</a></li>
-                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>262144000&amp;doctype=directory">Size >250 MB</a></li>
-                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>524288000&amp;doctype=directory">Size >500 MB</a></li>
-                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>1048576000&amp;doctype=directory">Size >1 GB</a></li>
+                                        <li class="dropdown-submenu">
+                                            <a href="#">Smaller than</a>
+                                            <ul class="dropdown-menu">
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:<1&amp;doctype=directory">Size <1 byte</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:<1024&amp;doctype=directory">Size <1 KB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:<65536&amp;doctype=directory">Size <64 KB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:<262144&amp;doctype=directory">Size <256 KB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:<524288&amp;doctype=directory">Size <512 KB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:<1048576&amp;doctype=directory">Size <1 MB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:<10485760&amp;doctype=directory">Size <10 MB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:<26214400&amp;doctype=directory">Size <25 MB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:<52428800&amp;doctype=directory">Size <50 MB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:<104857600&amp;doctype=directory">Size <100 MB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:<262144000&amp;doctype=directory">Size <250 MB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:<524288000&amp;doctype=directory">Size <500 MB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:<1048576000&amp;doctype=directory">Size <1 GB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:<2097152000&amp;doctype=directory">Size <2 GB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:<5242880000&amp;doctype=directory">Size <5 GB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:<10485760000&amp;doctype=directory">Size <10 GB</a></li>
+                                            </ul>
+                                        </li>
+                                        <li class="dropdown-submenu">
+                                            <a href="#">Larger than</a>
+                                            <ul class="dropdown-menu">
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>1&amp;doctype=directory">Size >1 byte</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>1024&amp;doctype=directory">Size >1 KB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>65536&amp;doctype=directory">Size >64 KB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>262144&amp;doctype=directory">Size >256 KB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>524288&amp;doctype=directory">Size >512 KB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>1048576&amp;doctype=directory">Size >1 MB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>10485760&amp;doctype=directory">Size >10 MB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>26214400&amp;doctype=directory">Size >25 MB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>52428800&amp;doctype=directory">Size >50 MB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>104857600&amp;doctype=directory">Size >100 MB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>262144000&amp;doctype=directory">Size >250 MB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>524288000&amp;doctype=directory">Size >500 MB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>1048576000&amp;doctype=directory">Size >1 GB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>2097152000&amp;doctype=directory">Size >2 GB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>5242880000&amp;doctype=directory">Size >5 GB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>10485760000&amp;doctype=directory">Size >10 GB</a></li>
+                                            </ul>
+                                        </li>
                                     </ul>
                                 </li>
                                 <li class="divider"></li>
-                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:0&amp;doctype=directory">Empty (0 b) directories</a></li>
-                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-6M/d] AND atime:[* TO now/m-6M/d]&amp;doctype=directory">Recommended to remove</a></li>
+                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:<=52428800&amp;doctype=directory">Small directories (<50 MB)</a></li>
+                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>=52428800&amp;doctype=directory">Large directories (>50 MB)</a></li>
+                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:0&amp;doctype=directory">Empty directories (0 bytes)</a></li>
+                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-6M/d] AND atime:[* TO now/m-6M/d]&amp;doctype=directory">Old directories</a></li>
+                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[now/m-6M/d TO now/m] AND atime:[now/m-6M/d TO now/m]&amp;doctype=directory">New directories</a></li>
                             </ul>
                         </li>
                         <li class="dropdown-submenu">
@@ -230,43 +444,118 @@ error_reporting(E_ALL ^ E_NOTICE);
                                         <li class="dropdown-submenu">
                                             <a href="#">Modified</a>
                                             <ul class="dropdown-menu">
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-1w/d]">Date modified >1 week</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-2w/d]">Date modified >2 weeks</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-1M/d]">Date modified >1 month</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-2M/d]">Date modified >2 months</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-3M/d]">Date modified >3 months</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-6M/d]">Date modified >6 months</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-1y/d]">Date modified >1 year</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-2y/d]">Date modified >2 years</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-3y/d]">Date modified >3 years</a></li>
+                                                <li class="dropdown-submenu">
+                                                    <a href="#">Older than</a>
+                                                    <ul class="dropdown-menu">
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-1d/d]">Date modified >1 day</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-2d/d]">Date modified >2 days</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-1w/d]">Date modified >1 week</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-2w/d]">Date modified >2 weeks</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-1M/d]">Date modified >1 month</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-2M/d]">Date modified >2 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-3M/d]">Date modified >3 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-6M/d]">Date modified >6 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-1y/d]">Date modified >1 year</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-2y/d]">Date modified >2 years</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-3y/d]">Date modified >3 years</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-5y/d]">Date modified >5 years</a></li>
+                                                    </ul>
+                                                </li>
+                                                <li class="dropdown-submenu">
+                                                    <a href="#">Newer than</a>
+                                                    <ul class="dropdown-menu">
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[now/m-1d/d TO now/m]">Date modified <1 day</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[now/m-2d/d TO now/m]">Date modified <2 days</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[now/m-1w/d TO now/m]">Date modified <1 week</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[now/m-2w/d TO now/m]">Date modified <2 weeks</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[now/m-1M/d TO now/m]">Date modified <1 month</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[now/m-2M/d TO now/m]">Date modified <2 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[now/m-3M/d TO now/m]">Date modified <3 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[now/m-6M/d TO now/m]">Date modified <6 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[now/m-1y/d TO now/m]">Date modified <1 year</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[now/m-2y/d TO now/m]">Date modified <2 years</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[now/m-3y/d TO now/m]">Date modified <3 years</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[now/m-5y/d TO now/m]">Date modified <5 years</a></li>
+                                                    </ul>
+                                                </li>
                                             </ul>
                                         </li>
                                         <li class="dropdown-submenu">
                                             <a href="#">Accessed</a>
                                             <ul class="dropdown-menu">
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-1w/d]">Last accessed >1 week</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-2w/d]">Last accessed >2 weeks</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-1M/d]">Last accessed >1 month</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-2M/d]">Last accessed >2 months</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-3M/d]">Last accessed >3 months</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-6M/d]">Last accessed >6 months</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-1y/d]">Last accessed >1 year</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-2y/d]">Last accessed >2 years</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-3y/d]">Last accessed >3 years</a></li>
+                                                <li class="dropdown-submenu">
+                                                    <a href="#">Older than</a>
+                                                    <ul class="dropdown-menu">
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-1d/d]">Last accessed >1 day</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-2d/d]">Last accessed >2 days</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-1w/d]">Last accessed >1 week</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-2w/d]">Last accessed >2 weeks</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-1M/d]">Last accessed >1 month</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-2M/d]">Last accessed >2 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-3M/d]">Last accessed >3 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-6M/d]">Last accessed >6 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-1y/d]">Last accessed >1 year</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-2y/d]">Last accessed >2 years</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-3y/d]">Last accessed >3 years</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[* TO now/m-5y/d]">Last accessed >5 years</a></li>
+                                                    </ul>
+                                                </li>
+                                                <li class="dropdown-submenu">
+                                                    <a href="#">Newer than</a>
+                                                    <ul class="dropdown-menu">
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[now/m-1d/d TO now/m]">Last accessed <1 day</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[now/m-2d/d TO now/m]">Last accessed <2 days</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[now/m-1w/d TO now/m]">Last accessed <1 week</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[now/m-2w/d TO now/m]">Last accessed <2 weeks</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[now/m-1M/d TO now/m]">Last accessed <1 month</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[now/m-2M/d TO now/m]">Last accessed <2 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[now/m-3M/d TO now/m]">Last accessed <3 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[now/m-6M/d TO now/m]">Last accessed <6 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[now/m-1y/d TO now/m]">Last accessed <1 year</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[now/m-2y/d TO now/m]">Last accessed <2 years</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[now/m-3y/d TO now/m]">Last accessed <3 years</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=atime:[now/m-5y/d TO now/m]">Last accessed <5 years</a></li>
+                                                    </ul>
+                                                </li>
                                             </ul>
                                         </li>
                                         <li class="dropdown-submenu">
                                             <a href="#">Changed</a>
                                             <ul class="dropdown-menu">
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-1w/d]">Date changed >1 week</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-2w/d]">Date changed >2 weeks</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-1M/d]">Date changed >1 month</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-2M/d]">Date changed >2 months</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-3M/d]">Date changed >3 months</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-6M/d]">Date changed >6 months</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-1y/d]">Date changed >1 year</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-2y/d]">Date changed >2 years</a></li>
-                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-3y/d]">Date changed >3 years</a></li>
+                                                <li class="dropdown-submenu">
+                                                    <a href="#">Older than</a>
+                                                    <ul class="dropdown-menu">
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-1d/d]">Date changed >1 day</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-2d/d]">Date changed >2 days</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-1w/d]">Date changed >1 week</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-2w/d]">Date changed >2 weeks</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-1M/d]">Date changed >1 month</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-2M/d]">Date changed >2 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-3M/d]">Date changed >3 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-6M/d]">Date changed >6 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-1y/d]">Date changed >1 year</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-2y/d]">Date changed >2 years</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-3y/d]">Date changed >3 years</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[* TO now/m-5y/d]">Date changed >5 years</a></li>
+                                                    </ul>
+                                                </li>
+                                                <li class="dropdown-submenu">
+                                                    <a href="#">Newer than</a>
+                                                    <ul class="dropdown-menu">
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[now/m-1d/d TO now/m]">Date changed <1 day</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[now/m-2d/d TO now/m]">Date changed <2 days</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[now/m-1w/d TO now/m]">Date changed <1 week</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[now/m-2w/d TO now/m]">Date changed <2 weeks</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[now/m-1M/d TO now/m]">Date changed <1 month</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[now/m-2M/d TO now/m]">Date changed <2 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[now/m-3M/d TO now/m]">Date changed <3 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[now/m-6M/d TO now/m]">Date changed <6 months</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[now/m-1y/d TO now/m]">Date changed <1 year</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[now/m-2y/d TO now/m]">Date changed <2 years</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[now/m-3y/d TO now/m]">Date changed <3 years</a></li>
+                                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=ctime:[now/m-5y/d TO now/m]">Date changed <5 years</a></li>
+                                                    </ul>
+                                                </li>
                                             </ul>
                                         </li>
                                     </ul>
@@ -274,24 +563,56 @@ error_reporting(E_ALL ^ E_NOTICE);
                                 <li class="dropdown-submenu">
                                     <a href="#">Size</a>
                                     <ul class="dropdown-menu">
-                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>1">Size >1 byte</a></li>
-                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>1024">Size >1 KB</a></li>
-                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>65536">Size >64 KB</a></li>
-                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>262144">Size >256 KB</a></li>
-                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>524288">Size >512 KB</a></li>
-                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>1048576">Size >1 MB</a></li>
-                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>10485760">Size >10 MB</a></li>
-                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>26214400">Size >25 MB</a></li>
-                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>52428800">Size >50 MB</a></li>
-                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>104857600">Size >100 MB</a></li>
-                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>262144000">Size >250 MB</a></li>
-                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>524288000">Size >500 MB</a></li>
-                                        <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>1048576000">Size >1 GB</a></li>
+                                        <li class="dropdown-submenu">
+                                            <a href="#">Smaller than</a>
+                                            <ul class="dropdown-menu">
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:<1">Size <1 byte</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:<1024">Size <1 KB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:<65536">Size <64 KB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:<262144">Size <256 KB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:<524288">Size <512 KB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:<1048576">Size <1 MB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:<10485760">Size <10 MB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:<26214400">Size <25 MB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:<52428800">Size <50 MB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:<104857600">Size <100 MB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:<262144000">Size <250 MB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:<524288000">Size <500 MB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:<1048576000">Size <1 GB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:<2097152000">Size <2 GB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:<5242880000">Size <5 GB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:<10485760000">Size <10 GB</a></li>
+                                            </ul>
+                                        </li>
+                                        <li class="dropdown-submenu">
+                                            <a href="#">Larger than</a>
+                                            <ul class="dropdown-menu">
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>1">Size >1 byte</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>1024">Size >1 KB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>65536">Size >64 KB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>262144">Size >256 KB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>524288">Size >512 KB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>1048576">Size >1 MB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>10485760">Size >10 MB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>26214400">Size >25 MB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>52428800">Size >50 MB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>104857600">Size >100 MB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>262144000">Size >250 MB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>524288000">Size >500 MB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>1048576000">Size >1 GB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>2097152000">Size >2 GB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>5242880000">Size >5 GB</a></li>
+                                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>10485760000">Size >10 GB</a></li>
+                                            </ul>
+                                        </li>
                                     </ul>
                                 </li>
                                 <li class="divider"></li>
-                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:0">Empty (0 b)</a></li>
-                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-6M/d] AND atime:[* TO now/m-6M/d]">Recommended to remove</a></li>
+                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:<=52428800">Small files/dirs (<50 MB)</a></li>
+                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:>=52428800">Large files/dirs (>50 MB)</a></li>
+                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=size:0">Empty files/dirs (0 bytes)</a></li>
+                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[* TO now/m-6M/d] AND atime:[* TO now/m-6M/d]">Old files/dirs</a></li>
+                                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=mtime:[now/m-6M/d TO now/m] AND atime:[now/m-6M/d TO now/m]">New files/dirs</a></li>
                             </ul>
                         </li>
                     </ul>

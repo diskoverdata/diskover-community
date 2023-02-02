@@ -206,7 +206,7 @@ function getJSONFileTree() {
     // config references
     chartConfig = {
         target: 'tree-container',
-        data_url: 'd3_data_search.php?path=' + encodeURIComponent(path) + '&filter=0&time=0&use_count=0&show_files=0&usecache=' + usecache
+        data_url: 'd3_data_search.php?path=' + encodeURIComponent(path) + '&filter=1&time=0&use_count=0&show_files=0&usecache=' + usecache
     };
 
     // loader settings
@@ -399,9 +399,10 @@ $(function () {
         // config references
         var chartConfig = {
             target: 'searchCharts-container',
-            data_url1: 'd3_data_search_dirsizechart.php?path=' + encodeURIComponent(path) + '&usecache=' + usecache,
-            data_url2: 'd3_data_pie_ext_searchresults.php?path=' + encodeURIComponent(path) + '&usecache=' + usecache,
-            data_url3: 'd3_data_bar_mtime_searchresults.php?path=' + encodeURIComponent(path) + '&usecache=' + usecache
+            data_url1: 'd3_data_search_dirsizechart.php?path=' + encodeURIComponent(path) + '&usecount=0&usecache=' + usecache,
+            data_url2: 'd3_data_search_dirsizechart.php?path=' + encodeURIComponent(path) + '&usecount=1&usecache=' + usecache,
+            data_url3: 'd3_data_pie_ext_searchresults.php?path=' + encodeURIComponent(path) + '&usecache=' + usecache,
+            data_url4: 'd3_data_bar_mtime_searchresults.php?path=' + encodeURIComponent(path) + '&usecache=' + usecache
         };
 
         // loader settings
@@ -428,7 +429,8 @@ $(function () {
             .defer(d3.json, chartConfig.data_url1)
             .defer(d3.json, chartConfig.data_url2)
             .defer(d3.json, chartConfig.data_url3)
-            .await(function (error, data1, data2, data3) {
+            .defer(d3.json, chartConfig.data_url4)
+            .await(function (error, data1, data2, data3, data4) {
                 // handle error
                 if (error) {
                     jsonError(error);
@@ -437,15 +439,15 @@ $(function () {
                 data1 = data1.children;
                 data2 = data2.children;
                 data3 = data3.children;
+                data4 = data4.children;
 
-                //console.log(data)
                 // stop spin.js loader
                 spinner.stop();
-                renderCharts(data1, data2, data3);
+                renderCharts(data1, data2, data3, data4);
             });
     }
 
-    function renderCharts(data1, data2, data3) {
+    function renderCharts(data1, data2, data3, data4) {
         // chart settings
         var ticksStyle = {
             fontColor: '#495057',
@@ -463,25 +465,25 @@ $(function () {
         //----------------
 
         // hide top dir chart if no subdirs
-        if (data1.length === 0) {
+        if (data1.length === 0 || data2.length === 0) {
             $('#topDirs-Chart-container').hide();
         } else {
             // by size bar chart
 
             var top_dirs_labels = []
             var top_dirs_data_size = []
+            var top_dirs_data_size_count = []
             var top_dirs_colors = []
             var top_dirs_colors_border = []
-            var top_dirs_colors_map = []
 
             for (var i in data1) {
                 var name = data1[i].name;
                 top_dirs_labels.push(basename(name))
                 top_dirs_data_size.push(data1[i].size)
+                top_dirs_data_size_count.push(data1[i].count)
                 var c = default_colors[i]
                 top_dirs_colors.push(c)
                 top_dirs_colors_border.push('#2F3338')
-                top_dirs_colors_map[name] = c
             }
 
             var topDirsBySizebarChartCanvas = $("#topDirsBySize-barChart")
@@ -507,7 +509,8 @@ $(function () {
                             });
                             var currentValue = data1.datasets[0].data[i];
                             var percentage = parseFloat((currentValue/total*100).toFixed(1));
-                            return data1.labels[i] + ': ' + format(currentValue) + ' (' + percentage +'%)';
+                            var currentCount = top_dirs_data_size_count[i];
+                            return data1.labels[i] + ': ' + format(currentValue) + ' (' + percentage +'%) (' + numberWithCommas(currentCount) + ' items)';
                         }
                     }
                 },
@@ -535,7 +538,7 @@ $(function () {
                     //var size = this.data.datasets[0].data[e._index];
                     var pp = encodeURIComponent(escapeHTML(decodeURIComponent(path) + '\/' + dir));
                     var pp_path = encodeURIComponent(decodeURIComponent(path + '\/' + dir));
-                    window.location.href = "search.php?submitted=true&p=1&q=parent_path:" + pp + "*&path=" + pp_path;
+                    window.open("search.php?submitted=true&p=1&q=parent_path:" + pp + "*&path=" + pp_path);
                     return false;
                 },
                 onHover: function (event, legendItem, legend) {
@@ -556,22 +559,19 @@ $(function () {
 
             var top_dirs_labels = []
             var top_dirs_data_count = []
+            var top_dirs_data_count_size = []
             var top_dirs_colors = []
             var top_dirs_colors_border = []
 
             // re-sort data by top count
-            data1.sort((a, b) => (a.count > b.count) ? -1 : 1)
-            //console.log(data)
+            //data1.sort((a, b) => (a.count > b.count) ? -1 : 1)
 
-            for (var i in data1) {
-                var name = data1[i].name;
+            for (var i in data2) {
+                var name = data2[i].name;
                 top_dirs_labels.push(basename(name))
-                top_dirs_data_count.push(data1[i].count)
-                if (name in top_dirs_colors_map) {
-                    var c = top_dirs_colors_map[name]
-                } else {
-                    var c = default_colors[i]
-                }
+                top_dirs_data_count.push(data2[i].count)
+                top_dirs_data_count_size.push(data2[i].size)
+                var c = default_colors[i]
                 top_dirs_colors.push(c)
                 top_dirs_colors_border.push('#2F3338')
             }
@@ -596,7 +596,7 @@ $(function () {
                         var dir = legendItem.text;
                         var pp = encodeURIComponent(escapeHTML(decodeURIComponent(path) + '\/' + dir));
                         var pp_path = encodeURIComponent(decodeURIComponent(path + '\/' + dir));
-                        window.location.href = "search.php?submitted=true&p=1&q=parent_path:" + pp + "*&path=" + pp_path;
+                        window.open("search.php?submitted=true&p=1&q=parent_path:" + pp + "*&path=" + pp_path);
                         return false;
                     },
                     onHover: function (event, legendItem, legend) {
@@ -609,14 +609,15 @@ $(function () {
                 tooltips: {
                     mode: 'label',
                     callbacks: {
-                        label: function (tooltipItem, data1) {
+                        label: function (tooltipItem, data2) {
                             var i = tooltipItem.index;
-                            var total = data1.datasets[0].data.reduce(function(previousValue, currentValue, currentIndex, array) {
+                            var total = data2.datasets[0].data.reduce(function(previousValue, currentValue, currentIndex, array) {
                                 return previousValue + currentValue;
                             });
-                            var currentValue = data1.datasets[0].data[i];
+                            var currentValue = data2.datasets[0].data[i];
                             var percentage = parseFloat((currentValue/total*100).toFixed(1));
-                            return data1.labels[i] + ': ' + currentValue.toLocaleString() + ' files (' + percentage +'%)';
+                            var currentSize = top_dirs_data_count_size[i];
+                            return data2.labels[i] + ': ' + numberWithCommas(currentValue.toLocaleString()) + ' items (' + percentage +'%) (' + format(currentSize) + ')';
                         }
                     }
                 },
@@ -633,7 +634,7 @@ $(function () {
                     //var size = this.data.datasets[0].data[e._index];
                     var pp = encodeURIComponent(escapeHTML(decodeURIComponent(path) + '\/' + dir));
                     var pp_path = encodeURIComponent(decodeURIComponent(path + '\/' + dir));
-                    window.location.href = "search.php?submitted=true&p=1&q=parent_path:" + pp + "*&path=" + pp_path;
+                    window.open("search.php?submitted=true&p=1&q=parent_path:" + pp + "*&path=" + pp_path);
                     return false;
                 },
                 onHover: function (event, legendItem, legend) {
@@ -661,7 +662,7 @@ $(function () {
         //----------------
 
         // hide top dir chart if no files
-        if (data2.length === 0) {
+        if (data3.length === 0) {
             $('#mtime-Chart-container').hide();
             $('#topFileTypes-Chart-container').hide();
         } else {
@@ -669,21 +670,21 @@ $(function () {
 
             var top_ext_labels = []
             var top_ext_data_size = []
+            var top_ext_data_size_count = []
             var top_ext_colors = []
             var top_ext_colors_border = []
-            var top_ext_colors_map = []
 
-            for (var i in data2) {
-                var name = data2[i].name;
+            for (var i in data3['top_extensions_bysize']) {
+                var name = data3['top_extensions_bysize'][i].name;
                 if (name == '') {
                     name = 'NULL (no ext)'
                 }
                 top_ext_labels.push(name)
-                top_ext_data_size.push(data2[i].size)
+                top_ext_data_size.push(data3['top_extensions_bysize'][i].size)
+                top_ext_data_size_count.push(data3['top_extensions_bysize'][i].count)
                 var c = default_colors[i]
                 top_ext_colors.push(c)
                 top_ext_colors_border.push('#2F3338')
-                top_ext_colors_map[name] = c
             }
 
             var topFileTypesBySizebarChartCanvas = $("#topFileTypesBySize-barChart")
@@ -702,14 +703,15 @@ $(function () {
                 tooltips: {
                     mode: 'label',
                     callbacks: {
-                        label: function (tooltipItem, data2) {
+                        label: function (tooltipItem, data3) {
                             var i = tooltipItem.index;
-                            var total = data2.datasets[0].data.reduce(function(previousValue, currentValue, currentIndex, array) {
+                            var total = data3.datasets[0].data.reduce(function(previousValue, currentValue, currentIndex, array) {
                                 return previousValue + currentValue;
                             });
-                            var currentValue = data2.datasets[0].data[i];
+                            var currentValue = data3.datasets[0].data[i];
+                            var currentCount = top_ext_data_size_count[i];
                             var percentage = parseFloat((currentValue/total*100).toFixed(1));
-                            return data2.labels[i] + ': ' + format(currentValue) + ' (' + percentage +'%)';
+                            return data3.labels[i] + ': ' + format(currentValue) + ' (' + percentage +'%) (' + numberWithCommas(currentCount) + ' files)';
                         }
                     }
                 },
@@ -739,7 +741,7 @@ $(function () {
                         ext = "\"\"";
                     }
                     var pp = encodeURIComponent(escapeHTML(decodeURIComponent(path)));
-                    window.location.href = "search.php?submitted=true&p=1&q=extension:" + ext + " AND parent_path:" + pp + "*&doctype=file";
+                    window.open("search.php?submitted=true&p=1&q=extension:" + ext + " AND parent_path:" + pp + "* AND " + sizefield + ":>=" + filter + "&doctype=file");
                     return false;
                 },
                 onHover: function (event, legendItem, legend) {
@@ -760,24 +762,19 @@ $(function () {
 
             var top_ext_labels = []
             var top_ext_data_count = []
+            var top_ext_data_count_size = []
             var top_ext_colors = []
             var top_ext_colors_border = []
 
-            // re-sort data by top count
-            data2.sort((a, b) => (a.count > b.count) ? -1 : 1)
-
-            for (var i in data2) {
-                var name = data2[i].name;
+            for (var i in data3['top_extensions_bycount']) {
+                var name = data3['top_extensions_bycount'][i].name;
                 if (name == '') {
                     name = 'NULL (no ext)'
                 }
                 top_ext_labels.push(name)
-                top_ext_data_count.push(data2[i].count)
-                if (name in top_ext_colors_map) {
-                    var c = top_ext_colors_map[name]
-                } else {
-                    var c = default_colors[i]
-                }
+                top_ext_data_count.push(data3['top_extensions_bycount'][i].count)
+                top_ext_data_count_size.push(data3['top_extensions_bycount'][i].size)
+                var c = default_colors[i]
                 top_ext_colors.push(c)
                 top_ext_colors_border.push('#2F3338')
             }
@@ -804,7 +801,7 @@ $(function () {
                             ext = "\"\"";
                         }
                         var pp = encodeURIComponent(escapeHTML(decodeURIComponent(path)));
-                        window.location.href = "search.php?submitted=true&p=1&q=extension:" + ext + " AND parent_path:" + pp + "*&doctype=file";
+                        window.open("search.php?submitted=true&p=1&q=extension:" + ext + " AND parent_path:" + pp + "* AND " + sizefield + ":>=" + filter + "&doctype=file");
                         return false;
                     },
                     onHover: function (event, legendItem, legend) {
@@ -817,14 +814,15 @@ $(function () {
                 tooltips: {
                     mode: 'label',
                     callbacks: {
-                        label: function (tooltipItem, data2) {
+                        label: function (tooltipItem, data3) {
                             var i = tooltipItem.index;
-                            var total = data2.datasets[0].data.reduce(function(previousValue, currentValue, currentIndex, array) {
+                            var total = data3.datasets[0].data.reduce(function(previousValue, currentValue, currentIndex, array) {
                                 return previousValue + currentValue;
                             });
-                            var currentValue = data2.datasets[0].data[i];
+                            var currentValue = data3.datasets[0].data[i];
+                            var currentSize = top_ext_data_count_size[i];
                             var percentage = parseFloat((currentValue/total*100).toFixed(1));
-                            return data2.labels[i] + ': ' + currentValue.toLocaleString() + ' files (' + percentage +'%)';
+                            return data3.labels[i] + ': ' + currentValue.toLocaleString() + ' files (' + percentage +'%) (' + format(currentSize) + ')';
                         }
                     }
                 },
@@ -843,7 +841,7 @@ $(function () {
                         ext = "\"\"";
                     }
                     var pp = encodeURIComponent(escapeHTML(decodeURIComponent(path)));
-                    window.location.href = "search.php?submitted=true&p=1&q=extension:" + ext + " AND parent_path:" + pp + "*&doctype=file";
+                    window.open("search.php?submitted=true&p=1&q=extension:" + ext + " AND parent_path:" + pp + "* AND " + sizefield + ":>=" + filter + "&doctype=file");
                     return false;
                 },
                 onHover: function (event, legendItem, legend) {
@@ -871,17 +869,20 @@ $(function () {
 
             var datasets = []
 
-            // get total size
+            // get total size and count
             var totalsize = 0;
-            for (var i in data3) {
-                totalsize += data3[i].size;
+            var totalcount = 0;
+            for (var i in data4) {
+                totalsize += data4[i].size;
+                totalcount += data4[i].count;
             }
 
-            for (var i in data3) {
+            for (var i in data4) {
                 datasets.push({
-                    label: data3[i].mtime,
-                    data: [(data3[i].size / totalsize * 100).toFixed(1)],
-                    size: data3[i].size,
+                    label: data4[i].mtime,
+                    data: [(data4[i].size / totalsize * 100).toFixed(1), (data4[i].count / totalcount * 100).toFixed(1)],
+                    size: data4[i].size,
+                    count: data4[i].count,
                     backgroundColor: hot_cold_colors[i],
                     borderColor: '#2F3338'
                 })
@@ -917,7 +918,7 @@ $(function () {
                             mtime = "[* TO now/m-2y/d}"
                         }
                         var pp = encodeURIComponent(escapeHTML(decodeURIComponent(path)));
-                        window.location.href = "search.php?submitted=true&p=1&q=mtime:" + mtime + " AND parent_path:" + pp + "*&sort=size&sortorder=desc&sort2=name&sortorder2=asc&doctype=file";
+                        window.open("search.php?submitted=true&p=1&q=mtime:" + mtime + " AND parent_path:" + pp + "* AND " + sizefield + ":>=" + filter + "&doctype=file");
                         return false;
                     },
                     onHover: function (event, legendItem, legend) {
@@ -930,11 +931,12 @@ $(function () {
                 tooltips: {
                     mode: 'single',
                     callbacks: {
-                        label: function (tooltipItem, data3) {
+                        label: function (tooltipItem, data4) {
                             var i = tooltipItem.datasetIndex;
-                            var currentValue = data3.datasets[i].size
+                            var currentValue = data4.datasets[i].size;
+                            var currentCount = data4.datasets[i].count;
                             var percentage = parseFloat((currentValue/totalsize*100).toFixed(1));
-                            return data3.datasets[i].label + ': ' + format(currentValue) + ' (' + percentage +'%)';
+                            return data4.datasets[i].label + ': ' + format(currentValue) + ' (' + percentage +'%) (' + numberWithCommas(currentCount) + ' items)';
                         }
                     }
                 },
@@ -984,7 +986,7 @@ $(function () {
                         mtime = "[* TO now/m-2y/d}"
                     }
                     var pp = encodeURIComponent(escapeHTML(decodeURIComponent(path)));
-                    window.location.href = "search.php?submitted=true&p=1&q=mtime:" + mtime + " AND parent_path:" + pp + "*&doctype=file";
+                    window.open("search.php?submitted=true&p=1&q=mtime:" + mtime + " AND parent_path:" + pp + "* AND " + sizefield + ":>=" + filter + "&doctype=file");
                     return false;
                 },
                 onHover: function (event, legendItem, legend) {

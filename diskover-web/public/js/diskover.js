@@ -20,6 +20,7 @@ https://www.diskoverdata.com/solutions/
 const FILTER = 1;
 const MAXDEPTH = 2;
 const TIME = 0;
+const TIME_FIELD = 'mtime';
 const USE_COUNT = 0;
 const SHOW_FILES = 0;
 const SIZE_FIELD = 'size';
@@ -48,6 +49,7 @@ parentpath = decodeURIComponent(parentpath);
 // filters for analytics pages
 var filter = FILTER;
 var time = TIME;
+var timefield = TIME_FIELD;
 var maxdepth = MAXDEPTH;
 var use_count = USE_COUNT;
 var show_files = SHOW_FILES;
@@ -201,11 +203,18 @@ $(document).ready(function () {
         $.ajax({
             url: 'check_session.php',
             method: 'POST',
+            cache: false,
             success:function(response){
                 if(response == 'logout') {
                     window.location.replace("logout.php?inactive");
                     return true;
+                } else {
+                    console.log('check session login idle time: ' + response + ' sec')
+                    return true;
                 }
+            },
+            error: function(response){
+                console.error("check session error: " + response);
             }
         });
     }
@@ -472,6 +481,15 @@ function setWildcardSearch() {
     }
 }
 
+// set filter charts
+function setFilterCharts() {
+    if (document.getElementById('filterchart').checked) {
+        setCookie('filtercharts', 1);
+    } else {
+        setCookie('filtercharts', 0);
+    }
+}
+
 // set default sort
 function setSortDisplay() {
     if (document.getElementById('sortdisplay').checked) {
@@ -649,14 +667,27 @@ function saveSearchFilters(action) {
         extensions_arr.push($(this).val());
     });
     if (extensions_arr.length === 0) { extensions_arr = null };
+    
+    var filetype_arr = [];
+    $.each($("input[name='filetype']:checked"), function () {
+        filetype_arr.push($(this).val());
+    });
+    if (filetype_arr.length === 0) { filetype_arr = null };
+    
     if ($("#nofilterdirs").is(":checked")) {
         nofilterdirsval = "on";
     } else {
         nofilterdirsval = null;
     } 
+    
+    if ($("#filtercharts").is(":checked")) {
+        setCookie('filtercharts', 1)
+    } else {
+        setCookie('filtercharts', 0)
+    }
+    
     var formData = {
         doctype: $("#doctype").val(),
-        searchpath: $("#searchpath").val(),
         nofilterdirs: nofilterdirsval,
         file_size_bytes_low: $("#file_size_bytes_low").val(),
         file_size_bytes_low_unit: $("#file_size_bytes_low_unit").val(),
@@ -678,6 +709,8 @@ function saveSearchFilters(action) {
         extensions: extensions_arr,
         extension_operator: $("#extension_operator").val(),
         extension: $("#extension").val(),
+        filetype: filetype_arr,
+        filetype_operator: $("#filetype_operator").val(),
         otherfields: $("#otherfields").val(),
         otherfields_operator: $("#otherfields_operator").val(),
         otherfields_input: $("#otherfields_input").val(),
@@ -770,6 +803,7 @@ function checkIndexDel() {
     if (confirm('Are you sure you want to remove the selected ' + checked + ' indices? (' + indices_names.join(", ") + ')')) {
         // submit form
         $('#form-deleteindex').submit();
+        alert('Index deleting... please do not refresh the page or close the window.');
     } else {
         return false;
     }

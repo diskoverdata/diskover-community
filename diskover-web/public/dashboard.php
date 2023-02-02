@@ -17,15 +17,17 @@ https://www.diskoverdata.com/solutions/
 */
 
 require '../vendor/autoload.php';
-
+use Elasticsearch\Common\Exceptions\Missing404Exception;
 require "../src/diskover/Auth.php";
 require "d3_inc.php";
 require "dashboard.data.php";
 
 $estime = number_format(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 4);
 
-// escape characters
+// escape characters in rootpath
 $path_escaped = escape_chars($_SESSION['rootpath']);
+// encode rootpath
+$path_encoded = rawurlencode($_SESSION['rootpath']);
 
 ?>
 <!DOCTYPE html>
@@ -109,7 +111,7 @@ $path_escaped = escape_chars($_SESSION['rootpath']);
                         <h1><?php echo $percent_removable; ?> %</h1>
                     </div>
                     <div class="panel-footer text-center">
-                        <a href="search.php?&submitted=true&p=1&q=mtime%3A%5B*%20TO%20now%2Fm-6M%2Fd%5D%20AND%20atime%3A%5B*%20TO%20now%2Fm-6M%2Fd%5D%20AND%20parent_path%3A<?php echo $path_escaped ?>*%20AND%20type%3Afile">More info <i class="glyphicon glyphicon-circle-arrow-right"></i></a>
+                        <a href="search.php?&submitted=true&p=1&q=mtime%3A%5B*%20TO%20now%2Fm-6M%2Fd%5D%20AND%20atime%3A%5B*%20TO%20now%2Fm-6M%2Fd%5D%20AND%20parent_path%3A<?php echo rawurlencode($path_escaped) ?>*%20AND%20type%3Afile&path=<?php echo $path_encoded ?>" target="_blank">More info <i class="glyphicon glyphicon-circle-arrow-right"></i></a>
                     </div>
                 </div>
             </div>
@@ -149,19 +151,19 @@ $path_escaped = escape_chars($_SESSION['rootpath']);
                             <div title="Other: <?php echo formatBytes($other_size) . ' (' . $other_percent . ' %)'; ?>" class="progress-bar" style="background-color: #8B8A88; width: <?php echo $other_percent; ?>%"></div>
                         </div>
                         <span class="filetypechart">
-                            <a href="search.php?&submitted=true&p=1&q=<?php echo rawurlencode($fileGroups_extension['docs']); ?>&doctype=file"><i class="fas fa-square" style="color: #4A924D" title="<?php echo $docs_percent; ?>%"></i> Docs: <?php echo formatBytes($fileGroups_sizes['docs']) . ' (' . $docs_percent . ' %)'; ?></a>&nbsp;
-                            <a href="search.php?&submitted=true&p=1&q=<?php echo rawurlencode($fileGroups_extension['images']); ?>&doctype=file"><i class="fas fa-square" style="color: #3465CC" title="<?php echo $images_percent; ?>%"></i> Images: <?php echo formatBytes($fileGroups_sizes['images']) . ' (' . $images_percent . ' %)'; ?></a>&nbsp;
-                            <a href="search.php?&submitted=true&p=1&q=<?php echo rawurlencode($fileGroups_extension['video']); ?>&doctype=file"><i class="fas fa-square" style="color: #DC3912" title="<?php echo $video_percent; ?>%"></i> Video: <?php echo formatBytes($fileGroups_sizes['video']) . ' (' . $video_percent . ' %)'; ?></a>&nbsp;
-                            <a href="search.php?&submitted=true&p=1&q=<?php echo rawurlencode($fileGroups_extension['audio']); ?>&doctype=file"><i class="fas fa-square" style="color: #129618" title="<?php echo $audio_percent; ?>%"></i> Audio: <?php echo formatBytes($fileGroups_sizes['audio']) . ' (' . $audio_percent . ' %)'; ?></a>&nbsp;
-                            <a href="search.php?&submitted=true&p=1&q=<?php echo rawurlencode($fileGroups_extension['apps']); ?>&doctype=file"><i class="fas fa-square" style="color: #A84554" title="<?php echo $apps_percent; ?>%"></i> Apps: <?php echo formatBytes($fileGroups_sizes['apps']) . ' (' . $apps_percent . ' %)'; ?></a>&nbsp;
-                            <a href="search.php?&submitted=true&p=1&q=<?php echo rawurlencode($fileGroups_extension['programming']); ?>&doctype=file"><i class="fas fa-square" style="color: #980299" title="<?php echo $programming_percent; ?>%"></i> Programming: <?php echo formatBytes($fileGroups_sizes['programming']) . ' (' . $programming_percent . ' %)'; ?></a>&nbsp;
-                            <a href="search.php?&submitted=true&p=1&q=<?php echo rawurlencode($fileGroups_extension['internet']); ?>&doctype=file"><i class="fas fa-square" style="color: #3B3EAC" title="<?php echo $internet_percent; ?>%"></i> Internet: <?php echo formatBytes($fileGroups_sizes['internet']) . ' (' . $internet_percent . ' %)'; ?></a>&nbsp;
-                            <a href="search.php?&submitted=true&p=1&q=<?php echo rawurlencode($fileGroups_extension['system']); ?>&doctype=file"><i class="fas fa-square" style="color: #4B4846" title="<?php echo $system_percent; ?>%"></i> System: <?php echo formatBytes($fileGroups_sizes['system']) . ' (' . $system_percent . ' %)'; ?></a>&nbsp;
-                            <a href="search.php?&submitted=true&p=1&q=<?php echo rawurlencode($fileGroups_extension['data']); ?>&doctype=file"><i class="fas fa-square" style="color: #1C7B9C" title="<?php echo $data_percent; ?>%"></i> Data: <?php echo formatBytes($fileGroups_sizes['data']) . ' (' . $data_percent . ' %)'; ?></a>&nbsp;
-                            <a href="search.php?&submitted=true&p=1&q=<?php echo rawurlencode($fileGroups_extension['disc']); ?>&doctype=file"><i class="fas fa-square" style="color: #A13B5D" title="<?php echo $disc_percent; ?>%"></i> Disc: <?php echo formatBytes($fileGroups_sizes['disc']) . ' (' . $disc_percent . ' %)'; ?></a>&nbsp;
-                            <a href="search.php?&submitted=true&p=1&q=<?php echo rawurlencode($fileGroups_extension['compressed']); ?>&doctype=file"><i class="fas fa-square" style="color: #4F7F1A" title="<?php echo $compressed_percent; ?>%"></i> Compressed: <?php echo formatBytes($fileGroups_sizes['compressed']) . ' (' . $compressed_percent . ' %)'; ?></a>&nbsp;
-                            <a href="search.php?&submitted=true&p=1&q=<?php echo rawurlencode($fileGroups_extension['trash']); ?>&doctype=file"><i class="fas fa-square" style="color: #FFD52F" title="<?php echo $trash_percent; ?>%"></i> Trash: <?php echo formatBytes($fileGroups_sizes['trash']) . ' (' . $trash_percent . ' %)'; ?></a>&nbsp;
-                            <a href="search.php?&submitted=true&p=1&q=<?php echo rawurlencode($fileGroups_extension['other']); ?>&doctype=file"><i class="fas fa-square" style="color: #8B8A88" title="<?php echo $other_percent; ?>%"></i> Other: <?php echo formatBytes($other_size) . ' (' . $other_percent . ' %)'; ?></a>&nbsp;
+                            <a href="search.php?&submitted=true&p=1&q=<?php echo rawurlencode($fileGroups_extension['docs']); ?>&doctype=file&path=<?php echo $path_encoded ?>" target="_blank"><i class="fas fa-square" style="color: #4A924D" title="<?php echo $docs_percent; ?>%"></i> Docs: <?php echo formatBytes($fileGroups_sizes['docs']) . ' (' . $docs_percent . ' %)'; ?></a>&nbsp;
+                            <a href="search.php?&submitted=true&p=1&q=<?php echo rawurlencode($fileGroups_extension['images']); ?>&doctype=file&path=<?php echo $path_encoded ?>" target="_blank"><i class="fas fa-square" style="color: #3465CC" title="<?php echo $images_percent; ?>%"></i> Images: <?php echo formatBytes($fileGroups_sizes['images']) . ' (' . $images_percent . ' %)'; ?></a>&nbsp;
+                            <a href="search.php?&submitted=true&p=1&q=<?php echo rawurlencode($fileGroups_extension['video']); ?>&doctype=file&path=<?php echo $path_encoded ?>" target="_blank"><i class="fas fa-square" style="color: #DC3912" title="<?php echo $video_percent; ?>%"></i> Video: <?php echo formatBytes($fileGroups_sizes['video']) . ' (' . $video_percent . ' %)'; ?></a>&nbsp;
+                            <a href="search.php?&submitted=true&p=1&q=<?php echo rawurlencode($fileGroups_extension['audio']); ?>&doctype=file&path=<?php echo $path_encoded ?>" target="_blank"><i class="fas fa-square" style="color: #129618" title="<?php echo $audio_percent; ?>%"></i> Audio: <?php echo formatBytes($fileGroups_sizes['audio']) . ' (' . $audio_percent . ' %)'; ?></a>&nbsp;
+                            <a href="search.php?&submitted=true&p=1&q=<?php echo rawurlencode($fileGroups_extension['apps']); ?>&doctype=file&path=<?php echo $path_encoded ?>" target="_blank"><i class="fas fa-square" style="color: #A84554" title="<?php echo $apps_percent; ?>%"></i> Apps: <?php echo formatBytes($fileGroups_sizes['apps']) . ' (' . $apps_percent . ' %)'; ?></a>&nbsp;
+                            <a href="search.php?&submitted=true&p=1&q=<?php echo rawurlencode($fileGroups_extension['programming']); ?>&doctype=file&path=<?php echo $path_encoded ?>" target="_blank"><i class="fas fa-square" style="color: #980299" title="<?php echo $programming_percent; ?>%"></i> Programming: <?php echo formatBytes($fileGroups_sizes['programming']) . ' (' . $programming_percent . ' %)'; ?></a>&nbsp;
+                            <a href="search.php?&submitted=true&p=1&q=<?php echo rawurlencode($fileGroups_extension['internet']); ?>&doctype=file&path=<?php echo $path_encoded ?>" target="_blank"><i class="fas fa-square" style="color: #3B3EAC" title="<?php echo $internet_percent; ?>%"></i> Internet: <?php echo formatBytes($fileGroups_sizes['internet']) . ' (' . $internet_percent . ' %)'; ?></a>&nbsp;
+                            <a href="search.php?&submitted=true&p=1&q=<?php echo rawurlencode($fileGroups_extension['system']); ?>&doctype=file&path=<?php echo $path_encoded ?>" target="_blank"><i class="fas fa-square" style="color: #4B4846" title="<?php echo $system_percent; ?>%"></i> System: <?php echo formatBytes($fileGroups_sizes['system']) . ' (' . $system_percent . ' %)'; ?></a>&nbsp;
+                            <a href="search.php?&submitted=true&p=1&q=<?php echo rawurlencode($fileGroups_extension['data']); ?>&doctype=file&path=<?php echo $path_encoded ?>" target="_blank"><i class="fas fa-square" style="color: #1C7B9C" title="<?php echo $data_percent; ?>%"></i> Data: <?php echo formatBytes($fileGroups_sizes['data']) . ' (' . $data_percent . ' %)'; ?></a>&nbsp;
+                            <a href="search.php?&submitted=true&p=1&q=<?php echo rawurlencode($fileGroups_extension['disc']); ?>&doctype=file&path=<?php echo $path_encoded ?>" target="_blank"><i class="fas fa-square" style="color: #A13B5D" title="<?php echo $disc_percent; ?>%"></i> Disc: <?php echo formatBytes($fileGroups_sizes['disc']) . ' (' . $disc_percent . ' %)'; ?></a>&nbsp;
+                            <a href="search.php?&submitted=true&p=1&q=<?php echo rawurlencode($fileGroups_extension['compressed']); ?>&doctype=file&path=<?php echo $path_encoded ?>" target="_blank"><i class="fas fa-square" style="color: #4F7F1A" title="<?php echo $compressed_percent; ?>%"></i> Compressed: <?php echo formatBytes($fileGroups_sizes['compressed']) . ' (' . $compressed_percent . ' %)'; ?></a>&nbsp;
+                            <a href="search.php?&submitted=true&p=1&q=<?php echo rawurlencode($fileGroups_extension['trash']); ?>&doctype=file&path=<?php echo $path_encoded ?>" target="_blank"><i class="fas fa-square" style="color: #FFD52F" title="<?php echo $trash_percent; ?>%"></i> Trash: <?php echo formatBytes($fileGroups_sizes['trash']) . ' (' . $trash_percent . ' %)'; ?></a>&nbsp;
+                            <a href="search.php?&submitted=true&p=1&q=<?php echo rawurlencode($fileGroups_extension['other']); ?>&doctype=file&path=<?php echo $path_encoded ?>" target="_blank"><i class="fas fa-square" style="color: #8B8A88" title="<?php echo $other_percent; ?>%"></i> Other: <?php echo formatBytes($other_size) . ' (' . $other_percent . ' %)'; ?></a>&nbsp;
                         </span>
                     </div>
                 </div>
@@ -258,13 +260,20 @@ $path_escaped = escape_chars($_SESSION['rootpath']);
                                     ]
                                 ];
 
-                                $queryResponse = $client->search($searchParams);
+                                try {
+                                    // Send search query to Elasticsearch
+                                    $queryResponse = $client->search($searchParams);
+                                } catch (Missing404Exception $e) {
+                                    handleError("Selected indices are no longer available. Please select a different index.");
+                                } catch (Exception $e) {
+                                    handleError('ES error: ' . $e->getMessage(), false);
+                                }
 
                                 $largestfiles = $queryResponse['hits']['hits'];
                                 foreach ($largestfiles as $key => $value) {
                                 ?>
                                     <tr>
-                                        <td class="path"><a href="view.php?id=<?php echo $value['_id'] . '&amp;docindex=' . $value['_index'] . '&amp;doctype=file'; ?>"><i class="fas fa-file-alt" style="color:#738291;padding-right:3px;"></i> <?php echo $value['_source']['name']; ?></a></td>
+                                        <td class="path"><a href="view.php?id=<?php echo $value['_id'] . '&amp;docindex=' . $value['_index'] . '&amp;doctype=file'; ?>" target="_blank"><i class="fas fa-file-alt" style="color:#738291;padding-right:3px;"></i> <?php echo $value['_source']['name']; ?></a></td>
                                         <th><?php echo formatBytes($value['_source']['size']); ?></td>
                                         <th><?php echo formatBytes($value['_source']['size_du']); ?></td>
                                         <th><?php echo utcTimeToLocal($value['_source']['atime']); ?></td>
@@ -274,7 +283,7 @@ $path_escaped = escape_chars($_SESSION['rootpath']);
                         </table>
                     </div>
                     <div class="panel-footer text-center">
-                        <a href="search.php?&submitted=true&p=1&q=parent_path:<?php echo $path_escaped ?>*&sort=size&sortorder=desc&sort2=name&sortorder2=asc&doctype=file">Show more <i class="glyphicon glyphicon-circle-arrow-right"></i></a>
+                        <a href="search.php?&submitted=true&p=1&q=parent_path:<?php echo rawurlencode($path_escaped) ?>*&sort=size&sortorder=desc&sort2=name&sortorder2=asc&doctype=file&path=<?php echo $path_encoded ?>" target="_blank">Show more <i class="glyphicon glyphicon-circle-arrow-right"></i></a>
                     </div>
                 </div>
             </div>
@@ -320,13 +329,20 @@ $path_escaped = escape_chars($_SESSION['rootpath']);
                                     ]
                                 ];
 
-                                $queryResponse = $client->search($searchParams);
+                                try {
+                                    // Send search query to Elasticsearch
+                                    $queryResponse = $client->search($searchParams);
+                                } catch (Missing404Exception $e) {
+                                    handleError("Selected indices are no longer available. Please select a different index.");
+                                } catch (Exception $e) {
+                                    handleError('ES error: ' . $e->getMessage(), false);
+                                }
 
                                 $largestdirs = $queryResponse['hits']['hits'];
                                 foreach ($largestdirs as $key => $value) {
                                 ?>
                                     <tr>
-                                        <td class="path"><a href="view.php?id=<?php echo $value['_id'] . '&amp;docindex=' . $value['_index'] . '&amp;doctype=directory'; ?>"><i class="fas fa-folder" style="color:#E9AC47;padding-right:3px"></i> <?php if ($value['_source']['name'] === '' && $value['_source']['parent_path'] === '/') {
+                                        <td class="path"><a href="view.php?id=<?php echo $value['_id'] . '&amp;docindex=' . $value['_index'] . '&amp;doctype=directory'; ?>" target="_blank"><i class="fas fa-folder" style="color:#E9AC47;padding-right:3px"></i> <?php if ($value['_source']['name'] === '' && $value['_source']['parent_path'] === '/') {
                                                                                                                                                                                                                                                         echo '/';
                                                                                                                                                                                                                                                     } else {
                                                                                                                                                                                                                                                         echo $value['_source']['name'];
@@ -341,11 +357,12 @@ $path_escaped = escape_chars($_SESSION['rootpath']);
                         </table>
                     </div>
                     <div class="panel-footer text-center">
-                        <a href="search.php?&submitted=true&p=1&q=parent_path:<?php echo $path_escaped ?>*&sort=size&sortorder=desc&sort2=name&sortorder2=asc&doctype=directory">Show more <i class="glyphicon glyphicon-circle-arrow-right"></i></a>
+                        <a href="search.php?&submitted=true&p=1&q=parent_path:<?php echo rawurlencode($path_escaped) ?>*&sort=size&sortorder=desc&sort2=name&sortorder2=asc&doctype=directory&path=<?php echo $path_encoded ?>" target="_blank">Show more <i class="glyphicon glyphicon-circle-arrow-right"></i></a>
                     </div>
                 </div>
             </div>
         </div>
+        <a href="#" class="btn btn-sm btn-default reload-results" title="Reload chart data"><i class="glyphicon glyphicon-refresh"></i> Reload</a>
     </div>
     <hr>
     <div class="container-fluid">

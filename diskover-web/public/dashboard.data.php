@@ -80,57 +80,6 @@ $space_available = $space_info['available'];
 $space_total = $space_info['total'];
 $space_used = $space_info['used'];
 
-// Get info about index2
-if ($esIndex2 != "") {
-    $searchParams['index'] = $esIndex2;
-    $searchParams['body'] = [
-        'size' => 2,
-        'query' => [
-            'query_string' => [
-                'query' => 'path:"'.$_SESSION['rootpath'].'" AND type:"indexinfo"'
-            ]
-        ]
-    ];
-
-    $client2 = $mnclient->getClientByIndex($esIndex2);
-    try {
-        $queryResponse = $client2->search($searchParams);
-    } catch (Missing404Exception $e) {
-        handleError("Selected indices are no longer available.");
-    } catch (Exception $e) {
-        handleError('ES error: ' . $e->getMessage(), true);
-    }
-
-    $index2_info = array();
-    foreach ($queryResponse['hits']['hits'] as $hit) {
-        $index2_info[] = $hit['_source'];
-    }
-
-    // Get info about space
-    $searchParams['index'] = $esIndex2;
-    $searchParams['body'] = [
-        'size' => 1,
-        'query' => [
-            'query_string' => [
-                'query' => 'path:"'.$_SESSION['rootpath'].'" AND type:"spaceinfo"'
-            ]
-        ]
-    ];
-
-    try {
-        $queryResponse = $client2->search($searchParams);
-    } catch (Missing404Exception $e) {
-        handleError("Selected indices are no longer available.");
-    } catch (Exception $e) {
-        handleError('ES error: ' . $e->getMessage(), true);
-    }
-    
-    $space2_info = $queryResponse['hits']['hits'][0]['_source'];
-
-    // calculate disk space available change between the two indices
-    $space_change = number_format(changePercent($space_info['available'], $space2_info['available']), 1);
-}
-
 // Get recommended file delete size/count/cost
 $file_recommended_delete_size = 0;
 $file_recommended_delete_count = 0;
@@ -159,7 +108,14 @@ $searchParams['body'] = [
     ]
 ];
 
-$queryResponse = $client->search($searchParams);
+try {
+    // Send search query to Elasticsearch
+    $queryResponse = $client->search($searchParams);
+} catch (Missing404Exception $e) {
+    handleError("Selected indices are no longer available.");
+} catch (Exception $e) {
+    handleError('ES error: ' . $e->getMessage(), false);
+}
 
 // Get total count of recommended files to remove
 $cleanlist_filecount = $queryResponse['hits']['total']['value'];
@@ -222,8 +178,16 @@ foreach ($fileGroups_sizes as $key => $value) {
         ]
     ];
 
-    // Send search query to Elasticsearch
-    $queryResponse = $client->search($searchParams);
+    $searchParams = filterChartResults($searchParams);
+
+    try {
+        // Send search query to Elasticsearch
+        $queryResponse = $client->search($searchParams);
+    } catch (Missing404Exception $e) {
+        handleError("Selected indices are no longer available.");
+    } catch (Exception $e) {
+        handleError('ES error: ' . $e->getMessage(), false);
+    }
 
     // Get total size of all files with tag
     $fileGroups_sizes[$key] = $queryResponse['aggregations']['total_size']['value'];
@@ -279,7 +243,14 @@ $searchParams['body'] = [
     ]
 ];
 
-$queryResponse = $client->search($searchParams);
+try {
+    // Send search query to Elasticsearch
+    $queryResponse = $client->search($searchParams);
+} catch (Missing404Exception $e) {
+    handleError("Selected indices are no longer available.");
+} catch (Exception $e) {
+    handleError('ES error: ' . $e->getMessage(), false);
+}
 
 $avgfilesize = $queryResponse['aggregations']['avg_size']['value'];
 $avgfilesizedu = $queryResponse['aggregations']['avg_size_du']['value'];
@@ -306,7 +277,14 @@ $searchParams['body'] = [
     ]
 ];
 
-$queryResponse = $client->search($searchParams);
+try {
+    // Send search query to Elasticsearch
+    $queryResponse = $client->search($searchParams);
+} catch (Missing404Exception $e) {
+    handleError("Selected indices are no longer available.");
+} catch (Exception $e) {
+    handleError('ES error: ' . $e->getMessage(), false);
+}
 
 $avgdirsize = $queryResponse['aggregations']['avg_size']['value'];
 $avgdirsizedu = $queryResponse['aggregations']['avg_size_du']['value'];

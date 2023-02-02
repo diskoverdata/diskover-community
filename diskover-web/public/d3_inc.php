@@ -34,75 +34,6 @@ if ($path !== "/") {
 $esIndex = (isset($_GET['index'])) ? $_GET['index'] : getCookie('index');
 
 
-function get_dir_info_dashboard($client, $index, $path) {
-    // Get total directory size, count (files/subdirs), mtime from Elasticsearch (recursive) for path
-    $totalsize = 0;
-    $totalcount = 0;
-    $totalcount_files = 0;
-    $totalcount_subdirs = 0;
-    $searchParams['body'] = [];
-
-    // get dir size and items (files/subdirs) from directory doc
-
-    // Setup search query
-    $searchParams['index'] = $index;
-
-    // escape any special characters in path
-    $escapedpath = escape_chars($path);
-
-    if ($path === '/') {  // root /
-        $searchParams['body'] = [
-            'size' => 1,
-            '_source' => ["size","size_du","file_count","dir_count","mtime"],
-            'query' => [
-                'query_string' => [
-                    'query' => 'parent_path: ' . $escapedpath . ' AND name: "" AND type:"directory"'
-                ]
-            ]
-        ];
-    } else {
-        $p = escape_chars(dirname($path));
-        $f = escape_chars(basename($path));
-        $searchParams['body'] = [
-            'size' => 1,
-            '_source' => ["size","size_du","file_count","dir_count","mtime"],
-            'query' => [
-                'query_string' => [
-                    'query' => 'parent_path: ' . $p . ' AND name: ' . $f . ' AND type:"directory"'
-                ]
-            ]
-        ];
-    }
-
-    try {
-        // Send search query to Elasticsearch
-        $queryResponse = $client->search($searchParams);
-    }
-    catch(Exception $e) {
-        handleError('ES error: ' . $e->getMessage(), false);
-    }
-
-    // Get total count of files
-    $totalcount_files = (int)$queryResponse['hits']['hits'][0]['_source']['file_count'];
-
-    // Get total count of subdirs
-    $totalcount_subdirs = (int)$queryResponse['hits']['hits'][0]['_source']['dir_count'];
-
-    // Get total count (files+subdirs)
-    $totalcount = (int)$totalcount_files + $totalcount_subdirs;
-
-    // Get total size of directory and all subdirs
-    $totalsize = (int)$queryResponse['hits']['hits'][0]['_source'][$_COOKIE['sizefield']];
-
-    // Get directory modified time
-    $modified = utcTimeToLocal($queryResponse['hits']['hits'][0]['_source']['mtime']);
-
-    // Create dirinfo list with total size (of all files), total count (file items/subdir items) and dir modified time
-    $dirinfo = [$totalsize, $totalcount, $totalcount_files, $totalcount_subdirs, $modified];
-
-    return $dirinfo;
-}
-
 function get_dir_info($client, $index, $path) {
     // Get total directory size, count (files/subdirs), mtime from Elasticsearch (recursive) for path
     $totalsize = 0;
@@ -172,7 +103,7 @@ function get_dir_info($client, $index, $path) {
     return $dirinfo;
 }
 
-function get_files($client, $index, $path, $filter, $time, $maxfiles=100) {
+function get_files($client, $index, $path, $filter, $time, $maxfiles, $filtercharts) {
     // gets the 100 largest files in the current directory (path)
     // sorted by size/filename
     $items = [];
@@ -189,7 +120,7 @@ function get_files($client, $index, $path, $filter, $time, $maxfiles=100) {
                 '_source' => ["parent_path","name","size","size_du","mtime"],
                 'query' => [
                     'query_string' => [
-                        'query' => 'parent_path: ' . $escapedpath . ' AND '.$_COOKIE['sizefield'].': >=' . $filter . ' AND mtime: [* TO ' . $time . '] AND type:"file"'
+                        'query' => 'parent_path: ' . $escapedpath . ' AND '.$_COOKIE['sizefield'].': >=' . $filter . ' AND '. $_COOKIE['timefield'] .': [* TO ' . $time . '] AND type:"file"'
                     ]
                 ],
                 'sort' => [
@@ -202,8 +133,9 @@ function get_files($client, $index, $path, $filter, $time, $maxfiles=100) {
                 ]
         ];
 
-    // check if we need to apply any filters to search
-    $searchParams = filterSearchResults($searchParams);
+    if ($filtercharts) {
+        $searchParams = filterChartResults($searchParams);
+    }
 
     try {
         $queryResponse = $client->search($searchParams);
@@ -238,7 +170,7 @@ function get_files($client, $index, $path, $filter, $time, $maxfiles=100) {
 }
 
 
-function get_sub_dirs($client, $index, $path, $filter, $use_count, $sortdirs, $maxdirs) {
+function get_sub_dirs($client, $index, $path, $filter, $use_count, $sortdirs, $maxdirs, $filtercharts) {
     // gets the largest sub dirs by filesize or item count (use_count true)
     // non-recursive
     // sorted by size/filename
@@ -278,7 +210,7 @@ function get_sub_dirs($client, $index, $path, $filter, $use_count, $sortdirs, $m
 
     // sort directories by size or file count
     if ($sortdirs === 1) {
-        if ($use_count === 1) {
+        if ($use_count == 1) {
             $searchParams['body']['sort'] = [
                 'file_count' => [
                     'order' => 'desc'
@@ -305,8 +237,9 @@ function get_sub_dirs($client, $index, $path, $filter, $use_count, $sortdirs, $m
         ];
     }
 
-    // check if we need to apply any filters to search
-    $searchParams = filterSearchResults($searchParams);
+    if ($filtercharts) {
+        $searchParams = filterChartResults($searchParams);
+    }
 
     try {
         // Send search query to Elasticsearch and get results
@@ -348,7 +281,7 @@ function get_sub_dirs($client, $index, $path, $filter, $use_count, $sortdirs, $m
     return $dirs;
 }
 
-function walk_tree($client, $index, $path, $filter, $time, $depth, $maxdepth, $use_count=0, $show_files=1, $sortdirs=1, $maxdirs=100) {
+function walk_tree($client, $index, $path, $filter, $time, $depth, $maxdepth, $use_count=0, $show_files=1, $sortdirs=1, $maxdirs=100, $maxfiles=100, $filtercharts=false) {
     $items = [];
     $subdirs = [];
     if ($depth === $maxdepth) {
@@ -357,11 +290,11 @@ function walk_tree($client, $index, $path, $filter, $time, $depth, $maxdepth, $u
 
     // get files in current path (not recursive)
     if ($show_files === 1) {
-        $items = get_files($client, $index, $path, $filter, $time);
+        $items = get_files($client, $index, $path, $filter, $time, $maxfiles, $filtercharts);
     }
 
     // get directories (inc. their total size and file count) in current path (not recursive)
-    $subdirs = get_sub_dirs($client, $index, $path, $filter, $use_count, $sortdirs, $maxdirs);
+    $subdirs = get_sub_dirs($client, $index, $path, $filter, $use_count, $sortdirs, $maxdirs, $filtercharts);
 
     // return if there are no sub directories
     if (count($subdirs) === 0) {
@@ -388,7 +321,7 @@ function walk_tree($client, $index, $path, $filter, $time, $depth, $maxdepth, $u
         }
     }
 
-    $subdirs = ($use_count === 1) ? $subdirs_count : $subdirs_size;
+    $subdirs = ($use_count == 1) ? $subdirs_count : $subdirs_size;
 
     // add subdirs to items array
     foreach ($subdirs as $key => $value) {
@@ -400,7 +333,7 @@ function walk_tree($client, $index, $path, $filter, $time, $depth, $maxdepth, $u
             "count_subdirs" => $subdirs_count_subdirs[$key],
             "modified" => $subdirs_modified[$key],
             "type" => 'directory',
-            "children" => walk_tree($client, $index, $key, $filter, $time, $depth+=1, $maxdepth, $use_count, $show_files, $sortdirs, $maxdirs)
+            "children" => walk_tree($client, $index, $key, $filter, $time, $depth+=1, $maxdepth, $use_count, $show_files, $sortdirs, $maxdirs, $maxfiles, $filtercharts)
         ];
         $depth-=1;
     }
@@ -425,9 +358,8 @@ function subdirs_name_sort($a, $b) {
 }
 
 
-function get_file_mtime_dashboard($client, $index, $path) {
-    /* gets file modified ranges for the dashboard, 
-    similiar to get_file_mtime but with less date ranges */
+function get_file_mtime($client, $index, $path, $filter, $mtime) {
+    // gets file modified ranges
     $items = [];
     $searchParams['body'] = [];
 
@@ -441,7 +373,8 @@ function get_file_mtime_dashboard($client, $index, $path) {
                 'size' => 0,
                 'query' => [
                     'query_string' => [
-                        'query' => 'parent_path: ' . $escapedpath . '* AND type:"file"',
+                        'query' => 'parent_path: ' . $escapedpath . '* 
+                        AND mtime:[* TO ' . $mtime . '] AND '.$_COOKIE['sizefield'].': >=' . $filter . ' AND type:"file"',
                         'analyze_wildcard' => 'true'
                     ]
                 ]
@@ -452,7 +385,8 @@ function get_file_mtime_dashboard($client, $index, $path) {
             'query' => [
                 'query_string' => [
                     'query' => '(parent_path: ' . $escapedpath . ' OR
-                    parent_path: ' . $escapedpath . '\/*) AND type:"file"',
+                    parent_path: ' . $escapedpath . '\/*) AND
+                    mtime: [* TO ' . $mtime . ']  AND '.$_COOKIE['sizefield'].': >=' . $filter . ' AND type:"file"',
                     'analyze_wildcard' => 'true'
                 ]
             ]
@@ -485,6 +419,8 @@ function get_file_mtime_dashboard($client, $index, $path) {
         ]
     ];
 
+    $searchParams = filterChartResults($searchParams);
+
     try {
         $queryResponse = $client->search($searchParams);
     }
@@ -507,9 +443,9 @@ function get_file_mtime_dashboard($client, $index, $path) {
     return $items;
 }
 
-function get_file_mtime_searchresults($client, $index, $path) {
-    /* gets file modified ranges for search results chart, 
-    similiar to get_file_mtime but with less date ranges */
+
+function get_file_ext($client, $index, $path, $filter, $time) {
+    // gets the top 10 file extensions sorted by count and size
     $items = [];
     $searchParams['body'] = [];
 
@@ -517,13 +453,13 @@ function get_file_mtime_searchresults($client, $index, $path) {
     $searchParams['index'] = $index;
 
     $escapedpath = escape_chars($path);
-
     if ($escapedpath === '\/') {  // root /
             $searchParams['body'] = [
                 'size' => 0,
                 'query' => [
                     'query_string' => [
-                        'query' => 'parent_path: ' . $escapedpath . '* AND type:"file"',
+                        'query' => 'parent_path: ' . $escapedpath . '*
+                        AND mtime: [* TO ' . $time . '] AND '.$_COOKIE['sizefield'].': >=' . $filter . ' AND type:"file"',
                         'analyze_wildcard' => 'true'
                     ]
                 ]
@@ -534,7 +470,8 @@ function get_file_mtime_searchresults($client, $index, $path) {
             'query' => [
                 'query_string' => [
                     'query' => '(parent_path: ' . $escapedpath . ' OR
-                    parent_path: ' . $escapedpath . '\/*) AND type:"file"',
+                    parent_path: ' . $escapedpath . '\/*) AND
+                    mtime: [* TO ' . $time . '] AND '.$_COOKIE['sizefield'].': >=' . $filter . ' AND type:"file"',
                     'analyze_wildcard' => 'true'
                 ]
             ]
@@ -543,107 +480,39 @@ function get_file_mtime_searchresults($client, $index, $path) {
 
     $searchParams['body'] += [
         'aggs' => [
-            'mtime_ranges' => [
-                'range' => [
-                    'field' => 'mtime',
-                    'keyed' => true,
-                    'ranges' => [
-                        ['key' => '0 - 30 days', 'from' => 'now/m-1M/d', 'to' => 'now/m'],
-                        ['key' => '30 - 90 days', 'from' => 'now/m-3M/d', 'to' => 'now/m-1M/d'],
-                        ['key' => '90 - 180 days', 'from' => 'now/m-6M/d', 'to' => 'now/m-3M/d'],
-                        ['key' => '180 days - 1 year', 'from' => 'now/m-1y/d', 'to' => 'now/m-6M/d'],
-                        ['key' => '1 - 2 years', 'from' => 'now/m-2y/d', 'to' => 'now/m-1y/d'],
-                        ['key' => '> 2 years', 'to' => 'now/m-2y/d']
-                    ]
-                ],
-                'aggs' => [
-                    'file_size' => [
-                        'sum' => [
-                            'field' => $_COOKIE['sizefield']
-                        ]
-                    ]
-                ]
-            ]
-        ]
-    ];
-
-    // check if we need to apply any filters to search
-    $searchParams = filterSearchResults($searchParams);
-
-    try {
-        $queryResponse = $client->search($searchParams);
-    }
-    catch(Exception $e) {
-        handleError('ES error: ' . $e->getMessage(), false);
-    }
-
-    // Get mtime ranges
-    $results = $queryResponse['aggregations']['mtime_ranges']['buckets'];
-
-    // Add mtimes to items array
-    foreach ($results as $key => $result) {
-        $items[] = [
-                    "mtime" => $key,
-                    "count" => $result['doc_count'],
-                    "size" => $result['file_size']['value']
-                    ];
-    }
-
-    return $items;
-}
-
-function get_file_ext_dashboard($client, $index, $path) {
-    // gets the top 10 file extensions for the dashboard
-    $items = [];
-    $searchParams['body'] = [];
-
-    // Setup search query
-    $searchParams['index'] = $index;
-
-    $escapedpath = escape_chars($path);
-    if ($escapedpath === '\/') {  // root /
-            $searchParams['body'] = [
-                'size' => 0,
-                'query' => [
-                    'query_string' => [
-                        'query' => 'parent_path: ' . $escapedpath . '* AND type:"file"',
-                        'analyze_wildcard' => 'true'
-                    ]
-                ]
-            ];
-    } else {
-        $searchParams['body'] = [
-            'size' => 0,
-            'query' => [
-                'query_string' => [
-                    'query' => '(parent_path: ' . $escapedpath . ' OR
-                    parent_path: ' . $escapedpath . '\/*) AND type:"file"',
-                    'analyze_wildcard' => 'true'
-                ]
-            ]
-        ];
-    }
-
-    $searchParams['body'] += [
-            'aggs' => [
-                'top_extensions' => [
-                    'terms' => [
-                        'field' => 'extension',
-                        'order' => [
-                            'ext_size' => 'desc'
-                        ],
-                        'size' => 10
+            'top_extensions_bysize' => [
+                'terms' => [
+                    'field' => 'extension',
+                    'order' => [
+                        'ext_size' => 'desc'
                     ],
-                    'aggs' => [
-                        'ext_size' => [
-                            'sum' => [
-                                'field' => $_COOKIE['sizefield']
-                            ]
+                    'size' => 10
+                ],
+                'aggs' => [
+                    'ext_size' => [
+                        'sum' => [
+                            'field' => $_COOKIE['sizefield']
+                        ]
+                    ]
+                ]
+            ],
+            'top_extensions_bycount' => [
+                'terms' => [
+                    'field' => 'extension',
+                    'size' => 10
+                ],
+                'aggs' => [
+                    'ext_size' => [
+                        'sum' => [
+                            'field' => $_COOKIE['sizefield']
                         ]
                     ]
                 ]
             ]
-        ];
+        ]
+    ];
+
+    $searchParams = filterChartResults($searchParams);
 
     try {
         $queryResponse = $client->search($searchParams);
@@ -653,89 +522,19 @@ function get_file_ext_dashboard($client, $index, $path) {
     }
 
     // Get file extensions
-    $results = $queryResponse['aggregations']['top_extensions']['buckets'];
+    $results_by_size = $queryResponse['aggregations']['top_extensions_bysize']['buckets'];
+    $results_by_count = $queryResponse['aggregations']['top_extensions_bycount']['buckets'];
 
     // Add file extension to items array
-    foreach ($results as $result) {
-        $items[] = [
+    foreach ($results_by_size as $result) {
+        $items['top_extensions_bysize'][] = [
                     "name" => $result['key'],
                     "count" => $result['doc_count'],
                     "size" => $result['ext_size']['value']
                     ];
     }
-
-    return $items;
-}
-
-function get_file_ext_searchresults($client, $index, $path) {
-    // gets the top 10 file extensions for search results chart
-    $items = [];
-    $searchParams['body'] = [];
-
-    // Setup search query
-    $searchParams['index'] = $index;
-
-    $escapedpath = escape_chars($path);
-    if ($escapedpath === '\/') {  // root /
-            $searchParams['body'] = [
-                'size' => 0,
-                'query' => [
-                    'query_string' => [
-                        'query' => 'parent_path: ' . $escapedpath . '* AND type:"file"',
-                        'analyze_wildcard' => 'true'
-                    ]
-                ]
-            ];
-    } else {
-        $searchParams['body'] = [
-            'size' => 0,
-            'query' => [
-                'query_string' => [
-                    'query' => '(parent_path: ' . $escapedpath . ' OR
-                    parent_path: ' . $escapedpath . '\/*) AND type:"file"',
-                    'analyze_wildcard' => 'true'
-                ]
-            ]
-        ];
-    }
-
-    $searchParams['body'] += [
-            'aggs' => [
-                'top_extensions' => [
-                    'terms' => [
-                        'field' => 'extension',
-                        'order' => [
-                            'ext_size' => 'desc'
-                        ],
-                        'size' => 10
-                    ],
-                    'aggs' => [
-                        'ext_size' => [
-                            'sum' => [
-                                'field' => $_COOKIE['sizefield']
-                            ]
-                        ]
-                    ]
-                ]
-            ]
-        ];
-
-    // check if we need to apply any filters to search
-    $searchParams = filterSearchResults($searchParams);
-
-    try {
-        $queryResponse = $client->search($searchParams);
-    }
-    catch(Exception $e) {
-        handleError('ES error: ' . $e->getMessage(), false);
-    }
-
-    // Get file extensions
-    $results = $queryResponse['aggregations']['top_extensions']['buckets'];
-
-    // Add file extension to items array
-    foreach ($results as $result) {
-        $items[] = [
+    foreach ($results_by_count as $result) {
+        $items['top_extensions_bycount'][] = [
                     "name" => $result['key'],
                     "count" => $result['doc_count'],
                     "size" => $result['ext_size']['value']

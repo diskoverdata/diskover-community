@@ -28,7 +28,7 @@ error_reporting(E_ALL ^ E_NOTICE);
 
 $esIndex = $path = $toppath = $es_index_info = $all_index_info = $completed_indices = 
     $latest_completed_index = $fields = $indexinfo_updatetime = $index_starttimes = $es_responsetime = 
-    $filter = $time = $use_count = $show_files = $maxdepth = $sizefield = null;
+    $filter = $time = $timefield = $use_count = $show_files = $maxdepth = $sizefield = null;
 
 // file type groups
 $fileGroups_extensions = $config->FILE_TYPES;
@@ -97,10 +97,6 @@ class ESClient
             'free_percent',
             'available',
             'available_percent',
-            'file_size',
-            'file_size_du',
-            'file_count',
-            'dir_count',
             'start_at',
             'end_at',
             'crawl_time',
@@ -418,7 +414,7 @@ function indexInfo()
         $esIndex = $esIndex_cookie;
         // redirect to select indices page if esIndex is empty
         if (empty($esIndex) && !in_array(basename($_SERVER['PHP_SELF']), $selectindex_noredirect)) {
-            header("location:selectindices.php");
+            header("location:selectindices.php?noindex");
             exit();
         }
     }
@@ -477,10 +473,11 @@ function handleError($e, $redirect = true, $ajax = false, $throwexception = fals
 
 // set analytics vars
 function setd3Vars() {
-    global $filter, $time, $use_count, $show_files, $maxdepth, $sizefield;
+    global $filter, $time, $timefield, $use_count, $show_files, $maxdepth, $sizefield;
 
     $filter = 1;
     $time = 0; // time field filter
+    $timefield = 'mtime'; // time field to use
     // get use_count
     $use_count = 0;
     // get show_files
@@ -530,12 +527,22 @@ function setPaths()
         $_SESSION['toppath'] = $toppath;
     }
 
-    $rootpath = getRootpath($path);
+    setRootPath($path);
+}
+
+
+// finds and sets root path session/cookies from path
+function setRootPath($p) {
+    global $path;
+    
+    $rootpath = getRootPath($p);
     if (!is_null($rootpath)) {
         $_SESSION['rootpath'] = $rootpath;
         createCookie('rootpath', $rootpath);
-        createCookie('path', $path);
-        createCookie('parentpath', getParentDir($path));
+        createCookie('path', $p);
+        createCookie('parentpath', getParentDir($p));
+        //$_GET['path'] = $p;
+        $path = $p;
     }
 }
 
@@ -545,8 +552,10 @@ function getRootPath($p)
 {
     if ($p == $_SESSION['toppath']) {
         return $p;
-    } elseif ($p != '/') {
-        return getRootPath(dirname($p));
+    }
+    $p = dirname($p);
+    if (!in_array($p, array('', '/', '.'))) {
+        return getRootPath($p);
     }
     return null;
 }
@@ -1094,17 +1103,22 @@ function predict_search($q)
         // check for wildcard at end of path
         if (preg_match('/^.*\\*$/', $request)) {
             $pathnowild = rtrim($request, '\*');
-            $cookiepath = str_replace('\\', '', $pathnowild);
-            createCookie('path', $cookiepath);
+            $path = str_replace('\\', '', $pathnowild);
+            setRootPath($path);
             $request = 'parent_path:' . $pathnowild . '*';
         } elseif (preg_match('/(^.*\.\w{3,4}(\.\w{2}){0,1}$)|(^.*\/\..*$)/', $request)) { // file
-            $request = 'parent_path:' . rtrim(dirname($request), '\/') . ' AND name:' . rtrim(basename($request), '\/');
-            $cookiepath = rtrim(dirname($q), '/');
-            createCookie('path', $cookiepath);
+            $pp = rtrim(dirname($request), '\/');
+            if ($pp === "") $pp = '""';
+            $path = rtrim(dirname($q), '/');
+            setRootPath($path);
+            $request = 'parent_path:' . $pp . ' AND name:' . rtrim(basename($request), '\/');
         } else { // directory
-            $cookiepath = str_replace('\\', '', $request);
-            createCookie('path', $cookiepath);
-            $request = '(parent_path:' . rtrim(dirname($request), '\/')  . ' AND name:' . rtrim(basename($request), '\/') . ') OR parent_path:' . $request;
+            $pp = rtrim(dirname($request), '\/');
+            if ($pp === "") $pp = '""';
+            $path = str_replace('\\', '', $request);
+            //createCookie('path', $cookiepath);
+            setRootPath($path);
+            $request = '(parent_path:' . $pp  . ' AND name:' . rtrim(basename($request), '\/') . ') OR parent_path:' . $request;
         }
         // NOT es field query such as name:filename
     } elseif (preg_match('/(\w+):/i', $q) == false && !empty($q)) {
@@ -1135,19 +1149,6 @@ function predict_search($q)
     return $request;
 }
 
-
-// determine what indices/paths users can see
-function index_restrictions()
-{
-    // Return if not ldap/ad user or if admin user
-    if (
-        !$_SESSION['ldaplogin'] || $_SESSION['ldapadmin'] ||
-        in_array($_SESSION['username'], $GLOBALS['config']->ADMIN_USERS)
-    ) return;
-
-    // Check what indices/paths the group is allowed to see
-
-}
 
 // curl function to get ES data
 function curl_es($url, $request = null, $return_json = true)
@@ -1214,14 +1215,6 @@ function curl_es($url, $request = null, $return_json = true)
     return $curlresp;
 }
 
-function wildcardMatch($pattern, $subject)
-{
-    $pattern = strtr($pattern, array(
-        '*' => '.*?',
-        '?' => '.',
-    ));
-    return preg_match("/$pattern/", $subject);
-}
 
 // calculate file rating
 function calcFileRating($file)
@@ -1244,6 +1237,16 @@ function calcFileRating($file)
         $file_rating = 0;
     }
     return $file_rating;
+}
+
+// Filter chart results
+function filterChartResults($searchParams)
+{
+    // check if filtercharts is checked in filters page
+    if (getCookie('filtercharts') == 1) {
+        return filterSearchResults($searchParams);
+    }
+    return $searchParams;
 }
 
 // Filter search results
@@ -1270,23 +1273,6 @@ function filterSearchResults($searchParams)
 
     // return if there are no saved filters
     if (!$savedfilters) return $searchParams;
-
-    // only use the path filters if currentdironly nav toggle is off
-    if (getCookie('searchcurrentdironly') != 1) {
-        if ($savedfilters['searchpath'] == 'activetoppath') {
-            if ($pathinurl) {
-                $searchParams['body']['query']['query_string']['query'] .= " AND parent_path:" . escape_chars($_SESSION['rootpath']) . '*';
-            } else {
-                $searchParams['body']['query']['query_string']['query'] .= " AND (parent_path:" . escape_chars($_SESSION['rootpath']) . " OR parent_path:" . escape_chars($_SESSION['rootpath']) . '*)';
-            }
-        } elseif ($savedfilters['searchpath'] == 'currentpath') {
-            if ($pathinurl) {
-                $searchParams['body']['query']['query_string']['query'] .= " AND parent_path:" . escape_chars($path) . '*';
-            } else {
-                $searchParams['body']['query']['query_string']['query'] .= " AND (parent_path:" . escape_chars($path) . " OR parent_path:" . escape_chars($path) . '*)';
-            }
-        }
-    }
 
     if ($savedfilters['file_size_bytes_low']) {
         switch ($savedfilters['file_size_bytes_low_unit']) {
@@ -1383,6 +1369,21 @@ function filterSearchResults($searchParams)
         }
     }
 
+    if ($savedfilters['filetype']) {
+        $extensions = array();
+        foreach ($savedfilters['filetype'] as $filetype) {
+            foreach ($GLOBALS['config']->FILE_TYPES[$filetype] as $ext) {
+                $extensions[] = $ext;
+            }
+        }
+        $extension_str = implode(" OR ", $extensions);
+        if ($savedfilters['filetype_operator'] == 'is') {
+            $searchParams['body']['query']['query_string']['query'] .= " AND extension:(" . $extension_str . ")";
+        } else {
+            $searchParams['body']['query']['query_string']['query'] .= " AND NOT extension:(" . $extension_str . ")";
+        }
+    }
+
     if ($savedfilters['otherfields'] && $savedfilters['otherfields_input']) {
         switch ($savedfilters['otherfields_operator']) {
             case 'contains':
@@ -1420,4 +1421,20 @@ function filterSearchResults($searchParams)
     }
 
     return $searchParams;
+}
+
+// reset search sort order and reload page
+function resetSort($reason)
+{
+    createCookie('sort', 'parent_path');
+    createCookie('sortorder', 'asc');
+    createCookie('sort2', 'name');
+    createCookie('sortorder2', 'asc');
+    $_SESSION['resetsortreason'] = $reason;
+    $query = $_GET;
+    $query['sort'] = 'parent_path';
+    $query['sortorder'] = 'asc';
+    $query_result = http_build_query($query);
+    header('Location: ' . $_SERVER['PHP_SELF'] . '?' . $query_result);
+    exit;
 }

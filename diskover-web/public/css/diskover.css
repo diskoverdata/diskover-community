@@ -479,3 +479,9 @@ input:checked+.nav-slider:before {
     padding-top: 4px;
     padding-bottom: 4px;
 }
+
+.extrafields-wrap {
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    word-break: break-word;
+}

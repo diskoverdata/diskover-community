@@ -91,9 +91,11 @@ if (isset($_GET['forcedelindex'])) {
     $del_warning = false;
 }
 
-// check if new indices selected
+// check if new indices selected or no index selected
 if (isset($_GET['saved'])) {
     $save_message = 'Index selection saved!';
+} elseif (isset($_GET['noindex'])) {
+    $noindex_message = 'No index selected. Select an index and click save selection.';
 }
 
 
@@ -252,6 +254,10 @@ $estime = number_format(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 4);
             echo '<div class="row"><div class="col-lg-6"><div class="alert alert-dismissible alert-success">
                 <button type="button" class="close" data-dismiss="alert">&times;</button>
                 <strong>' . $save_message . '</strong></div></div></div>';
+        } elseif (isset($noindex_message)) {
+            echo '<div class="row"><div class="col-lg-6"><div class="alert alert-dismissible alert-info">
+                <button type="button" class="close" data-dismiss="alert">&times;</button>
+                <strong><i class="fas fa-bell"></i> ' . $noindex_message . '</strong></div></div></div>';
         } elseif (isset($del_message)) {
             $class = ($del_warning) ? "alert-warning" : "alert-success";
             echo '<div class="row"><div class="col-lg-6"><div class="alert alert-dismissible ' . $class . '">
