@@ -1288,6 +1288,9 @@ function filterSearchResults($searchParams)
             case "GB":
                 $size_bytes = $savedfilters['file_size_bytes_low'] * 1024 * 1024 * 1024;
                 break;
+            case "TB":
+                $size_bytes = $savedfilters['file_size_bytes_low'] * 1024 * 1024 * 1024 * 1024;
+                break;
         }
         $searchParams['body']['query']['query_string']['query'] .= " AND size:>=" . $size_bytes;
     }
@@ -1305,6 +1308,9 @@ function filterSearchResults($searchParams)
                 break;
             case "GB":
                 $size_bytes = $savedfilters['file_size_bytes_high'] * 1024 * 1024 * 1024;
+                break;
+            case "TB":
+                $size_bytes = $savedfilters['file_size_bytes_high'] * 1024 * 1024 * 1024 * 1024;
                 break;
         }
         $searchParams['body']['query']['query_string']['query'] .= " AND size:<=" . $size_bytes;
