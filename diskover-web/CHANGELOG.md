@@ -1,12 +1,13 @@
 # Diskover-web v2 Community Edition Change Log
 
-# [2.1.0] - 2023-02-02
+# [2.1.0] - 2023-02-03
 ### fixed
 - not staying logged in when checking keep me logged in for 7 days on login page
 - Fatal error: Allowed memory size of n bytes exhausted in Diskover.php when searching for /nonexistpath
 - es search query error when searching for /nonexistpath
 - bug fixes searching full absolute paths
 - links on dashboard not loading root path in search results
+- filters for hardlinks not using nlink field
 ### added
 - more options to quick search nav menu dropdown
 - more options to filters modal

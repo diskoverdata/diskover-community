@@ -1335,11 +1335,11 @@ function filterSearchResults($searchParams)
     }
 
     if ($savedfilters['hardlinks_low']) {
-        $searchParams['body']['query']['query_string']['query'] .= " AND hardlinks:>= " . $savedfilters['hardlinks_low'];
+        $searchParams['body']['query']['query_string']['query'] .= " AND nlink:>= " . $savedfilters['hardlinks_low'];
     }
 
     if ($savedfilters['hardlinks_high']) {
-        $searchParams['body']['query']['query_string']['query'] .= " AND hardlinks:<= " . $savedfilters['hardlinks_high'];
+        $searchParams['body']['query']['query_string']['query'] .= " AND nlink:<= " . $savedfilters['hardlinks_high'];
     }
 
     if ($savedfilters['owner']) {
