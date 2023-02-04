@@ -541,20 +541,17 @@ function setRootPath($p) {
         createCookie('rootpath', $rootpath);
         createCookie('path', $p);
         createCookie('parentpath', getParentDir($p));
-        //$_GET['path'] = $p;
         $path = $p;
     }
 }
 
 
-// finds root path from path
 function getRootPath($p)
 {
-    if ($p == $_SESSION['toppath']) {
-        return $p;
-    }
+    if ($p == $_SESSION['toppath']) return $p;
     $p = dirname($p);
-    if (!in_array($p, array('', '/', '.'))) {
+    if ($p == '/') return $p;
+    if ($p != '' && $p != '.') {
         return getRootPath($p);
     }
     return null;
@@ -1100,8 +1097,13 @@ function predict_search($q)
         } else {
             $request = escape_chars($q);
         }
+        // check for / path
+        if ($q == '/') {
+            $path = '/';
+            setRootPath($path);
+            $request = 'parent_path:\/ AND NOT name:""';
         // check for wildcard at end of path
-        if (preg_match('/^.*\\*$/', $request)) {
+        } elseif (preg_match('/^.*\\*$/', $request)) {
             $pathnowild = rtrim($request, '\*');
             $path = str_replace('\\', '', $pathnowild);
             setRootPath($path);
@@ -1116,7 +1118,6 @@ function predict_search($q)
             $pp = rtrim(dirname($request), '\/');
             if ($pp === "") $pp = '""';
             $path = str_replace('\\', '', $request);
-            //createCookie('path', $cookiepath);
             setRootPath($path);
             $request = '(parent_path:' . $pp  . ' AND name:' . rtrim(basename($request), '\/') . ') OR parent_path:' . $request;
         }
