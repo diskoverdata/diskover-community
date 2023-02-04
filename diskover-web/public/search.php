@@ -54,7 +54,10 @@ if (!empty($_GET['submitted'])) {
     $request = predict_search($searchquery);
 
     // check for path in search query and update paths in session and cookies
-    if (empty($_GET['path']) && strpos($request, 'parent_path:\/') !== false && substr_count($request, 'parent_path:\/') === 1) {
+    // changes the path in the search results tree
+    if (empty($_GET['path']) && strpos($request, 'parent_path:\/') !== false && 
+        substr_count($request, 'parent_path:\/') === 1 &&
+        preg_match('/(NOT [\(]{0,}parent_path:\\\\\/)|(\(NOT parent_path:\\\\\/)/', $request) !== 1) {
         // parse out actual path from es query string
         $pp = explode('parent_path:', $request)[1];
         $pp = preg_replace('/ (AND|OR) .*/i', '', $pp);
