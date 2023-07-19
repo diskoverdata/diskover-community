@@ -837,6 +837,7 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
 def crawl(root):
     """Crawl the directory tree at top path."""
     global emptyindex
+    global warnings
     sizes = {}
     inodes = set()
 

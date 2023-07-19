@@ -5,6 +5,7 @@
 - SIGTERM handling
 - bad file/directory timestamp handling
 - ctrl-c interupt handling log error in Windows
+- warnings error message at end of crawl
 ### added
 - Elasticsearch 8.x support
 - checkfiletimes to default/sample diskover config file excludes section
