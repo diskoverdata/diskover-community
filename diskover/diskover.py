@@ -4,7 +4,7 @@ diskover community edition (ce)
 https://github.com/diskoverdata/diskover-community/
 https://diskoverdata.com
 
-Copyright 2017-2022 Diskover Data, Inc.
+Copyright 2017-2023 Diskover Data, Inc.
 "Community" portion of Diskover made available under the Apache 2.0 License found here:
 https://www.diskoverdata.com/apache-license/
  
@@ -25,6 +25,7 @@ import confuse
 import importlib
 import re
 import warnings
+import signal
 from datetime import datetime, timedelta
 from threading import Thread, Lock, current_thread
 from concurrent import futures
@@ -41,7 +42,7 @@ from diskover_helpers import dir_excluded, file_excluded, \
     get_file_name, load_plugins, list_plugins, get_plugins_info, set_times, \
     get_mem_usage, get_win_path, rem_win_path
 
-version = '2.1.0 community edition (ce)'
+version = '2.1.1 community edition (ce)'
 __version__ = version
 
 # Windows check
@@ -51,14 +52,13 @@ if os.name == 'nt':
     def handler(a,b=None):
         logger.info('*** Received keyboard interrupt, waiting for threads to complete ***')
         close_app()
-    def install_handler():
+    def install_win_sig_handler():
         try:
             import win32api
         except ModuleNotFoundError:
             print('Windows requires pywin32 Python module')
             sys.exit(1)
         win32api.SetConsoleCtrlHandler(handler, True)
-    install_handler()
 else:
     IS_WIN = False
 
@@ -130,6 +130,11 @@ try:
 except confuse.NotFoundError as e:
     config_warn(e)
     minfilesize = config_defaults['diskover']['excludes']['minfilesize'].get()
+try:
+    checkfiletimes = config['diskover']['excludes']['checkfiletimes'].get()
+except confuse.NotFoundError as e:
+    config_warn(e)
+    checkfiletimes = config_defaults['diskover']['excludes']['checkfiletimes'].get()
 try:
     minmtime = config['diskover']['excludes']['minmtime'].get() * 86400
 except confuse.NotFoundError as e:
@@ -297,6 +302,13 @@ def close_app_critical_error():
     logger.critical(logmsg)
     if logtofile: logger_warn.critical(logmsg)
     os._exit(1)
+
+
+def receive_signal(signum, frame):
+    """Handle kill."""
+    logger.info('Received signal ({}), exiting...'.format(signal.Signals(signum).name))
+    close_app() 
+    sys.exit(signum)
 
             
 def start_bulk_upload(thread, root, docs):
@@ -505,131 +517,138 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
                     fatime_sec = timenow - f_stat.st_atime
 
                     if not exc_empty_files or (exc_empty_files and fsize > 0):
-                        if fsize >= minfilesize and \
-                            fmtime_sec > minmtime and \
-                            fmtime_sec < maxmtime and \
-                            fctime_sec > minctime and \
-                            fctime_sec < maxctime and \
-                            fatime_sec > minatime and \
-                            fatime_sec < maxatime:
-                            size += fsize
-                            size_norecurs += fsize
-                            size_du += fsize_du
-                            size_du_norecurs += fsize_du
-                            files += 1
-                            files_norecurs += 1
-                            # get owner and group names
-                            if IS_WIN:
-                                # for windows just set both owner and group to 0, this is what scandir returns for Windows
-                                # and there is no known fast way to get Windows file owner (pywin32 is slow)
-                                owner = f_stat.st_uid
-                                group = f_stat.st_gid
-                            else:
-                                owner, group = get_owner_group_names(f_stat.st_uid, f_stat.st_gid)
-                            
-                            # check for bad Unicode utf-8 characters
-                            try:
-                                if parent_path is None:
-                                    parent_path = get_parent_path(entry.path)
-                                file_name = get_file_name(entry.name)
-                            except UnicodeError:
-                                if parent_path is None:
-                                    parent_path = get_parent_path(entry.path, ignore_errors=True)
-                                file_name = get_file_name(entry.name, ignore_errors=True)
-                                logmsg = '[{0}] UNICODE WARNING {1}'.format(thread, os.path.join(parent_path, file_name))
-                                logger.warning(logmsg)
-                                if logtofile: logger_warn.warning(logmsg)
-                                with crawl_thread_lock:
-                                    warnings += 1
-                                pass
-                            
-                            # index doc dict
-                            data = {
-                                'name': file_name,
-                                'extension': os.path.splitext(entry.name)[1][1:].lower(),
-                                'parent_path': parent_path,
-                                'size': fsize,
-                                'size_du': fsize_du,
-                                'owner': owner,
-                                'group': group,
-                                'mtime': datetime.utcfromtimestamp(int(f_stat.st_mtime)).isoformat(),
-                                'atime': datetime.utcfromtimestamp(int(f_stat.st_atime)).isoformat(),
-                                'ctime': datetime.utcfromtimestamp(int(f_stat.st_ctime)).isoformat(),
-                                'nlink': f_stat.st_nlink,
-                                'ino': str(f_stat.st_ino),
-                                'type': 'file'
-                            }
-
-                            # check if using altscanner and if any additional meta data to add to data dict
-                            if options.altscanner:
+                        if fsize >= minfilesize:
+                            if not checkfiletimes or (\
+                                fmtime_sec > minmtime and \
+                                fmtime_sec < maxmtime and \
+                                fctime_sec > minctime and \
+                                fctime_sec < maxctime and \
+                                fatime_sec > minatime and \
+                                fatime_sec < maxatime):
+                                size += fsize
+                                size_norecurs += fsize
+                                size_du += fsize_du
+                                size_du_norecurs += fsize_du
+                                files += 1
+                                files_norecurs += 1
+                                # get owner and group names
+                                if IS_WIN:
+                                    # for windows just set both owner and group to 0, this is what scandir returns for Windows
+                                    # and there is no known fast way to get Windows file owner (pywin32 is slow)
+                                    owner = f_stat.st_uid
+                                    group = f_stat.st_gid
+                                else:
+                                    owner, group = get_owner_group_names(f_stat.st_uid, f_stat.st_gid)
+                                
+                                # check for bad Unicode utf-8 characters
                                 try:
-                                    extrameta_dict = alt_scanner.add_meta(entry.path, f_stat)
-                                    if extrameta_dict is not None:
-                                        data.update(extrameta_dict)
-                                except Exception as e:
-                                    logmsg = '[{0}] ALT SCANNER EXCEPTION {1}'.format(thread, e)
-                                    logger.exception(logmsg)
-                                    if logtofile: logger_warn.exception(logmsg)
+                                    if parent_path is None:
+                                        parent_path = get_parent_path(entry.path)
+                                    file_name = get_file_name(entry.name)
+                                except UnicodeError:
+                                    if parent_path is None:
+                                        parent_path = get_parent_path(entry.path, ignore_errors=True)
+                                    file_name = get_file_name(entry.name, ignore_errors=True)
+                                    logmsg = '[{0}] UNICODE WARNING {1}'.format(thread, os.path.join(parent_path, file_name))
+                                    logger.warning(logmsg)
+                                    if logtofile: logger_warn.warning(logmsg)
                                     with crawl_thread_lock:
                                         warnings += 1
                                     pass
-                            # check plugins for adding extra meta data to data dict
-                            if plugins_enabled and plugins_files:
-                                for plugin in plugins:
+                                
+                                # index doc dict
+                                data = {
+                                    'name': file_name,
+                                    'extension': os.path.splitext(entry.name)[1][1:].lower(),
+                                    'parent_path': parent_path,
+                                    'size': fsize,
+                                    'size_du': fsize_du,
+                                    'owner': owner,
+                                    'group': group,
+                                    'mtime': datetime.utcfromtimestamp(int(f_stat.st_mtime)).isoformat(),
+                                    'atime': datetime.utcfromtimestamp(int(f_stat.st_atime)).isoformat(),
+                                    'ctime': datetime.utcfromtimestamp(int(f_stat.st_ctime)).isoformat(),
+                                    'nlink': f_stat.st_nlink,
+                                    'ino': str(f_stat.st_ino),
+                                    'type': 'file'
+                                }
+
+                                # check if using altscanner and if any additional meta data to add to data dict
+                                if options.altscanner:
                                     try:
-                                        # check if plugin is for file doc
-                                        if plugin.for_type('file'):
-                                            extrameta_dict = plugin.add_meta(entry.path, f_stat)
-                                            if extrameta_dict is not None:
-                                                data.update(extrameta_dict)
-                                    except (RuntimeWarning, RuntimeError) as e:
-                                        err_message = e.args[0]
-                                        if e.__class__ == RuntimeWarning:
-                                            logmsg = '[{0}] PLUGIN WARNING: {1}'.format(thread, err_message)
-                                            logger.warning(logmsg)
-                                            if logtofile: logger_warn.warning(logmsg)
-                                        else:
-                                            logmsg = '[{0}] PLUGIN ERROR: {1}'.format(thread, err_message)
-                                            logger.error(logmsg)
-                                            if logtofile: logger_warn.error(logmsg)
-                                        with crawl_thread_lock:
-                                            warnings += 1
-                                        extrameta_dict = e.args[1]
+                                        extrameta_dict = alt_scanner.add_meta(entry.path, f_stat)
                                         if extrameta_dict is not None:
                                             data.update(extrameta_dict)
                                     except Exception as e:
-                                        logmsg = '[{0}] PLUGIN EXCEPTION {1}'.format(thread, e)
+                                        logmsg = '[{0}] ALT SCANNER EXCEPTION {1}'.format(thread, e)
                                         logger.exception(logmsg)
                                         if logtofile: logger_warn.exception(logmsg)
                                         with crawl_thread_lock:
                                             warnings += 1
                                         pass
-                            # add file doc to docs list and upload to ES once it reaches certain size
-                            docs.append(data.copy())
-                            doc_count = len(docs)
-                            if doc_count >= es_chunksize:
-                                doc_count = start_bulk_upload(thread, root, docs)
-                                tot_doc_count += doc_count
-                                docs.clear()
+                                # check plugins for adding extra meta data to data dict
+                                if plugins_enabled and plugins_files:
+                                    for plugin in plugins:
+                                        try:
+                                            # check if plugin is for file doc
+                                            if plugin.for_type('file'):
+                                                extrameta_dict = plugin.add_meta(entry.path, f_stat)
+                                                if extrameta_dict is not None:
+                                                    data.update(extrameta_dict)
+                                        except (RuntimeWarning, RuntimeError) as e:
+                                            err_message = e.args[0]
+                                            if e.__class__ == RuntimeWarning:
+                                                logmsg = '[{0}] PLUGIN WARNING: {1}'.format(thread, err_message)
+                                                logger.warning(logmsg)
+                                                if logtofile: logger_warn.warning(logmsg)
+                                            else:
+                                                logmsg = '[{0}] PLUGIN ERROR: {1}'.format(thread, err_message)
+                                                logger.error(logmsg)
+                                                if logtofile: logger_warn.error(logmsg)
+                                            with crawl_thread_lock:
+                                                warnings += 1
+                                            extrameta_dict = e.args[1]
+                                            if extrameta_dict is not None:
+                                                data.update(extrameta_dict)
+                                        except Exception as e:
+                                            logmsg = '[{0}] PLUGIN EXCEPTION {1}'.format(thread, e)
+                                            logger.exception(logmsg)
+                                            if logtofile: logger_warn.exception(logmsg)
+                                            with crawl_thread_lock:
+                                                warnings += 1
+                                            pass
+                                # add file doc to docs list and upload to ES once it reaches certain size
+                                docs.append(data.copy())
+                                doc_count = len(docs)
+                                if doc_count >= es_chunksize:
+                                    doc_count = start_bulk_upload(thread, root, docs)
+                                    tot_doc_count += doc_count
+                                    docs.clear()
 
+                            else:
+                                f_skip_count += 1
+                                if DEBUG:
+                                    logger.debug('[{0}] file time excluded, skipping file {1}'.format(thread, entry.path))
+                                if options.verbose or options.vverbose:
+                                    logger.info('[{0}] file time excluded, skipping file {1}'.format(thread, entry.path))
                         else:
                             f_skip_count += 1
                             if DEBUG:
-                                logger.debug('[{0}] skipping file {1}'.format(thread, entry.path))
+                                logger.debug('[{0}] file size excluded, skipping file {1}'.format(thread, entry.path))
                             if options.verbose or options.vverbose:
-                                logger.info('[{0}] skipping file {1}'.format(thread, entry.path))
+                                logger.info('[{0}] file size excluded, skipping file {1}'.format(thread, entry.path))
                     else:
                         f_skip_count += 1
                         if DEBUG:
-                            logger.debug('[{0}] skipping file {1}'.format(thread, entry.path))
+                            logger.debug('[{0}] empty file, skipping file {1}'.format(thread, entry.path))
                         if options.verbose or options.vverbose:
-                            logger.info('[{0}] skipping file {1}'.format(thread, entry.path))
+                            logger.info('[{0}] empty file, skipping file {1}'.format(thread, entry.path))                    
                 else:
                     f_skip_count += 1
                     if DEBUG:
-                        logger.debug('[{0}] skipping file {1}'.format(thread, entry.path))
+                        logger.debug('[{0}] file name excluded, skipping file {1}'.format(thread, entry.path))
                     if options.verbose or options.vverbose:
-                        logger.info('[{0}] skipping file {1}'.format(thread, entry.path))
+                        logger.info('[{0}] file name excluded, skipping file {1}'.format(thread, entry.path))
         
         # if not excluding empty dirs is set or exclude empty dirs is set but there are files or 
         # dirs in the current directory, index the dir
@@ -661,12 +680,34 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
             try:
                 mtime = datetime.utcfromtimestamp(int(d_stat.st_mtime)).isoformat()
             except ValueError:
-                logmsg = '[{0}] TIMESTAMP WARNING {1}'.format(thread, os.path.join(parent_path, file_name))
+                logmsg = '[{0}] MTIME TIMESTAMP WARNING {1}'.format(thread, os.path.join(parent_path, file_name))
                 logger.warning(logmsg)
                 if logtofile: logger_warn.warning(logmsg)
                 with crawl_thread_lock:
                     warnings += 1
                 mtime = "1970-01-01T00:00:00"
+                pass
+            
+            try:
+                atime = datetime.utcfromtimestamp(int(d_stat.st_atime)).isoformat()
+            except ValueError:
+                logmsg = '[{0}] ATIME TIMESTAMP WARNING {1}'.format(thread, os.path.join(parent_path, file_name))
+                logger.warning(logmsg)
+                if logtofile: logger_warn.warning(logmsg)
+                with crawl_thread_lock:
+                    warnings += 1
+                atime = "1970-01-01T00:00:00"
+                pass
+            
+            try:
+                ctime = datetime.utcfromtimestamp(int(d_stat.st_ctime)).isoformat()
+            except ValueError:
+                logmsg = '[{0}] CTIME TIMESTAMP WARNING {1}'.format(thread, os.path.join(parent_path, file_name))
+                logger.warning(logmsg)
+                if logtofile: logger_warn.warning(logmsg)
+                with crawl_thread_lock:
+                    warnings += 1
+                ctime = "1970-01-01T00:00:00"
                 pass
             
             # index doc dict
@@ -1057,11 +1098,6 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
         print('diskover v{}'.format(version))
         sys.exit(0)
 
-    banner()    
-    
-    logger, logger_warn, loglevel, logformat, \
-        handler_file, handler_warnfile, handler_con = log_setup()
-
     # load any available plugins
     plugins = load_plugins()
 
@@ -1070,6 +1106,14 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
         print('diskover plugins:')
         list_plugins()
         sys.exit(0)
+
+    banner()    
+    
+    logger, logger_warn, loglevel, logformat, \
+        handler_file, handler_warnfile, handler_con = log_setup()
+        
+    if IS_WIN:
+        install_win_sig_handler()
         
     # load alternate scanner py module instead of os.scandir
     if options.altscanner:
@@ -1095,6 +1139,9 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
                 raise AltScannerError(e)
     else:
         alt_scanner = None
+        
+    # catch SIGTERM sent by kill command 
+    signal.signal(signal.SIGTERM, receive_signal)
 
     # create Elasticsearch connection
     es = elasticsearch_connection()

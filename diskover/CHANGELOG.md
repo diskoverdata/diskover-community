@@ -1,5 +1,16 @@
 # Diskover v2 Community Edition Change Log
 
+# [2.1.1] - 2023-
+### fixed
+- SIGTERM handling
+- bad file/directory timestamp handling
+- ctrl-c interupt handling log error in Windows
+### added
+- Elasticsearch 8.x support
+- checkfiletimes to default/sample diskover config file excludes section
+### changed
+
+
 # [2.1.0] - 2023-02-02
 ### fixed
 - python error when indexing spaceinfo doc and total disk space > max size for ES long field mapping (s3fs mount)
