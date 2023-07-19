@@ -887,11 +887,37 @@ def crawl(root):
 
     # find all subdirs at level 1
     subdir_list = []
-    for entry in os.scandir(root):
-        if entry.is_symlink():
-            pass
-        elif entry.is_dir() and not dir_excluded(entry.path):
-            subdir_list.append(entry.path)
+    try:
+        if DEBUG:
+            logger.debug('Scanning path {0}...'.format(root))
+        if options.verbose or options.vverbose:
+            logger.info('Scanning path {0}...'.format(root))
+        for entry in os.scandir(root):
+            if DEBUG:
+                logger.debug('Scanning dir entry {0}...'.format(entry.path))
+            if options.vverbose:
+                logger.info('Scanning dir entry {0}...'.format(entry.path)) 
+            if entry.is_symlink():
+                pass
+            elif entry.is_dir():
+                if IS_WIN and options.altscanner is None:
+                    dir_path = rem_win_path(entry.path)
+                else:
+                    dir_path = entry.path
+                if not dir_excluded(dir_path):
+                    subdir_list.append(dir_path)
+                else:
+                    if DEBUG:
+                        logger.debug('dir excluded, skipping dir {0}'.format(entry.path))
+                    if options.verbose or options.vverbose:
+                        logger.info('dir excluded, skipping dir {0}'.format(entry.path))
+                    skipdircount[root] += 1
+    except OSError as e:
+        logmsg = 'OS ERROR: {0}'.format(e)
+        logger.warning(logmsg)
+        if logtofile: logger_warn.warning(logmsg)
+        warnings += 1
+        pass
     if len(subdir_list) > 0:
         logger.info('found {0} subdirs at level 1, starting threads...'.format(len(subdir_list)))
     else:
@@ -981,7 +1007,7 @@ def banner():
 
             "{0}"
             v{1}
-            https://github.com/diskoverdata/
+            https://diskoverdata.com
 
     \u001b[0m""".format(choice(catchphrases), version))
     sys.stdout.flush()
@@ -1016,12 +1042,22 @@ def log_setup():
             d_path = os.getcwd()
         treedirsstr = ''
         d_path = d_path.replace(' ', '_')
-        if IS_WIN:
+        if IS_WIN and options.altscanner is not None:
+            # replace any :// with _, such as s3://
+            d_path = d_path.replace('://', '_')
+            # replace any forward slash with underscore
+            treedirsstr += d_path.replace('/', '_')
+        elif IS_WIN:
+            # strip off any trailing slash
+            d_path = d_path.rstrip('\\')
             # replace any drive letter colon with _drive_
             d_path = d_path.replace(':', '_drive')
             # replace any backslace in drive letter or unc path with underscore
             treedirsstr += d_path.replace('\\', '_')
         else:
+            if options.altscanner:
+                # replace any :// with _, such as s3://
+                d_path = d_path.replace('://', '_')
             # replace any forward slash with underscore
             treedirsstr += d_path.replace('/', '_')
         logfiletime = datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
@@ -1125,6 +1161,12 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
         logger.info('Using alternate scanner {0}'.format(alt_scanner))
         # point os.scandir() to scandir() in alt scanner module
         os.scandir = alt_scanner.scandir
+        # point os.walk() to walk()) in alt scanner module
+        os.walk = alt_scanner.walk
+        if IS_WIN and options.altscanner is not None:
+            # point os.path.join() to posixpath.join() to use / as path sep instead of \
+            import posixpath
+            os.path.join = posixpath.join
         # call log_setup function to set up any logging for scanner
         if hasattr(alt_scanner, 'log_setup'):
             try:
@@ -1229,7 +1271,7 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
     if options.index == 'diskover-<tree_dir>-<datetime>':
         tree_dir_str = tree_dir
         tree_dir_str = tree_dir_str.replace(' ', '_')
-        if IS_WIN:
+        if IS_WIN and options.altscanner is None:
             # replace any drive letter colon with _drive_
             tree_dir_str = tree_dir_str.replace(':', '_drive')
             # replace any backslace in drive letter or unc path with underscore
@@ -1237,6 +1279,9 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
         else:
             # replace any forward slash with underscore
             tree_dir_str = tree_dir_str.replace('/', '_')
+        # add alt scanner as prefix
+        if options.altscanner:
+            tree_dir_str = options.altscanner.split('_')[1] + tree_dir_str
         options.index = 'diskover-' + tree_dir_str.lower().lstrip('_') + '-' + datetime.now().strftime("%y%m%d%H%M%S")
 
     # check if index exists

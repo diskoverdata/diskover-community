@@ -8,6 +8,7 @@
 ### added
 - Elasticsearch 8.x support
 - checkfiletimes to default/sample diskover config file excludes section
+- more detailed logging for directory/file exclusions
 ### changed
 
 

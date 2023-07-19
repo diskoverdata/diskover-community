@@ -43,6 +43,8 @@ diskover:
         # exclude files smaller than min size in bytes
         minfilesize: 1
         #minfilesize: 512
+        # check file times when excluding, set to True to use min/max time settings or False to not use
+        checkfiletimes: False
         # exclude files modified less than x days ago
         minmtime: 0
         #minmtime: 30
