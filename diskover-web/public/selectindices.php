@@ -337,7 +337,7 @@ $estime = number_format(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 4);
                                 <div class="form-group">
                                     <label for="namecontains" class="col-lg-5 control-label">Index name contains:</label>
                                     <div class="col-lg-7">
-                                        <input class="form-control input-sm" name="namecontains" id="namecontains" autocomplete="off" value="<?php echo $_GET['namecontains']; ?>">
+                                        <input class="form-control input-sm" name="namecontains" id="namecontains" autocomplete="off" value="<?php echo htmlspecialchars($_GET['namecontains']); ?>">
                                     </div>
                                 </div>
                             </div>
@@ -354,7 +354,7 @@ $estime = number_format(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 4);
                 <div class="col-lg-6">
                     <div class="alert alert-dismissible alert-warning">
                         <button type="button" class="close" data-dismiss="alert">&times;</button>
-                        <i class="glyphicon glyphicon-exclamation-sign"></i> No diskover indices found in Elasticsearch or index filters above are set and all indices are hidden. Try setting show indices to All or <a class="alert-link" href="selectindices.php?maxage=<?php echo $maxage_str ?>&namecontains=<?php echo $_GET['namecontains'] ?>&reloadindices">reload indices</a>.
+                        <i class="glyphicon glyphicon-exclamation-sign"></i> No diskover indices found in Elasticsearch or index filters above are set and all indices are hidden. Try setting show indices to All or <a class="alert-link" href="selectindices.php?maxage=<?php echo $maxage_str ?>&namecontains=<?php echo htmlspecialchars($_GET['namecontains']) ?>&reloadindices">reload indices</a>.
                     </div>
                 </div>
             </div>
@@ -363,13 +363,13 @@ $estime = number_format(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 4);
                 <div class="col-lg-12">
                     <div class="form-group">
                         <button type="button" class="btn btn-primary" id="savebutton" onclick="checkSelectedIndex()"><i class="glyphicon glyphicon-saved"></i> Save selection</button>
-                        <button title="reload indices and refresh list" type="button" class="btn btn-default pull-right" id="reloadindices" onclick="window.location.replace('selectindices.php?maxage=<?php echo $maxage_str ?>&namecontains=<?php echo $_GET['namecontains'] ?>&reloadindices')"><i class="fas fa-sync-alt"></i> Reload indices</button>
+                        <button title="reload indices and refresh list" type="button" class="btn btn-default pull-right" id="reloadindices" onclick="window.location.replace('selectindices.php?maxage=<?php echo $maxage_str ?>&namecontains=<?php echo htmlspecialchars($_GET['namecontains']) ?>&reloadindices')"><i class="fas fa-sync-alt"></i> Reload indices</button>
                     </div>
                 </div>
             </div>
             <div class="row">
                 <div class="col-lg-12">
-                    <p class="pull-right"><?php echo count($indices_filtered) . " indices found"; ?> (last updated <?php echo $indexinfo_updatetime->format('m/d/Y, h:i:s A T'); ?> <a href="selectindices.php?maxage=<?php echo $maxage_str ?>&namecontains=<?php echo $_GET['namecontains'] ?>&reloadindices">update</a>)</p>
+                    <p class="pull-right"><?php echo count($indices_filtered) . " indices found"; ?> (last updated <?php echo $indexinfo_updatetime->format('m/d/Y, h:i:s A T'); ?> <a href="selectindices.php?maxage=<?php echo $maxage_str ?>&namecontains=<?php echo htmlspecialchars($_GET['namecontains']) ?>&reloadindices">update</a>)</p>
                     <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" name="form-selectindex" id="form-selectindex">
                         <table class="table table-striped table-hover table-condensed" id="indices-table" data-order='[[ 4, "desc" ]]' style="width:100%">
                             <thead>
@@ -443,7 +443,7 @@ $estime = number_format(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 4);
                             </tfoot>
                         </table>
                     </form>
-                    <p class="pull-right"><?php echo count($indices_filtered) . " indices found"; ?> (last updated <?php echo $indexinfo_updatetime->format('m/d/Y, h:i:s A T'); ?> <a href="selectindices.php?maxage=<?php echo $maxage_str ?>&namecontains=<?php echo $_GET['namecontains'] ?>&reloadindices">update</a>)</p>
+                    <p class="pull-right"><?php echo count($indices_filtered) . " indices found"; ?> (last updated <?php echo $indexinfo_updatetime->format('m/d/Y, h:i:s A T'); ?> <a href="selectindices.php?maxage=<?php echo $maxage_str ?>&namecontains=<?php echo htmlspecialchars($_GET['namecontains']) ?>&reloadindices">update</a>)</p>
                 </div>
             </div>
             <div class="row">

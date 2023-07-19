@@ -1,5 +1,10 @@
 # Diskover-web v2 Community Edition Change Log
 
+# [2.1.1] - 2023-
+### fixed
+- xss vulnerabilities
+
+
 # [2.1.0] - 2023-02-04
 ### fixed
 - not staying logged in when checking keep me logged in for 7 days on login page
