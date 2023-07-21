@@ -261,8 +261,7 @@ function indexInfo()
                         'query_string' => [
                             'query' => 'type:spaceinfo'
                         ]
-                    ],
-                    'sort' => ['start_at' => 'asc']
+                    ]
                 ]
             ];
 
