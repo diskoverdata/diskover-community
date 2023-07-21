@@ -239,27 +239,48 @@ function indexInfo()
                 unset($_SESSION['toppath']);
             }
 
-            $searchParams['index'] = $key;
             $searchParams['body'] = [
-                'size' => 2,
-                'query' => [
-                    'match' => ['type' => 'indexinfo']
-
+                [
+                    'index' => $key
                 ],
-                'sort' => ['start_at' => 'asc']
+                [
+                    'size' => 2,
+                    'query' => [
+                        'query_string' => [
+                            'query' => 'type:indexinfo'
+                        ]
+                    ],
+                    'sort' => ['start_at' => 'asc']
+                ],
+                [
+                    'index' => $key
+                ],
+                [
+                    'size' => 1,
+                    'query' => [
+                        'query_string' => [
+                            'query' => 'type:spaceinfo'
+                        ]
+                    ],
+                    'sort' => ['start_at' => 'asc']
+                ]
             ];
 
-            // catch any errors searching doc in indices which might be corrupt or deleted
+            // do multi-search and handle any errors
             try {
-                $queryResponse = $client->search($searchParams);
+                $queryResponse = $client->msearch($searchParams);
+            } catch (Missing404Exception $e) {
+                handleError('ES error (missing 404 exception index not found): ' . $e->getMessage(), false, false, false);
+                removeIndex($key, $uuid);
+                continue;
             } catch (Exception $e) {
-                handleError('ES error (index not found/ index error): ' . $e->getMessage(), false, false, false);
+                handleError('ES error (unhandled exception): ' . $e->getMessage(), false, false, false);
                 removeIndex($key, $uuid);
                 continue;
             }
 
             // if no indexinfo docs, remove it from indices array
-            if (sizeof($queryResponse['hits']['hits']) == 0) {
+            if (sizeof($queryResponse['responses'][0]['hits']['hits']) == 0) {
                 removeIndex($key, $uuid);
                 continue;
             }
@@ -322,27 +343,8 @@ function indexInfo()
             }
             $all_index_info[$key]['totals']['indexsize'] = $indexsize;
 
-            // get disk space for each index
-            $searchParams['body'] = [
-                'size' => 100,
-                'query' => [
-                    'match' => [
-                        'type' => 'spaceinfo'
-                    ]
-                ]
-            ];
-
-            try {
-                $queryResponse = $client->search($searchParams);
-            } catch (Missing404Exception $e) {
-                    deleteCookie('index');
-                    clearPaths();
-                    handleError("Selected indices are no longer available. Please select a different index.");
-            } catch (Exception $e) {
-                handleError('ES error: ' . $e->getMessage(), true);
-            }
-
-            foreach ($queryResponse['hits']['hits'] as $hit) {
+            // get disk space for index
+            foreach ($queryResponse['responses'][1]['hits']['hits'] as $hit) {
                 $index_spaceinfo[$key][$hit['_source']['path']] = $hit['_source'];
             }
 

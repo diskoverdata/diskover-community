@@ -3,6 +3,8 @@
 # [2.1.1] - 2023-
 ### fixed
 - xss vulnerabilities
+### added
+- faster log in and initial search page load time
 
 
 # [2.1.0] - 2023-02-04
