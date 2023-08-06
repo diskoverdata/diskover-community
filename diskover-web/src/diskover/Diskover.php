@@ -286,7 +286,7 @@ function indexInfo()
 
             $startcount = 0;
             $endcount = 0;
-            foreach ($queryResponse['hits']['hits'] as $hit) {
+            foreach ($queryResponse['responses'][0]['hits']['hits'] as $hit) {
                 $source = $hit['_source'];
                 // add to index_starttimes list
                 if (array_key_exists('start_at', $source)) {
