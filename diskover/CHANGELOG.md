@@ -1,6 +1,6 @@
 # Diskover v2 Community Edition Change Log
 
-# [2.1.1] - 2023-
+# [2.1.1] - 2023-08-10
 ### fixed
 - SIGTERM handling
 - bad file/directory timestamp handling
@@ -10,7 +10,6 @@
 - Elasticsearch 8.x support
 - checkfiletimes to default/sample diskover config file excludes section
 - more detailed logging for directory/file exclusions
-### changed
 
 
 # [2.1.0] - 2023-02-02
