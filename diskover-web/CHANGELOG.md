@@ -1,9 +1,11 @@
 # Diskover-web v2 Community Edition Change Log
 
-# [2.1.1] - 2023-
+# [2.1.1] - 2023-08-10
 ### fixed
 - xss vulnerabilities
 ### added
+- Elasticsearch 8.x support
+- PHP 8.x support
 - faster log in and initial search page load time
 
 
