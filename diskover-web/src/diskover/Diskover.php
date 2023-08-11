@@ -456,7 +456,7 @@ function handleError($e, $redirect = true, $ajax = false, $throwexception = fals
     }
     if ($redirect) {
         // set error cookie to expire 1 hour
-        setCookie('error', $e, time()+3600);
+        setCookie('error', $e, time()+3600, "/");
         // redirect to error page
         if (strpos($_SERVER['REQUEST_URI'], 'tasks/') !== false) {
             header('Location: ../error.php');
