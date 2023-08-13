@@ -48,6 +48,7 @@ error_reporting(E_ALL ^ E_NOTICE);
                         <li><a href="#"><i class="glyphicon glyphicon-equalizer"></i> Smart Searches <span class="label label-info">Pro</span></a></li>
                         <li><a href="#"><i class="glyphicon glyphicon-user"></i> User Analysis <span class="label label-info">Essential</span></a></li>
                         <li><a href="#"><i class="glyphicon glyphicon-piggy-bank"></i> Cost Analysis <span class="label label-info">Pro</span></a></li>
+                        <li><a href="#"><i class="glyphicon glyphicon-stats"></i> Reports <span class="label label-info">Pro</span></a></li>
                     </ul>
                 </li>
                 <li class="dropdown">
