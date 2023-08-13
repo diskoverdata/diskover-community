@@ -3,7 +3,7 @@ diskover-web community edition (ce)
 https://github.com/diskoverdata/diskover-community/
 https://diskoverdata.com
 
-Copyright 2017-2022 Diskover Data, Inc.
+Copyright 2017-2023 Diskover Data, Inc.
 "Community" portion of Diskover made available under the Apache 2.0 License found here:
 https://www.diskoverdata.com/apache-license/
  
