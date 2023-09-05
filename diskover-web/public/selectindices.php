@@ -281,7 +281,7 @@ $estime = number_format(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 4);
             <div class="col-lg-6">
                 <div class="alert alert-dismissible alert-info">
                     <button type="button" class="close" data-dismiss="alert">&times;</button>
-                    <i class="fas fa-lightbulb"></i> PRO tip: Indices can ben deleted by selecting an index and clicking the Delete button.
+                    <i class="fas fa-lightbulb"></i> PRO tip: Indices can be deleted by selecting an index and clicking the Delete button.
                 </div>
             </div>
         </div>
