@@ -1,5 +1,12 @@
 # Diskover v2 Community Edition Change Log
 
+# [2.2.0] - 2023-09-19
+### fixed
+- python error when scanning file/directory with invalid future timestamps causing scan to exit with critical error
+### added
+- exception handling and logging for file/directory with invalid future timestamps, times are now set to 1970-01-01T00:00:00
+
+
 # [2.1.1] - 2023-08-10
 ### fixed
 - SIGTERM handling

@@ -42,7 +42,7 @@ from diskover_helpers import dir_excluded, file_excluded, \
     get_file_name, load_plugins, list_plugins, get_plugins_info, set_times, \
     get_mem_usage, get_win_path, rem_win_path
 
-version = '2.1.1 community edition (ce)'
+version = '2.2.0 community edition (ce)'
 __version__ = version
 
 # Windows check
@@ -556,6 +556,40 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
                                         warnings += 1
                                     pass
                                 
+                                # check for invalid time stamps
+                                try:
+                                    mtime = datetime.utcfromtimestamp(int(f_stat.st_mtime)).isoformat()
+                                except ValueError:
+                                    logmsg = '[{0}] MTIME TIMESTAMP WARNING {1}'.format(thread, os.path.join(parent_path, file_name))
+                                    logger.warning(logmsg)
+                                    if logtofile: logger_warn.warning(logmsg)
+                                    with crawl_thread_lock:
+                                        warnings += 1
+                                    mtime = "1970-01-01T00:00:00"
+                                    pass
+                                
+                                try:
+                                    atime = datetime.utcfromtimestamp(int(f_stat.st_atime)).isoformat()
+                                except ValueError:
+                                    logmsg = '[{0}] ATIME TIMESTAMP WARNING {1}'.format(thread, os.path.join(parent_path, file_name))
+                                    logger.warning(logmsg)
+                                    if logtofile: logger_warn.warning(logmsg)
+                                    with crawl_thread_lock:
+                                        warnings += 1
+                                    atime = "1970-01-01T00:00:00"
+                                    pass
+                                
+                                try:
+                                    ctime = datetime.utcfromtimestamp(int(f_stat.st_ctime)).isoformat()
+                                except ValueError:
+                                    logmsg = '[{0}] CTIME TIMESTAMP WARNING {1}'.format(thread, os.path.join(parent_path, file_name))
+                                    logger.warning(logmsg)
+                                    if logtofile: logger_warn.warning(logmsg)
+                                    with crawl_thread_lock:
+                                        warnings += 1
+                                    ctime = "1970-01-01T00:00:00"
+                                    pass
+                                
                                 # index doc dict
                                 data = {
                                     'name': file_name,
@@ -565,9 +599,9 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
                                     'size_du': fsize_du,
                                     'owner': owner,
                                     'group': group,
-                                    'mtime': datetime.utcfromtimestamp(int(f_stat.st_mtime)).isoformat(),
-                                    'atime': datetime.utcfromtimestamp(int(f_stat.st_atime)).isoformat(),
-                                    'ctime': datetime.utcfromtimestamp(int(f_stat.st_ctime)).isoformat(),
+                                    'mtime': mtime,
+                                    'atime': atime,
+                                    'ctime': ctime,
                                     'nlink': f_stat.st_nlink,
                                     'ino': str(f_stat.st_ino),
                                     'type': 'file'
