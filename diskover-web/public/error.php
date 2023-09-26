@@ -83,18 +83,22 @@ if (isset($_COOKIE['error'])) {
 <body>
     <div class="error">
         <div class="error-logo"><img src="images/diskover.png" alt="diskover" width="249" height="189" /></div>
-        <h1>Oops something went wrong <i class="far fa-frown"></i></h1>
-        <p class="text-danger"><i class="fas fa-exclamation-circle"></i> <?php echo $error; ?></p>
-        <?php
+        <?php if (strpos($error, "No completed indices found") !== false) {
+        echo '<h1>Welcome to Diskover-web Community Edition (ce)</h1>';
+        echo '<p class="text-info"><i class="fas fa-info-circle"></i> '.$error.'</p>';
+        } else {
+        echo '<h1>Oops something went wrong <i class="far fa-frown"></i></h1>';
+        echo '<p class="text-danger"><i class="fas fa-exclamation-circle"></i> '.$error.'</p>';
+        }
         if (strpos($error, "Selected indices are no longer available") !== false ||
-            strpos($error, "Selected indices have changed") !== false) { ?>
-        <p><a href="selectindices.php?reloadindices">Select index</a></p>
-        <?php } else { ?>
-        <p><a href="index.php?reloadindices">Reload index page</a></p>
-        <?php } ?>
-        <?php if ($config->LOGIN_REQUIRED) { ?>
-        <p><a href="logout.php">Logout</a></p>
-        <?php } ?>
+            strpos($error, "Selected indices have changed") !== false) {
+        echo '<p><a href="selectindices.php?reloadindices">Select index</a></p>';
+        } else {
+        echo '<p><a href="index.php?reloadindices">Reload index page</a></p>';
+        }
+        if ($config->LOGIN_REQUIRED) {
+        echo '<p><a href="logout.php">Logout</a></p>';
+        } ?>
     </div>
 </body>
 
