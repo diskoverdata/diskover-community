@@ -371,7 +371,8 @@ $estime = number_format(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 4);
                 <div class="col-lg-12">
                     <div class="form-group">
                         <button type="button" class="btn btn-primary" id="savebutton" onclick="checkSelectedIndex()"><i class="glyphicon glyphicon-saved"></i> Save selection</button>
-                        <button title="reload indices and refresh list" type="button" class="btn btn-default pull-right" id="reloadindices" onclick="window.location.replace('selectindices.php?maxage=<?php echo $maxage_str ?>&namecontains=<?php echo htmlspecialchars($_GET['namecontains']) ?>&reloadindices&refreshindices')"><i class="fas fa-sync-alt"></i> Reload indices</button>
+                        <button title="reload indices and refresh list" type="button" class="btn btn-default pull-right" id="reloadindices" onclick="$('#reloadindicesload').show(); window.location.replace('selectindices.php?maxage=<?php echo $maxage_str ?>&namecontains=<?php echo htmlspecialchars($_GET['namecontains']) ?>&reloadindices&refreshindices')"><i class="fas fa-sync-alt"></i> Reload indices</button>
+                        <span id="reloadindicesload" style="position:relative; display:none; top:6px; padding-right:5px" class="pull-right"><img width="24" height="24" src="images/ajax-loader.gif" alt="Loading..." /></span>
                     </div>
                 </div>
             </div>
