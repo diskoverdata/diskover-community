@@ -95,10 +95,10 @@ class Constants {
     const MAX_INDEX = 250;
 
     // time in seconds for index info to be cached, clicking reload indices forces update
-    const INDEXINFO_CACHETIME = 600;
+    const INDEXINFO_CACHETIME = 1200;
 
     // time in seconds to check Elasticsearch for new index info
-    const NEWINDEX_CHECKTIME = 10;
+    const NEWINDEX_CHECKTIME = 30;
 
     // sqlite database file path
     const DATABASE = '../diskoverdb.sqlite3';
