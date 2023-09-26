@@ -197,7 +197,15 @@ foreach ($es_index_info as $key => $val) {
             ]
         ];
 
-        $queryResponse = $client->search($searchParams);
+        try {
+            $queryResponse = $client->search($searchParams);
+        } catch (Exception $e) {
+            error_log('ES error: ' .$e->getMessage());
+            $ifk = array_search($key, $indices_filtered);
+            unset($indices_filtered[$ifk]);
+            unset($all_index_info[$key]);
+            continue;
+        }
 
         // Get total count of directory docs
         $all_index_info[$key]['dir_count'] = $queryResponse['hits']['total']['value'];
@@ -363,7 +371,7 @@ $estime = number_format(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 4);
                 <div class="col-lg-12">
                     <div class="form-group">
                         <button type="button" class="btn btn-primary" id="savebutton" onclick="checkSelectedIndex()"><i class="glyphicon glyphicon-saved"></i> Save selection</button>
-                        <button title="reload indices and refresh list" type="button" class="btn btn-default pull-right" id="reloadindices" onclick="window.location.replace('selectindices.php?maxage=<?php echo $maxage_str ?>&namecontains=<?php echo htmlspecialchars($_GET['namecontains']) ?>&reloadindices')"><i class="fas fa-sync-alt"></i> Reload indices</button>
+                        <button title="reload indices and refresh list" type="button" class="btn btn-default pull-right" id="reloadindices" onclick="window.location.replace('selectindices.php?maxage=<?php echo $maxage_str ?>&namecontains=<?php echo htmlspecialchars($_GET['namecontains']) ?>&reloadindices&refreshindices')"><i class="fas fa-sync-alt"></i> Reload indices</button>
                     </div>
                 </div>
             </div>
@@ -409,7 +417,7 @@ $estime = number_format(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 4);
                                         if (!$disabled) {
                                             echo "<input onclick=\"addHidden()\" type=\"radio\" name=\"index\" id=\"index_" . $val . "\" class=\"indexcheck\" value=\"" . $val . "\" $checked></td>";
                                         } else {
-                                            echo "<a href=\"#\" title=\"force delete\" onclick=\"checkForceIndexDel('" . $val . "')\" class=\"btn btn-xs btn-primary\"><i class=\"far fa-trash-alt\"></i>";
+                                            echo "<a href=\"#\" title=\"force delete\" onclick=\"checkForceIndexDel('" . $val . "'); return false;\" class=\"btn btn-xs btn-primary\"><i class=\"far fa-trash-alt\"></i>";
                                         }
                                         echo "<td>" . $val . " " . $newest . "</td>
                                         <td>" . $indexval['path'] . "</td>

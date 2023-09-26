@@ -18,8 +18,6 @@ https://www.diskoverdata.com/solutions/
 
 require '../vendor/autoload.php';
 require "../src/diskover/Diskover.php";
-error_reporting(E_ALL ^ E_NOTICE);
-
 
 // get path from cookie
 $path = (isset($_GET['path'])) ? $_GET['path'] : getCookie('path');

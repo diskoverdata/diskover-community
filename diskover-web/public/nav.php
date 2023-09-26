@@ -19,8 +19,6 @@ https://www.diskoverdata.com/solutions/
 require '../vendor/autoload.php';
 require '../src/diskover/config_inc.php';
 
-error_reporting(E_ALL ^ E_NOTICE);
-
 ?>
 <nav class="navbar navbar-inverse navbar-fixed-top">
     <div class="container-fluid">
@@ -630,7 +628,7 @@ error_reporting(E_ALL ^ E_NOTICE);
                         <li><a href="https://github.com/diskoverdata/diskover-community/" target="_blank"><i class="fab fa-github-alt"></i> diskover GitHub</a></li>
                         <li><a href="https://diskoverdata.com/solutions/" target="_blank"><i class="fas fa-cart-plus"></i> Upgrade license</a></li>
                         <li class="divider"></li>
-                        <li><a title="reload indices and get latest" href="<?php echo $_SERVER['REQUEST_URI'] . (parse_url($_SERVER['REQUEST_URI'], PHP_URL_QUERY) ? '&' : '?') . 'reloadindices'; ?>"><i class="glyphicon glyphicon-refresh"></i> Reload indices</a> <span class="small text-primary" style="padding-left:3px"><i class="fas fa-clock"></i> last updated <?php echo $indexinfo_updatetime->format('h:i:s A'); ?></span></li>
+                        <li><a title="reload indices and get latest" href="<?php echo $_SERVER['REQUEST_URI'] . (parse_url($_SERVER['REQUEST_URI'], PHP_URL_QUERY) ? '&' : '?') . 'reloadindices&refreshindices'; ?>"><i class="glyphicon glyphicon-refresh"></i> Reload indices</a> <span class="small text-primary" style="padding-left:3px"><i class="fas fa-clock"></i> last updated <?php echo $indexinfo_updatetime->format('h:i:s A'); ?></span></li>
                         <?php if ($config->LOGIN_REQUIRED) { ?>
                             <li class="divider"></li>
                             <li><a href="logout.php"><i class="glyphicon glyphicon-log-out"></i> Logout</a></li>

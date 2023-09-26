@@ -19,6 +19,11 @@ https://www.diskoverdata.com/solutions/
 require '../vendor/autoload.php';
 require "d3_inc.php";
 
+// return empty array if chart not selected
+if (getCookie('searchchart') != 'topfiletypes') {
+  echo json_encode(["children" => []]);
+  exit;
+}
 
 // check if path in session cache
 if ($_SESSION["diskover_cache_chartfileext_searchresults"][$esIndex][$_REQUEST['path']] && $_GET['usecache'] == 1) {

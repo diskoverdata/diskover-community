@@ -21,7 +21,6 @@ use Elasticsearch\ClientBuilder;
 use Elasticsearch\Common\Exceptions\Missing404Exception;
 require 'version.php';
 require 'config_inc.php';
-error_reporting(E_ALL ^ E_NOTICE);
 
 
 /* Start Globals */
@@ -172,8 +171,11 @@ class ESClient
     {
         // get index info from ES
         // only get new index info every 10 seconds
-        if (isset($_GET['reloadindices']) || !isset($_SESSION['es_index_info_time']) || time() - $_SESSION['es_index_info_time'] > $GLOBALS['config']->NEWINDEX_CHECKTIME) {
-            $this->refreshIndices();
+        if (isset($_GET['reloadindices']) || !isset($_SESSION['es_index_info_time']) || 
+        time() - $_SESSION['es_index_info_time'] > $GLOBALS['config']->NEWINDEX_CHECKTIME) {
+            if (isset($_GET['refreshindices'])) {
+                $this->refreshIndices();
+            }
             $indices_info_curl = $this->getIndicesInfoCurl();
             $indices_info_cat = $this->getIndicesInfoCat();
             $es_index_info = array();
@@ -570,13 +572,14 @@ function removeIndex($index, $uuid = null)
     unset($_SESSION['indices_uuids'][$uuid]);
     unset($_SESSION['indices_doccount'][$index]);
     unset($_SESSION['indexinfo']['all_index_info'][$index]);
-    if ($k = array_search($index, $_SESSION['indexinfo']['completed_indices'])) {
+    if (!is_null($_SESSION['indexinfo']['completed_indices']) && 
+        $k = array_search($index, $_SESSION['indexinfo']['completed_indices'])) {
         unset($_SESSION['indexinfo']['completed_indices'][$k]);
     }
-    if ($k = array_search($index, $completed_indices)) {
+    if (!is_null($completed_indices) && $k = array_search($index, $completed_indices)) {
         unset($completed_indices[$k]);
     }
-    if ($k = array_search($index, $all_index_info)) {
+    if (!is_null($all_index_info) && $k = array_search($index, $all_index_info)) {
         unset($all_index_info[$k]);
     }
 }

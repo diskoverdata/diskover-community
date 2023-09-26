@@ -16,8 +16,6 @@ https://www.diskoverdata.com/solutions/
 
 */
 
-error_reporting(E_ALL ^ E_NOTICE);
-
 
 $savedfilters = getCookieToArray('searchfilters');
 if (!$savedfilters) {

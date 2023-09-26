@@ -19,7 +19,6 @@ https://www.diskoverdata.com/solutions/
 require '../vendor/autoload.php';
 require "d3_inc.php";
 
-
 // check if path in session cache
 if ($_SESSION["diskover_cache_chartfileext_dashboard"][$esIndex][$_SESSION['rootpath']] && $_GET['usecache'] == 1) {
   $data = $_SESSION["diskover_cache_chartfileext_dashboard"][$esIndex][$_SESSION['rootpath']];

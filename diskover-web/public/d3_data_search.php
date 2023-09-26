@@ -29,6 +29,13 @@ if ($_SESSION["diskover_cache_filetree_search"][$esIndex][$path] && $_GET['useca
     // get dir total size and file count
     $dirinfo = get_dir_info($client, $esIndex, $path);
 
+    // how should the file tree be sorted (alphanumeric or size)
+    if (isset($_COOKIE['searchfiletreesort'])) {
+        $sortdirs = (int)$_COOKIE['searchfiletreesort'];
+    } else {
+        $sortdirs = 0;
+    }
+
     $data = [
         "name" => $path,
         "size" => $dirinfo[0],
@@ -37,7 +44,8 @@ if ($_SESSION["diskover_cache_filetree_search"][$esIndex][$path] && $_GET['useca
         "count_subdirs" => $dirinfo[3],
         "modified" => $dirinfo[4],
         "type" => 'directory',
-        "children" => walk_tree($client, $esIndex, $path, $filter, $time, $depth = 0, $maxdepth = 1, $use_count, $show_files, $sortdirs = 0, $maxdirs = 5000)
+        "children" => walk_tree($client, $esIndex, $path, $filter, $time, $depth = 0, $maxdepth = 1, 
+            $use_count, $show_files, $sortdirs, $maxdirs = 5000)
     ];
 
     // cache path data in session

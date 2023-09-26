@@ -23,8 +23,6 @@ require "../src/diskover/Auth.php";
 use diskover\Login;
 use diskover\UserDatabase;
 
-// Set logging level
-error_reporting(E_ERROR | E_PARSE);
 
 $initialPassword = isset($_GET['initial']);
 

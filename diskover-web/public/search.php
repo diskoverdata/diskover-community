@@ -249,9 +249,6 @@ $estime = number_format(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 4);
     <?php include "results.php"; ?>
     <?php include 'modals.php' ?>
 
-    <!-- iframe used for exporting -->
-    <iframe name="hiddeniframe" width="0" height="0" style="display:none"></iframe>
-
     <script language="javascript" src="js/jquery.min.js"></script>
     <script language="javascript" src="js/bootstrap.min.js"></script>
     <script language="javascript" src="js/diskover.js"></script>

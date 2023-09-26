@@ -1,5 +1,16 @@
 # Diskover-web v2 Community Edition Change Log
 
+# [2.2.0] - 2023-09-25
+### fixed
+- slow logins when indexing
+### added
+- directory size percent and item count percent bar charts to search file tree
+- option to sort search file tree by size to settings page
+- directory chart select dropdown to search results page
+### changed
+- search directory charts are not all displayed at same time, added a select option dropdown to change the chart
+
+
 # [2.1.1] - 2023-08-10
 ### fixed
 - xss vulnerabilities

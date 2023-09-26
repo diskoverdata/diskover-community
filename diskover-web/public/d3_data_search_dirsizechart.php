@@ -19,6 +19,12 @@ https://www.diskoverdata.com/solutions/
 require '../vendor/autoload.php';
 require "d3_inc.php";
 
+// return empty array if chart not selected
+if (getCookie('searchchart') != 'topdirs') {
+    echo json_encode(["children" => []]);
+    exit;
+}
+
 // get size or count
 if (isset($_GET['usecount']) && $_GET['usecount'] == 1) {
     $usecount = 1;

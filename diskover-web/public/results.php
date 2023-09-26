@@ -19,8 +19,6 @@ https://www.diskoverdata.com/solutions/
 require '../vendor/autoload.php';
 require '../src/diskover/config_inc.php';
 
-error_reporting(E_ALL ^ E_NOTICE);
-
 
 // get top path's last indexed time
 $dt = new DateTime($index_starttimes[$esIndex][$_SESSION['rootpath']], new DateTimeZone('UTC'));
@@ -159,25 +157,43 @@ $hidecharts = getCookie('hidesearchcharts');
                             <div id="dirdetails" style="font-size:13px"></div>
                         </div>
                         <div class="panel-body">
-                            <div style="margin:0 auto; width:100%; height:125px; margin-bottom:10px; border:1px solid #121416; padding:5px" id="mtime-Chart-container">
-                                <canvas id="mtime-barChart"></canvas>
+                            <form class="form-inline" style="display:inline-block;">
+                            <div class="form-group">
+                                <label for="chart">Chart </label>
+                                <select class="form-control input-sm" name="chart" id="chart" onchange="setCookie('searchchart', this.value); location.reload(true)">
+                                    <option value="fileage" <?php echo (getCookie('searchchart') == 'fileage' || getCookie('searchchart') == '') ? 'selected' : ''; ?>>File Age</option>
+                                    <option value="topdirs" <?php echo (getCookie('searchchart') == 'topdirs') ? 'selected' : ''; ?>>Top Directories</option>
+                                    <option value="topfiletypes" <?php echo (getCookie('searchchart') == 'topfiletypes') ? 'selected' : ''; ?>>Top File Types</option>
+                                </select>
                             </div>
-                            <div style="margin:0 auto; width:100%;">
-                                <div style="margin:0 auto; width:100%; height:220px; margin-bottom:10px; border:1px solid #121416; padding:5px" class="text-center" id="topDirs-Chart-container">
-                                    <div style="margin:0 auto; width:40%; height:200px; display:inline-block" class="text-center">
-                                        <canvas id="topDirsBySize-barChart"></canvas>
-                                    </div>
-                                    <div style="margin:0 auto; width:55%; height:200px; display:inline-block" class="text-center">
-                                        <canvas id="topDirsByCount-pieChart"></canvas>
-                                    </div>
+                            </form>
+                            <div id="charts-container" style="margin:0 auto; width:100%;">
+                                <?php if (getCookie('searchchart') == 'fileage' || getCookie('searchchart') == '') { ?>
+                                <div style="margin:0 auto; width:100%; height:125px; margin-bottom:10px; border:1px solid #121416; padding:5px" id="mtime-Chart-container">
+                                    <canvas id="mtime-barChart"></canvas>
                                 </div>
-                                <div style="margin:0 auto; width:100%; height:220px; border:1px solid #121416; padding:5px" class="text-center" id="topFileTypes-Chart-container">
-                                    <div style="margin:0 auto; width:40%; height:200px; display:inline-block">
-                                        <canvas id="topFileTypesBySize-barChart"></canvas>
+                                <?php } ?>
+                                <div style="margin:0 auto; width:100%;">
+                                    <?php if (getCookie('searchchart') == 'topdirs') { ?>
+                                    <div style="margin:0 auto; width:100%; height:220px; margin-bottom:10px; border:1px solid #121416; padding:5px" class="text-center" id="topDirs-Chart-container">
+                                        <div style="margin:0 auto; width:40%; height:200px; display:inline-block" class="text-center">
+                                            <canvas id="topDirsBySize-barChart"></canvas>
+                                        </div>
+                                        <div style="margin:0 auto; width:55%; height:200px; display:inline-block" class="text-center">
+                                            <canvas id="topDirsByCount-pieChart"></canvas>
+                                        </div>
                                     </div>
-                                    <div style="margin:0 auto; width:55%; height:200px; display:inline-block">
-                                        <canvas id="topFileTypesByCount-pieChart"></canvas>
+                                    <?php } ?>
+                                    <?php if (getCookie('searchchart') == 'topfiletypes') { ?>
+                                    <div style="margin:0 auto; width:100%; height:220px; border:1px solid #121416; padding:5px" class="text-center" id="topFileTypes-Chart-container">
+                                        <div style="margin:0 auto; width:40%; height:200px; display:inline-block">
+                                            <canvas id="topFileTypesBySize-barChart"></canvas>
+                                        </div>
+                                        <div style="margin:0 auto; width:55%; height:200px; display:inline-block">
+                                            <canvas id="topFileTypesByCount-pieChart"></canvas>
+                                        </div>
                                     </div>
+                                    <?php } ?>
                                 </div>
                             </div>
                         </div>

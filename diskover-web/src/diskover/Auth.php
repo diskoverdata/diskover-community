@@ -22,8 +22,6 @@ session_set_cookie_params(604800, "/");
 session_start();
 require 'config_inc.php';
 
-error_reporting(E_ALL ^ E_NOTICE);
-
 if ($config->LOGIN_REQUIRED) {
     if (isset($_SESSION['loggedin'])) {
         // check if user is logged in and timeout not exceeded

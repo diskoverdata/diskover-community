@@ -19,7 +19,6 @@ ini_set('session.gc_maxlifetime', 604800);
 ini_set("session.cookie_lifetime", 604800);
 session_set_cookie_params(604800, "/");
 session_start();
-error_reporting(E_ALL ^ E_NOTICE);
 
 // check if session timeout exceeded and if so, log user out by responding with logout to ajax post request in diskover.js
 if (isset($_POST)) {

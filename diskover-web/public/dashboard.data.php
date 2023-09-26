@@ -18,7 +18,6 @@ https://www.diskoverdata.com/solutions/
 
 require '../vendor/autoload.php';
 use Elasticsearch\Common\Exceptions\Missing404Exception;
-error_reporting(E_ALL ^ E_NOTICE);
 
 
 // Get info about index

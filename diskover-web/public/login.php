@@ -26,10 +26,6 @@ require '../src/diskover/version.php';
 
 use diskover\Login;
 
-// Set logging level
-//error_reporting(E_ALL);
-error_reporting(E_ERROR | E_PARSE);
-
 $msg = '';
 
 // If they were inactive session timeout

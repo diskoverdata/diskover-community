@@ -101,6 +101,15 @@ require "../src/diskover/Diskover.php";
                     </div>
                 </div>
                 <div class="well">
+                    <h4>Search file tree</h4>
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="searchfiletreesort" onclick="setSearchFileTreeSort()">
+                        <label class="form-check-label" for="searchfiletreesort">Sort search file tree by size instead of alphanumerically</label><br>
+                        <span class="small"><i class="glyphicon glyphicon-info-sign"></i> Changing this setting may require reloading file tree data.</span>
+                        
+                    </div>
+                </div>
+                <div class="well">
                     <h4>Filter charts</h4>
                     <div class="form-check">
                         <input type="checkbox" class="form-check-input" id="filterchart" onclick="setFilterCharts()">
@@ -233,6 +242,12 @@ require "../src/diskover/Diskover.php";
             document.getElementById('filterchart').checked = true;
         } else {
             document.getElementById('filterchart').checked = false;
+        }
+        // set search file tree sort checkbox
+        if (getCookie('searchfiletreesort') == 1) {
+            document.getElementById('searchfiletreesort').checked = true;
+        } else {
+            document.getElementById('searchfiletreesort').checked = false;
         }
     </script>
 </body>

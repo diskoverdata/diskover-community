@@ -490,6 +490,16 @@ function setFilterCharts() {
     }
 }
 
+// set search file tree sort
+function setSearchFileTreeSort() {
+    if (document.getElementById('searchfiletreesort').checked) {
+        setCookie('searchfiletreesort', 1);
+    } else {
+        setCookie('searchfiletreesort', 0);
+    }
+    setCookie('usecache', 0);
+}
+
 // set default sort
 function setSortDisplay() {
     if (document.getElementById('sortdisplay').checked) {
