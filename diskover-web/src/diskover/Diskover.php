@@ -202,7 +202,10 @@ class ESClient
 function indexInfo()
 {
     global $esclient, $client, $timezone, $esIndex, $es_index_info, $all_index_info, $completed_indices, 
-    $latest_completed_index, $fields, $indexinfo_updatetime, $index_starttimes, $index_spaceinfo, $selectindex_noredirect;
+    $latest_completed_index, $fields, $indexinfo_updatetime, $index_starttimes, $index_spaceinfo, $selectindex_noredirect,
+    $indexinfotime;
+
+    $indexinfo_start = microtime(true);
 
     $es_index_info = $esclient->getIndexInfo();
 
@@ -406,6 +409,8 @@ function indexInfo()
         $indexinfo_updatetime = $_SESSION['indexinfo']['update_time'];
         $index_spaceinfo = $_SESSION['indexinfo']['spaceinfo'];
     }
+
+    $indexinfotime = (microtime(true) - $indexinfo_start) * 1000;
 
     $esIndex_cookie = getCookie('index');
 

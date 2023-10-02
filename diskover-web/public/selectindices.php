@@ -130,93 +130,22 @@ foreach ($es_index_info as $key => $val) {
     $indices_filtered[] = $key;
 
     // determine if index is still being crawled
-    // if still being indexed, grab the file/dir count and size of top path and totals and add the index to disabled_indices list
+    // if still being indexed, add the index to disabled_indices list
 
     // Set the path finished to true
     if (isset($all_index_info[$key]['end_at'])) {
-        $all_index_info[$key]['finished'] = 1;
+        $all_index_info[$key]['finished'] = true;
     } else {
         $all_index_info[$key]['end_at'] = null;
 
+        // Calculate crawl time
         $diff = abs(strtotime($all_index_info[$key]['start_at']) - strtotime(gmdate("Y-m-d\TH:i:s")));
         $all_index_info[$key]['crawl_time'] = $diff;
 
-        $searchParams = [];
-        $searchParams['index'] = $key;
-
-        $escaped_path = escape_chars($all_index_info[$key]['path']);
-        if ($escaped_path === '\/') {  // root
-            $pp_query = 'parent_path:' . $escaped_path . '*';
-        } else {
-            $pp_query = 'parent_path:(' . $escaped_path . ' OR ' . $escaped_path . '\/*)';
-        }
-
-        $searchParams['body'] = [
-            'size' => 0,
-            'track_total_hits' => true,
-            'aggs' => [
-                'total_size' => [
-                    'sum' => [
-                        'field' => 'size'
-                    ]
-                ]
-            ],
-            'query' => [
-                'query_string' => [
-                    'query' => $pp_query . ' AND type:"file"'
-                ]
-            ]
-        ];
-
-        // catch any errors searching doc in indices which might be corrupt or deleted
-        try {
-            $queryResponse = $client->search($searchParams);
-        } catch (Exception $e) {
-            error_log('ES error: ' .$e->getMessage());
-            $ifk = array_search($key, $indices_filtered);
-            unset($indices_filtered[$ifk]);
-            unset($all_index_info[$key]);
-            continue;
-        }
-
-        // Get count of file docs
-        $all_index_info[$key]['file_count'] = $queryResponse['hits']['total']['value'];
-        // Get size of file docs
-        $all_index_info[$key]['file_size'] = $queryResponse['aggregations']['total_size']['value'];
-
-        $searchParams = [];
-        $searchParams['index'] = $key;
-
-        $searchParams['body'] = [
-            'size' => 0,
-            'track_total_hits' => true,
-            'query' => [
-                'query_string' => [
-                    'query' => $pp_query . ' AND type:"directory"'
-                ]
-            ]
-        ];
-
-        try {
-            $queryResponse = $client->search($searchParams);
-        } catch (Exception $e) {
-            error_log('ES error: ' .$e->getMessage());
-            $ifk = array_search($key, $indices_filtered);
-            unset($indices_filtered[$ifk]);
-            unset($all_index_info[$key]);
-            continue;
-        }
-
-        // Get total count of directory docs
-        $all_index_info[$key]['dir_count'] = $queryResponse['hits']['total']['value'];
-
         // Set the path finished to false
-        $all_index_info[$key]['finished'] = 0;
+        $all_index_info[$key]['finished'] = false;
 
         // Add to index totals
-        $all_index_info[$key]['totals']['filecount'] += $all_index_info[$key]['file_count'];
-        $all_index_info[$key]['totals']['filesize'] += $all_index_info[$key]['file_size'];
-        $all_index_info[$key]['totals']['dircount'] += $all_index_info[$key]['dir_count'];
         $all_index_info[$key]['totals']['crawltime'] += $all_index_info[$key]['crawl_time'];
     
         # add index to disabled_indices list
@@ -406,12 +335,12 @@ $estime = number_format(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 4);
                                         $checked = ($val == $index) ? 'checked' : '';
                                         $disabled = (in_array($val, $disabled_indices)) ? true : false;
                                         $startat = utcTimeToLocal($indexval['start_at']);
-                                        $endat = (is_null($indexval['end_at'])) ? "<span style=\"color:white\"><i class=\"fas fa-sync-alt\"></i> indexing...</span>" : utcTimeToLocal($indexval['end_at']);
-                                        $filecount = number_format($indexval['file_count']);
-                                        $dircount = number_format($indexval['dir_count']);
+                                        $endat = (is_null($indexval['end_at'])) ? "<span style=\"color:white\"><i class=\"fas fa-sync-alt\"></i> indexing... <br> (" . number_format($es_index_info[$val]['docs_count']) . " docs, " . number_format($es_index_info[$val]['docs_count'] / $indexval['crawl_time'], 1) . " docs/s)</span>" : utcTimeToLocal($indexval['end_at']);
+                                        $filecount = (is_null($indexval['file_count'])) ? "-" : number_format($indexval['file_count']);
+                                        $dircount = (is_null($indexval['dir_count'])) ? "-" : number_format($indexval['dir_count']);
                                         $crawltime = (is_null($indexval['crawl_time'])) ?: secondsToTime($indexval['crawl_time']);
-                                        $inodessec = number_format(($indexval['file_count'] + $indexval['dir_count']) / $indexval['crawl_time'], 1);
-                                        $filesize = formatBytes($indexval['file_size']);
+                                        $inodessec = (is_null($indexval['file_count'])) ? "-" : number_format(($indexval['file_count'] + $indexval['dir_count']) / $indexval['crawl_time'], 1);
+                                        $filesize = (is_null($indexval['file_size'])) ? "-" : formatBytes($indexval['file_size']);
                                         $indexsize = formatBytes($indexval['totals']['indexsize']);
                                         echo "<tr>
                                         <td>";
@@ -471,6 +400,16 @@ $estime = number_format(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 4);
                 </div>
             </div><br />
         <?php } ?>
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="pull-right small text-primary">
+                    <?php
+                    $time = number_format(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 4);
+                    echo "ES Time: {$estime}, Page Load Time: {$time}";
+                    ?>
+                </div>
+            </div>
+        </div>
     </div>
 
     <?php include 'modals.php' ?>
@@ -507,6 +446,8 @@ $estime = number_format(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 4);
                 ]
             });
         });
+        // log indexinfo time to console
+        console.log('indexinfotime: <?php echo $indexinfotime; ?> ms');
     </script>
 </body>
 
