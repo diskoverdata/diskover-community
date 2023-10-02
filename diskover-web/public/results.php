@@ -549,10 +549,8 @@ $hidecharts = getCookie('hidesearchcharts');
                                             <a class="pathdark" href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1&amp;q=parent_path:<?php echo rawurlencode(escape_chars($parentpath)); ?>&amp;path=<?php echo rawurlencode($parentpath); ?>"><?php echo $file['parent_path']; ?></a>
                                         </td>
                                     <?php } ?>
-                                    <th><?php echo formatBytes($file['size']); ?>
-                                    </td>
-                                    <?php if (!in_array('sizedu', $hiddencol)) { ?><th> <?php echo formatBytes($file['size_du']); ?>
-                                        </td><?php } ?>
+                                    <td><?php echo formatBytes($file['size']); ?></td>
+                                    <?php if (!in_array('sizedu', $hiddencol)) { ?><td><?php echo formatBytes($file['size_du']); ?></td><?php } ?>
                                     <?php if (!in_array('sizep', $hiddencol)) { ?><td>
                                             <?php $width = ($total_size > 0) ? $file['size'] / $total_size * 100 : 0; ?>
                                             <?php if ($width > 0) { ?>
@@ -561,54 +559,14 @@ $hidecharts = getCookie('hidesearchcharts');
                                                 </div>
                                             <?php } ?>
                                         </td><?php } ?>
-                                    <?php if (!in_array('modified', $hiddencol)) { ?><th><?php echo utcTimeToLocal($file['mtime']); ?></td><?php } ?>
-                                    <?php if (!in_array('accessed', $hiddencol)) { ?><th><?php echo utcTimeToLocal($file['atime']); ?></td><?php } ?>
+                                    <?php if (!in_array('modified', $hiddencol)) { ?><td><?php echo utcTimeToLocal($file['mtime']); ?></td><?php } ?>
+                                    <?php if (!in_array('accessed', $hiddencol)) { ?><td><?php echo utcTimeToLocal($file['atime']); ?></td><?php } ?>
                                     <?php if ($_GET['doctype'] == 'directory' || $_GET['doctype'] == '') { ?>
                                         <?php if (!in_array('files', $hiddencol)) { ?>
-                                            <th>
-                                                <?php if ($file['type'] == 'directory') {
-                                                    echo number_format($file['file_count']); ?>
-                                                    <!-- show comparison file count -->
-                                                    <?php if ($esIndex2 != "") { ?>
-                                                        <?php
-                                                        $filecount_change = 0;
-                                                        if ($file['file_count'] > 0 && $fileinfo_index2[3] > 0) {
-                                                            $filecount_change = number_format(changePercent($file['file_count'], $fileinfo_index2[3]), 1);
-                                                        } else if ($file['file_count'] > 0 && $fileinfo_index2[3] == 0) {
-                                                            $filecount_change = 100.0;
-                                                        }
-                                                        if ($filecount_change != 0) { ?>
-                                                            <br><small><?php echo number_format($fileinfo_index2[3]); ?>
-                                                                <br><span style="color:<?php echo $filecount_change > 0 ? "red" : "#29FE2F"; ?>;">(<?php echo $filecount_change > 0 ? '<i class="fa fa-caret-up"></i> +' : '<i class="fa fa-caret-down"></i>'; ?>
-                                                                    <?php echo $filecount_change; ?>%)</span></small>
-                                                    <?php }
-                                                    } ?>
-                                                    <!-- end show comparison file count -->
-                                                <?php } ?>
-                                            </td>
+                                            <td><?php if ($file['type'] == 'directory') { echo number_format($file['file_count']); ?><?php } ?></td>
                                         <?php } ?>
                                         <?php if (!in_array('folders', $hiddencol)) { ?>
-                                            <th>
-                                                <?php if ($file['type'] == 'directory') {
-                                                    echo number_format($file['dir_count']); ?>
-                                                    <!-- show comparison file count -->
-                                                    <?php if ($esIndex2 != "") { ?>
-                                                        <?php
-                                                        $dircount_change = 0;
-                                                        if ($file['dir_count'] > 0 && $fileinfo_index2[4] > 0) {
-                                                            $dircount_change = number_format(changePercent($file['dir_count'], $fileinfo_index2[4]), 1);
-                                                        } else if ($file['dir_count'] > 0 && $fileinfo_index2[4] == 0) {
-                                                            $dircount_change = 100.0;
-                                                        }
-                                                        if ($dircount_change != 0) { ?>
-                                                            <br><small><?php echo number_format($fileinfo_index2[4]); ?>
-                                                                <br><span style="color:<?php echo $dircount_change > 0 ? "red" : "#29FE2F"; ?>;">(<?php echo $dircount_change > 0 ? '<i class="fa fa-caret-up"></i> +' : '<i class="fa fa-caret-down"></i>'; ?>
-                                                                    <?php echo $dircount_change; ?>%)</span></small>
-                                                    <?php }
-                                                    } ?>
-                                                    <!-- end show comparison file count -->
-                                                <?php } ?>
-                                            </td>
+                                            <td><?php if ($file['type'] == 'directory') { echo number_format($file['dir_count']); ?><?php } ?></td>
                                         <?php } ?>
                                     <?php } ?>
                                     <?php if (!in_array('owner', $hiddencol)) { ?><td><?php echo $file['owner']; ?></td><?php } ?>

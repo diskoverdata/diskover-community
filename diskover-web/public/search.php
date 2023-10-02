@@ -267,6 +267,8 @@ $estime = number_format(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 4);
         $js_fullpaths = json_encode($fullpaths);
         echo "var js_fullpaths = " . $js_fullpaths . ";\n";
         ?>
+        // log indexinfo time to console
+        console.log('indexinfotime: <?php echo $indexinfotime; ?> ms');
     </script>
 </body>
 
