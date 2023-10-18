@@ -59,7 +59,7 @@ function get_dir_info($client, $index, $path) {
             ]
         ];
     } else {
-        $p = escape_chars(dirname($path));
+        $p = escape_chars(getDirName($path));
         $f = escape_chars(basename($path));
         $searchParams['body'] = [
             'size' => 1,

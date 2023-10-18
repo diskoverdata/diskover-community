@@ -136,7 +136,7 @@ $hidecharts = getCookie('hidesearchcharts');
                             $splitpath = explode('/', $path);
                             $x = substr_count($_SESSION['rootpath'], '/');
                             $splitpath = array_slice($splitpath, $x);
-                            $pathfull = dirname($_SESSION['rootpath']);
+                            $pathfull = getDirName($_SESSION['rootpath']);
                             if ($pathfull == '/') $pathfull = '';
                             $n = 0;
                             foreach ($splitpath as $pathitem) {

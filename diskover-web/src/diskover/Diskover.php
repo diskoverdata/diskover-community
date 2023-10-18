@@ -557,12 +557,23 @@ function setRootPath($p) {
 function getRootPath($p)
 {
     if ($p == $_SESSION['toppath']) return $p;
-    $p = dirname($p);
+    $p = getDirName($p);
     if ($p == '/') return $p;
     if ($p != '' && $p != '.') {
         return getRootPath($p);
     }
     return null;
+}
+
+
+// return parent directory path and handle Windows backslash
+function getDirName($path)
+{
+    $p = dirname($path);
+    if ($p == '/' || $p == '\\') {
+        return '/';
+    }
+    return $p;
 }
 
 
@@ -906,7 +917,7 @@ function changePercent($a, $b)
 function getParentDir($p)
 {
     if (strlen($p) > strlen($_SESSION['rootpath'])) {
-        return dirname($p);
+        return getDirName($p);
     } else {
         return $_SESSION['rootpath'];
     }

@@ -1,5 +1,10 @@
 # Diskover-web v2 Community Edition Change Log
 
+# [2.2.1] - 2023-10-17
+### fixed
+- Windows issues
+
+
 # [2.2.0] - 2023-10-07
 ### fixed
 - slow logins when indexing
