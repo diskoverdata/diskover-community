@@ -21,6 +21,7 @@ https://www.diskoverdata.com/solutions/
 namespace diskover;
 use diskover\Constants;
 use ReflectionClass;
+error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE & ~E_DEPRECATED);
 
 class Config
 {

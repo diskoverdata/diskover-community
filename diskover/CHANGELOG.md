@@ -1,6 +1,6 @@
 # Diskover v2 Community Edition Change Log
 
-# [2.2.1] - 2023-10-17
+# [2.2.1] - 2023-11-03
 ### changed
 - version change only
 

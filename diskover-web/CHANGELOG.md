@@ -1,8 +1,9 @@
 # Diskover-web v2 Community Edition Change Log
 
-# [2.2.1] - 2023-10-17
+# [2.2.1] - 2023-11-03
 ### fixed
 - Windows issues
+- hide php notices, warnings, deprecated messages from nginx error log
 
 
 # [2.2.0] - 2023-10-07
