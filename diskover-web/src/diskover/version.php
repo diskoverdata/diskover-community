@@ -17,4 +17,4 @@ https://www.diskoverdata.com/solutions/
 */
 
 // diskover-web version
-$VERSION = '2.2.1 community edition (ce)';
+$VERSION = '2.2.2 community edition (ce)';

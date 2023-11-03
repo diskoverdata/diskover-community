@@ -19,6 +19,7 @@ https://www.diskoverdata.com/solutions/
 session_start();
 use Elasticsearch\ClientBuilder;
 use Elasticsearch\Common\Exceptions\Missing404Exception;
+error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE & ~E_DEPRECATED);
 require 'version.php';
 require 'config_inc.php';
 

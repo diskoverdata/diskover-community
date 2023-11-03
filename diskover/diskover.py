@@ -42,7 +42,7 @@ from diskover_helpers import dir_excluded, file_excluded, \
     get_file_name, load_plugins, list_plugins, get_plugins_info, set_times, \
     get_mem_usage, get_win_path, rem_win_path
 
-version = '2.2.1 community edition (ce)'
+version = '2.2.2 community edition (ce)'
 __version__ = version
 
 # Windows check
