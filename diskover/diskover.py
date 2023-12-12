@@ -1332,37 +1332,28 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
     logger.info('Config file: {0}'.format(config_filename))
     logger.info('Config env var DISKOVERDIR: {0}'.format(os.getenv('DISKOVERDIR')))
 
-    # print plugins
-    if plugins_enabled and plugins:
-        plugins_list = ''
-        for pi in get_plugins_info():
-            plugins_list = plugins_list + pi['name'] + ' '
-        logger.info('Plugins loaded: {0}'.format(plugins_list))
-    else:
-        logger.info('No plugins loaded')
-
-    # init and print plugins
-    if plugins_enabled and plugins:
-        for plugin in plugins:
-            if hasattr(plugin, 'init'):
-                try:
-                    plugin.init(globals())
-                except Exception as e:
-                    raise PluginError(e)
-    # print plugins
-    if plugins_enabled and plugins:
-        plugins_list = ''
-        for pi in get_plugins_info():
-            plugins_list = plugins_list + pi['name'] + ' '
-        logger.info('Plugins loaded: {0}'.format(plugins_list))
-    else:
-        logger.info('No plugins loaded')
-
     try:
         logger.info('Creating index {0}...'.format(options.index))
         create_index(options.index, es)
 
         tune_index(es, options.index)
+
+        # init plugins
+        if plugins_enabled and plugins:
+            for plugin in plugins:
+                if hasattr(plugin, 'init'):
+                    try:
+                        plugin.init(globals())
+                    except Exception as e:
+                        raise PluginError(e)
+        # print plugins
+        if plugins_enabled and plugins:
+            plugins_list = ''
+            for pi in get_plugins_info():
+                plugins_list = plugins_list + pi['name'] + ' '
+            logger.info('Plugins loaded: {0}'.format(plugins_list))
+        else:
+            logger.info('No plugins loaded')
         
         # check for thread config override
         if options.threads:

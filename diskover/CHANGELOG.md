@@ -1,5 +1,12 @@
 # Diskover v2 Community Edition Change Log
 
+# [2.2.2] - 2023-12-12
+### added
+- index gets deleted if diskover.py exits with critical error
+### fixed
+- moved plugin init call below create_index() so we can access the current index
+
+
 # [2.2.1] - 2023-11-03
 ### changed
 - version change only
