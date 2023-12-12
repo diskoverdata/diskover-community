@@ -28,13 +28,13 @@ https://www.diskoverdata.com/solutions/
     padding-left: 25px;
     background-color: #222222;
     position: fixed;
-    width: 300px;
+    width: 325px;
 }
 
 .search-results-wrapper {
     padding-left: 10px;
-    margin-left: 300px;
-    width: calc(100% - 300px);
+    margin-left: 325px;
+    width: calc(100% - 325px);
     overflow: auto;
     display: block;
 }
@@ -48,7 +48,7 @@ https://www.diskoverdata.com/solutions/
 }
 
 .tree-button-wrapper {
-    width: 300px;
+    width: 325px;
     position: fixed;
     margin: 0px auto;
     padding: 5px;
@@ -139,12 +139,24 @@ https://www.diskoverdata.com/solutions/
     font-size: 12px;
     padding-left: 2px;
     padding-right: 2px;
+    text-decoration: none!important;
 }
 
 .node .filesize-darkergray {
     color: #6E7681;
     font-size: 12px;
     padding-left: 2px;
+}
+
+.node .downarrow {
+    font-size: 9px;
+    font-weight: bold;
+    color: gray;
+    margin-right: 2px;
+}
+
+.node .downarrow-spacer {
+    margin-right: 11px;
 }
 
 /* d3 tool tip */

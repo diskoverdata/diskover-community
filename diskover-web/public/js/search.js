@@ -198,6 +198,56 @@ function hideCharts() {
     }
 }
 
+function getChildJSON(d) {
+    // get json data from Elasticsearch using php data grabber
+    //console.log("getting children from Elasticsearch: " + d.name);
+
+    // config references
+    chartConfig = {
+        target: 'tree-container',
+        data_url: 'd3_data_search.php?path=' + encodeURIComponent(d.name) + '&filter=1&time=0&use_count=0&show_files=0&usecache=' + usecache
+    };
+
+    // loader settings
+    opts = {
+        lines: 12, // The number of lines to draw
+        length: 6, // The length of each line
+        width: 3, // The line thickness
+        radius: 7, // The radius of the inner circle
+        color: '#EE3124', // #rgb or #rrggbb or array of colors
+        speed: 1.9, // Rounds per second
+        trail: 40, // Afterglow percentage
+        className: 'spinner', // The CSS class to assign to the spinner
+    };
+
+    var target = document.getElementById(chartConfig.target);
+    // trigger loader
+    var spinner = new Spinner(opts).spin(target);
+    //console.log(chartConfig.data_url)
+
+    // load json data and trigger callback
+    d3.json(chartConfig.data_url, function (error, data) {
+        if (error) {
+            jsonError(error);
+        } else if (data.count === 0 && data.size === 0) {
+            spinner.stop();
+            console.warn('No docs found in Elasticsearch');
+            return false;
+        }
+
+        if (data.children.length > 0) {
+            // update children in root
+            d._children = [];
+            d._children = data.children;
+        }
+
+        // stop spin.js loader
+        spinner.stop();
+
+    });
+
+}
+
 function getJSONFileTree() {
     console.time('treeloadtime')
     // get json data from Elasticsearch using php data grabber
@@ -244,7 +294,7 @@ function getJSONFileTree() {
         console.timeEnd('treeloadtime');
         // load file tree
         if (getCookie('hidesearchtree') != 1) {
-            updateTree(root, root);
+            updateTree(root, root, true);
         }
     });
 }
@@ -260,12 +310,29 @@ function toggleChildren(d) {
 }
 
 function click(d) {
-    location.href = "search.php?submitted=true&p=1&q=parent_path:" + encodeURIComponent(escapeHTML(d.name)) + "&path=" + encodeURIComponent(d.name);
+    //console.log(d)
+    if (d.name == root.name) {
+        return null;
+    }
+    if (d.count > 1 && !d.children && !d._children) {
+        // check if there are any children in Elasticsearch
+        getChildJSON(d);
+    } else if (d._children) {
+        toggleChildren(d);
+        updateTree(root, d, false);
+    } else if (d.children) {
+        toggleChildren(d);
+        updateTree(root, d, false);
+    }
 }
 
-function updateTree(data, parent) {
-    var nodes = tree.nodes(data),
-        treeduration = 0;
+function updateTree(data, parent, isroot) {
+    var nodes = tree.nodes(data);
+    if (isroot) {
+        var treeduration = 0;
+    } else {
+        var treeduration = 125;
+    }
 
     var nodeEls = ul.selectAll("li.node").data(nodes, function (d) {
         d.id = d.id || ++id;
@@ -278,21 +345,51 @@ function updateTree(data, parent) {
         .style("opacity", 0)
         .style("height", tree.nodeHeight() + "px");
 
-    //add icons for folder for file
+    //add arrows if it is a folder
     entered.append("span").attr("class", function (d) {
-            var foldericon = "fa-folder";
-            var icon = (d.count > 0 || d.type === 'directory') ? foldericon : "fa-file";
-            return "fas " + icon;
+        var icon = d.children ? " glyphicon-chevron-down" :
+        (d.count_subdirs > 1) ? "glyphicon-chevron-right" : "";
+        if (icon == "" && d.type == "directory") {
+            return "downarrow-spacer";
+        }
+        return "downarrow glyphicon " + icon;
+    })
+    .style('cursor', 'pointer')
+    .on("click", function (d) {
+        click(d);
+    })
+    .on("mouseover", function (d) {
+        if (d.count > 1 && !d.children && !d._children) {
+            // check if there are any children in Elasticsearch   
+            t = setTimeout(function () {
+                getChildJSON(d);
+            }, 150);
+        }
+    })
+    .on("mouseout", function (d) {
+        clearTimeout(t);
+    });
+
+    //add icon for folder
+    entered.append("span").attr("class", function (d) {
+            return "fas fa-folder"
         })
         .style('cursor', 'pointer')
         .on("click", function (d) {
             click(d);
         })
         .on("mouseover", function (d) {
+            if (d.count > 1 && !d.children && !d._children) {
+                // check if there are any children in Elasticsearch
+                t = setTimeout(function () {
+                    getChildJSON(d);
+                }, 150);
+            }
             tip.show(d, this);
         })
         .on('mouseout', function (d) {
             tip.hide(d);
+            clearTimeout(t);
         })
         .on('mousemove', function () {
             return tip
@@ -306,15 +403,22 @@ function updateTree(data, parent) {
             return d.depth === 0 ? d.name : d.name.split('/').pop();
         })
         .on("click", function (d) {
-            click(d);
+            location.href = "search.php?submitted=true&p=1&q=parent_path:" + encodeURIComponent(escapeHTML(d.name)) + "&path=" + encodeURIComponent(d.name);
         })
         .on("mouseover", function (d) {
             d3.select(this).classed("selected", true);
             tip.show(d, this);
+            if (d.count > 1 && !d.children && !d._children) {
+                // check if there are any children in Elasticsearch
+                t = setTimeout(function () {
+                    getChildJSON(d);
+                }, 150);
+            }
         })
         .on('mouseout', function (d) {
             d3.selectAll(".selected").classed("selected", false);
             tip.hide(d);
+            clearTimeout(t);
         })
         .on('mousemove', function () {
             return tip
@@ -332,12 +436,18 @@ function updateTree(data, parent) {
     entered.append("span")
     .html(function (d) {
         var barpercent = (d.size / root.size * 100 / 1.5).toFixed(1) + '%';
-        var ret = "<div style=\"position:relative; top:-3px; z-index:-99; height:4px; width:" + barpercent + "; background-image: linear-gradient(to right, #202327, #DB3A13);\"> </div>";
+        var ret = "<div style=\"position:relative; top:-3px; left:11px; z-index:-99; height:4px; width:" + barpercent + "; background-image: linear-gradient(to right, #202327, #DB3A13);\"> </div>";
         var barpercent = (d.count / root.count * 100 / 1.5).toFixed(1) + '%';
-        ret += "<div style=\"position:relative; top:-3px; z-index:-99; height:4px; width:" + barpercent + "; background-image: linear-gradient(to right, #202327, #FF9901);\"> </div>";
+        ret += "<div style=\"position:relative; top:-3px; left:11px; z-index:-99; height:4px; width:" + barpercent + "; background-image: linear-gradient(to right, #202327, #FF9901);\"> </div>";
         return ret;
     });
 
+    //update caret arrow direction
+    nodeEls.select("span.downarrow").attr("class", function (d) {
+        var icon = d.children ? " glyphicon-chevron-down" :
+            d._children || d.count > 0 ? "glyphicon-chevron-right" : "";
+        return "downarrow glyphicon " + icon;
+    });
     //update position with transition
     nodeEls.transition().duration(treeduration)
         .style("top", function (d) {
@@ -417,7 +527,8 @@ $(function () {
             data_url1: 'd3_data_search_dirsizechart.php?path=' + encodeURIComponent(path) + '&usecount=0&usecache=' + usecache,
             data_url2: 'd3_data_search_dirsizechart.php?path=' + encodeURIComponent(path) + '&usecount=1&usecache=' + usecache,
             data_url3: 'd3_data_pie_ext_searchresults.php?path=' + encodeURIComponent(path) + '&usecache=' + usecache,
-            data_url4: 'd3_data_bar_mtime_searchresults.php?path=' + encodeURIComponent(path) + '&usecache=' + usecache
+            data_url4: 'd3_data_bar_mtime_searchresults.php?path=' + encodeURIComponent(path) + '&usecache=' + usecache,
+            data_url5: 'd3_data_bar_atime_searchresults.php?path=' + encodeURIComponent(path) + '&usecache=' + usecache
         };
 
         // loader settings
@@ -443,6 +554,7 @@ $(function () {
         console.log(chartConfig.data_url2)
         console.log(chartConfig.data_url3)
         console.log(chartConfig.data_url4)
+        console.log(chartConfig.data_url5)
 
         // load json data from Elasticsearch
         // use d3 queue to load json files simultaneously
@@ -451,7 +563,8 @@ $(function () {
             .defer(d3.json, chartConfig.data_url2)
             .defer(d3.json, chartConfig.data_url3)
             .defer(d3.json, chartConfig.data_url4)
-            .await(function (error, data1, data2, data3, data4) {
+            .defer(d3.json, chartConfig.data_url5)
+            .await(function (error, data1, data2, data3, data4, data5) {
                 // handle error
                 if (error) {
                     jsonError(error);
@@ -461,15 +574,16 @@ $(function () {
                 data2 = data2.children;
                 data3 = data3.children;
                 data4 = data4.children;
+                data5 = data5.children;
 
                 // stop spin.js loader
                 spinner.stop();
                 console.timeEnd('chartloadtime');
-                renderCharts(data1, data2, data3, data4);
+                renderCharts(data1, data2, data3, data4, data5);
             });
     }
 
-    function renderCharts(data1, data2, data3, data4) {
+    function renderCharts(data1, data2, data3, data4, data5) {
         // chart settings
         var ticksStyle = {
             fontColor: '#495057',
@@ -992,7 +1106,7 @@ $(function () {
                 },
                 title: {
                     display: true,
-                    text: 'File Age by Size'
+                    text: 'File Age by Size Modified'
                 },
                 maintainAspectRatio: false,
                 onClick: function(event, clickedElements) {
@@ -1032,6 +1146,157 @@ $(function () {
 
             //--------------------
             //- END STACKED BAR MTIME CHART -
+            //--------------------
+
+        }
+
+        // hide charts if no files
+        if (data5.length === 0) {
+            $('#atime-Chart-container').hide();
+        } else {
+
+            //----------------
+            //- STACKED BAR ATIME CHART -
+            //----------------
+
+            var datasets = []
+
+            // get total size and count
+            var totalsize = 0;
+            var totalcount = 0;
+            for (var i in data5) {
+                totalsize += data5[i].size;
+                totalcount += data5[i].count;
+            }
+
+            for (var i in data5) {
+                datasets.push({
+                    label: data5[i].atime,
+                    data: [(data5[i].size / totalsize * 100).toFixed(1)],
+                    size: data5[i].size,
+                    count: data5[i].count,
+                    backgroundColor: hot_cold_colors[i],
+                    borderColor: '#2F3338'
+                })
+            }
+
+            datasets.reverse();
+
+            var atimebarChartCanvas = $("#atime-barChart")
+            var atimebarData = {
+                labels: ['Last Accessed'],
+                datasets: datasets
+            }
+            var atimebarOptions = {
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: {
+                        fontColor: '#C8C8C8'
+                    },
+                    onClick: function (event, legendItem, legend) {
+                        var atime = legendItem.text;
+                        if (atime == "0 - 30 days") {
+                            atime = "[now/m-1M/d TO now/m}"
+                        } else if (atime == "30 - 90 days") {
+                            atime = "[now/m-3M/d TO now/m-1M/d}"
+                        } else if (atime == "90 - 180 days") {
+                            atime = "[now/m-6M/d TO now/m-3M/d}"
+                        } else if (atime == "180 days - 1 year") {
+                            atime = "[now/m-1y/d TO now/m-6M/d}"
+                        } else if (atime == "1 - 2 years") {
+                            atime = "[now/m-2y/d TO now/m-1y/d}"
+                        } else if (atime == "> 2 years") {
+                            atime = "[* TO now/m-2y/d}"
+                        }
+                        var pp = encodeURIComponent(escapeHTML(decodeURIComponent(path)));
+                        window.open("search.php?submitted=true&p=1&q=atime:" + atime + " AND parent_path:" + pp + "* AND " + sizefield + ":>=" + filter + "&doctype=file");
+                        return false;
+                    },
+                    onHover: function (event, legendItem, legend) {
+                        $("#atime-barChart").css("cursor", "pointer");
+                    },
+                    onLeave: function (event, legendItem, legend) {
+                        $("#atime-barChart").css("cursor", "default");
+                    }
+                },
+                tooltips: {
+                    mode: 'single',
+                    callbacks: {
+                        label: function (tooltipItem, data5) {
+                            var i = tooltipItem.datasetIndex;
+                            var currentValue = data5.datasets[i].size;
+                            var currentCount = data5.datasets[i].count;
+                            var percentage = parseFloat((currentValue/totalsize*100).toFixed(1));
+                            return data5.datasets[i].label + ': ' + format(currentValue) + ' (' + percentage +'%) (' + numberWithCommas(currentCount) + ' items)';
+                        }
+                    }
+                },
+                scales: {
+                    xAxes: [{
+                        display: true,
+                        stacked: true,
+                        gridLines: {
+                            display: false
+                        },
+                        ticks: {
+                            min: 0,
+                            max: 100,
+                            callback: function (value) {
+                                return value + '%'
+                            }
+                        }
+                    }],
+                    yAxes: [{
+                        display: false,
+                        stacked: true,
+                        gridLines: {
+                            display: false
+                        }
+                    }]
+                },
+                title: {
+                    display: true,
+                    text: 'File Age by Size Accessed'
+                },
+                maintainAspectRatio: false,
+                onClick: function(event, clickedElements) {
+                    if (clickedElements.length === 0) return;
+                    var activeElement = atimebarChart.getElementAtEvent(event);
+                    var atime = this.data.datasets[activeElement[0]._datasetIndex].label;
+                    if (atime == "0 - 30 days") {
+                        atime = "[now/m-1M/d TO now/m}"
+                    } else if (atime == "30 - 90 days") {
+                        atime = "[now/m-3M/d TO now/m-1M/d}"
+                    } else if (atime == "90 - 180 days") {
+                        atime = "[now/m-6M/d TO now/m-3M/d}"
+                    } else if (atime == "180 days - 1 year") {
+                        atime = "[now/m-1y/d TO now/m-6M/d}"
+                    } else if (atime == "1 - 2 years") {
+                        atime = "[now/m-2y/d TO now/m-1y/d}"
+                    } else if (atime == "> 2 years") {
+                        atime = "[* TO now/m-2y/d}"
+                    }
+                    var pp = encodeURIComponent(escapeHTML(decodeURIComponent(path)));
+                    window.open("search.php?submitted=true&p=1&q=atime:" + atime + " AND parent_path:" + pp + "* AND " + sizefield + ":>=" + filter + "&doctype=file");
+                    return false;
+                },
+                onHover: function (event, legendItem, legend) {
+                    $("#atime-barChart").css("cursor", "pointer");
+                },
+                onLeave: function (event, legendItem, legend) {
+                    $("#atime-barChart").css("cursor", "default");
+                }
+            }
+
+            var atimebarChart = new Chart(atimebarChartCanvas, {
+                type: 'horizontalBar',
+                data: atimebarData,
+                options: atimebarOptions
+            })
+
+            //--------------------
+            //- END STACKED BAR ATIME CHART -
             //--------------------
 
         }
