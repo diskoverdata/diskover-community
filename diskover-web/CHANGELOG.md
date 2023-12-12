@@ -1,9 +1,17 @@
 # Diskover-web v2 Community Edition Change Log
 
-# [2.2.2] - 2023-
+# [2.2.2] - 2023-12-12
 ### fixed
 - issue with search page occasionally not loading results
 - issue with File Age Modified chart on search results page showing undefined on mouse over
+- dashboard freezing when large index selected
+- changing FILE_TYPES config setting not updating dashboard file type usage chart
+### added
+- loading spinner to dashboard
+- clickable bars on dashboard File Type Usage chart
+- File Age by Size Accessed chart to dashboard
+- File Age Accessed chart to search results page chart dropdown menu
+- collapsible file tree on search page
 
 
 # [2.2.1] - 2023-11-03
