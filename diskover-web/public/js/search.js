@@ -907,7 +907,7 @@ $(function () {
             for (var i in data4) {
                 datasets.push({
                     label: data4[i].mtime,
-                    data: [(data4[i].size / totalsize * 100).toFixed(1), (data4[i].count / totalcount * 100).toFixed(1)],
+                    data: [(data4[i].size / totalsize * 100).toFixed(1)],
                     size: data4[i].size,
                     count: data4[i].count,
                     backgroundColor: hot_cold_colors[i],
