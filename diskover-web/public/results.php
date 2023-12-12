@@ -161,16 +161,22 @@ $hidecharts = getCookie('hidesearchcharts');
                             <div class="form-group">
                                 <label for="chart">Chart </label>
                                 <select class="form-control input-sm" name="chart" id="chart" onchange="setCookie('searchchart', this.value); location.reload(true)">
-                                    <option value="fileage" <?php echo (getCookie('searchchart') == 'fileage' || getCookie('searchchart') == '') ? 'selected' : ''; ?>>File Age</option>
+                                    <option value="fileage_mtime" <?php echo (getCookie('searchchart') == 'fileage_mtime' || getCookie('searchchart') == '') ? 'selected' : ''; ?>>File Age Modified</option>
+                                    <option value="fileage_atime" <?php echo (getCookie('searchchart') == 'fileage_atime') ? 'selected' : ''; ?>>File Age Accessed</option>
                                     <option value="topdirs" <?php echo (getCookie('searchchart') == 'topdirs') ? 'selected' : ''; ?>>Top Directories</option>
                                     <option value="topfiletypes" <?php echo (getCookie('searchchart') == 'topfiletypes') ? 'selected' : ''; ?>>Top File Types</option>
                                 </select>
                             </div>
                             </form>
                             <div id="charts-container" style="margin:0 auto; width:100%;">
-                                <?php if (getCookie('searchchart') == 'fileage' || getCookie('searchchart') == '') { ?>
+                                <?php if (getCookie('searchchart') == 'fileage_mtime' || getCookie('searchchart') == '') { ?>
                                 <div style="margin:0 auto; width:100%; height:125px; margin-bottom:10px; border:1px solid #121416; padding:5px" id="mtime-Chart-container">
                                     <canvas id="mtime-barChart"></canvas>
+                                </div>
+                                <?php } ?>
+                                <?php if (getCookie('searchchart') == 'fileage_atime') { ?>
+                                <div style="margin:0 auto; width:100%; height:125px; margin-bottom:10px; border:1px solid #121416; padding:5px" id="atime-Chart-container">
+                                    <canvas id="atime-barChart"></canvas>
                                 </div>
                                 <?php } ?>
                                 <div style="margin:0 auto; width:100%;">

@@ -356,7 +356,7 @@ function subdirs_name_sort($a, $b) {
 }
 
 
-function get_file_mtime($client, $index, $path, $filter, $mtime) {
+function get_file_time($client, $index, $path, $filter, $time, $timefield) {
     // gets file modified ranges
     $items = [];
     $searchParams['body'] = [];
@@ -372,7 +372,7 @@ function get_file_mtime($client, $index, $path, $filter, $mtime) {
                 'query' => [
                     'query_string' => [
                         'query' => 'parent_path: ' . $escapedpath . '* 
-                        AND mtime:[* TO ' . $mtime . '] AND '.$_COOKIE['sizefield'].': >=' . $filter . ' AND type:"file"',
+                        AND '.$timefield.':[* TO ' . $time . '] AND '.$_COOKIE['sizefield'].': >=' . $filter . ' AND type:"file"',
                         'analyze_wildcard' => 'true'
                     ]
                 ]
@@ -384,7 +384,7 @@ function get_file_mtime($client, $index, $path, $filter, $mtime) {
                 'query_string' => [
                     'query' => '(parent_path: ' . $escapedpath . ' OR
                     parent_path: ' . $escapedpath . '\/*) AND
-                    mtime: [* TO ' . $mtime . ']  AND '.$_COOKIE['sizefield'].': >=' . $filter . ' AND type:"file"',
+                    '.$timefield.': [* TO ' . $time . ']  AND '.$_COOKIE['sizefield'].': >=' . $filter . ' AND type:"file"',
                     'analyze_wildcard' => 'true'
                 ]
             ]
@@ -395,7 +395,7 @@ function get_file_mtime($client, $index, $path, $filter, $mtime) {
         'aggs' => [
             'mtime_ranges' => [
                 'range' => [
-                    'field' => 'mtime',
+                    'field' => $timefield,
                     'keyed' => true,
                     'ranges' => [
                         ['key' => '0 - 30 days', 'from' => 'now/m-1M/d', 'to' => 'now/m'],
@@ -432,7 +432,7 @@ function get_file_mtime($client, $index, $path, $filter, $mtime) {
     // Add mtimes to items array
     foreach ($results as $key => $result) {
         $items[] = [
-                    "mtime" => $key,
+                    $timefield => $key,
                     "count" => $result['doc_count'],
                     "size" => $result['file_size']['value']
                     ];

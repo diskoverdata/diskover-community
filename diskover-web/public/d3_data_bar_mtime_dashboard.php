@@ -33,7 +33,7 @@ if ($_SESSION["diskover_cache_chartfilemtime_dashboard"][$esIndex][$_SESSION['ro
         "name" => $_SESSION['rootpath'],
         "size" => $dirinfo[0],
         "count" => $dirinfo[2],
-        "children" => get_file_mtime($client, $esIndex, $_SESSION['rootpath'], $filter, $time)
+        "children" => get_file_time($client, $esIndex, $_SESSION['rootpath'], $filter, $time, 'mtime')
     ];
 
     // cache path data in session

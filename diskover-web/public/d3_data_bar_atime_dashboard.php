@@ -1,7 +1,6 @@
 <?php
 /*
-diskover-web community edition (ce)
-https://github.com/diskoverdata/diskover-community/
+diskover-web
 https://diskoverdata.com
 
 Copyright 2017-2023 Diskover Data, Inc.
@@ -19,31 +18,25 @@ https://www.diskoverdata.com/solutions/
 require '../vendor/autoload.php';
 require "d3_inc.php";
 
-// return empty array if chart not selected
-if (getCookie('searchchart') != 'fileage_mtime' && getCookie('searchchart') != "") {
-    echo json_encode(["children" => []]);
-    exit;
-}
-
 // check if path in session cache
-if ($_SESSION["diskover_cache_chartfilemtime_searchresults"][$esIndex][$_REQUEST['path']] && $_GET['usecache'] == 1) {
-    $data = $_SESSION["diskover_cache_chartfilemtime_searchresults"][$esIndex][$_REQUEST['path']];
+if ($_SESSION["diskover_cache_chartfileatime_dashboard"][$esIndex][$_SESSION['rootpath']] && $_GET['usecache'] == 1) {
+    $data = $_SESSION["diskover_cache_chartfileatime_dashboard"][$esIndex][$_SESSION['rootpath']];
 } else {
     // get mtime in ES format
     $time = gettime($time);
-    
+
     // get dir total size and file count
-    $dirinfo = get_dir_info($client, $esIndex, $_REQUEST['path']);
+    $dirinfo = get_dir_info($client, $esIndex, $_SESSION['rootpath']);
 
     $data = [
-        "name" => $_REQUEST['path'],
+        "name" => $_SESSION['rootpath'],
         "size" => $dirinfo[0],
         "count" => $dirinfo[2],
-        "children" => get_file_time($client, $esIndex, $_REQUEST['path'], $filter, $time, 'mtime')
+        "children" => get_file_time($client, $esIndex, $_SESSION['rootpath'], $filter, $time, 'atime')
     ];
 
     // cache path data in session
-    $_SESSION["diskover_cache_chartfilemtime_searchresults"][$esIndex][$_REQUEST['path']] = $data;
+    $_SESSION["diskover_cache_chartfileatime_dashboard"][$esIndex][$_SESSION['rootpath']] = $data;
 }
 
 echo json_encode($data);

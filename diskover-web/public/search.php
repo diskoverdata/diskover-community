@@ -192,11 +192,6 @@ if (!empty($_GET['submitted'])) {
                 }
             }
             arsort($ext_onpage);
-            // clear current scroll window
-            if (!empty($scroll_id)) {
-                $client->clearScroll(array('scroll_id' => $scroll_id));
-                $scroll_id = null;
-            }
             // end loop
             break;
         }
