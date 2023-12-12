@@ -1,5 +1,11 @@
 # Diskover-web v2 Community Edition Change Log
 
+# [2.2.2] - 2023-
+### fixed
+- issue with search page occasionally not loading results
+- issue with File Age Modified chart on search results page showing undefined on mouse over
+
+
 # [2.2.1] - 2023-11-03
 ### fixed
 - Windows issues
