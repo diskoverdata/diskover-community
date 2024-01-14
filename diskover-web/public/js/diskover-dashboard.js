@@ -28,6 +28,9 @@ $(function () {
             $('#mainwindow').html(data);
             $('#loading_spinner').hide();
 
+            var estime = $('#estime').val();
+            $('#es-time').html(estime);
+
             var ticksStyle = {
                 fontColor: '#495057',
                 fontStyle: 'bold'

@@ -3,6 +3,7 @@
 # [2.3.0] - 2024-
 ### fixed
 - getting logged out when LOGIN_REQUIRED set to false in config
+- es time not showing on dashboard
 ### added
 - config settings are now stored in sqlite db
 - new tabs to settings page

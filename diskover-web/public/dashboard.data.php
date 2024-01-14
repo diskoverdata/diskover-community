@@ -35,9 +35,6 @@ $fileGroups_colors = [
 $randcolor = array('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f');
 
 
-$estime = number_format(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 4);
-
-
 // Get info about index
 $searchParams['index'] = $esIndex;
 $searchParams['body'] = [
@@ -365,6 +362,8 @@ try {
 
 $largestdirs = $queryResponse['hits']['hits'];
 
+$estime = number_format(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 4);
+
 ?>
 
 <div class="row">
@@ -608,3 +607,4 @@ $largestdirs = $queryResponse['hits']['hits'];
         </div>
     </div>
 </div>
+<form><input type="hidden" id="estime" name="estime" value="<?php echo $estime ?>" /></form>

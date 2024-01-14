@@ -76,7 +76,7 @@ require "d3_inc.php";
                 <div class="pull-right small text-primary">
                     <?php
                     $time = number_format(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 4);
-                    echo "ES Time: {$estime}, Page Load Time: {$time}";
+                    echo "ES Time: <span id=\"es-time\"></span>, Page Load Time: {$time}";
                     ?>
                 </div>
             </div>
@@ -93,7 +93,6 @@ require "d3_inc.php";
     <script language="javascript" src="js/spin.min.js"></script>
     <script language="javascript" src="js/Chart.bundle.min.js"></script>
     <script language="javascript" src="js/diskover-dashboard.js"></script>
-
 </body>
 
 </html>
