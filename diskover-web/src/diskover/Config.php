@@ -19,9 +19,9 @@ https://www.diskoverdata.com/solutions/
 // diskover-web community edition (ce) config handling
 
 namespace diskover;
-use diskover\Constants;
-use ReflectionClass;
 error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE & ~E_DEPRECATED);
+
+class ConfigConstants { }
 
 class Config
 {
@@ -29,18 +29,14 @@ class Config
 
     public function getConfig()
     {
-        require 'config_defaults.php';
-        // check for any missing config settings in Constants.php and if any are missing use default
-        $config = new Constants;
-        $refl = new ReflectionClass('diskover\Constants');
-        $consts = $refl->getConstants();
-        foreach ($config_defaults as $configkey => $configval) {
-            if (!array_key_exists($configkey, $consts)) {
-                error_log("Missing config setting $configkey. Using default.");
-                $config->{$configkey} = $configval;
-            } else {
-                $config->{$configkey} = $consts[$configkey];
-            }
+        // load settings table in sqlite db
+        // Load database and get config settings.
+        $db = new ConfigDatabase();
+        $db->connect();
+        $config_db = $db->getConfigSettings();
+        $config = new ConfigConstants;
+        foreach ($config_db as $configkey => $configval) {
+            $config->{$configkey} = $configval;
         }
         return $config;
     }

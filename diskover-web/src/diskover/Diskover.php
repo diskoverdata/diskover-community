@@ -34,8 +34,11 @@ $esIndex = $path = $toppath = $es_index_info = $all_index_info = $completed_indi
 $fileGroups_extensions = $config->FILE_TYPES;
 
 // create ES client connection
-$esclient = new ESClient;
-$client = $esclient->createClient();
+if (strpos($_SERVER['REQUEST_URI'], 'settings.php') === false &&
+    strpos($_SERVER['REQUEST_URI'], 'settings_tests.php') === false) {
+    $esclient = new ESClient;
+    $client = $esclient->createClient();
+}
 
 // Set d3 vars
 setd3Vars();
@@ -52,7 +55,9 @@ $timezone = getenv('TZ') ?: $config->TIMEZONE;
 
 // get/set index info
 if (strpos($_SERVER['REQUEST_URI'], 'd3_data') === false && 
-    strpos($_SERVER['REQUEST_URI'], 'searchkeypress.php') === false) {
+    strpos($_SERVER['REQUEST_URI'], 'searchkeypress.php') === false &&
+    strpos($_SERVER['REQUEST_URI'], 'settings.php') === false &&
+    strpos($_SERVER['REQUEST_URI'], 'settings_tests.php') === false) {
     indexInfo();
 }
 
@@ -455,6 +460,10 @@ function indexInfo()
 
 // handle errors
 function handleError($e, $redirect = true, $ajax = false, $throwexception = false) {
+    if (strpos($_SERVER['REQUEST_URI'], 'settings.php') || 
+        strpos($_SERVER['REQUEST_URI'], 'settings_tests.php')) {
+        return;
+    }
     // Log error
     error_log(" Error: " . $e . " ");
     if ($ajax) {
@@ -1228,6 +1237,7 @@ function curl_es($url, $request = null, $return_json = true)
     // Get response time
     $info = curl_getinfo($curl);
     $es_responsetime = $info['total_time'];
+    $_SESSION['es_responsetime'] = $es_responsetime;
     // Close request to clear up some resources
     curl_close($curl);
     if ($return_json) {

@@ -20,9 +20,14 @@ ini_set("session.cookie_lifetime", 604800);
 session_set_cookie_params(604800, "/");
 session_start();
 
+require '../vendor/autoload.php';
+require '../src/diskover/config_inc.php';
+
 // check if session timeout exceeded and if so, log user out by responding with logout to ajax post request in diskover.js
 if (isset($_POST)) {
-    if ($_SESSION['stayloggedin'] && time() - $_SESSION['last_activity'] > 604800) {
+    if (!$config->LOGIN_REQUIRED) {
+        echo "nologin";
+    } elseif ($_SESSION['stayloggedin'] && time() - $_SESSION['last_activity'] > 604800) {
         echo "logout";
     } elseif (!$_SESSION['stayloggedin'] && time() - $_SESSION['last_activity'] > 28800) {
         echo "logout";

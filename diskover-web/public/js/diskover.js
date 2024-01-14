@@ -208,6 +208,8 @@ $(document).ready(function () {
                 if(response == 'logout') {
                     window.location.replace("logout.php?inactive");
                     return true;
+                } else if (response == "nologin") {
+                    return true;
                 } else {
                     console.log('check session login idle time: ' + response + ' sec')
                     return true;

@@ -35,7 +35,11 @@ require '../src/diskover/config_inc.php';
         <div class="collapse navbar-collapse" id="navbar-collapsible">
             <ul class="nav navbar-nav">
                 <li><a href="dashboard.php?index=<?php echo $esIndex; ?>" title="dashboard"><i class="fas fa-tachometer-alt"></i> </a></li>
+                <?php if (isset($path)) { ?>
                 <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;q=parent_path:<?php echo rawurlencode(escape_chars($path)); ?>&amp;submitted=true&amp;p=1&amp;doctype=&amp;path=<?php echo rawurlencode($path); ?>" title="file search"><i class="far fa-folder"></i> </a></li>
+                <?php } else { ?>
+                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1" title="file search"><i class="far fa-folder"></i> </a></li>
+                <?php } ?>
                 <li class="dropdown">
                     <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false" title="analytics"><i class="fas fa-chart-bar"></i> Analytics <span class="caret"></span></a>
                     <ul class="dropdown-menu multi-level" role="menu">
@@ -628,7 +632,7 @@ require '../src/diskover/config_inc.php';
                         <li><a href="https://github.com/diskoverdata/diskover-community/" target="_blank"><i class="fab fa-github-alt"></i> diskover GitHub</a></li>
                         <li><a href="https://diskoverdata.com/solutions/" target="_blank"><i class="fas fa-cart-plus"></i> Upgrade license</a></li>
                         <li class="divider"></li>
-                        <li><a title="reload indices and get latest" href="<?php echo $_SERVER['REQUEST_URI'] . (parse_url($_SERVER['REQUEST_URI'], PHP_URL_QUERY) ? '&' : '?') . 'reloadindices&refreshindices'; ?>"><i class="glyphicon glyphicon-refresh"></i> Reload indices</a> <span class="small text-primary" style="padding-left:3px"><i class="fas fa-clock"></i> last updated <?php echo $indexinfo_updatetime->format('h:i:s A'); ?></span></li>
+                        <li><a title="reload indices and get latest" href="<?php echo $_SERVER['REQUEST_URI'] . (parse_url($_SERVER['REQUEST_URI'], PHP_URL_QUERY) ? '&' : '?') . 'reloadindices&refreshindices'; ?>"><i class="glyphicon glyphicon-refresh"></i> Reload indices</a> <span class="small text-primary" style="padding-left:3px"><i class="fas fa-clock"></i> last updated <?php echo (isset($indexinfo_updatetime)) ? $indexinfo_updatetime->format('h:i:s A') : 'Unknown'; ?></span></li>
                         <?php if ($config->LOGIN_REQUIRED) { ?>
                             <li class="divider"></li>
                             <li><a href="logout.php"><i class="glyphicon glyphicon-log-out"></i> Logout</a></li>

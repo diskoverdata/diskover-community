@@ -95,6 +95,7 @@ if (isset($_COOKIE['error'])) {
         echo '<p><a href="selectindices.php?reloadindices">Select index</a></p>';
         } else {
         echo '<p><a href="index.php?reloadindices">Reload index page</a></p>';
+        echo '<p><a href="settings.php">Settings</a></p>';
         }
         if ($config->LOGIN_REQUIRED) {
         echo '<p><a href="logout.php">Logout</a></p>';

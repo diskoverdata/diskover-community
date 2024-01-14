@@ -1,5 +1,15 @@
 # Diskover-web v2 Community Edition Change Log
 
+# [2.3.0] - 2024-
+### fixed
+- getting logged out when LOGIN_REQUIRED set to false in config
+### added
+- config settings are now stored in sqlite db
+- new tabs to settings page
+### changed
+- Constants.php and Constants.php.sample are no longer used, settings are now stored in sqlite db
+
+
 # [2.2.2] - 2023-12-12
 ### fixed
 - issue with search page occasionally not loading results
