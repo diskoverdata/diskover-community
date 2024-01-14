@@ -4,7 +4,7 @@ diskover community edition (ce)
 https://github.com/diskoverdata/diskover-community/
 https://diskoverdata.com
 
-Copyright 2017-2023 Diskover Data, Inc.
+Copyright 2017-2024 Diskover Data, Inc.
 "Community" portion of Diskover made available under the Apache 2.0 License found here:
 https://www.diskoverdata.com/apache-license/
  
@@ -42,7 +42,7 @@ from diskover_helpers import dir_excluded, file_excluded, \
     get_file_name, load_plugins, list_plugins, get_plugins_info, set_times, \
     get_mem_usage, get_win_path, rem_win_path
 
-version = '2.2.2 community edition (ce)'
+version = '2.3.0 community edition (ce)'
 __version__ = version
 
 # Windows check
@@ -298,10 +298,14 @@ def close_app_critical_error():
         except Exception as e:
             logger.exception(e, exc_info=1)
             if logtofile: logger_warn.exception(e, exc_info=1)
-    logmsg = 'CRITICAL ERROR EXITING'
+    logmsg = 'CRITICAL ERROR, DELETING INDEX AND EXITING'
     logger.critical(logmsg)
     if logtofile: logger_warn.critical(logmsg)
-    os._exit(1)
+    es.indices.delete(index=options.index, ignore=[400, 404])
+    try:
+        sys.exit(1)
+    except SystemExit:
+        os._exit(1)
 
 
 def receive_signal(signum, frame):

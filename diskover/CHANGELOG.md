@@ -1,5 +1,10 @@
 # Diskover v2 Community Edition Change Log
 
+# [2.3.0] - 2024-
+### changed
+- version change only
+
+
 # [2.2.2] - 2023-12-12
 ### added
 - index gets deleted if diskover.py exits with critical error
