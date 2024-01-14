@@ -17,8 +17,6 @@ https://www.diskoverdata.com/solutions/
 */
 
 // diskover-web community edition (ce) config defaults
-// these values get overwritten by any in Constants.php (diskover-web config file)
-// to change any of these from default, edit Constants.php
 
 $config_defaults = [
     'TIMEZONE' => 'America/Vancouver',
