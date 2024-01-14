@@ -61,6 +61,8 @@ $(document).ready(function () {
     }
 
     $("#elasticsearchform").submit(function (event) {
+        $('.has-error').removeClass();
+        $(".help-block").remove();
         var formData = $("#elasticsearchform").serialize();
 
         $.ajax({
@@ -82,8 +84,6 @@ $(document).ready(function () {
                     }
                   }
             } else {
-                $('.has-error').removeClass();
-                $('.help-block').remove();
                 $("#elasticsearchform").append(
                     '<div class="alert alert-success" id="elasticsearchformsuccess">' + data.message + "</div>"
                 ).fadeIn();
@@ -94,51 +94,25 @@ $(document).ready(function () {
                     $('#elasticsearchformsuccess').remove(); 
                 },3000);
             }
-        });
-
-        event.preventDefault();
-    });
-
-    $("#otherform").submit(function (event) {
-        var formData = $("#otherform").serialize();
-
-        $.ajax({
-            type: "POST",
-            url: "settings_process.php",
-            data: formData,
-            dataType: "json",
-            encode: true,
-        }).done(function (data) {
-            console.log(data);
-
-            if (!data.success) {
-                for (var key in data.errors) {
-                    if (data.errors.hasOwnProperty(key)) {
-                        $("#"+key+"-group").addClass("has-error");
-                        $("#"+key+"-group").append(
-                            '<div class="help-block">' + data.errors[key] + "</div>"
-                        );
-                    }
-                  }
-            } else {
-                $('.has-error').removeClass();
-                $('.help-block').remove();
-                $("#otherform").append(
-                    '<div class="alert alert-success" id="otherformsuccess">' + data.message + "</div>"
-                ).fadeIn();
-                setTimeout(function(){
-                    $('#otherformsuccess').fadeOut();
-                },2000);
-                setTimeout(function(){
-                    $('#otherformsuccess').remove();
-                },3000);
-            }
+        })
+        .fail(function (data) {
+            $("#elasticsearchform").append(
+                '<div class="alert alert-danger" id="elasticsearchformerror">Could not reach server, please try again later.</div>'
+            ).fadeIn();
+            setTimeout(function () {
+                $('#elasticsearchformerror').fadeOut();
+            }, 2000);
+            setTimeout(function () {
+                $('#elasticsearchformerror').remove();
+            }, 3000);
         });
 
         event.preventDefault();
     });
 
     $("#elasticsearchtestform").submit(function (event) {
+        $('.has-error').removeClass();
+        $(".help-block").remove();
         var formData = $("#elasticsearchform").serialize();
 
         $.ajax({
@@ -161,8 +135,6 @@ $(document).ready(function () {
                     $('#elasticsearchformerror').remove(); 
                 },3000);
             } else {
-                $('.has-error').removeClass();
-                $('.help-block').remove();
                 $("#elasticsearchtestform").append(
                     '<div class="alert alert-success" id="elasticsearchformsuccess">' + data.message + "</div>"
                 ).fadeIn();
@@ -173,8 +145,70 @@ $(document).ready(function () {
                     $('#elasticsearchformsuccess').remove(); 
                 },3000);
             }
+        })
+        .fail(function (data) {
+            $("#elasticsearchtestform").append(
+                '<div class="alert alert-danger" id="elasticsearchformerror">Could not reach server, please try again later.</div>'
+            ).fadeIn();
+            setTimeout(function () {
+                $('#elasticsearchformerror').fadeOut();
+            }, 2000);
+            setTimeout(function () {
+                $('#elasticsearchformerror').remove();
+            }, 3000);
         });
 
         event.preventDefault();
     });
+
+    $("#otherform").submit(function (event) {
+        $('.has-error').removeClass();
+        $(".help-block").remove();
+        var formData = $("#otherform").serialize();
+
+        $.ajax({
+            type: "POST",
+            url: "settings_process.php",
+            data: formData,
+            dataType: "json",
+            encode: true,
+        }).done(function (data) {
+            console.log(data);
+
+            if (!data.success) {
+                for (var key in data.errors) {
+                    if (data.errors.hasOwnProperty(key)) {
+                        $("#"+key+"-group").addClass("has-error");
+                        $("#"+key+"-group").append(
+                            '<div class="help-block">' + data.errors[key] + "</div>"
+                        );
+                    }
+                  }
+            } else {
+                $("#otherform").append(
+                    '<div class="alert alert-success" id="otherformsuccess">' + data.message + "</div>"
+                ).fadeIn();
+                setTimeout(function(){
+                    $('#otherformsuccess').fadeOut();
+                },2000);
+                setTimeout(function(){
+                    $('#otherformsuccess').remove();
+                },3000);
+            }
+        })
+        .fail(function (data) {
+            $("#otherform").append(
+                '<div class="alert alert-danger" id="otherformerror">Could not reach server, please try again later.</div>'
+            ).fadeIn();
+            setTimeout(function () {
+                $('#otherformerror').fadeOut();
+            }, 2000);
+            setTimeout(function () {
+                $('#otherformerror').remove();
+            }, 3000);
+        });
+
+        event.preventDefault();
+    });
+
 });
