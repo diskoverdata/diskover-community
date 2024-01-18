@@ -125,7 +125,7 @@ $(document).ready(function () {
             console.log(data);
 
             if (!data.success) {
-                $("#elasticsearchtestform").append(
+                $("#elasticsearchform").append(
                     '<div class="alert alert-danger" id="elasticsearchformerror">' + data.errors + "</div>"
                 ).fadeIn();
                 setTimeout(function(){
@@ -135,7 +135,7 @@ $(document).ready(function () {
                     $('#elasticsearchformerror').remove(); 
                 },3000);
             } else {
-                $("#elasticsearchtestform").append(
+                $("#elasticsearchform").append(
                     '<div class="alert alert-success" id="elasticsearchformsuccess">' + data.message + "</div>"
                 ).fadeIn();
                 setTimeout(function(){
@@ -147,7 +147,7 @@ $(document).ready(function () {
             }
         })
         .fail(function (data) {
-            $("#elasticsearchtestform").append(
+            $("#elasticsearchform").append(
                 '<div class="alert alert-danger" id="elasticsearchformerror">Could not reach server, please try again later.</div>'
             ).fadeIn();
             setTimeout(function () {
