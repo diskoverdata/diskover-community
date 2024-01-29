@@ -244,7 +244,7 @@ $helptext = [
                         Nodes Total: <?php echo $es_clusterstats['_nodes']['total'] ?><br />
                         Cluster Name: <?php echo $es_clusterstats['cluster_name'] ?><br />
                         Cluster UUID: <?php echo $es_clusterstats['cluster_uuid'] ?><br />
-                        Status: <?php echo $es_clusterstats['status'] ?><br />
+                        Status: <?php echo '<span style="color:'.$es_clusterstats['status'].'">'.$es_clusterstats['status'].'</span>' ?><br />
                         Indices Count: <?php echo $es_clusterstats['indices']['count'] ?><br />
                         Indices Shards Total: <?php echo $es_clusterstats['indices']['shards']['total'] ?><br />
                         Indices Shards Primaries: <?php echo $es_clusterstats['indices']['shards']['primaries'] ?><br />
