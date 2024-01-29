@@ -7,6 +7,7 @@
 ### added
 - config settings are now stored in sqlite db
 - new tabs to settings page
+- additional Elasticsearch info to settings page
 ### changed
 - Constants.php and Constants.php.sample are no longer used, settings are now stored in sqlite db
 
