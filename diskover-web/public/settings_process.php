@@ -21,8 +21,6 @@ https://www.diskoverdata.com/solutions/
 namespace diskover;
 
 require '../vendor/autoload.php';
-//require "../src/diskover/Auth.php";
-//require "../src/diskover/Diskover.php";
 
 use diskover\ConfigDatabase;
 
