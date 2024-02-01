@@ -19,6 +19,14 @@ https://www.diskoverdata.com/solutions/
 require '../vendor/autoload.php';
 require '../src/diskover/config_inc.php';
 
+if (isset($path)) {
+    $path = $path;
+} elseif (getCookie('path') != '') {
+    $path = getCookie('path');
+} else {
+    $path = $_SESSION['rootpath'];
+}
+
 ?>
 <nav class="navbar navbar-inverse navbar-fixed-top">
     <div class="container-fluid">
@@ -35,11 +43,7 @@ require '../src/diskover/config_inc.php';
         <div class="collapse navbar-collapse" id="navbar-collapsible">
             <ul class="nav navbar-nav">
                 <li><a href="dashboard.php?index=<?php echo $esIndex; ?>" title="dashboard"><i class="fas fa-tachometer-alt"></i> </a></li>
-                <?php if (isset($path)) { ?>
                 <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;q=parent_path:<?php echo rawurlencode(escape_chars($path)); ?>&amp;submitted=true&amp;p=1&amp;doctype=&amp;path=<?php echo rawurlencode($path); ?>" title="file search"><i class="far fa-folder"></i> </a></li>
-                <?php } else { ?>
-                <li><a href="search.php?index=<?php echo $esIndex; ?>&amp;submitted=true&amp;p=1" title="file search"><i class="far fa-folder"></i> </a></li>
-                <?php } ?>
                 <li class="dropdown">
                     <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false" title="analytics"><i class="fas fa-chart-bar"></i> Analytics <span class="caret"></span></a>
                     <ul class="dropdown-menu multi-level" role="menu">
