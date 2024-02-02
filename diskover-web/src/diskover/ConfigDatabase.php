@@ -32,6 +32,7 @@ class ConfigDatabase
     public function connect()
     {
         require 'config_defaults.php';
+        
         // Get datbase file path from config defaults
         $this->databaseFilename = $config_defaults['DATABASE'];
 

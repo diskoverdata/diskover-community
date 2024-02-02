@@ -21,8 +21,6 @@ https://www.diskoverdata.com/solutions/
 namespace diskover;
 error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE & ~E_DEPRECATED);
 
-class ConfigConstants { }
-
 class Config
 {
     public $config;
@@ -34,10 +32,7 @@ class Config
         $db = new ConfigDatabase();
         $db->connect();
         $config_db = $db->getConfigSettings();
-        $config = new ConfigConstants;
-        foreach ($config_db as $configkey => $configval) {
-            $config->{$configkey} = $configval;
-        }
+        $config = (object) $config_db;
         return $config;
     }
 }
