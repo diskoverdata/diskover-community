@@ -192,10 +192,10 @@ $(document).ready(function () {
         $("#newindexnotification").modal('show');
     }
 
-    // show modal for sending anon data
-    var sendanondata = getCookie('sendanondata');
-    if (sendanondata == "") {
-        $('#sendanondataModal').modal('show');
+    // show modal for welcome message
+    var hidewelcomemsgmodal = getCookie('hidewelcomemsgmodal');
+    if (hidewelcomemsgmodal == "") {
+        $('#welcomemsgModal').modal('show');
     }
 
     // check session hasn't expired
@@ -795,6 +795,12 @@ function clipboardNotice() {
     }, 1000);
 }
 
+// hide welcome msg modal
+function hideWelcomeMsgModal() {
+    setCookie('hidewelcomemsgmodal', 1);
+    $('#welcomemsgModal').modal('hide');
+}
+
 
 /* 
 ============= START INDICES =============
@@ -870,14 +876,6 @@ function checkSelected() {
             $(item).prop("checked", false);
         }
     });
-}
-
-function setSendAnonData() {
-    if ($('#sendanondata').prop('checked')) {
-        setCookie("sendanondata", 1);
-    } else {
-        setCookie("sendanondata", 0);
-    }
 }
 
 /* 

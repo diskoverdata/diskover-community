@@ -26,22 +26,18 @@ https://www.diskoverdata.com/solutions/
     </div>
 </div>
 
-<div id="sendanondataModal" class="modal fade" role="dialog" style="display:none">
+<div id="welcomemsgModal" class="modal fade" role="dialog" style="display:none">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" onclick="setSendAnonData()">&times;</button>
-                <h4 class="modal-title">Send anonymous usage data</h4>
+                <button type="button" class="close" data-dismiss="modal" onclick="hideWelcomeMsgModal()">&times;</button>
+                <h4 class="modal-title">Welcome to diskover-web community edition (ce)</h4>
             </div>
             <div class="modal-body">
-                <p><i class="fas fa-bullhorn"></i> Welcome to diskover-web community edition (ce). Help us improve diskover by sending anonymous usage data to Diskover Data. No personal information is sent. You can change this anytime on the settings page.</p>
-                <div class="form-check">
-                    <input type="checkbox" class="form-check-input" id="sendanondata" onclick="setSendAnonData()" checked>
-                    <label class="form-check-label" for="sendanondata">Send anonymous data</label>
-                </div>
+                <p><i class="fas fa-bullhorn"></i> Thank you for downloading diskover ce, we hope you enjoy! <i class="fas fa-star" style="color:yellow"></i> <strong><a href="https://github.com/diskoverdata/diskover-community/stargazers" target="_blank">Star</a></strong> us on GitHub.</p>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-default" data-dismiss="modal" onclick="setSendAnonData()">Close</button>
+                <button type="button" class="btn btn-default" data-dismiss="modal" onclick="hideWelcomeMsgModal()">Close</button>
             </div>
         </div>
     </div>

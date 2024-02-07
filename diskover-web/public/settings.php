@@ -29,7 +29,6 @@ catch (Exception $e)
 {
 }
 
-
 $helptext = [
     'TIMEZONE' => 'Local <a href="https://www.php.net/manual/en/timezones.php" target="_blank">Timezone</a>.',
     'ES_HOST' => 'Elasticsearch host/ip. For AWS ES, set to your Elasticsearch endpoint without http:// or https://.',
@@ -41,7 +40,6 @@ $helptext = [
 <html lang="en">
 
 <head>
-    <?php if (isset($_COOKIE['sendanondata']) && $_COOKIE['sendanondata'] == 1) { ?>
     <!-- Global site tag (gtag.js) - Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-DYSE689C04"></script>
     <script>
@@ -51,7 +49,6 @@ $helptext = [
 
     gtag('config', 'G-DYSE689C04');
     </script>
-    <?php } ?>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -202,11 +199,6 @@ $helptext = [
                         <div class="well">
                             <h4>Clear diskover cookies</h4>
                             <button type="submit" class="btn btn-warning" onclick=clearCookies()>Clear</button>
-                        </div>
-                        <div class="well">
-                            <h4>Send anonymous usage data</h4>
-                            <input type="checkbox" name="sendanondata" id="sendanondata" onclick="setSendAnonData()" <?php echo (getCookie('sendanondata') == 1) ? 'checked' : ''; ?>> <label for="sendanondata" class="control-label">Send anonymous data</label>
-                            <p class="small"><i class="glyphicon glyphicon-info-sign"></i> Send anonymous usage data to Diskover Data to help improve diskover. No personal information is sent.</p>
                         </div>
                     </div>
                 </div>
