@@ -25,7 +25,7 @@ try
 {
     $es_clusterstats = $client->cluster()->stats();
 }
-catch (Exception $e)
+catch (Throwable $e)
 {
 }
 
