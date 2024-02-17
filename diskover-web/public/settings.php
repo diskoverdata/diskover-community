@@ -30,8 +30,23 @@ catch (Throwable $e)
 }
 
 $helptext = [
-    'TIMEZONE' => 'Local <a href="https://www.php.net/manual/en/timezones.php" target="_blank">Timezone</a>.',
-    'ES_HOST' => 'Elasticsearch host/ip. For AWS ES, set to your Elasticsearch endpoint without http:// or https://.',
+    'TIMEZONE' => 'Set to your local timezone. See <a href="https://www.php.net/manual/en/timezones.php" target="_blank">Timezone list</a>.<br>Override with env var TZ. Default is America/Vancouver.',
+    'ES_HOST' => 'Elasticsearch host/ip. For AWS ES, set to your Elasticsearch endpoint without http:// or https://.<br>Override with env var ES_HOST. Default is localhost.',
+    'ES_PORT' => 'Elasticsearch port. Default port for Elasticsearch is 9200 and AWS ES is 80 or 443.<br>Override with env var ES_PORT.',
+    'ES_USER' => 'Elasticsearch user. For no username, leave empty.<br>Override with env var ES_USER. Default is no username.',
+    'ES_PASS' => 'Elasticsearch password. For no password, leave empty.<br>Override with env var ES_PASS. Default is no password.',
+    'ES_HTTPS' => 'Elasticsearch cluster uses HTTP TLS/SSL, set ES_HTTPS to true or false.<br>Override with env var ES_HTTPS. Default is false.',
+    'ES_SSLVERIFICATION' => 'Elasticsearch SSL verification, set to true to verify SSL or false to not verify ssl when connecting to ES.<br>Override with env var ES_SSLVERIFICATION. Default is true.',
+    'LOGIN_REQUIRED' => 'Login auth for diskover-web. Default is true.',
+    'USER' => 'Default login username. Default is diskover.',
+    'PASS' => 'Default login password. Default is darkdata.<br>The password is no longer used after first login, a hashed password gets stored in sqlite db.',
+    'SEARCH_RESULTS' => 'Default results per search page. Default is 50.',
+    'SIZE_FIELD' => 'Default size field (size, size_du) to use for sizes on file tree and charts.<br>If the file systems being indexed contain hardlinks, set this to size_du to use allocated sizes. Default is size.',
+    'FILE_TYPES' => 'Default file types, used by quick search (file type) and dashboard file type usage chart.<br>Additional extensions can be added/removed from each file types list.',
+    'EXTRA_FIELDS' => 'Extra fields for search results and view file/dir info pages.',
+    'MAX_INDEX' => 'Maximum number of indices to load by default, indices are loaded in order by creation date.<br>This setting can bo overridden on indices page per user and stored in maxindex cookie.<br>If MAX_INDEX is set higher than maxindex browser cookie, the cookie will be set to this value. Default is 250.',
+    'INDEXINFO_CACHETIME' => 'Time in seconds for index info to be cached, clicking reload indices forces update. Default 1200.',
+    'NEWINDEX_CHECKTIME' => 'Time in seconds to check Elasticsearch for new index info. Default is 30.'
 ];
 
 ?>
@@ -246,10 +261,9 @@ $helptext = [
                         Version: <?php echo $es_clusterstats['indices']['versions'][0]['version'] ?><br />
                         <?php } ?>
                         <br />
-                        Connected to: <?php echo $config->ES_HOST . ":" . $config->ES_PORT ?><br />
+                        Elasticsearch host: <?php echo $config->ES_HOST . ":" . $config->ES_PORT ?><br />
                         Response time: <?php echo $_SESSION['es_responsetime'] ?><br />
-                        New index check time: <?php echo $config->NEWINDEX_CHECKTIME ?> sec<br />
-                        Index info cache time: <?php echo $config->INDEXINFO_CACHETIME ?> sec<br />
+                        Connected to ES: <?php echo (isset($es_clusterstats)) ? '<span style="color:green">Yes</span>' : '<span style="color:red">No</span>'; ?>
                     </div>
                     <button type="submit" class="btn btn-primary" title="Save settings">Save</button><br>
                     <br>
@@ -290,7 +304,10 @@ $helptext = [
                                     <input class="form-control input" style="background-color:#1C1E21;color:darkgray;width:75%;" name="FILE_TYPES[]" id="file_types_' . $k . '_extensions" value="' . implode(', ', $v) . '">';
                             }
                             echo '<input class="form-control input" style="background-color:#1C1E21;color:darkgray;width:20%;" name="FILE_TYPES[]" value="" placeholder="Type label">
-                                    <input class="form-control input" style="background-color:#1C1E21;color:darkgray;width:75%;" name="FILE_TYPES[]" value="" placeholder="File extensions">';
+                                    <input class="form-control input" style="background-color:#1C1E21;color:darkgray;width:75%;" name="FILE_TYPES[]" value="" placeholder="File extensions"><br>';
+                            if (array_key_exists($key, $helptext) && !empty($helptext[$key])) {
+                                echo '<span class="small"><i class="glyphicon glyphicon-info-sign"></i> ' . $helptext[$key] . '</span>';
+                            }
                             echo '</div>';
                             echo "</div>";
                         } elseif ($key === 'EXTRA_FIELDS') {
@@ -302,7 +319,10 @@ $helptext = [
                                         <input class="form-control input" style="background-color:#1C1E21;color:darkgray;width:75%;" name="EXTRA_FIELDS[]" id="extra_fields_' . $k . '_fieldname" value="' . $v . '">';
                                 }
                                 echo '<input class="form-control input" style="background-color:#1C1E21;color:darkgray;width:20%;" name="EXTRA_FIELDS[]" value="" placeholder="Field label">
-                                        <input class="form-control input" style="background-color:#1C1E21;color:darkgray;width:75%;" name="EXTRA_FIELDS[]" value="" placeholder="ES field name">';
+                                        <input class="form-control input" style="background-color:#1C1E21;color:darkgray;width:75%;" name="EXTRA_FIELDS[]" value="" placeholder="ES field name"><br>';
+                                if (array_key_exists($key, $helptext) && !empty($helptext[$key])) {
+                                    echo '<span class="small"><i class="glyphicon glyphicon-info-sign"></i> ' . $helptext[$key] . '</span>';
+                                }
                                 echo '</div>';
                                 echo "</div>";
                         } else {
