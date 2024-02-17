@@ -247,7 +247,11 @@ $helptext = [
                     ?>
                     <div class="well">
                         <h4>Elasticsearch Info</h4>
+                        Elasticsearch host: <?php echo $config->ES_HOST . ":" . $config->ES_PORT ?><br />
+                        Response time: <?php echo $_SESSION['es_responsetime'] ?><br />
+                        Connected to ES: <?php echo (isset($es_clusterstats)) ? '<span style="color:green">Yes</span>' : '<span style="color:red">No</span>'; ?><br />
                         <?php if (isset($es_clusterstats)) { ?>
+                        <br />
                         Nodes Total: <?php echo $es_clusterstats['_nodes']['total'] ?><br />
                         Cluster Name: <?php echo $es_clusterstats['cluster_name'] ?><br />
                         Cluster UUID: <?php echo $es_clusterstats['cluster_uuid'] ?><br />
@@ -260,10 +264,6 @@ $helptext = [
                         Storage Size Used: <?php echo formatBytes($es_clusterstats['indices']['store']['size_in_bytes']) ?><br />
                         Version: <?php echo $es_clusterstats['indices']['versions'][0]['version'] ?><br />
                         <?php } ?>
-                        <br />
-                        Elasticsearch host: <?php echo $config->ES_HOST . ":" . $config->ES_PORT ?><br />
-                        Response time: <?php echo $_SESSION['es_responsetime'] ?><br />
-                        Connected to ES: <?php echo (isset($es_clusterstats)) ? '<span style="color:green">Yes</span>' : '<span style="color:red">No</span>'; ?>
                     </div>
                     <button type="submit" class="btn btn-primary" title="Save settings">Save</button><br>
                     <br>
