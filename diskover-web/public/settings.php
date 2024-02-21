@@ -140,7 +140,7 @@ $helptext = [
                             <div class="form-check">
                                 <input type="checkbox" class="form-check-input" id="searchfiletreesort" onclick="setSearchFileTreeSort()">
                                 <label class="form-check-label" for="searchfiletreesort">Sort search file tree by size instead of alphanumerically</label><br>
-                                <span class="small"><i class="glyphicon glyphicon-info-sign"></i> Changing this setting may require reloading file tree data.</span>
+                                <span class="small"><i class="glyphicon glyphicon-info-sign"></i> Changing this setting may require reloading file tree data by clicking the Reload button.</span>
                                 
                             </div>
                         </div>
@@ -149,7 +149,7 @@ $helptext = [
                             <div class="form-check">
                                 <input type="checkbox" class="form-check-input" id="filterchart" onclick="setFilterCharts()">
                                 <label class="form-check-label" for="filterchart">Use filters on charts</label><br>
-                                <span class="small"><i class="glyphicon glyphicon-info-sign"></i> Apply any filters to search results and dashboard charts.</span>
+                                <span class="small"><i class="glyphicon glyphicon-info-sign"></i> Apply any filters to search results and dashboard charts. Changing this setting may require reloading file tree data by clicking the Reload button.</span>
                             </div>
                         </div>
                         <div class="well">
