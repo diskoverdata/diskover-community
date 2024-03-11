@@ -225,6 +225,10 @@ crawl_tree_queue = Queue()
 
 quit = False
 emptyindex = False
+inodesps_max = None
+inodesps_min = None
+dps_max = None
+dps_min = None
 
 
 class AltScannerError(Exception):
@@ -362,6 +366,10 @@ def start_bulk_upload(thread, root, docs):
 
 def log_stats_thread(root):
     """Shows crawl and es upload stats."""
+    global inodesps_max
+    global inodesps_min
+    global dps_max
+    global dps_min
     start = time.time()
 
     while True:
@@ -369,11 +377,21 @@ def log_stats_thread(root):
         timenow = time.time()
         elapsed = str(timedelta(seconds = timenow - start))
         inodesps = inodecount[root] / (timenow - start)
-        logger.info('CRAWL STATS (path {0}, files {1}, dirs {2}, elapsed {3}, perf {4:.3f} inodes/s, {5} paths still scanning {6}, memory usage {7})'.format(
-            root, filecount[root], dircount[root], elapsed, inodesps, len(scan_paths), scan_paths, get_mem_usage()))
+        if inodesps_max is None or inodesps > inodesps_max:
+            inodesps_max = inodesps
+        if inodesps_min is None or inodesps < inodesps_min:
+            inodesps_min = inodesps
+        inodesps_avg = (inodesps_max + inodesps_min) / 2
+        logger.info('CRAWL STATS (path {0}, files {1}, dirs {2}, elapsed {3}, perf {4:.3f} inodes/s (max {5:.3f}, min {6:.3f}, avg {7:.3f}), {8} paths still scanning {9}, memory usage {10})'.format(
+            root, filecount[root], dircount[root], elapsed, inodesps, inodesps_max, inodesps_min, inodesps_avg, len(scan_paths), scan_paths, get_mem_usage()))
         dps = total_doc_count[root] / (timenow - start)
-        logger.info('ES UPLOAD STATS (path {0}, uploaded {1} docs, elapsed {2}, perf {3:.3f} docs/s)'.format(
-            root, total_doc_count[root], elapsed, dps))
+        if dps_max is None or dps > dps_max:
+            dps_max = dps
+        if dps_min is None or dps < dps_min:
+            dps_min = dps
+        dps_avg = (dps_max + dps_min) / 2
+        logger.info('ES UPLOAD STATS (path {0}, uploaded {1} docs, elapsed {2}, perf {3:.3f} docs/s (max {4:.3f}, min {5:.3f}, avg {6:.3f}))'.format(
+            root, total_doc_count[root], elapsed, dps, dps_max, dps_min, dps_avg))
 
 
 def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdepth=999):
@@ -1016,12 +1034,12 @@ def crawl(root):
         logger.info('*** walk dirs {0}, skipped {1} ***'.format(dircount[root], skipdircount[root]))
         logger.info('*** walk took {0} ***'.format(get_time(scandir_walk_time)))
         try:
-            logger.info('*** walk perf {0:.3f} inodes/s ***'.format(inodecount[root] / scandir_walk_time))
+            logger.info('*** walk perf {0:.3f} inodes/s (max {1:.3f}, min {2:.3f}, avg {3:.3f}) ***'.format(inodecount[root] / scandir_walk_time, inodesps_max, inodesps_min, (inodesps_max+inodesps_min)/2))
         except ZeroDivisionError:
             pass
         logger.info('*** docs indexed {0} ***'.format(total_doc_count[root]))
         try:
-            logger.info('*** indexing perf {0:.3f} docs/s ***'.format(total_doc_count[root] / scandir_walk_time))
+            logger.info('*** indexing perf {0:.3f} docs/s (max {1:.3f}, min {2:.3f}, avg {3:.3f}) ***'.format(total_doc_count[root] / scandir_walk_time, dps_max, dps_min, (dps_max+dps_min)/2))
         except ZeroDivisionError:
             pass
         logger.info('*** bulk uploads took {0} ***'.format(get_time(bulktime[root])))

@@ -1,8 +1,8 @@
 # Diskover v2 Community Edition Change Log
 
 # [2.3.0] - 2024-
-### changed
-- version change only
+### added
+- additional perf stats for min, max, avg for inodes/s and docs/s
 
 
 # [2.2.2] - 2023-12-12
