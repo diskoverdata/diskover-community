@@ -227,8 +227,10 @@ quit = False
 emptyindex = False
 inodesps_max = None
 inodesps_min = None
+inodesps_avg = None
 dps_max = None
 dps_min = None
+dpg_avg = None
 
 
 class AltScannerError(Exception):
@@ -368,8 +370,10 @@ def log_stats_thread(root):
     """Shows crawl and es upload stats."""
     global inodesps_max
     global inodesps_min
+    global inodesps_avg
     global dps_max
     global dps_min
+    global dps_avg
     start = time.time()
 
     while True:
@@ -381,7 +385,7 @@ def log_stats_thread(root):
             inodesps_max = inodesps
         if inodesps_min is None or inodesps < inodesps_min:
             inodesps_min = inodesps
-        inodesps_avg = (inodesps_max + inodesps_min) / 2
+        inodesps_avg = (inodesps_max + inodesps_min + inodesps) / 3
         logger.info('CRAWL STATS (path {0}, files {1}, dirs {2}, elapsed {3}, perf {4:.3f} inodes/s (max {5:.3f}, min {6:.3f}, avg {7:.3f}), {8} paths still scanning {9}, memory usage {10})'.format(
             root, filecount[root], dircount[root], elapsed, inodesps, inodesps_max, inodesps_min, inodesps_avg, len(scan_paths), scan_paths, get_mem_usage()))
         dps = total_doc_count[root] / (timenow - start)
@@ -389,7 +393,7 @@ def log_stats_thread(root):
             dps_max = dps
         if dps_min is None or dps < dps_min:
             dps_min = dps
-        dps_avg = (dps_max + dps_min) / 2
+        dps_avg = (dps_max + dps_min + dps) / 3
         logger.info('ES UPLOAD STATS (path {0}, uploaded {1} docs, elapsed {2}, perf {3:.3f} docs/s (max {4:.3f}, min {5:.3f}, avg {6:.3f}))'.format(
             root, total_doc_count[root], elapsed, dps, dps_max, dps_min, dps_avg))
 
@@ -1034,12 +1038,12 @@ def crawl(root):
         logger.info('*** walk dirs {0}, skipped {1} ***'.format(dircount[root], skipdircount[root]))
         logger.info('*** walk took {0} ***'.format(get_time(scandir_walk_time)))
         try:
-            logger.info('*** walk perf {0:.3f} inodes/s (max {1:.3f}, min {2:.3f}, avg {3:.3f}) ***'.format(inodecount[root] / scandir_walk_time, inodesps_max, inodesps_min, (inodesps_max+inodesps_min)/2))
+            logger.info('*** walk perf {0:.3f} inodes/s (max {1:.3f}, min {2:.3f}, avg {3:.3f}) ***'.format(inodecount[root] / scandir_walk_time, inodesps_max, inodesps_min, inodesps_avg))
         except ZeroDivisionError:
             pass
         logger.info('*** docs indexed {0} ***'.format(total_doc_count[root]))
         try:
-            logger.info('*** indexing perf {0:.3f} docs/s (max {1:.3f}, min {2:.3f}, avg {3:.3f}) ***'.format(total_doc_count[root] / scandir_walk_time, dps_max, dps_min, (dps_max+dps_min)/2))
+            logger.info('*** indexing perf {0:.3f} docs/s (max {1:.3f}, min {2:.3f}, avg {3:.3f}) ***'.format(total_doc_count[root] / scandir_walk_time, dps_max, dps_min, dps_avg))
         except ZeroDivisionError:
             pass
         logger.info('*** bulk uploads took {0} ***'.format(get_time(bulktime[root])))
