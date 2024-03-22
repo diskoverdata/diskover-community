@@ -384,8 +384,8 @@ def log_stats_thread(root):
         if inodesps_min is None or inodesps < inodesps_min:
             inodesps_min = inodesps
         inodesps_avg = (inodesps_max + inodesps_min + inodesps) / 3
-        logger.info('CRAWL STATS (path {0}, files {1}, dirs {2}, elapsed {3}, perf {4:.3f} inodes/s (max {5:.3f}, min {6:.3f}, avg {7:.3f}), {8} paths still scanning {9}, memory usage {10})'.format(
-            root, filecount[root], dircount[root], elapsed, inodesps, inodesps_max, inodesps_min, inodesps_avg, len(scan_paths), scan_paths, get_mem_usage()))
+        logger.info('CRAWL STATS (path {0}, files {1} (skipped {2}), dirs {3} (skipped {4}), elapsed {5}, perf {6:.3f} inodes/s (max {7:.3f}, min {8:.3f}, avg {9:.3f}), {10} paths still scanning {11}, memory usage {12})'.format(
+            root, filecount[root], skipfilecount[root], dircount[root], skipdircount[root], elapsed, inodesps, inodesps_max, inodesps_min, inodesps_avg, len(scan_paths), scan_paths, get_mem_usage()))
         dps = total_doc_count[root] / (timenow - start)
         if dps_max is None or dps > dps_max:
             dps_max = dps

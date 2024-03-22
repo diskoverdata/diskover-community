@@ -2,7 +2,7 @@
 
 # [2.3.0] - 2024-
 ### added
-- additional perf stats for min, max, avg for inodes/s and docs/s
+- additional crawl stats log output for min, max, avg for inodes/s and docs/s and also skipped files/dirs
 
 
 # [2.2.2] - 2023-12-12
