@@ -321,12 +321,10 @@ def receive_signal(signum, frame):
     sys.exit(signum)
 
             
-def start_bulk_upload(thread, root, docs):
+def start_bulk_upload(thread, root, docs, doccount):
     """Bulk uploads docs to es index."""
     global bulktime
     global warnings
-    
-    doccount = len(docs)
     
     if DEBUG:
         logger.debug('[{0}] bulk uploading {1} docs to ES...'.format(thread, doccount))
@@ -681,7 +679,7 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
                                 docs.append(data.copy())
                                 doc_count = len(docs)
                                 if doc_count >= es_chunksize:
-                                    doc_count = start_bulk_upload(thread, root, docs)
+                                    doc_count = start_bulk_upload(thread, root, docs, doc_count)
                                     tot_doc_count += doc_count
                                     docs.clear()
 
@@ -843,7 +841,7 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
                 docs.append(data.copy())
                 doc_count = len(docs)
                 if doc_count >= es_chunksize:
-                    doc_count = start_bulk_upload(thread, root, docs)
+                    doc_count = start_bulk_upload(thread, root, docs, doc_count)
                     tot_doc_count += doc_count
                     docs.clear()
                     
@@ -917,7 +915,7 @@ def crawl(root):
         size, size_du, file_count, dir_count = get_tree_size(thread, root, top, top, docs, sizes, inodes, depth, maxdepth)
         doc_count = len(docs)
         if doc_count > 0:
-            doc_count = start_bulk_upload(thread, root, docs)
+            doc_count = start_bulk_upload(thread, root, docs, doc_count)
             with crawl_thread_lock:
                 total_doc_count[root] += doc_count
             docs.clear()
