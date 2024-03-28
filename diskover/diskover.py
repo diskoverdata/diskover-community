@@ -344,7 +344,7 @@ def start_bulk_upload(thread, root, docs, doccount):
             warnings += 1
         for doc in docs:
             try:
-                es.index(index=options.index, document=doc)
+                es.index(options.index, doc)
             except UnicodeEncodeError:
                 file = os.path.join(doc['parent_path'], doc['name'])
                 logmsg = '[{0}] Elasticsearch index unicode encode error for {1}'.format(thread, file)
@@ -1020,7 +1020,7 @@ def crawl(root):
             es.indices.delete(index=options.index, ignore=[400, 404])
     # upload the directory doc for the root top level directory to ES
     else:
-        es.index(index=options.index, document=sizes[root])
+        es.index(options.index, sizes[root])
         total_doc_count[root] += 1
 
         # add data to info index
