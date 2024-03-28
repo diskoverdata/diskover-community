@@ -896,6 +896,12 @@ def crawl(root):
     """Crawl the directory tree at top path."""
     global emptyindex
     global warnings
+    global inodesps_max
+    global inodesps_min
+    global inodesps_avg
+    global dps_max
+    global dps_min
+    global dps_avg
     sizes = {}
     inodes = set()
 
@@ -1036,12 +1042,26 @@ def crawl(root):
         logger.info('*** walk dirs {0}, skipped {1} ***'.format(dircount[root], skipdircount[root]))
         logger.info('*** walk took {0} ***'.format(get_time(scandir_walk_time)))
         try:
-            logger.info('*** walk perf {0:.3f} inodes/s (max {1:.3f}, min {2:.3f}, avg {3:.3f}) ***'.format(inodecount[root] / scandir_walk_time, inodesps_max, inodesps_min, inodesps_avg))
+            inodesps = inodecount[root] / scandir_walk_time
+            if inodesps_max is None:
+                inodesps_max = inodesps
+            if inodesps_min is None:
+                inodesps_min = inodesps
+            if inodesps_avg is None:
+                inodesps_avg = inodesps
+            logger.info('*** walk perf {0:.3f} inodes/s (max {1:.3f}, min {2:.3f}, avg {3:.3f}) ***'.format(inodesps, inodesps_max, inodesps_min, inodesps_avg))
         except ZeroDivisionError:
             pass
         logger.info('*** docs indexed {0} ***'.format(total_doc_count[root]))
         try:
-            logger.info('*** indexing perf {0:.3f} docs/s (max {1:.3f}, min {2:.3f}, avg {3:.3f}) ***'.format(total_doc_count[root] / scandir_walk_time, dps_max, dps_min, dps_avg))
+            dps = total_doc_count[root] / scandir_walk_time
+            if dps_max is None:
+                dps_max = dps
+            if dps_min is None:
+                dps_min = dps
+            if dps_avg is None:
+                dps_avg = dps
+            logger.info('*** indexing perf {0:.3f} docs/s (max {1:.3f}, min {2:.3f}, avg {3:.3f}) ***'.format(dps, dps_max, dps_min, dps_avg))
         except ZeroDivisionError:
             pass
         logger.info('*** bulk uploads took {0} ***'.format(get_time(bulktime[root])))
