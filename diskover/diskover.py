@@ -230,7 +230,7 @@ inodesps_min = None
 inodesps_avg = None
 dps_max = None
 dps_min = None
-dpg_avg = None
+dps_avg = None
 
 
 class AltScannerError(Exception):
