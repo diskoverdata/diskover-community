@@ -2,6 +2,7 @@
 
 # [2.3.0] - 2024-
 ### added
+- improved crawl scan and es doc ingest performance
 - additional crawl stats log output for min, max, avg for inodes/s and docs/s and also skipped files/dirs
 
 

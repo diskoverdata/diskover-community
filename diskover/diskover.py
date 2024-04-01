@@ -31,11 +31,10 @@ from threading import Thread, Lock, current_thread
 from concurrent import futures
 from queue import Queue
 from random import choice
-from elasticsearch.helpers.errors import BulkIndexError
-from elasticsearch.exceptions import TransportError
+from elasticsearch import helpers
 
 from diskover_elasticsearch import elasticsearch_connection, \
-    check_index_exists, create_index, bulk_upload, tune_index
+    check_index_exists, create_index, tune_index
 from diskover_helpers import dir_excluded, file_excluded, \
     convert_size, get_time, get_owner_group_names, index_info_crawlstart, \
     index_info_crawlend, get_parent_path, get_dir_name, \
@@ -179,6 +178,11 @@ finally:
     if IS_WIN:
         replacepaths = True
 try:
+    es_wait_status_yellow = config['databases']['elasticsearch']['wait'].get()
+except confuse.NotFoundError as e:
+    config_warn(e)
+    es_wait_status_yellow = config_defaults['databases']['elasticsearch']['wait'].get()
+try:
     es_chunksize = config['databases']['elasticsearch']['chunksize'].get()
 except confuse.NotFoundError as e:
     config_warn(e)
@@ -222,6 +226,8 @@ scan_paths = []
 
 crawl_thread_lock = Lock()
 crawl_tree_queue = Queue()
+bulk_thread_lock = Lock()
+bulk_thread_queue = Queue(maxsize=100)
 
 quit = False
 emptyindex = False
@@ -261,6 +267,7 @@ def close_app():
         return
     quit = True
     crawl_tree_queue.join()
+    bulk_thread_queue.join()
     # set index settings back to defaults
     if not emptyindex:
         tune_index(es, options.index, defaults=True)
@@ -320,49 +327,6 @@ def receive_signal(signum, frame):
     close_app() 
     sys.exit(signum)
 
-            
-def start_bulk_upload(thread, root, docs, doccount):
-    """Bulk uploads docs to es index."""
-    global bulktime
-    global warnings
-    
-    if DEBUG:
-        logger.debug('[{0}] bulk uploading {1} docs to ES...'.format(thread, doccount))
-    es_upload_start = time.time()
-    try:
-        bulk_upload(es, options.index, docs)
-    except (BulkIndexError, TransportError) as e:
-        logmsg = '[{0}] FATAL ERROR: Elasticsearch bulk index/transport error! ({1})'.format(thread, e)
-        logger.critical(logmsg, exc_info=1)
-        if logtofile: logger_warn.critical(logmsg, exc_info=1)
-        close_app_critical_error()
-    except UnicodeEncodeError:
-        logmsg = '[{0}] Elasticsearch bulk index unicode encode error. Will try to index each doc individually.'.format(thread)
-        logger.warning(logmsg)
-        if logtofile: logger_warn.warning(logmsg)
-        with crawl_thread_lock:
-            warnings += 1
-        for doc in docs:
-            try:
-                es.index(options.index, doc)
-            except UnicodeEncodeError:
-                file = os.path.join(doc['parent_path'], doc['name'])
-                logmsg = '[{0}] Elasticsearch index unicode encode error for {1}'.format(thread, file)
-                logger.warning(logmsg)
-                if logtofile: logger_warn.warning(logmsg)
-                with crawl_thread_lock:
-                    warnings += 1
-                doccount -= 1
-                pass
-    es_upload_time = time.time() - es_upload_start
-    if DEBUG:
-        logger.debug('[{0}] bulk uploading {1} docs completed in {2:.3f}s'.format(
-            thread, doccount, es_upload_time))
-    with crawl_thread_lock:
-        bulktime[root] += es_upload_time
-    
-    return doccount
-
 
 def log_stats_thread(root):
     """Shows crawl and es upload stats."""
@@ -376,6 +340,8 @@ def log_stats_thread(root):
 
     while True:
         time.sleep(3)
+        if not scan_paths:
+            continue
         timenow = time.time()
         elapsed = str(timedelta(seconds = timenow - start))
         inodesps = inodecount[root] / (timenow - start)
@@ -396,6 +362,46 @@ def log_stats_thread(root):
             root, total_doc_count[root], elapsed, dps, dps_max, dps_min, dps_avg))
 
 
+def bulk_thread():
+    """Elasticsearch Bulk uploader thread."""
+    global total_doc_count
+    global bulktime
+    thread = current_thread().name
+    
+    while True:
+        try:
+            item = bulk_thread_queue.get()
+            root, docs, doccount = item
+            
+            if es_wait_status_yellow:
+                # wait for es health to be at least yellow
+                if DEBUG:
+                    logger.debug('[{0}] waiting for es status to be yellow...'.format(thread))
+                es.cluster.health(wait_for_status='yellow', request_timeout=es_timeout)
+            
+            if DEBUG:
+                logger.debug('[{0}] bulk uploading {1} docs to ES...'.format(thread, doccount))
+            es_upload_start = time.time()
+            
+            helpers.bulk(es, docs, index=options.index, chunk_size=es_chunksize, 
+                        request_timeout=es_timeout, stats_only=True)
+                
+            es_upload_time = time.time() - es_upload_start
+            if DEBUG:
+                logger.debug('[{0}] bulk uploading {1} docs completed in {2:.3f}s'.format(
+                        thread, doccount, es_upload_time))
+            with bulk_thread_lock:
+                bulktime[root] += es_upload_time
+                total_doc_count[root] += doccount
+                
+            bulk_thread_queue.task_done()
+        except Exception as e:
+            logmsg = '[{0}] FATAL ERROR: an exception has occurred: {1}'.format(thread, e)
+            logger.critical(logmsg, exc_info=1)
+            if logtofile: logger_warn.critical(logmsg, exc_info=1)
+            close_app_critical_error()
+
+
 def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdepth=999):
     """Return total size of all files in directory tree at path."""
     global filecount
@@ -414,7 +420,6 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
     d_count = 0
     f_skip_count = 0
     d_skip_count = 0
-    tot_doc_count = 0
     parent_path = None
     size_norecurs = 0
     size_du_norecurs = 0
@@ -424,6 +429,8 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
     # use alt scanner
     # try to get stat info for dir path
     if options.altscanner:
+        if IS_WIN and options.altscanner == 'scandir_dircache':
+            path = get_win_path(path)
         try:
             d_stat = alt_scanner.stat(path)
         except RuntimeError as e:
@@ -679,8 +686,7 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
                                 docs.append(data.copy())
                                 doc_count = len(docs)
                                 if doc_count >= es_chunksize:
-                                    doc_count = start_bulk_upload(thread, root, docs, doc_count)
-                                    tot_doc_count += doc_count
+                                    bulk_thread_queue.put((root, docs.copy(), doc_count))
                                     docs.clear()
 
                             else:
@@ -782,8 +788,8 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
                 'dir_count_norecurs': dirs_norecurs + 1,
                 'dir_depth': depth,
                 'mtime': mtime,
-                'atime': datetime.utcfromtimestamp(int(d_stat.st_atime)).isoformat(),
-                'ctime': datetime.utcfromtimestamp(int(d_stat.st_ctime)).isoformat(),
+                'atime': atime,
+                'ctime': ctime,
                 'nlink': d_stat.st_nlink,
                 'ino': str(d_stat.st_ino),
                 'owner': owner,
@@ -841,10 +847,8 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
                 docs.append(data.copy())
                 doc_count = len(docs)
                 if doc_count >= es_chunksize:
-                    doc_count = start_bulk_upload(thread, root, docs, doc_count)
-                    tot_doc_count += doc_count
+                    bulk_thread_queue.put((root, docs.copy(), doc_count))
                     docs.clear()
-                    
             else:
                 with crawl_thread_lock:
                     sizes[root] = data.copy()
@@ -861,7 +865,6 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
             filecount[root] += f_count - f_skip_count
             skipfilecount[root] += f_skip_count
             skipdircount[root] += d_skip_count
-            total_doc_count[root] += tot_doc_count
             inodecount[root] += d_count + f_count
         
         # restore directory times (atime/mtime)
@@ -921,9 +924,7 @@ def crawl(root):
         size, size_du, file_count, dir_count = get_tree_size(thread, root, top, top, docs, sizes, inodes, depth, maxdepth)
         doc_count = len(docs)
         if doc_count > 0:
-            doc_count = start_bulk_upload(thread, root, docs, doc_count)
-            with crawl_thread_lock:
-                total_doc_count[root] += doc_count
+            bulk_thread_queue.put((root, docs.copy(), doc_count))
             docs.clear()
         # Add sizes of subdir to root dir 
         if depth > 0:
@@ -1419,6 +1420,12 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
         t = Thread(target=log_stats_thread, args=(tree_dir,))
         t.daemon = True
         t.start()
+        
+        # start threads to do bulk uploads
+        for _ in range(100):
+            t = Thread(target=bulk_thread)
+            t.daemon = True
+            t.start()
         
         logger.info('Crawling dir tree {0}...'.format(tree_dir))
         crawl_start = time.time()
