@@ -23,6 +23,7 @@ import requests
 import logging
 import elasticsearch
 import warnings
+from elasticsearch import helpers
 
 from diskover_helpers import load_plugins
 
@@ -421,6 +422,17 @@ def create_index(indexname, es):
         print('ERROR: unable to connect to Elasticsearch! ({})'.format(e))
         sys.exit(1)
     return True
+
+
+def bulk_upload(es, indexname, docs):
+    """Elasticsearch Bulk uploader."""
+    if es_wait_status_yellow:
+        # wait for es health to be at least yellow
+        es.cluster.health(wait_for_status='yellow', request_timeout=es_timeout)
+
+    # bulk load data to Elasticsearch index
+    helpers.bulk(es, docs, index=indexname,
+                    chunk_size=es_chunksize, request_timeout=es_timeout)
 
 
 def tune_index(es, indexname, defaults=False):
