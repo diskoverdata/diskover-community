@@ -376,6 +376,8 @@ def log_stats_thread(root):
 
     while True:
         time.sleep(3)
+        if not scan_paths:
+            continue
         timenow = time.time()
         elapsed = str(timedelta(seconds = timenow - start))
         inodesps = inodecount[root] / (timenow - start)
@@ -424,6 +426,8 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
     # use alt scanner
     # try to get stat info for dir path
     if options.altscanner:
+        if IS_WIN and options.altscanner == 'scandir_dircache':
+            path = get_win_path(path)
         try:
             d_stat = alt_scanner.stat(path)
         except RuntimeError as e:
@@ -782,8 +786,8 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
                 'dir_count_norecurs': dirs_norecurs + 1,
                 'dir_depth': depth,
                 'mtime': mtime,
-                'atime': datetime.utcfromtimestamp(int(d_stat.st_atime)).isoformat(),
-                'ctime': datetime.utcfromtimestamp(int(d_stat.st_ctime)).isoformat(),
+                'atime': atime,
+                'ctime': ctime,
                 'nlink': d_stat.st_nlink,
                 'ino': str(d_stat.st_ino),
                 'owner': owner,
