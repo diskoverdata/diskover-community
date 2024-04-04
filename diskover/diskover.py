@@ -31,8 +31,6 @@ from threading import Thread, Lock, current_thread
 from concurrent import futures
 from queue import Queue
 from random import choice
-from elasticsearch.helpers.errors import BulkIndexError
-from elasticsearch.exceptions import TransportError
 
 from diskover_elasticsearch import elasticsearch_connection, \
     check_index_exists, create_index, bulk_upload, tune_index
@@ -324,36 +322,17 @@ def receive_signal(signum, frame):
 def start_bulk_upload(thread, root, docs, doccount):
     """Bulk uploads docs to es index."""
     global bulktime
-    global warnings
     
     if DEBUG:
         logger.debug('[{0}] bulk uploading {1} docs to ES...'.format(thread, doccount))
     es_upload_start = time.time()
     try:
         bulk_upload(es, options.index, docs)
-    except (BulkIndexError, TransportError) as e:
-        logmsg = '[{0}] FATAL ERROR: Elasticsearch bulk index/transport error! ({1})'.format(thread, e)
+    except Exception as e:
+        logmsg = '[{0}] FATAL ERROR: Elasticsearch bulk error! ({1})'.format(thread, e)
         logger.critical(logmsg, exc_info=1)
         if logtofile: logger_warn.critical(logmsg, exc_info=1)
         close_app_critical_error()
-    except UnicodeEncodeError:
-        logmsg = '[{0}] Elasticsearch bulk index unicode encode error. Will try to index each doc individually.'.format(thread)
-        logger.warning(logmsg)
-        if logtofile: logger_warn.warning(logmsg)
-        with crawl_thread_lock:
-            warnings += 1
-        for doc in docs:
-            try:
-                es.index(options.index, doc)
-            except UnicodeEncodeError:
-                file = os.path.join(doc['parent_path'], doc['name'])
-                logmsg = '[{0}] Elasticsearch index unicode encode error for {1}'.format(thread, file)
-                logger.warning(logmsg)
-                if logtofile: logger_warn.warning(logmsg)
-                with crawl_thread_lock:
-                    warnings += 1
-                doccount -= 1
-                pass
     es_upload_time = time.time() - es_upload_start
     if DEBUG:
         logger.debug('[{0}] bulk uploading {1} docs completed in {2:.3f}s'.format(

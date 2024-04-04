@@ -432,7 +432,7 @@ def bulk_upload(es, indexname, docs):
 
     # bulk load data to Elasticsearch index
     helpers.bulk(es, docs, index=indexname,
-                    chunk_size=es_chunksize, request_timeout=es_timeout)
+                    chunk_size=es_chunksize, request_timeout=es_timeout, stats_only=True)
 
 
 def tune_index(es, indexname, defaults=False):
