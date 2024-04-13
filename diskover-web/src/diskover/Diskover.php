@@ -34,10 +34,13 @@ $esIndex = $path = $toppath = $es_index_info = $all_index_info = $completed_indi
 $fileGroups_extensions = $config->FILE_TYPES;
 
 // create ES client connection
-if (strpos($_SERVER['REQUEST_URI'], 'settings.php') === false &&
-    strpos($_SERVER['REQUEST_URI'], 'settings_tests.php') === false) {
+try 
+{
     $esclient = new ESClient;
     $client = $esclient->createClient();
+}
+catch (Exception $e) 
+{
 }
 
 // Set d3 vars
@@ -69,8 +72,6 @@ class ESClient
     function createClient()
     {
         // Sets clients property
-        // Check connection to Elasticsearch using curl
-        $res = curl_es('/', null, false);
 
         // Create ES client connection
         // check for any env vars to override config
