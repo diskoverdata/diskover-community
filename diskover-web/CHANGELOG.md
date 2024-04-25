@@ -4,6 +4,7 @@
 ### fixed
 - getting logged out when LOGIN_REQUIRED set to false in config
 - es time not showing on dashboard
+- issue with setting browser cookie expiry dates
 ### added
 - config settings are now stored in sqlite db
 - new tabs to settings page

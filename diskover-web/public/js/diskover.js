@@ -242,11 +242,14 @@ function delay(callback, ms) {
 // cookie functions
 function setCookie(cname, cvalue, exdays) {
     // set default expire time to 1 year
-    if (exdays == '') var exdays = 365;
+    if (exdays === '' || exdays === undefined) {
+        var exdays = 365;
+    }
     var d = new Date();
     d.setTime(d.getTime() + (exdays * 24 * 60 * 60 * 1000));
     var expires = "expires=" + d.toUTCString();
-    document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+    var cookie_str = cname + "=" + cvalue + ";" + expires + ";path=/";
+    document.cookie = cookie_str;
 }
 
 function getCookie(cname) {
