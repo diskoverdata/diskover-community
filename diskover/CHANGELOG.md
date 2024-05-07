@@ -6,6 +6,7 @@
 - env vars for ES config settings overrides are now used by diskover.py
 ### changed
 - changed to using diskover-web sqlite db for storing diskover config settings instead of config file
+    - settings for diskover are now configurable in diskover-web settings page
 
 
 # [2.2.2] - 2023-12-12
