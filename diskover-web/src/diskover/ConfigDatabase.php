@@ -34,8 +34,9 @@ class ConfigDatabase
         require 'config_defaults_web.php';
         
         // Get database file path from config defaults
-        $this->databaseFilename = $config_defaults_web['DATABASE'];
-
+        // Check for env var
+        $this->databaseFilename = getenv('DATABASE') ?: $config_defaults_web['DATABASE'];
+        
         try {
             // Open sqlite database
             $this->db = new SQLite3($this->databaseFilename);
