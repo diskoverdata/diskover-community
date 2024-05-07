@@ -31,10 +31,10 @@ class ConfigDatabase
 
     public function connect()
     {
-        require 'config_defaults.php';
+        require 'config_defaults_web.php';
         
-        // Get datbase file path from config defaults
-        $this->databaseFilename = $config_defaults['DATABASE'];
+        // Get database file path from config defaults
+        $this->databaseFilename = $config_defaults_web['DATABASE'];
 
         try {
             // Open sqlite database
@@ -50,15 +50,16 @@ class ConfigDatabase
         }
 
         // Initial setup if necessary.
-        $this->setupDatabase();
+        $this->setupDatabaseConfig('configweb');
+        $this->setupDatabaseConfig('configdiskover');
     }
 
-    protected function setupDatabase()
+    protected function setupDatabaseConfig($table)
     {
-        // If the database config table exists and already has config settings, we have nothing to do here.
-        $res = $this->db->query("SELECT * FROM sqlite_master WHERE type='table' AND name='config'");
+        // If the database table exists and already has config settings, we have nothing to do here.
+        $res = $this->db->query("SELECT * FROM sqlite_master WHERE type='table' AND name='" . $table . "'");
         if ($row = $res->fetchArray()) {
-            $res = $this->db->query("SELECT COUNT(*) as count FROM config");
+            $res = $this->db->query("SELECT COUNT(*) as count FROM $table");
             $row = $res->fetchArray();
             if ($row['count'] > 0) {
                 return;
@@ -66,65 +67,72 @@ class ConfigDatabase
         }
 
         // Set up sqlite config table if does not yet exist.
-        $res = $this->db->exec("CREATE TABLE IF NOT EXISTS config (
+        $res = $this->db->exec("CREATE TABLE IF NOT EXISTS $table (
             id INTEGER PRIMARY KEY AUTOINCREMENT, 
             name TEXT NOT NULL, 
-            value TEXT NOT NULL
+            value TEXT,
+            UNIQUE(name)
         )");
 
         if (!$res) {
-            throw new \Exception('There was an error creating config table!');
+            throw new \Exception('There was an error creating ' . $table . ' table!');
         }
 
         // Add the settings, and save the newly created entries.
-        $this->addDefaultSettings();
+        $this->addDefaultSettings($table);
     }
 
-    protected function addDefaultSettings()
+    protected function addDefaultSettings($table)
     {
-        // Copy existing web config Constants.php into sqlite.
-        if (file_exists('../src/diskover/Constants.php')) {
-            $this->copyConfigPhpSqlite();
-        } else {
-            // Copy config defaults into sqlite.
-            require 'config_defaults.php';
+        if ($table === 'configweb') {
+            // Copy existing web config Constants.php into sqlite.
+            if (file_exists('../src/diskover/Constants.php')) {
+                $this->copyConfigPhpSqlite();
+            } else {
+                // Copy config defaults into sqlite.
+                require 'config_defaults_web.php';
 
-            foreach ($config_defaults as $configkey => $configval) {
-                $this->addConfigSetting($configkey, $configval);
+                foreach ($config_defaults_web as $configkey => $configval) {
+                    $this->addConfigSetting('configweb', $configkey, $configval);
+                }
+            }
+        } elseif ($table === 'configdiskover') {
+            // Copy diskover config defaults into sqlite.
+            require 'config_defaults_diskover.php';
+
+            foreach ($config_defaults_diskover as $configkey => $configval) {
+                $this->addConfigSetting('configdiskover', $configkey, $configval);
             }
         }
     }
 
     protected function copyConfigPhpSqlite()
     {
-        require 'config_defaults.php';
+        require 'config_defaults_web.php';
 
         $oldconfig = new Constants;
         $refl = new ReflectionClass('diskover\Constants');
         $consts = $refl->getConstants();
-        foreach ($config_defaults as $configkey => $configval) {
+        foreach ($config_defaults_web as $configkey => $configval) {
             if (!array_key_exists($configkey, $consts)) {
                 $oldconfig->{$configkey} = $configval;
             } else {
                 $oldconfig->{$configkey} = $consts[$configkey];
             }
-            $this->addConfigSetting($configkey, $oldconfig->{$configkey});
+            $this->addConfigSetting('configweb', $configkey, $oldconfig->{$configkey});
         }
         // Rename the Constants.php files to .old.
         rename('../src/diskover/Constants.php', '../src/diskover/Constants.php.old');
         rename('../src/diskover/Constants.php.sample', '../src/diskover/Constants.php.sample.old');
     }
 
-    protected function closeDatabase()
-    {
-        $this->db->close();
-    }
-
-    public function getConfigSettings()
+    public function getConfigSettings($table)
     {   
-        $res = $this->db->query('SELECT * FROM config');
+        // Get diskover-web config settings
         $config = array();
+        $res = $this->db->query("SELECT * FROM $table");
         while ($row = $res->fetchArray(SQLITE3_ASSOC)) {
+            // decode json string and handle non encoded
             $val = json_decode($row['value'], JSON_OBJECT_AS_ARRAY);
             // change true and false string to boolean
             if ($val == 'true' || $val == 'false') {
@@ -135,19 +143,26 @@ class ConfigDatabase
         return $config;
     }
 
-    public function addConfigSetting($name, $value)
-    {   
-        $value_json = json_encode($value);
-        $this->db->exec("INSERT INTO config ('name', 'value') 
-            VALUES ('$name', '$value_json')");
+    public function getAllConfigSettings()
+    {
+        $diskover_config = $this->getConfigSettings('configdiskover');
+        $config = $this->getConfigSettings('configweb');
+        return array_merge($diskover_config, $config);
     }
 
-    public function updateConfigSetting($name, $value)
+    public function addConfigSetting($table, $name, $value)
+    {
+        $value = json_encode($value);
+        $this->db->exec("INSERT OR IGNORE INTO $table ('name', 'value') 
+            VALUES ('$name', '$value')");
+    }
+
+    public function updateConfigSetting($table, $name, $value)
     {
         $foundSetting = false;
-        $value_json = json_encode($value);
+        $value = json_encode($value);
 
-        $res = $this->db->exec("UPDATE config SET value='$value_json' WHERE name = '$name'");
+        $res = $this->db->exec("UPDATE $table SET value='$value' WHERE name = '$name'");
 
         if ($res) {
             $foundSetting = true;
@@ -156,5 +171,10 @@ class ConfigDatabase
         if (!$foundSetting) {
             throw new \Exception('Tried to update a non-existent config setting.');
         }
+    }
+
+    protected function closeDatabase()
+    {
+        $this->db->close();
     }
 }

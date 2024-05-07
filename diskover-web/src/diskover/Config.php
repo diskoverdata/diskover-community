@@ -31,7 +31,7 @@ class Config
         // Load database and get config settings.
         $db = new ConfigDatabase();
         $db->connect();
-        $config_db = $db->getConfigSettings();
+        $config_db = $db->getConfigSettings('configweb');
         $config = (object) $config_db;
         return $config;
     }

@@ -19,6 +19,7 @@ https://www.diskoverdata.com/solutions/
 require '../vendor/autoload.php';
 require "../src/diskover/Auth.php";
 require "../src/diskover/Diskover.php";
+require "settings_helptext.php";
 
 // get ES cluster stats
 try
@@ -29,25 +30,12 @@ catch (Throwable $e)
 {
 }
 
-$helptext = [
-    'TIMEZONE' => 'Set to your local timezone. See <a href="https://www.php.net/manual/en/timezones.php" target="_blank">Timezone list</a>.<br>Override with env var TZ. Default is America/Vancouver.',
-    'ES_HOST' => 'Elasticsearch host/ip. For AWS ES, set to your Elasticsearch endpoint without http:// or https://.<br>Override with env var ES_HOST. Default is localhost.',
-    'ES_PORT' => 'Elasticsearch port. Default port for Elasticsearch is 9200 and AWS ES is 80 or 443.<br>Override with env var ES_PORT.',
-    'ES_USER' => 'Elasticsearch user. For no username, leave empty.<br>Override with env var ES_USER. Default is no username.',
-    'ES_PASS' => 'Elasticsearch password. For no password, leave empty.<br>Override with env var ES_PASS. Default is no password.',
-    'ES_HTTPS' => 'Elasticsearch cluster uses HTTP TLS/SSL, set ES_HTTPS to true or false.<br>Override with env var ES_HTTPS. Default is false.',
-    'ES_SSLVERIFICATION' => 'Elasticsearch SSL verification, set to true to verify SSL or false to not verify ssl when connecting to ES.<br>Override with env var ES_SSLVERIFICATION. Default is true.',
-    'LOGIN_REQUIRED' => 'Login auth for diskover-web. Default is true.',
-    'USER' => 'Default login username. Default is diskover.',
-    'PASS' => 'Default login password. Default is darkdata.<br>The password is no longer used after first login, a hashed password gets stored in sqlite db.',
-    'SEARCH_RESULTS' => 'Default results per search page. Default is 50.',
-    'SIZE_FIELD' => 'Default size field (size, size_du) to use for sizes on file tree and charts.<br>If the file systems being indexed contain hardlinks, set this to size_du to use allocated sizes. Default is size.',
-    'FILE_TYPES' => 'Default file types, used by quick search (file type) and dashboard file type usage chart.<br>Additional extensions can be added/removed from each file types list.',
-    'EXTRA_FIELDS' => 'Extra fields for search results and view file/dir info pages.',
-    'MAX_INDEX' => 'Maximum number of indices to load by default, indices are loaded in order by creation date.<br>This setting can bo overridden on indices page per user and stored in maxindex cookie.<br>If MAX_INDEX is set higher than maxindex browser cookie, the cookie will be set to this value. Default is 250.',
-    'INDEXINFO_CACHETIME' => 'Time in seconds for index info to be cached, clicking reload indices forces update. Default 1200.',
-    'NEWINDEX_CHECKTIME' => 'Time in seconds to check Elasticsearch for new index info. Default is 30.'
-];
+use diskover\ConfigDatabase;
+// Load database and get diskover config settings.
+$db = new ConfigDatabase();
+$db->connect();
+$config_diskover = (object) $db->getConfigSettings('configdiskover');
+$config_all = (object) $db->getAllConfigSettings();
 
 ?>
 
@@ -87,28 +75,31 @@ $helptext = [
     <div class="container" id="mainwindow" style="margin-top:70px;">
         <h1 class="page-header"><i class="fas fa-user-cog"></i> Settings</h1>
         <ul class="nav nav-tabs">
-            <li class="active"><a href="#user" data-toggle="tab">User</a></li>
+            <li class="active"><a href="#webuser" data-toggle="tab">Web - User</a></li>
+            <li><a href="#webother" data-toggle="tab">Web - Other</a></li>
+            <li><a href="#diskover" data-toggle="tab">Diskover Scan</a></li>
             <li><a href="#elasticsearch" data-toggle="tab">Elasticsearch</a></li>
-            <li><a href="#other" data-toggle="tab">Other</a></li>
             <li><a href="#version" data-toggle="tab">Version</a></li>
         </ul>
-        <div id="myTabContent" class="tab-content">
-            <div class="tab-pane fade active in" id="user">
+        <div id="settingsTabContent" class="tab-content">
+            <div class="tab-pane fade active in" id="webuser">
                 <div class="row">
                     <div class="col-lg-12">
-                        <?php if ($config->LOGIN_REQUIRED) : ?>
                         <div class="well">
+                        <h4>Web - User Settings</h4>
+                        <?php if ($config->LOGIN_REQUIRED) : ?>
+                        <div class="well-sm">
                         <h4>Profile</h4>
                         <p><i class="glyphicon glyphicon-user"></i> Username: <?php echo $_SESSION['username']; ?></p>
                         <p><i class="glyphicon glyphicon-lock"></i> Password: <a href="password.php">Change Password</a></p>
                         </div>
                         <?php endif; ?>
-                        <div class="well">
+                        <div class="well-sm">
                             <h4>New index notification</h4>
                             <input type="checkbox" name="notifynewindex" id="notifynewindex" onclick="setNotifyNewIndex()" <?php echo (getCookie('notifynewindex') == 1) ? 'checked' : ''; ?>> <label for="notifynewindex" class="control-label">Notify when newer index</label>
                             <p class="small"><i class="glyphicon glyphicon-info-sign"></i> As new indices get added, display a notification.</p>
                         </div>
-                        <div class="well">
+                        <div class="well-sm">
                             <h4>Time display</h4>
                             <div class="form-check">
                                 <input type="checkbox" class="form-check-input" id="timedisplay" onclick="setTimeDisplay()" <?php echo (getCookie('localtime') == 1) ? 'checked' : ''; ?>>
@@ -116,7 +107,7 @@ $helptext = [
                                 <span class="small"><i class="glyphicon glyphicon-info-sign"></i> Default is to show all times in UTC (times stored in index).</span>
                             </div>
                         </div>
-                        <div class="well">
+                        <div class="well-sm">
                             <h4>File size display</h4>
                             <div class="form-check">
                                 <input type="checkbox" class="form-check-input" id="sizedisplay" onclick="setFileSizeDisplay()">
@@ -135,7 +126,7 @@ $helptext = [
                                 </div>
                             </div>
                         </div>
-                        <div class="well">
+                        <div class="well-sm">
                             <h4>Search file tree</h4>
                             <div class="form-check">
                                 <input type="checkbox" class="form-check-input" id="searchfiletreesort" onclick="setSearchFileTreeSort()">
@@ -144,7 +135,7 @@ $helptext = [
                                 
                             </div>
                         </div>
-                        <div class="well">
+                        <div class="well-sm">
                             <h4>Filter charts</h4>
                             <div class="form-check">
                                 <input type="checkbox" class="form-check-input" id="filterchart" onclick="setFilterCharts()">
@@ -152,7 +143,7 @@ $helptext = [
                                 <span class="small"><i class="glyphicon glyphicon-info-sign"></i> Apply any filters to search results and dashboard charts. Changing this setting may require reloading file tree data by clicking the Reload button.</span>
                             </div>
                         </div>
-                        <div class="well">
+                        <div class="well-sm">
                             <h4>Use predictive search</h4>
                             <div class="form-check">
                                 <input type="checkbox" class="form-check-input" id="wildcardsearch" onclick="setWildcardSearch()">
@@ -160,7 +151,7 @@ $helptext = [
                                 <span class="small"><i class="glyphicon glyphicon-info-sign"></i> Uses wildcard * when searching to find search characters in file names, paths, etc.</span>
                             </div>
                         </div>
-                        <div class="well">
+                        <div class="well-sm">
                             <h4>Default search sort</h4>
                             <div class="form-check">
                                 <input type="checkbox" class="form-check-input" id="sortdisplay" onclick="setSortDisplay()">
@@ -168,7 +159,7 @@ $helptext = [
                                 <span class="small"><i class="glyphicon glyphicon-info-sign"></i> When no sort/sort2 is set on search results table.</span>
                             </div>
                         </div>
-                        <div class="well">
+                        <div class="well-sm">
                             <div class="form-group form-check">
                                 <h4>Hide fields in search results</h4>
                                 <input type="checkbox" class="form-check-input" id="hidefield_path" onclick="setHideFields('path');" <?php echo getCookie('hidefield_path') == "1" ? "checked" : ""; ?>>
@@ -207,44 +198,127 @@ $helptext = [
                                 <button type="submit" class="btn btn-primary" onclick=resetResultsTable()>Reset</button>
                             </div>
                         </div>
-                        <div class="well">
+                        <div class="well-sm">
                             <h4>Clear diskover cache</h4>
                             <button type="submit" class="btn btn-warning" onclick=clearChartCache()>Clear</button>
                         </div>
-                        <div class="well">
+                        <div class="well-sm">
                             <h4>Clear diskover cookies</h4>
                             <button type="submit" class="btn btn-warning" onclick=clearCookies()>Clear</button>
                         </div>
                     </div>
                 </div>
+                </div>
+            </div>
+            <div class="tab-pane fade" id="webother">
+                <div class="row">
+                    <div class="col-lg-12">
+                        <div class="well">
+                        <h4>Web - Other Settings</h4>
+                        <form name="webotherform" id="webotherform">
+                        <input type="hidden" name="formname" value="webotherform">
+                        <?php
+                        foreach ($config as $key => $value) {
+                            // hide ES_, USER, PASS, DATABASE settings
+                            if (preg_match("/^ES_|USER|PASS|DATABASE/", $key)) {
+                                continue;
+                            }
+                            if (is_bool($value)) {
+                                $value = json_encode($value);
+                            }
+                            if ($key === "PASS") {
+                                $inputtype = 'type="password"';
+                            } else {
+                                $inputtype = '';
+                            }
+                            if ($key === 'FILE_TYPES') {
+                                echo '<div class="well-sm">';
+                                echo '<div class="form-group form-inline" id="' . $key . '-group">';
+                                echo '<label>' . $key . '</label><br>';
+                                foreach ($value as $k => $v) {
+                                echo '<input class="form-control input" style="background-color:#1C1E21;color:darkgray;width:20%;" name="FILE_TYPES[]" id="file_types_' . $k . '_label" value="' . $k . '">
+                                        <input class="form-control input" style="background-color:#1C1E21;color:darkgray;width:75%;" name="FILE_TYPES[]" id="file_types_' . $k . '_extensions" value="' . implode(', ', $v) . '">';
+                                }
+                                echo '<input class="form-control input" style="background-color:#1C1E21;color:darkgray;width:20%;" name="FILE_TYPES[]" value="" placeholder="Type label">
+                                        <input class="form-control input" style="background-color:#1C1E21;color:darkgray;width:75%;" name="FILE_TYPES[]" value="" placeholder="File extensions"><br>';
+                                if (array_key_exists($key, $helptext) && !empty($helptext[$key])) {
+                                    echo '<span class="small"><i class="glyphicon glyphicon-info-sign"></i> ' . $helptext[$key] . '</span>';
+                                }
+                                echo '</div>';
+                                echo "</div>";
+                            } elseif ($key === 'EXTRA_FIELDS') {
+                                    echo '<div class="well-sm">';
+                                    echo '<div class="form-group form-inline" id="' . $key . '-group">';
+                                    echo '<label>' . $key . '</label><br>';
+                                    foreach ($value as $k => $v) {
+                                    echo '<input class="form-control input" style="background-color:#1C1E21;color:darkgray;width:20%;" name="EXTRA_FIELDS[]" id="extra_fields_' . $k . '_label" value="' . $k . '">
+                                            <input class="form-control input" style="background-color:#1C1E21;color:darkgray;width:75%;" name="EXTRA_FIELDS[]" id="extra_fields_' . $k . '_fieldname" value="' . $v . '">';
+                                    }
+                                    echo '<input class="form-control input" style="background-color:#1C1E21;color:darkgray;width:20%;" name="EXTRA_FIELDS[]" value="" placeholder="Field label">
+                                            <input class="form-control input" style="background-color:#1C1E21;color:darkgray;width:75%;" name="EXTRA_FIELDS[]" value="" placeholder="ES field name"><br>';
+                                    if (array_key_exists($key, $helptext) && !empty($helptext[$key])) {
+                                        echo '<span class="small"><i class="glyphicon glyphicon-info-sign"></i> ' . $helptext[$key] . '</span>';
+                                    }
+                                    echo '</div>';
+                                    echo "</div>";
+                            } else {
+                                echo '<div class="well-sm">';
+                                echo '<div class="form-group form-inline" id="' . $key . '-group">
+                                        <label style="width:250px;">' . $key . '</label>&nbsp;
+                                        <input class="form-control input" style="background-color:#1C1E21;color:darkgray;width:650px;" name="' . $key . '" id="' . $key . '" value="' . $value . '" ' . $inputtype . '><br>';
+                                if (array_key_exists($key, $helptext) && !empty($helptext[$key])) {
+                                    echo '<span class="small"><i class="glyphicon glyphicon-info-sign"></i> ' . $helptext[$key] . '</span>';
+                                }
+                                echo "</div>";
+                                echo "</div>";
+                            }
+                        }
+                        ?>
+                        <button type="submit" class="btn btn-primary" title="Save settings">Save</button><br>
+                        <br>
+                        </form>
+                    </div>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-pane fade" id="diskover">
+                <div class="row">
+                    <div class="col-lg-12">
+                    <div class="well">
+                        <h4>Diskover Scan Settings</h4>
+                        <form name="diskoverform" id="diskoverform">
+                        <input type="hidden" name="formname" value="diskoverform">
+                        <?php
+                        foreach ($config_diskover as $key => $value) {
+                            // hide ES_ and DATABASE settings
+                            if (preg_match("/^ES_|DATABASE/", $key)) {
+                                continue;
+                            }
+                            if (is_bool($value)) {
+                                $value = json_encode($value);
+                            }
+                            $value = (is_array($value)) ? implode(', ', $value) : $value;
+                            echo '<div class="well-sm">';
+                            echo '<div class="form-group form-inline" id="' . $key . '-group">
+                                    <label style="width:250px;">' . $key . '</label>&nbsp;
+                                    <input class="form-control input" style="background-color:#1C1E21;color:darkgray;width:650px;" name="' . $key . '" id="' . $key . '" value="' . $value . '" ' . $inputtype . '><br>';
+                            if (array_key_exists($key, $helptext) && !empty($helptext[$key])) {
+                                echo '<span class="small"><i class="glyphicon glyphicon-info-sign"></i> ' . $helptext[$key] . '</span>';
+                            }
+                            echo "</div>";
+                            echo "</div>";
+                        }
+                        ?>
+                        <button type="submit" class="btn btn-primary" title="Save settings">Save</button><br>
+                        <br>
+                        </form>
+                    </div>
+                </div>
+                </div>
             </div>
             <div class="tab-pane fade" id="elasticsearch">
                 <div class="row">
                     <div class="col-lg-12">
-                    <form name="elasticsearchform" id="elasticsearchform">
-                    <input type="hidden" name="formname" value="elasticsearchform">
-                    <?php
-                    foreach ($config as $key => $value) {
-                        if (strpos($key, "ES_") === false) continue;
-                        if (is_bool($value)) {
-                            $value = json_encode($value);
-                        }
-                        if ($key === "ES_PASS") {
-                            $inputtype = 'type="password"';
-                        } else {
-                            $inputtype = '';
-                        }
-                        echo '<div class="well">';
-                        echo '<div class="form-group form-inline" id="' . $key . '-group">
-                                <label>' . $key . '</label><br>
-                                <input class="form-control input" style="background-color:#1C1E21;color:darkgray;width:100%;" name="' . $key . '" id="' . $key . '" value="' . $value . '" ' . $inputtype . '><br>';
-                        if (array_key_exists($key, $helptext) && !empty($helptext[$key])) {
-                            echo '<span class="small"><i class="glyphicon glyphicon-info-sign"></i> ' . $helptext[$key] . '</span>';
-                        }
-                        echo "</div>";
-                        echo "</div>";
-                    }
-                    ?>
                     <div class="well">
                         <h4>Elasticsearch Info</h4>
                         Elasticsearch host: <?php echo $config->ES_HOST . ":" . $config->ES_PORT ?><br />
@@ -265,82 +339,42 @@ $helptext = [
                         Version: <?php echo $es_clusterstats['indices']['versions'][0]['version'] ?><br />
                         <?php } ?>
                     </div>
-                    <button type="submit" class="btn btn-primary" title="Save settings">Save</button><br>
-                    <br>
-                    </form>
-                    <form name="elasticsearchtestform" id="elasticsearchtestform">
-                    <input type="hidden" name="formname" value="elasticsearchtestform">
-                    <button type="submit" class="btn btn-default" title="Test connection">Test</button><br>
-                    <br>
-                    </form>
-                    </div>
-                </div>
-            </div>
-            <div class="tab-pane fade" id="other">
-                <div class="row">
-                    <div class="col-lg-12">
-                    <form name="otherform" id="otherform">
-                    <input type="hidden" name="formname" value="otherform">
-                    <?php
-                    foreach ($config as $key => $value) {
-                        if (strpos($key, "ES_") !== false || strpos($key, "USER") !== false || 
-                        strpos($key, "PASS") !== false || strpos($key, "DATABASE") !== false) {
-                            continue;
-                        }
-                        if (is_bool($value)) {
-                            $value = json_encode($value);
-                        }
-                        if ($key === "PASS") {
-                            $inputtype = 'type="password"';
-                        } else {
-                            $inputtype = '';
-                        }
-                        if ($key === 'FILE_TYPES') {
-                            echo '<div class="well">';
-                            echo '<div class="form-group form-inline" id="' . $key . '-group">';
-                            echo '<label>' . $key . '</label><br>';
-                            foreach ($value as $k => $v) {
-                            echo '<input class="form-control input" style="background-color:#1C1E21;color:darkgray;width:20%;" name="FILE_TYPES[]" id="file_types_' . $k . '_label" value="' . $k . '">
-                                    <input class="form-control input" style="background-color:#1C1E21;color:darkgray;width:75%;" name="FILE_TYPES[]" id="file_types_' . $k . '_extensions" value="' . implode(', ', $v) . '">';
+                    <div class="well">
+                        <h4>Elasticsearch Settings</h4>
+                        <form name="elasticsearchform" id="elasticsearchform">
+                        <input type="hidden" name="formname" value="elasticsearchform">
+                        <?php
+                        foreach ($config_all as $key => $value) {
+                            // hide non ES_ config settings
+                            if (!preg_match("/^ES_/", $key)) continue;
+                            if (is_bool($value)) {
+                                $value = json_encode($value);
                             }
-                            echo '<input class="form-control input" style="background-color:#1C1E21;color:darkgray;width:20%;" name="FILE_TYPES[]" value="" placeholder="Type label">
-                                    <input class="form-control input" style="background-color:#1C1E21;color:darkgray;width:75%;" name="FILE_TYPES[]" value="" placeholder="File extensions"><br>';
-                            if (array_key_exists($key, $helptext) && !empty($helptext[$key])) {
-                                echo '<span class="small"><i class="glyphicon glyphicon-info-sign"></i> ' . $helptext[$key] . '</span>';
+                            if ($key === "ES_PASS") {
+                                $inputtype = 'type="password"';
+                            } else {
+                                $inputtype = '';
                             }
-                            echo '</div>';
-                            echo "</div>";
-                        } elseif ($key === 'EXTRA_FIELDS') {
-                                echo '<div class="well">';
-                                echo '<div class="form-group form-inline" id="' . $key . '-group">';
-                                echo '<label>' . $key . '</label><br>';
-                                foreach ($value as $k => $v) {
-                                echo '<input class="form-control input" style="background-color:#1C1E21;color:darkgray;width:20%;" name="EXTRA_FIELDS[]" id="extra_fields_' . $k . '_label" value="' . $k . '">
-                                        <input class="form-control input" style="background-color:#1C1E21;color:darkgray;width:75%;" name="EXTRA_FIELDS[]" id="extra_fields_' . $k . '_fieldname" value="' . $v . '">';
-                                }
-                                echo '<input class="form-control input" style="background-color:#1C1E21;color:darkgray;width:20%;" name="EXTRA_FIELDS[]" value="" placeholder="Field label">
-                                        <input class="form-control input" style="background-color:#1C1E21;color:darkgray;width:75%;" name="EXTRA_FIELDS[]" value="" placeholder="ES field name"><br>';
-                                if (array_key_exists($key, $helptext) && !empty($helptext[$key])) {
-                                    echo '<span class="small"><i class="glyphicon glyphicon-info-sign"></i> ' . $helptext[$key] . '</span>';
-                                }
-                                echo '</div>';
-                                echo "</div>";
-                        } else {
-                            echo '<div class="well">';
+                            echo '<div class="well-sm">';
                             echo '<div class="form-group form-inline" id="' . $key . '-group">
-                                    <label>' . $key . '</label><br>
-                                    <input class="form-control input" style="background-color:#1C1E21;color:darkgray;width:100%;" name="' . $key . '" id="' . $key . '" value="' . $value . '" ' . $inputtype . '>';
+                                    <label style="width:250px;">' . $key . '</label>&nbsp;
+                                    <input class="form-control input" style="background-color:#1C1E21;color:darkgray;width:650px;" name="' . $key . '" id="' . $key . '" value="' . $value . '" ' . $inputtype . '><br>';
                             if (array_key_exists($key, $helptext) && !empty($helptext[$key])) {
                                 echo '<span class="small"><i class="glyphicon glyphicon-info-sign"></i> ' . $helptext[$key] . '</span>';
                             }
                             echo "</div>";
                             echo "</div>";
                         }
-                    }
-                    ?>
-                    <button type="submit" class="btn btn-primary" title="Save settings">Save</button><br>
-                    <br>
-                    </form>
+                        ?>
+                        <button type="submit" class="btn btn-primary" title="Save settings">Save</button><br>
+                        <br>
+                        </form>
+                        <form name="elasticsearchtestform" id="elasticsearchtestform">
+                        <input type="hidden" name="formname" value="elasticsearchtestform">
+                        <button type="submit" class="btn btn-default" title="Test connection">Test</button><br>
+                        <br>
+                        </form>
+                    </div>
                     </div>
                 </div>
             </div>

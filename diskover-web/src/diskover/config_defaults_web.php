@@ -18,7 +18,7 @@ https://www.diskoverdata.com/solutions/
 
 // diskover-web community edition (ce) config defaults
 
-$config_defaults = [
+$config_defaults_web = [
     'TIMEZONE' => 'America/Vancouver',
     'ES_HOST' => 'localhost',
     'ES_PORT' => '9200',

@@ -61,7 +61,7 @@ $(document).ready(function () {
     }
 
     $("#elasticsearchform").submit(function (event) {
-        $('.has-error').removeClass();
+        $('.has-error').removeClass('has-error');
         $(".help-block").remove();
         var formData = $("#elasticsearchform").serialize();
 
@@ -72,8 +72,6 @@ $(document).ready(function () {
             dataType: "json",
             encode: true,
         }).done(function (data) {
-            console.log(data);
-
             if (!data.success) {
                 for (var key in data.errors) {
                     if (data.errors.hasOwnProperty(key)) {
@@ -111,7 +109,7 @@ $(document).ready(function () {
     });
 
     $("#elasticsearchtestform").submit(function (event) {
-        $('.has-error').removeClass();
+        $('.has-error').removeClass('has-error');
         $(".help-block").remove();
         var formData = $("#elasticsearchform").serialize();
 
@@ -122,8 +120,6 @@ $(document).ready(function () {
             dataType: "json",
             encode: true,
         }).done(function (data) {
-            console.log(data);
-
             if (!data.success) {
                 $("#elasticsearchform").append(
                     '<div class="alert alert-danger" id="elasticsearchformerror">' + data.errors + "</div>"
@@ -162,7 +158,7 @@ $(document).ready(function () {
     });
 
     $("#otherform").submit(function (event) {
-        $('.has-error').removeClass();
+        $('.has-error').removeClass('has-error');
         $(".help-block").remove();
         var formData = $("#otherform").serialize();
 
@@ -173,8 +169,6 @@ $(document).ready(function () {
             dataType: "json",
             encode: true,
         }).done(function (data) {
-            console.log(data);
-
             if (!data.success) {
                 for (var key in data.errors) {
                     if (data.errors.hasOwnProperty(key)) {
@@ -205,6 +199,54 @@ $(document).ready(function () {
             }, 2000);
             setTimeout(function () {
                 $('#otherformerror').remove();
+            }, 3000);
+        });
+
+        event.preventDefault();
+    });
+
+    $("#diskoverform").submit(function (event) {
+        $('.has-error').removeClass('has-error');
+        $(".help-block").remove();
+        var formData = $("#diskoverform").serialize();
+
+        $.ajax({
+            type: "POST",
+            url: "settings_process.php",
+            data: formData,
+            dataType: "json",
+            encode: true,
+        }).done(function (data) {
+            if (!data.success) {
+                for (var key in data.errors) {
+                    if (data.errors.hasOwnProperty(key)) {
+                        $("#"+key+"-group").addClass("has-error");
+                        $("#"+key+"-group").append(
+                            '<div class="help-block">' + data.errors[key] + "</div>"
+                        );
+                    }
+                  }
+            } else {
+                $("#diskoverform").append(
+                    '<div class="alert alert-success" id="diskoverformsuccess">' + data.message + "</div>"
+                ).fadeIn();
+                setTimeout(function(){
+                    $('#diskoverformsuccess').fadeOut();
+                },2000);
+                setTimeout(function(){
+                    $('#diskoverformsuccess').remove();
+                },3000);
+            }
+        })
+        .fail(function (data) {
+            $("#diskoverform").append(
+                '<div class="alert alert-danger" id="diskoverformerror">Could not reach server, please try again later.</div>'
+            ).fadeIn();
+            setTimeout(function () {
+                $('#diskoverformerror').fadeOut();
+            }, 2000);
+            setTimeout(function () {
+                $('#diskoverformerror').remove();
             }, 3000);
         });
 
