@@ -58,7 +58,7 @@ if ($_POST['formname'] === 'elasticsearchform') {
     } elseif ($_POST['ES_HTTPCOMPRESS'] !== 'true' && $_POST['ES_HTTPCOMPRESS'] !== 'false') {
         $errors['ES_HTTPCOMPRESS'] = 'ES_HTTPCOMPRESS must be set to true or false.';
     }
-} elseif ($_POST['formname'] === 'otherform') {
+} elseif ($_POST['formname'] === 'webotherform') {
     if (empty($_POST['TIMEZONE'])) {
         $errors['TIMEZONE'] = 'TIMEZONE is required.';
     }

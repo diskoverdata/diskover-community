@@ -157,10 +157,10 @@ $(document).ready(function () {
         event.preventDefault();
     });
 
-    $("#otherform").submit(function (event) {
+    $("#webotherform").submit(function (event) {
         $('.has-error').removeClass('has-error');
         $(".help-block").remove();
-        var formData = $("#otherform").serialize();
+        var formData = $("#webotherform").serialize();
 
         $.ajax({
             type: "POST",
@@ -179,26 +179,26 @@ $(document).ready(function () {
                     }
                   }
             } else {
-                $("#otherform").append(
-                    '<div class="alert alert-success" id="otherformsuccess">' + data.message + "</div>"
+                $("#webotherform").append(
+                    '<div class="alert alert-success" id="webotherformsuccess">' + data.message + "</div>"
                 ).fadeIn();
                 setTimeout(function(){
-                    $('#otherformsuccess').fadeOut();
+                    $('#webotherformsuccess').fadeOut();
                 },2000);
                 setTimeout(function(){
-                    $('#otherformsuccess').remove();
+                    $('#webotherformsuccess').remove();
                 },3000);
             }
         })
         .fail(function (data) {
-            $("#otherform").append(
-                '<div class="alert alert-danger" id="otherformerror">Could not reach server, please try again later.</div>'
+            $("#webotherform").append(
+                '<div class="alert alert-danger" id="webotherformerror">Could not reach server, please try again later.</div>'
             ).fadeIn();
             setTimeout(function () {
-                $('#otherformerror').fadeOut();
+                $('#webotherformerror').fadeOut();
             }, 2000);
             setTimeout(function () {
-                $('#otherformerror').remove();
+                $('#webotherformerror').remove();
             }, 3000);
         });
 
