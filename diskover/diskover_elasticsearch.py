@@ -16,138 +16,17 @@ https://www.diskoverdata.com/solutions/
 
 """
 
-import os
 import sys
-import confuse
+import os
 import requests
 import logging
 import elasticsearch
-import warnings
 from elasticsearch import helpers
 
-from diskover_helpers import load_plugins
+from diskover_helpers import config, load_plugins
 
 
 logger = logging.getLogger(__name__)
-
-"""Load yaml config file."""
-config = confuse.Configuration('diskover', __name__)
-config_filename = os.path.join(config.config_dir(), confuse.CONFIG_FILENAME)
-if not os.path.exists(config_filename):
-    print('Config file {0} not found! Copy from default config.'.format(config_filename))
-    sys.exit(1)
-
-# load default config file
-config_defaults = confuse.Configuration('diskover', __name__)
-scriptpath = os.path.dirname(os.path.realpath(__file__))
-defaultconfig_filename = os.path.join(scriptpath, 'configs_sample/diskover/config.yaml')
-config_defaults.set_file(defaultconfig_filename)
-
-def config_warn(e):
-    warnings.warn('Config setting {}. Using default.'.format(e))
-
-# laod config values
-try:
-    # check for any env vars to override config
-    es_host = os.getenv('ES_HOST', config['databases']['elasticsearch']['host'].get())
-except confuse.NotFoundError as e:
-    config_warn(e)
-    es_host = config_defaults['databases']['elasticsearch']['host'].get()
-try:
-    es_port = os.getenv('ES_PORT', config['databases']['elasticsearch']['port'].get())
-except confuse.NotFoundError as e:
-    config_warn(e)
-    es_port = config_defaults['databases']['elasticsearch']['port'].get()
-try:
-    es_user = os.getenv('ES_USER', config['databases']['elasticsearch']['user'].get())
-except confuse.NotFoundError as e:
-    config_warn(e)
-    es_user = config_defaults['databases']['elasticsearch']['user'].get()
-finally:
-    if not es_user:
-        es_user = ""
-try:
-    es_password = os.getenv('ES_PASS', config['databases']['elasticsearch']['password'].get())
-except confuse.NotFoundError as e:
-    config_warn(e)
-    es_password = config_defaults['databases']['elasticsearch']['password'].get()
-finally:
-    if not es_password:
-        es_password = ""
-try:
-    es_https_env = os.getenv('ES_HTTPS')
-    if es_https_env is not None:
-        if es_https_env.lower() == "true":
-            es_https = True
-        elif es_https_env.lower() == "false":
-            es_https = False
-    else:
-        es_https = config['databases']['elasticsearch']['https'].get()
-except confuse.NotFoundError as e:
-    config_warn(e)
-    es_https = config_defaults['databases']['elasticsearch']['https'].get()
-try:
-    es_sslverify_env = os.getenv('ES_SSLVERIFICATION')
-    if es_sslverify_env is not None:
-        if es_sslverify_env.lower() == "true":
-            es_sslverify = True
-        elif es_sslverify_env.lower() == "false":
-            es_sslverify = False
-    else:
-        es_sslverify = config['databases']['elasticsearch']['sslverification'].get()
-except confuse.NotFoundError as e:
-    config_warn(e)
-    es_sslverify = config_defaults['databases']['elasticsearch']['sslverification'].get()
-try:
-    es_httpcompress = config['databases']['elasticsearch']['httpcompress'].get()
-except confuse.NotFoundError as e:
-    config_warn(e)
-    es_httpcompress = config_defaults['databases']['elasticsearch']['httpcompress'].get()
-try:
-    es_timeout = config['databases']['elasticsearch']['timeout'].get()
-except confuse.NotFoundError as e:
-    config_warn(e)
-    es_timeout = config_defaults['databases']['elasticsearch']['timeout'].get()
-try:
-    es_maxsize = config['databases']['elasticsearch']['maxsize'].get()
-except confuse.NotFoundError as e:
-    config_warn(e)
-    es_maxsize = config_defaults['databases']['elasticsearch']['maxsize'].get()
-try:
-    es_max_retries = config['databases']['elasticsearch']['maxretries'].get()
-except confuse.NotFoundError as e:
-    config_warn(e)
-    es_max_retries = config_defaults['databases']['elasticsearch']['maxretries'].get()
-try:
-    es_scrollsize = config['databases']['elasticsearch']['scrollsize'].get()
-except confuse.NotFoundError as e:
-    config_warn(e)
-    es_scrollsize = config_defaults['databases']['elasticsearch']['scrollsize'].get()
-try:
-    es_wait_status_yellow = config['databases']['elasticsearch']['wait'].get()
-except confuse.NotFoundError as e:
-    config_warn(e)
-    es_wait_status_yellow = config_defaults['databases']['elasticsearch']['wait'].get()
-try:
-    es_chunksize = config['databases']['elasticsearch']['chunksize'].get()
-except confuse.NotFoundError as e:
-    config_warn(e)
-    es_chunksize = config_defaults['databases']['elasticsearch']['chunksize'].get()
-try:
-    es_translogsize = config['databases']['elasticsearch']['translogsize'].get()
-except confuse.NotFoundError as e:
-    config_warn(e)
-    es_translogsize = config_defaults['databases']['elasticsearch']['translogsize'].get()
-try:
-    es_translogsyncint = config['databases']['elasticsearch']['translogsyncint'].get()
-except confuse.NotFoundError as e:
-    config_warn(e)
-    es_translogsyncint = config_defaults['databases']['elasticsearch']['translogsyncint'].get()
-try:
-    es_indexrefresh = config['databases']['elasticsearch']['indexrefresh'].get()
-except confuse.NotFoundError as e:
-    config_warn(e)
-    es_indexrefresh = config_defaults['databases']['elasticsearch']['indexrefresh'].get()
 
 # load any available plugins
 plugins = load_plugins()
@@ -171,47 +50,62 @@ def user_prompt(question):
 
 def elasticsearch_connection():
     """Connect to Elasticsearch."""
+    # Check for env vars
+    if os.getenv('ES_HTTPS') is not None:
+        config['ES_HTTPS'] = os.getenv('ES_HTTPS').lower() in ('true', '1')
+    if os.getenv('ES_HOST') is not None:
+        config['ES_HOST'] = os.getenv('ES_HOST')
+    if os.getenv('ES_PORT') is not None:
+        config['ES_HOST'] = os.getenv('ES_PORT')
+    if os.getenv('ES_USER') is not None:
+        config['ES_USER'] = os.getenv('ES_USER')
+    if os.getenv('ES_PASS') is not None:
+        config['ES_PASS'] = os.getenv('ES_PASS')
+    if os.getenv('ES_SSLVERIFICATION') is not None:
+        config['ES_SSLVERIFICATION'] = os.getenv('ES_SSLVERIFICATION').lower() in ('true', '1')
+    
+    if config['ES_USER'] is None:
+        config['ES_USER'] = ""
+    if config['ES_PASS'] is None:
+        config['ES_PASS'] = ""
+    
     # Check if Elasticsearch is alive
-    if es_https:
+    if config['ES_HTTPS']:
         scheme = 'https'
     # Local connection to es
     else:
         scheme = 'http'
-    url = scheme + '://' + es_host + ':' + str(es_port)
+    url = scheme + '://' + config['ES_HOST'] + ':' + str(config['ES_PORT'])
     try:
-        if (es_sslverify):
-            r = requests.get(url, auth=(es_user, es_password))
+        if (config['ES_SSLVERIFICATION']):
+            r = requests.get(url, auth=(config['ES_USER'], config['ES_PASS']))
         else:
             import urllib3
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-            r = requests.get(url, auth=(es_user, es_password), verify=False)
+            r = requests.get(url, auth=(config['ES_USER'], config['ES_PASS']), verify=False)
     except Exception as e:
-        print('Error connecting to Elasticsearch, check config and Elasticsearch is running.\n\nError: {0}'.format(e))
+        print('Error connecting to Elasticsearch at {0}, check config and Elasticsearch is running. (Error: {1})'.format(url, e))
         sys.exit(1)
 
     # Check if we are using HTTP TLS/SSL
-    if es_https:
-        if (es_sslverify):
-            verifycerts = True
-        else:
-            verifycerts = False
+    if os.getenv('ES_HTTPS') == 'true' or config['ES_HTTPS']:
         es = elasticsearch.Elasticsearch(
-            hosts=es_host,
-            port=es_port,
-            http_auth=(es_user, es_password),
-            scheme="https", use_ssl=True, verify_certs=verifycerts,
+            hosts=config['ES_HOST'],
+            port=config['ES_PORT'],
+            http_auth=(config['ES_USER'], config['ES_PASS']),
+            scheme="https", use_ssl=True, verify_certs=config['ES_SSLVERIFICATION'],
             connection_class=elasticsearch.RequestsHttpConnection,
-            timeout=es_timeout, maxsize=es_maxsize,
-            max_retries=es_max_retries, retry_on_timeout=True, http_compress=es_httpcompress)
+            timeout=config['ES_TIMEOUT'], maxsize=config['ES_MAXSIZE'],
+            max_retries=config['ES_MAXRETRIES'], retry_on_timeout=True, http_compress=config['ES_HTTPCOMPRESS'])
     # Local connection to es
     else:
         es = elasticsearch.Elasticsearch(
-            hosts=es_host,
-            port=es_port,
-            http_auth=(es_user, es_password),
+            hosts=config['ES_HOST'],
+            port=config['ES_PORT'],
+            http_auth=(config['ES_USER'], config['ES_PASS']),
             connection_class=elasticsearch.Urllib3HttpConnection,
-            timeout=es_timeout, maxsize=es_maxsize,
-            max_retries=es_max_retries, retry_on_timeout=True, http_compress=es_httpcompress)
+            timeout=config['ES_TIMEOUT'], maxsize=config['ES_MAXSIZE'],
+            max_retries=config['ES_MAXRETRIES'], retry_on_timeout=True, http_compress=config['ES_HTTPCOMPRESS'])
 
     return es
 
@@ -426,13 +320,13 @@ def create_index(indexname, es):
 
 def bulk_upload(es, indexname, docs):
     """Elasticsearch Bulk uploader."""
-    if es_wait_status_yellow:
+    if config['ES_WAIT']:
         # wait for es health to be at least yellow
-        es.cluster.health(wait_for_status='yellow', request_timeout=es_timeout)
+        es.cluster.health(wait_for_status='yellow', request_timeout=config['ES_TIMEOUT'])
 
     # bulk load data to Elasticsearch index
     helpers.bulk(es, docs, index=indexname,
-                    chunk_size=es_chunksize, request_timeout=es_timeout, stats_only=True)
+                    chunk_size=config['ES_CHUNKSIZE'], request_timeout=config['ES_TIMEOUT'], stats_only=True)
 
 
 def tune_index(es, indexname, defaults=False):
@@ -448,18 +342,18 @@ def tune_index(es, indexname, defaults=False):
     }
     tuned_settings = {
         "index": {
-            "refresh_interval": es_indexrefresh,
+            "refresh_interval": config['ES_INDEXREFRESH'],
             "number_of_replicas": 0,
-            "translog.flush_threshold_size": es_translogsize,
+            "translog.flush_threshold_size": config['ES_TRANSLOGSIZE'],
             "translog.durability": "async",
-            "translog.sync_interval": es_translogsyncint
+            "translog.sync_interval": config['ES_TRANSLOGSYNCINT']
         }
     }
     if not defaults:
         logger.info("Tuning index settings for crawl")
         es.indices.put_settings(index=indexname, body=tuned_settings,
-                                request_timeout=es_timeout)
+                                request_timeout=config['ES_TIMEOUT'])
     else:
         logger.info("Setting index settings back to defaults")
         es.indices.put_settings(index=indexname, body=default_settings,
-                                request_timeout=es_timeout)
+                                request_timeout=config['ES_TIMEOUT'])

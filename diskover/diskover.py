@@ -21,7 +21,6 @@ import os
 import sys
 import time
 import logging
-import confuse
 import importlib
 import re
 import warnings
@@ -34,7 +33,7 @@ from random import choice
 
 from diskover_elasticsearch import elasticsearch_connection, \
     check_index_exists, create_index, bulk_upload, tune_index
-from diskover_helpers import dir_excluded, file_excluded, \
+from diskover_helpers import config, dir_excluded, file_excluded, \
     convert_size, get_time, get_owner_group_names, index_info_crawlstart, \
     index_info_crawlend, get_parent_path, get_dir_name, \
     get_file_name, load_plugins, list_plugins, get_plugins_info, set_times, \
@@ -66,147 +65,6 @@ if not IS_PY3:
     print('Python 3.5 or higher required.')
     sys.exit(1)
 
-"""Load yaml config file.
-Checks for env var DISKOVERDIR as alternate config file.
-"""
-config = confuse.Configuration('diskover', __name__)
-config_filename = os.path.join(config.config_dir(), confuse.CONFIG_FILENAME)
-if not os.path.exists(config_filename):
-    print('Config file {0} not found! Copy from default config.'.format(config_filename))
-    sys.exit(1)
-
-# load default config file
-config_defaults = confuse.Configuration('diskover', __name__)
-scriptpath = os.path.dirname(os.path.realpath(__file__))
-defaultconfig_filename = os.path.join(scriptpath, 'configs_sample/diskover/config.yaml')
-config_defaults.set_file(defaultconfig_filename)
-
-def config_warn(e):
-    warnings.warn('Config setting {}. Using default.'.format(e))
-
-# laod config values
-try:
-    logtofile = config['logToFile'].get()
-except confuse.NotFoundError as e:
-    config_warn(e)
-    logtofile = config_defaults['logToFile'].get()
-try:
-    logdir = config['logDirectory'].get()
-except confuse.NotFoundError as e:
-    config_warn(e)
-    logdir = config_defaults['logDirectory'].get()
-try:
-    maxthreads = config['diskover']['maxthreads'].get()
-except confuse.NotFoundError as e:
-    config_warn(e)
-    maxthreads = config_defaults['diskover']['maxthreads'].get()
-finally:
-    if maxthreads is None:
-        maxthreads = int(os.cpu_count())
-try:
-    exc_empty_dirs = config['diskover']['excludes']['emptydirs'].get()
-except confuse.NotFoundError as e:
-    config_warn(e)
-    exc_empty_dirs = config_defaults['diskover']['excludes']['emptydirs'].get()
-try:
-    exc_empty_files = config['diskover']['excludes']['emptyfiles'].get()
-except confuse.NotFoundError as e:
-    config_warn(e)
-    exc_empty_files = config_defaults['diskover']['excludes']['emptyfiles'].get()
-try:
-    exc_files = config['diskover']['excludes']['files'].get()
-except confuse.NotFoundError as e:
-    config_warn(e)
-    exc_files = config_defaults['diskover']['excludes']['files'].get()
-try:
-    exc_dirs = config['diskover']['excludes']['dirs'].get()
-except confuse.NotFoundError as e:
-    config_warn(e)
-    exc_dirs = config_defaults['diskover']['excludes']['dirs'].get()
-try:
-    minfilesize = config['diskover']['excludes']['minfilesize'].get()
-except confuse.NotFoundError as e:
-    config_warn(e)
-    minfilesize = config_defaults['diskover']['excludes']['minfilesize'].get()
-try:
-    checkfiletimes = config['diskover']['excludes']['checkfiletimes'].get()
-except confuse.NotFoundError as e:
-    config_warn(e)
-    checkfiletimes = config_defaults['diskover']['excludes']['checkfiletimes'].get()
-try:
-    minmtime = config['diskover']['excludes']['minmtime'].get() * 86400
-except confuse.NotFoundError as e:
-    config_warn(e)
-    minmtime = config_defaults['diskover']['excludes']['minmtime'].get() * 86400
-try:
-    maxmtime = config['diskover']['excludes']['maxmtime'].get() * 86400
-except confuse.NotFoundError as e:
-    config_warn(e)
-    maxmtime = config_defaults['diskover']['excludes']['maxmtime'].get() * 86400
-try:
-    minctime = config['diskover']['excludes']['minctime'].get() * 86400
-except confuse.NotFoundError as e:
-    config_warn(e)
-    minctime = config_defaults['diskover']['excludes']['minctime'].get() * 86400
-try:
-    maxctime = config['diskover']['excludes']['maxctime'].get() * 86400
-except confuse.NotFoundError as e:
-    config_warn(e)
-    maxctime = config_defaults['diskover']['excludes']['maxctime'].get() * 86400
-try:
-    minatime = config['diskover']['excludes']['minatime'].get() * 86400
-except confuse.NotFoundError as e:
-    config_warn(e)
-    minatime = config_defaults['diskover']['excludes']['minatime'].get() * 86400
-try:
-    maxatime = config['diskover']['excludes']['maxatime'].get() * 86400
-except confuse.NotFoundError as e:
-    config_warn(e)
-    maxatime = config_defaults['diskover']['excludes']['maxatime'].get() * 86400
-try:
-    blocksize = config['diskover']['blocksize'].get()
-except confuse.NotFoundError as e:
-    config_warn(e)
-    blocksize = config_defaults['diskover']['blocksize'].get()
-try:
-    replacepaths = config['diskover']['replacepaths']['replace'].get()
-except confuse.NotFoundError as e:
-    config_warn(e)
-    replacepaths = config_defaults['diskover']['replacepaths']['replace'].get()
-finally:
-    if IS_WIN:
-        replacepaths = True
-try:
-    es_chunksize = config['databases']['elasticsearch']['chunksize'].get()
-except confuse.NotFoundError as e:
-    config_warn(e)
-    es_chunksize = config_defaults['databases']['elasticsearch']['chunksize'].get()
-try:
-    es_timeout = config['databases']['elasticsearch']['timeout'].get()
-except confuse.NotFoundError as e:
-    config_warn(e)
-    es_timeout = config_defaults['databases']['elasticsearch']['timeout'].get()
-try:
-    plugins_enabled = config['diskover']['plugins']['enable'].get()
-except confuse.NotFoundError as e:
-    config_warn(e)
-    plugins_enabled = config_defaults['diskover']['plugins']['enable'].get()
-try:
-    plugins_dirs = config['diskover']['plugins']['dirs'].get()
-except confuse.NotFoundError as e:
-    config_warn(e)
-    plugins_dirs = config_defaults['diskover']['plugins']['dirs'].get()
-try:
-    plugins_files = config['diskover']['plugins']['files'].get()
-except confuse.NotFoundError as e:
-    config_warn(e)
-    plugins_files = config_defaults['diskover']['plugins']['files'].get()
-try:
-    restore_times = config['diskover']['other']['restoretimes'].get()
-except confuse.NotFoundError as e:
-    config_warn(e)
-    restore_times = config_defaults['diskover']['other']['restoretimes'].get()
-
 
 filecount = {}
 skipfilecount = {}
@@ -237,7 +95,7 @@ class AltScannerError(Exception):
         super().__init__(self.message)
         logmsg = 'ALT SCANNER EXCEPTION {0}'.format(self.message)
         logger.exception(logmsg)
-        if logtofile: logger_warn.exception(logmsg)
+        if config['LOGTOFILE']: logger_warn.exception(logmsg)
         sys.exit(1)
 
 
@@ -247,7 +105,7 @@ class PluginError(Exception):
         super().__init__(self.message)
         logmsg = 'PLUGIN EXCEPTION {0}'.format(self.message)
         logger.exception(logmsg)
-        if logtofile: logger_warn.exception(logmsg)
+        if config['LOGTOFILE']: logger_warn.exception(logmsg)
         sys.exit(1)
         
 
@@ -263,21 +121,21 @@ def close_app():
     if not emptyindex:
         tune_index(es, options.index, defaults=True)
     # close any plugins
-    if plugins_enabled and plugins:
+    if config['PLUGINS_ENABLE'] and plugins:
         for plugin in plugins:
             if hasattr(plugin, 'close'):
                 try:
                     plugin.close(globals())
                 except Exception as e:
                     logger.exception(e, exc_info=1)
-                    if logtofile: logger_warn.exception(e, exc_info=1)
+                    if config['LOGTOFILE']: logger_warn.exception(e, exc_info=1)
     # alt scanner close
     if alt_scanner and hasattr(alt_scanner, 'close'):
         try:
             alt_scanner.close(globals())
         except Exception as e:
             logger.exception(e, exc_info=1)
-            if logtofile: logger_warn.exception(e, exc_info=1)
+            if config['LOGTOFILE']: logger_warn.exception(e, exc_info=1)
     # if any warnings, exit with custom exit code 64 to indicate index finished but with warnings
     if warnings > 0:
         sys.exit(64)
@@ -287,24 +145,24 @@ def close_app():
 def close_app_critical_error():
     """Handle exiting when a critical error exception occurs."""
     # close any plugins
-    if plugins_enabled and plugins:
+    if config['PLUGINS_ENABLE'] and plugins:
         for plugin in plugins:
             if hasattr(plugin, 'close'):
                 try:
                     plugin.close(globals())
                 except Exception as e:
                     logger.exception(e, exc_info=1)
-                    if logtofile: logger_warn.exception(e, exc_info=1)
+                    if config['LOGTOFILE']: logger_warn.exception(e, exc_info=1)
     # alt scanner close
     if alt_scanner and hasattr(alt_scanner, 'close'):
         try:
             alt_scanner.close(globals())
         except Exception as e:
             logger.exception(e, exc_info=1)
-            if logtofile: logger_warn.exception(e, exc_info=1)
+            if config['LOGTOFILE']: logger_warn.exception(e, exc_info=1)
     logmsg = 'CRITICAL ERROR, DELETING INDEX AND EXITING'
     logger.critical(logmsg)
-    if logtofile: logger_warn.critical(logmsg)
+    if config['LOGTOFILE']: logger_warn.critical(logmsg)
     es.indices.delete(index=options.index, ignore=[400, 404])
     try:
         sys.exit(1)
@@ -331,7 +189,7 @@ def start_bulk_upload(thread, root, docs, doccount):
     except Exception as e:
         logmsg = '[{0}] FATAL ERROR: Elasticsearch bulk error! ({1})'.format(thread, e)
         logger.critical(logmsg, exc_info=1)
-        if logtofile: logger_warn.critical(logmsg, exc_info=1)
+        if config['LOGTOFILE']: logger_warn.critical(logmsg, exc_info=1)
         close_app_critical_error()
     es_upload_time = time.time() - es_upload_start
     if DEBUG:
@@ -412,14 +270,14 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
         except RuntimeError as e:
             logmsg = '[{0}] ALT SCANNER ERROR: {1}'.format(thread, e)
             logger.error(logmsg)
-            if logtofile: logger_warn.error(logmsg)
+            if config['LOGTOFILE']: logger_warn.error(logmsg)
             with crawl_thread_lock:
                 warnings += 1
             return 0, 0, 0, 0
         except Exception as e:
             logmsg = '[{0}] ALT SCANNER EXCEPTION: {1}'.format(thread, e)
             logger.exception(logmsg)
-            if logtofile: logger_warn.exception(logmsg)
+            if config['LOGTOFILE']: logger_warn.exception(logmsg)
             with crawl_thread_lock:
                 warnings += 1
             return 0, 0, 0, 0
@@ -432,7 +290,7 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
         except OSError as e:
             logmsg = '[{0}] OS ERROR: {1}'.format(thread, e)
             logger.warning(logmsg)
-            if logtofile: logger_warn.warning(logmsg)
+            if config['LOGTOFILE']: logger_warn.warning(logmsg)
             with crawl_thread_lock:
                 warnings += 1
             return 0, 0, 0, 0
@@ -493,12 +351,12 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
                     f_stat = entry.stat()
                     
                     # restore file times (atime/mtime)
-                    if restore_times and not options.altscanner:
+                    if config['RESTORETIMES'] and not options.altscanner:
                         res, err = set_times(entry.path, f_stat.st_atime, f_stat.st_mtime)
                         if not res:
                             logmsg = 'OS ERROR setting file times for {0} (error {1})'.format(entry.path, err)
                             logger.warning(logmsg)
-                            if logtofile: logger_warn.warning(logmsg)
+                            if config['LOGTOFILE']: logger_warn.warning(logmsg)
                             with crawl_thread_lock:
                                 warnings += 1
 
@@ -509,7 +367,7 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
                     elif options.altscanner:
                         fsize_du = f_stat.st_sizedu
                     else:
-                        fsize_du = f_stat.st_blocks * blocksize    
+                        fsize_du = f_stat.st_blocks * config['BLOCKSIZE']    
                     # add inode to inodes list if hardlink count > 1
                     if f_stat.st_nlink > 1:
                         # set fsize_du to 0 if inode in inodes list (hardlink)
@@ -523,15 +381,15 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
                     fctime_sec = timenow - f_stat.st_ctime
                     fatime_sec = timenow - f_stat.st_atime
 
-                    if not exc_empty_files or (exc_empty_files and fsize > 0):
-                        if fsize >= minfilesize:
-                            if not checkfiletimes or (\
-                                fmtime_sec > minmtime and \
-                                fmtime_sec < maxmtime and \
-                                fctime_sec > minctime and \
-                                fctime_sec < maxctime and \
-                                fatime_sec > minatime and \
-                                fatime_sec < maxatime):
+                    if not config['EXCLUDES_EMPTYFILES'] or (config['EXCLUDES_EMPTYFILES'] and fsize > 0):
+                        if fsize >= config['EXCLUDES_MINFILESIZE']:
+                            if not config['EXCLUDES_CHECKFILETIMES'] or (\
+                                fmtime_sec > config['EXCLUDES_MINMTIME'] and \
+                                fmtime_sec < config['EXCLUDES_MAXMTIME'] and \
+                                fctime_sec > config['EXCLUDES_MINCTIME'] and \
+                                fctime_sec < config['EXCLUDES_MAXCTIME'] and \
+                                fatime_sec > config['EXCLUDES_MINATIME'] and \
+                                fatime_sec < config['EXCLUDES_MAXATIME']):
                                 size += fsize
                                 size_norecurs += fsize
                                 size_du += fsize_du
@@ -558,7 +416,7 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
                                     file_name = get_file_name(entry.name, ignore_errors=True)
                                     logmsg = '[{0}] UNICODE WARNING {1}'.format(thread, os.path.join(parent_path, file_name))
                                     logger.warning(logmsg)
-                                    if logtofile: logger_warn.warning(logmsg)
+                                    if config['LOGTOFILE']: logger_warn.warning(logmsg)
                                     with crawl_thread_lock:
                                         warnings += 1
                                     pass
@@ -569,7 +427,7 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
                                 except ValueError:
                                     logmsg = '[{0}] MTIME TIMESTAMP WARNING {1}'.format(thread, os.path.join(parent_path, file_name))
                                     logger.warning(logmsg)
-                                    if logtofile: logger_warn.warning(logmsg)
+                                    if config['LOGTOFILE']: logger_warn.warning(logmsg)
                                     with crawl_thread_lock:
                                         warnings += 1
                                     mtime = "1970-01-01T00:00:00"
@@ -580,7 +438,7 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
                                 except ValueError:
                                     logmsg = '[{0}] ATIME TIMESTAMP WARNING {1}'.format(thread, os.path.join(parent_path, file_name))
                                     logger.warning(logmsg)
-                                    if logtofile: logger_warn.warning(logmsg)
+                                    if config['LOGTOFILE']: logger_warn.warning(logmsg)
                                     with crawl_thread_lock:
                                         warnings += 1
                                     atime = "1970-01-01T00:00:00"
@@ -591,7 +449,7 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
                                 except ValueError:
                                     logmsg = '[{0}] CTIME TIMESTAMP WARNING {1}'.format(thread, os.path.join(parent_path, file_name))
                                     logger.warning(logmsg)
-                                    if logtofile: logger_warn.warning(logmsg)
+                                    if config['LOGTOFILE']: logger_warn.warning(logmsg)
                                     with crawl_thread_lock:
                                         warnings += 1
                                     ctime = "1970-01-01T00:00:00"
@@ -623,12 +481,12 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
                                     except Exception as e:
                                         logmsg = '[{0}] ALT SCANNER EXCEPTION {1}'.format(thread, e)
                                         logger.exception(logmsg)
-                                        if logtofile: logger_warn.exception(logmsg)
+                                        if config['LOGTOFILE']: logger_warn.exception(logmsg)
                                         with crawl_thread_lock:
                                             warnings += 1
                                         pass
                                 # check plugins for adding extra meta data to data dict
-                                if plugins_enabled and plugins_files:
+                                if config['PLUGINS_ENABLE'] and plugins_files:
                                     for plugin in plugins:
                                         try:
                                             # check if plugin is for file doc
@@ -641,11 +499,11 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
                                             if e.__class__ == RuntimeWarning:
                                                 logmsg = '[{0}] PLUGIN WARNING: {1}'.format(thread, err_message)
                                                 logger.warning(logmsg)
-                                                if logtofile: logger_warn.warning(logmsg)
+                                                if config['LOGTOFILE']: logger_warn.warning(logmsg)
                                             else:
                                                 logmsg = '[{0}] PLUGIN ERROR: {1}'.format(thread, err_message)
                                                 logger.error(logmsg)
-                                                if logtofile: logger_warn.error(logmsg)
+                                                if config['LOGTOFILE']: logger_warn.error(logmsg)
                                             with crawl_thread_lock:
                                                 warnings += 1
                                             extrameta_dict = e.args[1]
@@ -654,14 +512,14 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
                                         except Exception as e:
                                             logmsg = '[{0}] PLUGIN EXCEPTION {1}'.format(thread, e)
                                             logger.exception(logmsg)
-                                            if logtofile: logger_warn.exception(logmsg)
+                                            if config['LOGTOFILE']: logger_warn.exception(logmsg)
                                             with crawl_thread_lock:
                                                 warnings += 1
                                             pass
                                 # add file doc to docs list and upload to ES once it reaches certain size
                                 docs.append(data.copy())
                                 doc_count = len(docs)
-                                if doc_count >= es_chunksize:
+                                if doc_count >= config['ES_CHUNKSIZE']:
                                     doc_count = start_bulk_upload(thread, root, docs, doc_count)
                                     tot_doc_count += doc_count
                                     docs.clear()
@@ -693,7 +551,7 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
         
         # if not excluding empty dirs is set or exclude empty dirs is set but there are files or 
         # dirs in the current directory, index the dir
-        if not exc_empty_dirs or (exc_empty_dirs and (files > 0 or dirs > 0)):
+        if not config['EXCLUDES_EMPTYDIRS'] or (config['EXCLUDES_EMPTYDIRS'] and (files > 0 or dirs > 0)):
             # get owner and group names
             if IS_WIN:
                 # for windows just set both owner and group to 0, this is what scandir returns for Windows
@@ -712,7 +570,7 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
                 parent_path = get_parent_path(path, ignore_errors=True)
                 logmsg = '[{0}] UNICODE WARNING {1}'.format(thread, os.path.join(parent_path, file_name))
                 logger.warning(logmsg)
-                if logtofile: logger_warn.warning(logmsg)
+                if config['LOGTOFILE']: logger_warn.warning(logmsg)
                 with crawl_thread_lock:
                     warnings += 1
                 pass
@@ -723,7 +581,7 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
             except ValueError:
                 logmsg = '[{0}] MTIME TIMESTAMP WARNING {1}'.format(thread, os.path.join(parent_path, file_name))
                 logger.warning(logmsg)
-                if logtofile: logger_warn.warning(logmsg)
+                if config['LOGTOFILE']: logger_warn.warning(logmsg)
                 with crawl_thread_lock:
                     warnings += 1
                 mtime = "1970-01-01T00:00:00"
@@ -734,7 +592,7 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
             except ValueError:
                 logmsg = '[{0}] ATIME TIMESTAMP WARNING {1}'.format(thread, os.path.join(parent_path, file_name))
                 logger.warning(logmsg)
-                if logtofile: logger_warn.warning(logmsg)
+                if config['LOGTOFILE']: logger_warn.warning(logmsg)
                 with crawl_thread_lock:
                     warnings += 1
                 atime = "1970-01-01T00:00:00"
@@ -745,7 +603,7 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
             except ValueError:
                 logmsg = '[{0}] CTIME TIMESTAMP WARNING {1}'.format(thread, os.path.join(parent_path, file_name))
                 logger.warning(logmsg)
-                if logtofile: logger_warn.warning(logmsg)
+                if config['LOGTOFILE']: logger_warn.warning(logmsg)
                 with crawl_thread_lock:
                     warnings += 1
                 ctime = "1970-01-01T00:00:00"
@@ -783,12 +641,12 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
                 except Exception as e:
                     logmsg = '[{0}] ALT SCANNER EXCEPTION {1}'.format(thread, e)
                     logger.exception(logmsg)
-                    if logtofile: logger_warn.exception(logmsg)
+                    if config['LOGTOFILE']: logger_warn.exception(logmsg)
                     with crawl_thread_lock:
                         warnings += 1
                     pass
             # check plugins for adding extra meta data to data dict
-            if plugins_enabled and plugins_dirs:
+            if config['PLUGINS_ENABLE'] and plugins_dirs:
                 for plugin in plugins:
                     # check if plugin is for directory doc
                     try:
@@ -801,11 +659,11 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
                         if e.__class__ == RuntimeWarning:
                             logmsg = '[{0}] PLUGIN WARNING: {1}'.format(thread, err_message)
                             logger.warning(logmsg)
-                            if logtofile: logger_warn.warning(logmsg)
+                            if config['LOGTOFILE']: logger_warn.warning(logmsg)
                         else:
                             logmsg = '[{0}] PLUGIN ERROR: {1}'.format(thread, err_message)
                             logger.error(logmsg)
-                            if logtofile: logger_warn.error(logmsg)
+                            if config['LOGTOFILE']: logger_warn.error(logmsg)
                         with crawl_thread_lock:
                             warnings += 1
                         extrameta_dict = e.args[1]
@@ -814,7 +672,7 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
                     except Exception as e:
                         logmsg = '[{0}] PLUGIN EXCEPTION: {1}'.format(thread, e)
                         logger.exception(logmsg)
-                        if logtofile: logger_warn.exception(logmsg)
+                        if config['LOGTOFILE']: logger_warn.exception(logmsg)
                         with crawl_thread_lock:
                             warnings += 1
                         pass
@@ -823,7 +681,7 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
                 # add file doc to docs list and upload to ES once it reaches certain size
                 docs.append(data.copy())
                 doc_count = len(docs)
-                if doc_count >= es_chunksize:
+                if doc_count >= config['ES_CHUNKSIZE']:
                     doc_count = start_bulk_upload(thread, root, docs, doc_count)
                     tot_doc_count += doc_count
                     docs.clear()
@@ -848,26 +706,26 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
             inodecount[root] += d_count + f_count
         
         # restore directory times (atime/mtime)
-        if restore_times and not options.altscanner:
+        if config['RESTORETIMES'] and not options.altscanner:
             res, err = set_times(path, d_stat.st_atime, d_stat.st_mtime)
             if not res:
                 logmsg = 'OS ERROR setting file times for {0} (error {1})'.format(path, err)
                 logger.warning(logmsg)
-                if logtofile: logger_warn.warning(logmsg)
+                if config['LOGTOFILE']: logger_warn.warning(logmsg)
                 with crawl_thread_lock:
                     warnings += 1
 
     except OSError as e:
         logmsg = '[{0}] OS ERROR: {1}'.format(thread, e)
         logger.warning(logmsg)
-        if logtofile: logger_warn.warning(logmsg)
+        if config['LOGTOFILE']: logger_warn.warning(logmsg)
         with crawl_thread_lock:
             warnings += 1
         pass
     except RuntimeError as e:
         logmsg = '[{0}] ALT SCANNER ERROR: {1}'.format(thread, e)
         logger.error(logmsg)
-        if logtofile: logger_warn.error(logmsg)
+        if config['LOGTOFILE']: logger_warn.error(logmsg)
         with crawl_thread_lock:
             warnings += 1
         pass
@@ -963,7 +821,7 @@ def crawl(root):
     except OSError as e:
         logmsg = 'OS ERROR: {0}'.format(e)
         logger.warning(logmsg)
-        if logtofile: logger_warn.warning(logmsg)
+        if config['LOGTOFILE']: logger_warn.warning(logmsg)
         warnings += 1
         pass
     if len(subdir_list) > 0:
@@ -979,7 +837,7 @@ def crawl(root):
         except Exception as e:
             logmsg = 'FATAL ERROR: an exception has occurred: {0}'.format(e)
             logger.critical(logmsg, exc_info=1)
-            if logtofile: logger_warn.critical(logmsg, exc_info=1)
+            if config['LOGTOFILE']: logger_warn.critical(logmsg, exc_info=1)
             close_app_critical_error()
         
         # Set up threads to crawl (recursive) from each of the level 1 subdirs
@@ -990,7 +848,7 @@ def crawl(root):
             except Exception as e:          
                 logmsg = 'FATAL ERROR: an exception has occurred: {0}'.format(e)
                 logger.critical(logmsg, exc_info=1)
-                if logtofile: logger_warn.critical(logmsg, exc_info=1)
+                if config['LOGTOFILE']: logger_warn.critical(logmsg, exc_info=1)
                 close_app_critical_error()
 
     scandir_walk_time = time.time() - scandir_walk_start
@@ -1082,7 +940,7 @@ def log_setup():
     logger_warn = logging.getLogger('diskover_warn')
     eslogger = logging.getLogger('elasticsearch')
     diskover_eslogger = logging.getLogger('diskover_elasticsearch')
-    loglevel = config['logLevel'].get()
+    loglevel = config['LOGLEVEL']
     DEBUG = False
     if options.debug:
         loglevel = 'DEBUG'
@@ -1094,7 +952,7 @@ def log_setup():
     else:
         loglevel = logging.WARN
     logformat = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    if logtofile:
+    if config['LOGTOFILE']:
         # create log file name using top dir name and datestamp
         if args:
             d_path = args[0]
@@ -1124,7 +982,7 @@ def log_setup():
             treedirsstr += d_path.replace('/', '_')
         logfiletime = datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
         logname = 'diskover_{0}_{1}.log'.format(treedirsstr, logfiletime)
-        logfile = os.path.join(logdir, logname)
+        logfile = os.path.join(config['LOGDIRECTORY'], logname)
         handler_file = logging.FileHandler(logfile)
         handler_file.setFormatter(logging.Formatter(logformat))
         logger.setLevel(loglevel)
@@ -1136,7 +994,7 @@ def log_setup():
         logger.addHandler(handler_con)
         # warnings log
         logname_warn = 'diskover_{0}_{1}_warnings.log'.format(treedirsstr, logfiletime)
-        logfile_warn = os.path.join(logdir, logname_warn)
+        logfile_warn = os.path.join(config['LOGDIRECTORY'], logname_warn)
         handler_warnfile = logging.FileHandler(logfile_warn)
         handler_warnfile.setFormatter(logging.Formatter(logformat))
         logger_warn.setLevel(logging.WARN)
@@ -1232,7 +1090,7 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
         # call log_setup function to set up any logging for scanner
         if hasattr(alt_scanner, 'log_setup'):
             try:
-                alt_scanner.log_setup(loglevel, logformat, logtofile, handler_file, handler_warnfile, handler_con)
+                alt_scanner.log_setup(loglevel, logformat, config['LOGTOFILE'], handler_file, handler_warnfile, handler_con)
             except Exception as e:
                 raise AltScannerError(e)
          # call init function to create any connections to api, db, etc
@@ -1254,12 +1112,12 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
     if options.addtoindex:
         logmsg = 'Using --addtoindex cli option to add additional top paths to an index requires diskover Essential version.'
         logger.error(logmsg)
-        if logtofile: logger_warn.error(logmsg)
+        if config['LOGTOFILE']: logger_warn.error(logmsg)
         sys.exit(1)
     if options.threaddepth:
         logmsg = 'Using --threaddepth cli option to set crawl scan thread directory depth requires diskover Essential version.'
         logger.error(logmsg)
-        if logtofile: logger_warn.error(logmsg)
+        if config['LOGTOFILE']: logger_warn.error(logmsg)
         sys.exit(1)
 
     # get top path arg
@@ -1267,7 +1125,7 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
         if len(args) > 1:
             logmsg = 'Use only one tree_dir arg. Mutliple top paths in an index requires diskover Essential version.'
             logger.error(logmsg)
-            if logtofile: logger_warn.error(logmsg)
+            if config['LOGTOFILE']: logger_warn.error(logmsg)
             sys.exit(1)
         tree_dir = args[0]
         # check if we are using alternate scanner
@@ -1277,7 +1135,7 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
             if not res[0]:
                 logmsg = str(res[1])
                 logger.error(logmsg)
-                if logtofile: logger_warn.error(logmsg)
+                if config['LOGTOFILE']: logger_warn.error(logmsg)
                 sys.exit(1)
             # convert path to absolute path
             tree_dir = alt_scanner.abspath(tree_dir)
@@ -1285,7 +1143,7 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
             if not os.path.exists(tree_dir):
                 logmsg = '{0} no such directory!'.format(tree_dir)
                 logger.error(logmsg)
-                if logtofile: logger_warn.error(logmsg)
+                if config['LOGTOFILE']: logger_warn.error(logmsg)
                 sys.exit(1)
             else:
                 if IS_WIN:
@@ -1306,7 +1164,7 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
     else:
         logmsg = 'Missing tree_dir arg.'
         logger.error(logmsg)
-        if logtofile: logger_warn.error(logmsg)
+        if config['LOGTOFILE']: logger_warn.error(logmsg)
         sys.exit(1)
 
     # check if tree_dir is empty or all items excluded
@@ -1351,13 +1209,8 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
     if indexexits and not options.forcedropexisting:
         logmsg = 'Index {0} already exists, not crawling, use -f to overwrite.'.format(options.index)
         logger.warning(logmsg)
-        if logtofile: logger_warn.warning(logmsg)
+        if config['LOGTOFILE']: logger_warn.warning(logmsg)
         sys.exit(1)
-
-    # print config being used
-    config_filename = os.path.join(config.config_dir(), confuse.CONFIG_FILENAME)
-    logger.info('Config file: {0}'.format(config_filename))
-    logger.info('Config env var DISKOVERDIR: {0}'.format(os.getenv('DISKOVERDIR')))
 
     try:
         logger.info('Creating index {0}...'.format(options.index))
@@ -1366,7 +1219,7 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
         tune_index(es, options.index)
 
         # init plugins
-        if plugins_enabled and plugins:
+        if config['PLUGINS_ENABLE'] and plugins:
             for plugin in plugins:
                 if hasattr(plugin, 'init'):
                     try:
@@ -1374,7 +1227,7 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
                     except Exception as e:
                         raise PluginError(e)
         # print plugins
-        if plugins_enabled and plugins:
+        if config['PLUGINS_ENABLE'] and plugins:
             plugins_list = ''
             for pi in get_plugins_info():
                 plugins_list = plugins_list + pi['name'] + ' '
@@ -1385,6 +1238,10 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
         # check for thread config override
         if options.threads:
             maxthreads = options.threads
+        else:
+            maxthreads = config['MAXTHREADS']
+            if not maxthreads:
+                maxthreads = int(os.cpu_count())
         
         logger.info('maxthreads set to {0}'.format(maxthreads))
         
@@ -1417,5 +1274,5 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
     except Exception as e:                    
         logmsg = 'FATAL ERROR: an exception has occurred: {0}'.format(e)
         logger.critical(logmsg, exc_info=1)
-        if logtofile: logger_warn.critical(logmsg, exc_info=1)
+        if config['LOGTOFILE']: logger_warn.critical(logmsg, exc_info=1)
         close_app_critical_error()

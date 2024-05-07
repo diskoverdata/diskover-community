@@ -18,11 +18,9 @@ https://www.diskoverdata.com/solutions/
 
 import os
 import sys
-import confuse
 import re
 import math
 import importlib
-import warnings
 from datetime import datetime, timezone
 from threading import Lock
 if os.name == 'nt':
@@ -38,103 +36,11 @@ else:
     import grp
     from resource import getrusage, RUSAGE_SELF
     IS_WIN = False
+from diskover_db import db_getconfig
 
-"""Load yaml config file."""
-config = confuse.Configuration('diskover', __name__)
-config_filename = os.path.join(config.config_dir(), confuse.CONFIG_FILENAME)
-if not os.path.exists(config_filename):
-    print('Config file {0} not found! Copy from default config.'.format(config_filename))
-    sys.exit(1)
-    
-# load default config file
-config_defaults = confuse.Configuration('diskover', __name__)
-scriptpath = os.path.dirname(os.path.realpath(__file__))
-defaultconfig_filename = os.path.join(scriptpath, 'configs_sample/diskover/config.yaml')
-config_defaults.set_file(defaultconfig_filename)
+# Connect to sqlite database and get config settings
+config = db_getconfig()
 
-def config_warn(e):
-    warnings.warn('Config setting {}. Using default.'.format(e))
-
-# laod config values
-try:
-    exc_dirs = config['diskover']['excludes']['dirs'].get()
-except confuse.NotFoundError as e:
-    config_warn(e)
-    exc_dirs = config_defaults['diskover']['excludes']['dirs'].get()
-try:
-    exc_files = config['diskover']['excludes']['files'].get()
-except confuse.NotFoundError as e:
-    config_warn(e)
-    exc_files = config_defaults['diskover']['excludes']['files'].get()
-try:
-    inc_dirs = config['diskover']['includes']['dirs'].get()
-except confuse.NotFoundError as e:
-    config_warn(e)
-    inc_dirs = config_defaults['diskover']['includes']['dirs'].get()
-try:
-    inc_files = config['diskover']['includes']['files'].get()
-except confuse.NotFoundError as e:
-    config_warn(e)
-    inc_files = config_defaults['diskover']['includes']['files'].get()
-try:
-    og_uidgidonly = config['diskover']['ownersgroups']['uidgidonly'].get()
-except confuse.NotFoundError as e:
-    config_warn(e)
-    og_uidgidonly = config_defaults['diskover']['ownersgroups']['uidgidonly'].get()
-try:
-    og_domain = config['diskover']['ownersgroups']['domain'].get()
-except confuse.NotFoundError as e:
-    config_warn(e)
-    og_domain = config_defaults['diskover']['ownersgroups']['domain'].get()
-try:
-    og_domainsep = config['diskover']['ownersgroups']['domainsep'].get()
-except confuse.NotFoundError as e:
-    config_warn(e)
-    og_domainsep = config_defaults['diskover']['ownersgroups']['domainsep'].get()
-try:
-    og_domainfirst = config['diskover']['ownersgroups']['domainfirst'].get()
-except confuse.NotFoundError as e:
-    config_warn(e)
-    og_domainfirst = config_defaults['diskover']['ownersgroups']['domainfirst'].get()
-try:
-    og_keepdomain = config['diskover']['ownersgroups']['keepdomain'].get()
-except confuse.NotFoundError as e:
-    config_warn(e)
-    og_keepdomain = config_defaults['diskover']['ownersgroups']['keepdomain'].get()
-try:
-    replacepaths = config['diskover']['replacepaths']['replace'].get()
-except confuse.NotFoundError as e:
-    config_warn(e)
-    replacepaths = config_defaults['diskover']['replacepaths']['replace'].get()
-finally:
-    if IS_WIN:
-        replacepaths = True
-try:
-    replacepaths_from = config['diskover']['replacepaths']['from'].get()
-except confuse.NotFoundError as e:
-    config_warn(e)
-    replacepaths_from = config_defaults['diskover']['replacepaths']['from'].get()
-try:
-    replacepaths_to = config['diskover']['replacepaths']['to'].get()
-except confuse.NotFoundError as e:
-    config_warn(e)
-    replacepaths_to = config_defaults['diskover']['replacepaths']['to'].get()
-try:
-    plugins_enabled = config['diskover']['plugins']['enable'].get()
-except confuse.NotFoundError as e:
-    config_warn(e)
-    plugins_enabled = config_defaults['diskover']['plugins']['enable'].get()
-try:
-    plugins_dirs = config['diskover']['plugins']['dirs'].get()
-except confuse.NotFoundError as e:
-    config_warn(e)
-    plugins_dirs = config_defaults['diskover']['plugins']['dirs'].get()
-try:
-    plugins_files = config['diskover']['plugins']['files'].get()
-except confuse.NotFoundError as e:
-    config_warn(e)
-    plugins_files = config_defaults['diskover']['plugins']['files'].get()
-    
 
 uids_owners = {}
 gids_groups = {}
@@ -144,20 +50,20 @@ uidgid_lock = Lock()
 def dir_excluded(path):
     """Return True if path in exc_dirs, False if not in the list."""
     # return False if dir exclude list is empty
-    if not exc_dirs:
+    if not config['EXCLUDES_DIRS']:
         return False
     name = os.path.basename(path)
     # return if directory in included list (whitelist)
-    if name in inc_dirs or path in inc_dirs:
+    if name in config['INCLUDES_DIRS'] or path in config['INCLUDES_DIRS']:
         return False
     # skip any dirs in exc_dirs
-    if name in exc_dirs or path in exc_dirs:
+    if name in config['EXCLUDES_DIRS'] or path in config['EXCLUDES_DIRS']:
         return True
     # skip any dirs which start with . (dot) and in exc_dirs
-    if name.startswith('.') and u'.*' in exc_dirs:
+    if name.startswith('.') and u'.*' in config['EXCLUDES_DIRS']:
         return True
     # skip any dirs that are found in reg exp checks including wildcard searches
-    for d in exc_dirs:
+    for d in config['EXCLUDES_DIRS']:
         if d == '.*':
             continue
         
@@ -188,19 +94,19 @@ def dir_excluded(path):
 def file_excluded(filename):
     """Return True if path or ext in exc_files, False if not in the list."""
     # return False if file exclude list is empty
-    if not exc_files:
+    if not config['EXCLUDES_FILES']:
         return False
     # return if filename in included list (whitelist)
-    if filename in inc_files:
+    if filename in config['INCLUDES_FILES']:
         return False
     # check for filename in excluded_files set
-    if filename in exc_files:
+    if filename in config['EXCLUDES_FILES']:
         return True
     # check for extension in and . (dot) files in excluded_files
     extension = os.path.splitext(filename)[1][1:].lower()
-    if (not extension and 'NULLEXT' in exc_files) or \
-        '*.' + extension in exc_files or \
-            (filename.startswith('.') and u'.*' in exc_files):
+    if (not extension and 'NULLEXT' in config['EXCLUDES_FILES']) or \
+        '*.' + extension in config['EXCLUDES_FILES'] or \
+            (filename.startswith('.') and u'.*' in config['EXCLUDES_FILES']):
         return True
     return False
 
@@ -237,17 +143,17 @@ def get_owner_group_names(uid, gid):
     # not in cache
     if owner is None:
         # check if we should just get uid or try to get owner name
-        if og_uidgidonly:
+        if config['OWNERSGROUPS_UIDGIDONLY']:
             owner = uid
         else:
             try:
                 owner = pwd.getpwuid(uid).pw_name
                 # check if domain in name and if it should be removed
-                if og_domain and not og_keepdomain and og_domainsep in owner:
-                    if og_domainfirst:
-                        owner = owner.split(og_domainsep)[1]
+                if config['OWNERSGROUPS_DOMAIN'] and not config['OWNERSGROUPS_KEEPDOMAIN'] and config['OWNERSGROUPS_DOMAINSEP'] in owner:
+                    if config['OWNERSGROUPS_DOMAINFIRST']:
+                        owner = owner.split(config['OWNERSGROUPS_DOMAINSEP'])[1]
                     else:
-                        owner = owner.split(og_domainsep)[0]
+                        owner = owner.split(config['OWNERSGROUPS_DOMAINSEP'])[0]
             except Exception:
                 owner = uid
         with uidgid_lock:
@@ -262,17 +168,17 @@ def get_owner_group_names(uid, gid):
     # not in cache
     if group is None:
         # check if we should just get gid or try to get group name
-        if og_uidgidonly:
+        if config['OWNERSGROUPS_UIDGIDONLY']:
             group = gid
         else:
             try:
                 group = grp.getgrgid(gid).gr_name
                 # check if domain in name and if it should be removed
-                if og_domain and not og_keepdomain and og_domainsep in group:
-                    if og_domainfirst:
-                        group = group.split(og_domainsep)[1]
+                if config['OWNERSGROUPS_DOMAIN'] and not config['OWNERSGROUPS_KEEPDOMAIN'] and config['OWNERSGROUPS_DOMAINSEP'] in group:
+                    if config['OWNERSGROUPS_DOMAINFIRST']:
+                        group = group.split(config['OWNERSGROUPS_DOMAINSEP'])[1]
                     else:
-                        group = group.split(og_domainsep)[0]
+                        group = group.split(config['OWNERSGROUPS_DOMAINSEP'])[0]
             except Exception:
                 group = gid
         with uidgid_lock:
@@ -291,7 +197,7 @@ def index_info_crawlstart(es, index, path, start, ver, altscanner):
     if altscanner is not None:
         total, free, available = altscanner.get_storage_size(path)
         mount_path = path
-        if replacepaths:
+        if config['REPLACEPATHS_REPLACE']:
             mount_path = replace_path(mount_path)
         # Check if too large for long field mapping used by total
         maxlongint = 9007199254740992  # 8 PB
@@ -344,7 +250,7 @@ def index_info_crawlstart(es, index, path, start, ver, altscanner):
                 total = total_bytes.value
                 free = free_bytes.value
                 available = available_bytes.value
-            if replacepaths:
+            if config['REPLACEPATHS_REPLACE']:
                 mount_path = replace_path(mount_path)
             # Check if too large for long field mapping used by total
             maxlongint = 9007199254740992  # 8 PB
@@ -365,7 +271,7 @@ def index_info_crawlstart(es, index, path, start, ver, altscanner):
                 'type': 'spaceinfo'
             }
             es.index(index=index, body=data)
-    if replacepaths:
+    if config['REPLACEPATHS_REPLACE']:
         path = replace_path(path)
     data = {
             'path': path,
@@ -378,7 +284,7 @@ def index_info_crawlstart(es, index, path, start, ver, altscanner):
 
 def index_info_crawlend(es, index, path, size, size_du, filecount, dircount, end, elapsed):
     """Index some index info like total size, du size, file counts, etc."""
-    if replacepaths:
+    if config['REPLACEPATHS_REPLACE']:
         path = replace_path(path)
     data = {
         'path': path,
@@ -408,8 +314,8 @@ def replace_path(path):
         # change any windows path separator \ to /
         path = path.replace('\\', '/')
         path = path.rstrip('/')
-    if replacepaths_from and replacepaths_to:
-        path = path.replace(replacepaths_from, replacepaths_to, 1)
+    if config['REPLACEPATHS_FROM'] and config['REPLACEPATHS_TO']:
+        path = path.replace(config['REPLACEPATHS_FROM'], config['REPLACEPATHS_TO'], 1)
         path = path.rstrip('/')
     return path
 
@@ -450,14 +356,14 @@ def get_file_name(file, ignore_errors=False):
 
 
 def get_dir_name(path, ignore_errors=False):
-    if replacepaths:
+    if config['REPLACEPATHS_REPLACE']:
         path = replace_path(path)
     path = os.path.basename(path)
     return handle_unicode(path, ignore_errors=ignore_errors)
 
 
 def get_parent_path(path, ignore_errors=False):
-    if replacepaths:
+    if config['REPLACEPATHS_REPLACE']:
         path = replace_path(path)
     path = os.path.dirname(path)
     return handle_unicode(path, ignore_errors=ignore_errors)
@@ -491,7 +397,7 @@ def get_plugins_info():
                 in os.listdir(location):
             continue
         # check if plugin is enabled
-        if i in plugins_files or i in plugins_dirs:
+        if i in config['PLUGINS_FILES'] or i in config['PLUGINS_DIRS']:
             spec = importlib.machinery.PathFinder().find_spec(main_module, [location])
             plugins_info.append({'name': i, 'spec': spec})
     return plugins_info
@@ -502,7 +408,7 @@ def load_plugins():
     It dynamically load the plugins and return them in a list
     """
     loaded_plugins = []
-    if not plugins_enabled:
+    if not config['PLUGINS_ENABLE']:
         return loaded_plugins
     plugins_info = get_plugins_info()
     for plugin_info in plugins_info:
@@ -516,7 +422,7 @@ def list_plugins():
     """This is the list plugins function.
     It prints the name of all the available plugins
     """
-    if not plugins_enabled:
+    if not config['PLUGINS_ENABLED']:
         print('Plugins disabled in config')
     else:
         plugins_info = get_plugins_info()
@@ -526,9 +432,9 @@ def list_plugins():
             dirplugs = []
             fileplugs = []
             for plugin_info in plugins_info:
-                if plugin_info['name'] in plugins_dirs:
+                if plugin_info['name'] in config['PLUGINS_DIRS']:
                     dirplugs.append(plugin_info['name'])
-                if plugin_info['name'] in plugins_files:
+                if plugin_info['name'] in config['PLUGINS_FILES']:
                     fileplugs.append(plugin_info['name'])
             print('file:')
             print(fileplugs)
