@@ -40,6 +40,8 @@ from diskover_db import db_getconfig
 
 # Connect to sqlite database and get config settings
 config = db_getconfig()
+if IS_WIN:
+    config['REPLACEPATHS_REPLACE'] = True
 
 
 uids_owners = {}

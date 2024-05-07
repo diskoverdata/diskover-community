@@ -384,12 +384,12 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
                     if not config['EXCLUDES_EMPTYFILES'] or (config['EXCLUDES_EMPTYFILES'] and fsize > 0):
                         if fsize >= config['EXCLUDES_MINFILESIZE']:
                             if not config['EXCLUDES_CHECKFILETIMES'] or (\
-                                fmtime_sec > config['EXCLUDES_MINMTIME'] and \
-                                fmtime_sec < config['EXCLUDES_MAXMTIME'] and \
-                                fctime_sec > config['EXCLUDES_MINCTIME'] and \
-                                fctime_sec < config['EXCLUDES_MAXCTIME'] and \
-                                fatime_sec > config['EXCLUDES_MINATIME'] and \
-                                fatime_sec < config['EXCLUDES_MAXATIME']):
+                                fmtime_sec > config['EXCLUDES_MINMTIME']*86400 and \
+                                fmtime_sec < config['EXCLUDES_MAXMTIME']*86400 and \
+                                fctime_sec > config['EXCLUDES_MINCTIME']*86400 and \
+                                fctime_sec < config['EXCLUDES_MAXCTIME']*86400 and \
+                                fatime_sec > config['EXCLUDES_MINATIME']*86400 and \
+                                fatime_sec < config['EXCLUDES_MAXATIME']*86400):
                                 size += fsize
                                 size_norecurs += fsize
                                 size_du += fsize_du
