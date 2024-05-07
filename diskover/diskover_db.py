@@ -28,6 +28,9 @@ def db_connect():
     """Connect to sqlite db and return connection."""
     # Get database file path from config defaults
     dbfile = config_defaults['DATABASE']
+    # Check for env var
+    if os.getenv('DATABASE') is not None:
+        dbfile = os.getenv('DATABASE')
 
     # Open sqlite database
     try:
