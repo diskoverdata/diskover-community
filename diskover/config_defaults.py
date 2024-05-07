@@ -66,5 +66,5 @@ config_defaults = {
     'ES_TRANSLOGSIZE': '1gb',
     'ES_TRANSLOGSYNCINT': '30s',
     'ES_SCROLLSIZE': 1000,
-    'DATABASE': '/Users/cp/Documents/diskover-web-v2/community/v2.3.0/diskoverdb.sqlite3'
+    'DATABASE': '/var/www/diskover-web/diskoverdb.sqlite3'
  }
