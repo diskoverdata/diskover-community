@@ -3,6 +3,9 @@
 # [2.3.0] - 2024-
 ### added
 - additional crawl stats log output for min, max, avg for inodes/s and docs/s and also skipped files/dirs
+- env vars for ES config settings overrides are now used by diskover.py
+### changed
+- changed to using diskover-web sqlite db for storing diskover config settings instead of config file
 
 
 # [2.2.2] - 2023-12-12
