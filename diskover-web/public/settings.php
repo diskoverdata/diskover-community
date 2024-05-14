@@ -35,7 +35,7 @@ use diskover\ConfigDatabase;
 $db = new ConfigDatabase();
 $db->connect();
 $config_diskover = (object) $db->getConfigSettings('configdiskover');
-$config_all = (object) $db->getAllConfigSettings();
+$config_es = (object) $db->getESConfigSettings();
 
 ?>
 
@@ -344,9 +344,7 @@ $config_all = (object) $db->getAllConfigSettings();
                         <form name="elasticsearchform" id="elasticsearchform">
                         <input type="hidden" name="formname" value="elasticsearchform">
                         <?php
-                        foreach ($config_all as $key => $value) {
-                            // hide non ES_ config settings
-                            if (!preg_match("/^ES_/", $key)) continue;
+                        foreach ($config_es as $key => $value) {
                             if (is_bool($value)) {
                                 $value = json_encode($value);
                             }

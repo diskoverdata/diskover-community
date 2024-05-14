@@ -144,11 +144,18 @@ class ConfigDatabase
         return $config;
     }
 
-    public function getAllConfigSettings()
+    public function getESConfigSettings()
     {
         $diskover_config = $this->getConfigSettings('configdiskover');
-        $config = $this->getConfigSettings('configweb');
-        return array_merge($diskover_config, $config);
+        $web_config = $this->getConfigSettings('configweb');
+        $all_config = array_merge($diskover_config, $web_config);
+        $es_config = array();
+        foreach ($all_config as $key => $value) {
+            if (preg_match("/^ES_/", $key)) {
+                $es_config[$key] = $value;
+            }
+        }
+        return $es_config;
     }
 
     public function addConfigSetting($table, $name, $value)
