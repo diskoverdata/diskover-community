@@ -1,6 +1,8 @@
 # Diskover v2 Community Edition Change Log
 
-# [2.3.0] - 2024-
+# [2.3.0] - 2024-05-14
+### BREAKING CHANGES
+- diskover yaml config file no longer used, changed to using diskover-web sqlite db for storing diskover config settings instead of config file, settings from existing config file are not copied over on upgrade
 ### added
 - additional crawl stats log output for min, max, avg for inodes/s and docs/s and also skipped files/dirs
 - env vars for ES config settings overrides are now used by diskover.py
