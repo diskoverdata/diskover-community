@@ -21,13 +21,13 @@ import sys
 import sqlite3
 import json
 from distutils.util import strtobool
-from config_defaults import config_defaults
+from config_defaults import conf
 
 
 def db_connect():
     """Connect to sqlite db and return connection."""
     # Get database file path from config defaults
-    dbfile = config_defaults['DATABASE']
+    dbfile = conf['DATABASE']
     # Check for env var
     if os.getenv('DATABASE') is not None:
         dbfile = os.getenv('DATABASE')
@@ -63,7 +63,7 @@ def db_getconfig():
     
     config_tups = []
     # Add any missing settings from config_defaults to configdiskover table.
-    for name, value in config_defaults.items():
+    for name, value in conf.items():
         config_tups.append((name, json.dumps(value)))
     cur.executemany("INSERT OR IGNORE INTO configdiskover ('name', 'value') VALUES(?, ?)", config_tups)
     con.commit()

@@ -18,7 +18,7 @@ https://www.diskoverdata.com/solutions/
 
 # diskover config defaults
 
-config_defaults = {
+conf = {
     'LOGLEVEL': 'INFO',
     'LOGTOFILE': False,
     'LOGDIRECTORY': '/var/log/diskover/',
