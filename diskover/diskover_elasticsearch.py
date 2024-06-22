@@ -56,7 +56,7 @@ def elasticsearch_connection():
     if os.getenv('ES_HOST') is not None:
         config['ES_HOST'] = os.getenv('ES_HOST')
     if os.getenv('ES_PORT') is not None:
-        config['ES_HOST'] = os.getenv('ES_PORT')
+        config['ES_PORT'] = os.getenv('ES_PORT')
     if os.getenv('ES_USER') is not None:
         config['ES_USER'] = os.getenv('ES_USER')
     if os.getenv('ES_PASS') is not None:
