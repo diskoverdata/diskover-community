@@ -78,11 +78,11 @@ def elasticsearch_connection():
     url = scheme + '://' + config['ES_HOST'] + ':' + str(config['ES_PORT'])
     try:
         if (config['ES_SSLVERIFICATION']):
-            r = requests.get(url, auth=(config['ES_USER'], config['ES_PASS']))
+            r = requests.get(url, auth=(config['ES_USER'], config['ES_PASS']), verify=True, timeout=config['ES_TIMEOUT'])
         else:
             import urllib3
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-            r = requests.get(url, auth=(config['ES_USER'], config['ES_PASS']), verify=False)
+            r = requests.get(url, auth=(config['ES_USER'], config['ES_PASS']), verify=False, timeout=config['ES_TIMEOUT'])
     except Exception as e:
         print('Error connecting to Elasticsearch at {0}, check config and Elasticsearch is running. (Error: {1})'.format(url, e))
         sys.exit(1)
