@@ -1,6 +1,6 @@
 # Diskover-web v2 Community Edition Change Log
 
-# [2.3.0] - 2024-05-14
+# [2.3.0] - 2024-06-22
 ### BREAKING CHANGES
 - Constants.php config file no longer used, changed to using sqlite db for storing diskover-web config settings instead of config file, existing settings are copied from Constants.php on upgrade
 ### fixed
