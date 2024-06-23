@@ -1,3 +1,4 @@
 elasticsearch==7.13.4
-requests==2.31.0
+confuse==1.6.0
+requests==2.27.1
 boto3==1.18.63
