@@ -2,4 +2,4 @@ elasticsearch==7.13.4
 pywin32==302
 psutil==5.8.0
 confuse==1.6.0
-requests==2.27.1
+requests==2.32.2
