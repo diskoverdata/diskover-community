@@ -2,7 +2,7 @@
 
 # [2.3.0] - 2024-06-22
 ### BREAKING CHANGES
-- diskover yaml config file no longer used, changed to using diskover-web sqlite db for storing diskover config settings instead of config file, settings from existing config file are not copied over on upgrade
+- diskover yaml config file no longer used, changed to using diskover-web sqlite db for storing diskover config settings instead of config file, settings from existing config file are copied over on upgrade and config.yaml renamed to config.yaml.old
 ### added
 - additional crawl stats log output for min, max, avg for inodes/s and docs/s and also skipped files/dirs
 - env vars for ES config settings overrides are now used by diskover.py
