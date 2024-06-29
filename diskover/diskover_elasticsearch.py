@@ -68,24 +68,6 @@ def elasticsearch_connection():
         config['ES_USER'] = ""
     if config['ES_PASS'] is None:
         config['ES_PASS'] = ""
-    
-    # Check if Elasticsearch is alive
-    if config['ES_HTTPS']:
-        scheme = 'https'
-    # Local connection to es
-    else:
-        scheme = 'http'
-    url = scheme + '://' + config['ES_HOST'] + ':' + str(config['ES_PORT'])
-    try:
-        if (config['ES_SSLVERIFICATION']):
-            r = requests.get(url, auth=(config['ES_USER'], config['ES_PASS']), verify=True, timeout=config['ES_TIMEOUT'])
-        else:
-            import urllib3
-            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-            r = requests.get(url, auth=(config['ES_USER'], config['ES_PASS']), verify=False, timeout=config['ES_TIMEOUT'])
-    except Exception as e:
-        print('Error connecting to Elasticsearch at {0}, check config and Elasticsearch is running. (Error: {1})'.format(url, e))
-        sys.exit(1)
 
     # Check if we are using HTTP TLS/SSL
     if os.getenv('ES_HTTPS') == 'true' or config['ES_HTTPS']:
@@ -94,7 +76,6 @@ def elasticsearch_connection():
             port=config['ES_PORT'],
             http_auth=(config['ES_USER'], config['ES_PASS']),
             scheme="https", use_ssl=True, verify_certs=config['ES_SSLVERIFICATION'],
-            connection_class=elasticsearch.RequestsHttpConnection,
             timeout=config['ES_TIMEOUT'], maxsize=config['ES_MAXSIZE'],
             max_retries=config['ES_MAXRETRIES'], retry_on_timeout=True, http_compress=config['ES_HTTPCOMPRESS'])
     # Local connection to es
@@ -103,10 +84,13 @@ def elasticsearch_connection():
             hosts=config['ES_HOST'],
             port=config['ES_PORT'],
             http_auth=(config['ES_USER'], config['ES_PASS']),
-            connection_class=elasticsearch.Urllib3HttpConnection,
+            scheme="http", use_ssl=False, verify_certs=False,
             timeout=config['ES_TIMEOUT'], maxsize=config['ES_MAXSIZE'],
             max_retries=config['ES_MAXRETRIES'], retry_on_timeout=True, http_compress=config['ES_HTTPCOMPRESS'])
-
+    
+    if not es.ping():
+        print('Failed to connect to Elasticsearch.')
+        sys.exit(1)
     return es
 
 
