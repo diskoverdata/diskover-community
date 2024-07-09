@@ -135,6 +135,10 @@ if (!empty($_GET['submitted'])) {
 
     // Sort search results
     $searchParams = sortSearchResults($_GET, $searchParams);
+
+    // Set request including filters and sort
+    $request_full = $searchParams['body']['query']['query_string']['query'];
+    
     try {
         // Send search query to Elasticsearch and get scroll id and first page of results
         $queryResponse = $client->search($searchParams);
@@ -259,7 +263,19 @@ $estime = number_format(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 4);
         <?php
         $js_fullpaths = json_encode($fullpaths);
         echo "var js_fullpaths = " . $js_fullpaths . ";\n";
+        // log index to console
+        echo "console.log(\"ES search index: ".($searchParams['index'])."\");\n";
+        // alert user if sort order reset
+        if (isset($_SESSION['resetsortreason'])) {
+            if ($_SESSION['resetsortreason'] == 'nomapping') {
+                echo "alert('index missing field to sort on, using default sort');\n";
+            } elseif ($_SESSION['resetsortreason'] == 'textfield') {
+                echo "alert('cannot sort on a text field, using default sort');\n";
+            }
+            unset($_SESSION['resetsortreason']);
+        }
         ?>
+        console.log('Raw query: <?php echo $request_full; ?>');
         // log indexinfo time to console
         console.log('indexinfotime: <?php echo $indexinfotime; ?> ms');
     </script>
