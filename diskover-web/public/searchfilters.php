@@ -131,7 +131,7 @@ if ($filtercount > 0) {
                                 <div class="form-group">
                                     <div class="row">
                                         <div class="col-xs-4">
-                                            <label for="last_mod_time_low">Last modified (from) </label>
+                                            <label for="last_mod_time_low">Last modified (from/oldest) </label>
                                             <select class="form-control" name="last_mod_time_low" id="last_mod_time_low">
                                                 <option value=""></option>
                                                 <option value="*" <?php echo ($savedfilters['last_mod_time_low'] == "*") ? "selected" : "" ?>>any time (*)</option>
@@ -151,7 +151,7 @@ if ($filtercount > 0) {
                                             </select>
                                         </div>
                                         <div class="col-xs-4">
-                                            <label for="last_mod_time_high">Last modified (to) </label>
+                                            <label for="last_mod_time_high">Last modified (to/newest) </label>
                                             <select class="form-control" name="last_mod_time_high" id="last_mod_time_high">
                                                 <option value=""></option>
                                                 <option value="now/m" <?php echo ($savedfilters['last_mod_time_high'] == "now/m") ? "selected" : "" ?>>now</option>
@@ -175,7 +175,7 @@ if ($filtercount > 0) {
                                 <div class="form-group">
                                     <div class="row">
                                         <div class="col-xs-4">
-                                            <label for="last_accessed_time_low">Last accessed (from) </label>
+                                            <label for="last_accessed_time_low">Last accessed (from/oldest) </label>
                                             <select class="form-control" name="last_accessed_time_low" id="last_accessed_time_low">
                                                 <option value=""></option>
                                                 <option value="*)" <?php echo ($savedfilters['last_accessed_time_low'] == "*") ? "selected" : "" ?>>any time (*)</option>
@@ -195,7 +195,7 @@ if ($filtercount > 0) {
                                             </select>
                                         </div>
                                         <div class="col-xs-4">
-                                            <label for="last_accessed_time_high">Last accessed (to) </label>
+                                            <label for="last_accessed_time_high">Last accessed (to/newest) </label>
                                             <select class="form-control" name="last_accessed_time_high" id="last_accessed_time_high">
                                                 <option value=""></option>
                                                 <option value="now/m" <?php echo ($savedfilters['last_accessed_time_high'] == "now/m") ? "selected" : "" ?>>now</option>
@@ -219,7 +219,7 @@ if ($filtercount > 0) {
                                 <div class="form-group">
                                     <div class="row">
                                         <div class="col-xs-4">
-                                            <label for="last_changed_time_low">Last changed (from) </label>
+                                            <label for="last_changed_time_low">Last changed (from/oldest) </label>
                                             <select class="form-control" name="last_changed_time_low" id="last_changed_time_low">
                                                 <option value=""></option>
                                                 <option value="*" <?php echo ($savedfilters['last_changed_time_low'] == "*") ? "selected" : "" ?>>any time (*)</option>
@@ -239,7 +239,7 @@ if ($filtercount > 0) {
                                             </select>
                                         </div>
                                         <div class="col-xs-4">
-                                            <label for="last_changed_time_high">Last changed (to) </label>
+                                            <label for="last_changed_time_high">Last changed (to/newest) </label>
                                             <select class="form-control" name="last_changed_time_high" id="last_changed_time_high">
                                                 <option value=""></option>
                                                 <option value="now/m" <?php echo ($savedfilters['last_changed_time_high'] == "now/m") ? "selected" : "" ?>>now</option>
