@@ -18,7 +18,6 @@ https://www.diskoverdata.com/solutions/
 
 import sys
 import os
-import requests
 import logging
 import elasticsearch
 from elasticsearch import helpers

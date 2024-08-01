@@ -491,10 +491,6 @@ $estime = number_format(microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"], 4);
             <div class="panel-body">
                 <span><i class="fas fa-hdd" style="margin-right: 2px; color: grey"></i> <?php echo $_SESSION['rootpath']; ?></span>
                 <span class="pull-right"><b><?php echo formatBytes($space_available); ?> available</b> of <?php echo formatBytes($space_total); ?> (<?php echo round($space_available / $space_total * 100); ?> %)
-                    <?php if ($esIndex2 != "") { ?>
-                        <?php echo ($space_change > 0) ? "<span style=\"color:#29FE2F\"><i class=\"fa fa-caret-up\"></i>" : "<span style=\"color:red\"><i class=\"fa fa-caret-down\"></i>";
-                        echo " " . $space_change . " %"; ?></span>
-            <?php } ?>
             </span>
             <div class="progress" style="height:20px;margin-bottom:5px;">
                 <?php
