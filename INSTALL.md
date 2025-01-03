@@ -15,7 +15,7 @@ git clone https://github.com/diskoverdata/diskover-community.git
 
 - See [Releases](https://github.com/diskoverdata/diskover-community/releases) to download latest stable version in zip or tar format.
 - Diskover Community Edition v2.3 linuxserver.io Docker container. Download on [Docker Hub](https://hub.docker.com/r/linuxserver/diskover) or [Github](https://github.com/linuxserver/docker-diskover).
-- Diskover Community Edition v2.2 on [AWS Marketplace](https://aws.amazon.com/marketplace/pp/prodview-ahatamjklfgk4?sr=0-1&ref_=beagle&applicationId=AWSMPContessa)
+- Diskover Community Edition v2.3 on [AWS Marketplace](https://aws.amazon.com/marketplace/pp/prodview-ahatamjklfgk4?sr=0-1&ref_=beagle&applicationId=AWSMPContessa)
 
 ## Supported Operating Systems
 
@@ -78,7 +78,7 @@ xpack.ml.enabled: false                     (disable machine learning functional
 🔴 ES memory lock:
 
 ```
-vi /etc/elasticsearch/jvm.options
+vi /etc/elasticsearch/jvm.options.d/jvm.options
 ```
 
 🔴 Ensure the JVM args are uncommented and set to 1/2 of your available RAM:
@@ -175,6 +175,8 @@ php84-php-xml php84-php-mbstring php84-php-json php84-php-sqlite3
 cp /opt/remi/php84/root/usr/share/doc/php84-php-common/php.ini-production /etc/opt/remi/php84/php.ini 
         * This copy command may differ depending on your PHP8 install directory location
         * If this does not work, the below commands can be used to find the files that you need to copy
+
+* Quick way to find your PHP install directory location: `php84 -i | grep 'Configuration File'`
 
 find / -mount -name php.ini-production
   -- /opt/remi/php84/root/usr/share/dovi /etc/php84-php-common/php.ini-production
