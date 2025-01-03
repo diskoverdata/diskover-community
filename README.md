@@ -16,20 +16,21 @@ Using Diskover, users can identify old and unused files and give better insights
 
 Diskover runs on Linux, macOS and Windows 10 and is written in Python. Diskover's web app, diskover-web, is written in PHP, Javascript, HTML5 and CSS.
 
-## Screenshots
+## Diskover Interface
 
 <p align="left">
 <img width="366" height="234" src="https://github.com/diskoverdata/diskover-docs/blob/main/source_files/images/diskover_ce_v2-3_dashboard.png" hspace="10" vspace="5" alt="diskover-web screenshot 1">
 <img width="366" height="234" src="https://github.com/diskoverdata/diskover-docs/blob/main/source_files/images/diskover_ce_v2-3_search_page.png" hspace="10" vspace="5" alt="diskover-web screenshot 2">
 </p>
 
-## News/ Updates
+## News / Updates
 
-- Diskover V1 is end of life and is no longer supported.
+- Diskover 2.3.0 Community Edition - Released in October 2024
+- Diskover Version 1.X is EOL and no longer supported
 
-## User Guide
+## Install Guide / User Guide
 
-[Read the Docs](https://docs.diskoverdata.com/) for more documentation on how to use diskover.
+See the [Install Guide](https://github.com/diskoverdata/diskover-community/blob/master/INSTALL.md) for Community Edition & [Read the Docs](https://docs.diskoverdata.com/) for more documentation on how to use Diskover.
 
 ## Changelogs
 
@@ -37,7 +38,7 @@ Diskover runs on Linux, macOS and Windows 10 and is written in Python. Diskover'
 
 ## Discussions/Support
 
-For discussions or support for diskover join the [Diskover Slack Workspace](https://join.slack.com/t/diskoverworkspace/shared_invite/zt-2up4tjux2-eZYt1OFgCeA3kSFQfsU93A).
+For discussions or support on Diskover join the [Diskover Slack Workspace](https://join.slack.com/t/diskoverworkspace/shared_invite/zt-2up4tjux2-eZYt1OFgCeA3kSFQfsU93A).
 
 ## Bugs
 
@@ -50,7 +51,3 @@ See the [Security File](https://github.com/diskoverdata/diskover-community/blob/
 ## License
 
 See the [License File](https://github.com/diskoverdata/diskover-community/blob/master/LICENSE).  
-
-## Installation Guide
-
-See the [Install Guide](https://github.com/diskoverdata/diskover-community/blob/master/INSTALL.md)

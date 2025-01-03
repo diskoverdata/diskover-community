@@ -25,7 +25,7 @@ Diskover Community Edition can be installed on any Linux distribution that allow
 
 Install the Java OpenJDK Packages
 
-`dnf install java-21-openjdk`
+`yum -y install java-21-openjdk`
 
 Configure YUM Repository for ES 8
 
@@ -45,7 +45,7 @@ type=rpm-md
 
 Install the Latest ES 8 Package
 
-`yum -y install --enablerepo=elasticsearch elasticsearch`
+`yum -y install --disablerepo="*" --enablerepo=elasticsearch elasticsearch`
 
 ES Setting Modifications
 
@@ -152,12 +152,14 @@ php84-php-xml php84-php-mbstring php84-php-json php84-php-sqlite3
 Copy in Production php.ini
 
 ```sh
+cp /opt/remi/php84/root/usr/share/doc/php84-php-common/php.ini-production /etc/opt/remi/php84/php.ini 
+        * This copy command may differ depending on your PHP8 install directory location
+        * If this does not work, the below commands can be used to find the files that you need to copy
+
 find / -mount -name php.ini-production
   -- /opt/remi/php84/root/usr/share/dovi /etc/php84-php-common/php.ini-production
 find / -mount -name php.ini
   -- /etc/opt/remi/php84/php.ini
-cp /opt/remi/php84/root/usr/share/doc/php84-php-common/php.ini-production /etc/opt/remi/php84/php.ini 
-        * This copy command may differ depending on your PHP8 install directory location
 ```
 
 Edit PHP-FPM Configurations
@@ -255,13 +257,13 @@ Move the Source Code
 
 ```sh
 cd diskover-community-2.3.0/
-mv diskover /opt/
-mv diskover-web /var/www/
+cp -a diskover /opt/
+cp -a diskover-web /var/www/
 ```
 
 Install the Python Libraries
 
-```sh 
+```sh
 /usr/bin/python3.12 -m ensurepip
 /usr/bin/python3.12 -m pip install -r /opt/diskover/requirements.txt
 ```
@@ -275,7 +277,7 @@ systemctl status nginx php-fpm
 chown -R nginx.nginx /var/www/diskover-web/
 ```
 
-> **NOTE** - You should now be able to hit your Diskover system at the IP address in the browser : `http://IP:8000` if this does not work initially and you get a 500 error, re-run that `chown` command above! 
+> **NOTE** - You should now be able to hit your Diskover system at the IP address in the browser : `http://IP:8000` if this does not work initially and you get a 500 error, re-run that `chown` command above!
 
 Execute a Scan Task
 
@@ -291,4 +293,6 @@ Now that your scan has completed.. Let's view the contents!
 - Select the `diskover-test` Index and Choose `Save Selection`
 - Click the **Dashboard** or **File Search** Icon in the Top-Left Corner
 
-You've now successfully installed the Diskover Community Edition v2.3.X. If you have any additional questions feel free to reach out on our Community Slack Organization here : [Diskover Slack Workspace](https://join.slack.com/t/diskoverworkspace/shared_invite/zt-2up4tjux2-eZYt1OFgCeA3kSFQfsU93A)!
+You've now successfully installed the Diskover Community Edition v2.3.X!
+
+If you have any questions feel free to reach out on our Community Slack Organization here : [Diskover Slack Workspace](https://join.slack.com/t/diskoverworkspace/shared_invite/zt-2up4tjux2-eZYt1OFgCeA3kSFQfsU93A)!
