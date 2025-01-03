@@ -25,7 +25,7 @@ Diskover runs on Linux, macOS and Windows 10 and is written in Python. Diskover'
 
 ## News / Updates
 
-- Diskover 2.3.0 Community Edition - Released in October 2024
+- Diskover 2.3.0 Community Edition - Released in August 2024
 - Diskover Version 1.X is EOL and no longer supported
 
 ## Install Guide / User Guide
