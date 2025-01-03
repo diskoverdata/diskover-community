@@ -330,7 +330,7 @@ You've now successfully installed the Diskover Community Edition v2.3.X!
 
 ## License
 
-The Community Edition doesn't require any license and it is free to use for an unlimited time.
+The Community Edition is free to use for an unlimited time and operates without the need for license keys, subject to the terms of the [Apache License](https://github.com/diskoverdata/diskover-community/blob/master/LICENSE)
 
 ## Community Support
 
