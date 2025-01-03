@@ -270,7 +270,7 @@ python3 -V
 
 The output of your `python3 -V` command should show a 3.12.X
 
-⚠️ **WARNING** Depending on your distributtion and version of Linux, modifying the system level Python3 executable version could have unintended consequences.
+⚠️ **WARNING!** Depending on your distributtion and version of Linux, modifying the system level Python3 executable version could have unintended consequences.
 
 ## Diskover Installation
 
@@ -306,7 +306,7 @@ systemctl status nginx php-fpm
 chown -R nginx.nginx /var/www/diskover-web/
 ```
 
-✏️ **NOTE** You should now be able to hit your Diskover system at the IP address in the browser : `http://IP:8000` if this does not work initially and you get a 500 error, re-run that `chown` command above!
+✏️ **NOTE!** You should now be able to hit your Diskover system at the IP address in the browser : `http://IP:8000` if this does not work initially and you get a 500 error, re-run that `chown` command above!
 
 ## Execute a Scan Task
 
