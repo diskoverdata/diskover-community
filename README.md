@@ -1,4 +1,4 @@
-# Diskover Community Edition - Open source file indexer, file search engine and data management and analytics powered by Elasticsearch
+# Diskover Community Edition - Open source file indexer, file search engine, and data management, including analytics, powered by Elasticsearch
 
 [![GitHub issues](https://img.shields.io/github/issues/diskoverdata/diskover-community)](https://github.com/diskoverdata/diskover-community/issues)
 [![GitHub forks](https://img.shields.io/github/forks/diskoverdata/diskover-community)](https://github.com/diskoverdata/diskover-community/network)
