@@ -1,4 +1,4 @@
-# Diskover Community Edition - Open source file indexer, file search engine, and data management, including analytics, powered by Elasticsearch
+# Diskover Community Edition | Open-source file indexer, search engine, data analytics and management platform powered by Elasticsearch
 
 [![GitHub issues](https://img.shields.io/github/issues/diskoverdata/diskover-community)](https://github.com/diskoverdata/diskover-community/issues)
 [![GitHub forks](https://img.shields.io/github/forks/diskoverdata/diskover-community)](https://github.com/diskoverdata/diskover-community/network)
@@ -23,12 +23,12 @@ Diskover runs on Linux, macOS and Windows 10 and is written in Python. Diskover'
 <img width="366" height="234" src="https://github.com/diskoverdata/diskover-docs/blob/main/source_files/images/diskover_ce_v2-3_search_page.png" hspace="10" vspace="5" alt="diskover-web screenshot 2">
 </p>
 
-## News / Updates
+## News & Updates
 
 - Diskover 2.3.0 Community Edition - Released in August 2024
 - Diskover Version 1.X is EOL and no longer supported
 
-## Install Guide / User Guide
+## Install & User Guides
 
 See the [Install Guide](https://github.com/diskoverdata/diskover-community/blob/master/INSTALL.md) for Community Edition & [Read the Docs](https://docs.diskoverdata.com/) for more documentation on how to use Diskover.
 
@@ -36,7 +36,7 @@ See the [Install Guide](https://github.com/diskoverdata/diskover-community/blob/
 
 [Changelogs](https://docs.diskoverdata.com/diskover_changelogs/)
 
-## Discussions/Support
+## Discussions & Support
 
 For discussions or support on Diskover join the [Diskover Slack Workspace](https://join.slack.com/t/diskoverworkspace/shared_invite/zt-2up4tjux2-eZYt1OFgCeA3kSFQfsU93A).
 
