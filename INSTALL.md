@@ -338,7 +338,7 @@ If you have any questions feel free to reach out on our Community Slack Organiza
 
 ## Feature Upgrade Information
 
-- If you are a **home user**, the Community Edition is your best option as it is free to use for an unlimited time, and offers features to find and organize your data. The Diskover’s [subscription plans](https://diskoverdata.com/platform/features/) are designed for corporations, offering advanced features that exceed the budget of most home users.
+- If you are a **home user**, the Community Edition is your best option as it is free to use for an unlimited time, and offers features to find and organize your data. The Diskover’s [subscription plans](https://diskoverdata.com/platform/features/) are designed for businesses, offering advanced features that exceed the budget of most home users.
 
 - If you are a **business** trying out Diskover, please [contact us](https://diskoverdata.com/contact/) if would like to have more information regarding our [subscription options](https://diskoverdata.com/platform/features/).
   
