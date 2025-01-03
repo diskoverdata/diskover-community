@@ -1,4 +1,4 @@
-# Diskover Community Edition - Installation Instructions
+# Diskover Community Edition | Installation Instructions
 
 ## Requirements
 
