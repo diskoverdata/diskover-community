@@ -21,16 +21,21 @@ git clone https://github.com/diskoverdata/diskover-community.git
 
 Diskover Community Edition can be installed on any Linux distribution that allows the requirements to be installed properly. However, our team actively suggests any RHEL 8/9 or Rocky Linux 8/9 distributions!
 
-## Elastic Search 8.X Installation
+## Elasticsearch 8.X Installation
 
-Install the Java OpenJDK Packages
+🔴 Install the Java OpenJDK Packages:
 
-`yum -y install java-21-openjdk`
+```
+yum -y install java-21-openjdk
+```
 
-Configure YUM Repository for ES 8
+🔴 Configure YUM Repository for ES 8:
 
-`vi /etc/yum.repos.d/elasticsearch.repo`
- -- *Add the following to the file and save it*
+```
+vi /etc/yum.repos.d/elasticsearch.repo
+```
+ 
+ 🔴 *Add the following to the file and save it:*
 
 ```sh
 [elasticsearch]
@@ -43,14 +48,19 @@ autorefresh=1
 type=rpm-md
 ```
 
-Install the Latest ES 8 Package
+🔴 Install the Latest ES 8 Package:
 
-`yum -y install --disablerepo="*" --enablerepo=elasticsearch elasticsearch`
+```
+yum -y install --disablerepo="*" --enablerepo=elasticsearch elasticsearch
+```
 
-ES Setting Modifications
+🔴  ES Setting Modifications
 
-`vi /etc/elasticsearch/elasticsearch.yml`
-  -- *Please ensure the following properties are set and uncommented*
+```
+vi /etc/elasticsearch/elasticsearch.yml
+```
+
+🔴 *Ensure the following properties are set and uncommented:*
 
 ```sh
 cluster.name: <name of your cluster>        (Should be a distinctive name)
@@ -65,21 +75,30 @@ xpack.security.enrollment.enabled: false    (disable security enrollment on firs
 xpack.ml.enabled: false                     (disable machine learning functionality - not needed)
 ```
 
-ES Memory Lock
+🔴 ES Memory Lock:
 
-`vi /etc/elasticsearch/jvm.options`
- -- *Ensure the JVM args are uncommented and set to 1/2 of your available RAM*
+```
+vi /etc/elasticsearch/jvm.options
+```
+
+🔴 *Ensure the JVM args are uncommented and set to 1/2 of your available RAM:*
 
 ```sh
 -Xms32g
 -Xmx32g
 ```
 
-ES SystemD Service Memory Settings
+🔴 ES SystemD Service Memory Settings:
 
-`mkdir /etc/systemd/system/elasticsearch.service.d`  
-`vi /etc/systemd/system/elasticsearch.service.d/elasticsearch.conf`
-  -- *Add the following to the file and save it*
+```
+mkdir /etc/systemd/system/elasticsearch.service.d
+```
+
+```
+vi /etc/systemd/system/elasticsearch.service.d/elasticsearch.conf
+```
+
+🔴 *Add the following to the file and save it:*
 
 ```sh  
 [Service]
@@ -88,14 +107,14 @@ LimitNPROC=4096
 LimitNOFILE=65536
 ```
 
-Start and Enable the ES Service
+🔴  Start and Enable the ES Service:
 
 ```sh
 systemctl enable elasticsearch
 systemctl start elasticsearch
 ```
 
-Check the ES Cluster Health
+🔴 Check the ES Cluster Health:
 
 ```sh
 curl http://localhost:9200/_cluster/health?pretty
@@ -120,11 +139,12 @@ curl http://localhost:9200/_cluster/health?pretty
 
 ## Nginx Installation
 
-Install Nginx
+🔴 Install Nginx:
+```
+yum -y install nginx
+```
 
-`yum -y install nginx`
-
-Enable and Start the Nginx Service
+🔴 Enable and start the Nginx Service:
 
 ```sh
 systemctl enable nginx
@@ -134,14 +154,14 @@ systemctl status nginx
 
 ## PHP Installation
 
-Enable EPEL and REMI Repositories -- *change the 8s to 9s if using RHEL / Rocky Linux 9*
+🔴 Enable EPEL and REMI Repositories -- *change the 8s to 9s if using RHEL / Rocky Linux 9*:
 
 ```sh
 yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
 yum -y install https://rpms.remirepo.net/enterprise/remi-release-8.rpm
 ```
 
-Install PHP 8 Packages
+🔴 Install PHP 8 Packages:
 
 ```sh
 yum -y install php84 php84-php-common php84-php-fpm php84-php-opcache \
@@ -149,7 +169,7 @@ php84-php-cli php84-php-gd php84-php-mysqlnd php84-php-ldap php84-php-pecl-zip \
 php84-php-xml php84-php-mbstring php84-php-json php84-php-sqlite3
 ```
 
-Copy in Production php.ini
+🔴 Copy in Production `php.ini`:
 
 ```sh
 cp /opt/remi/php84/root/usr/share/doc/php84-php-common/php.ini-production /etc/opt/remi/php84/php.ini 
@@ -162,10 +182,13 @@ find / -mount -name php.ini
   -- /etc/opt/remi/php84/php.ini
 ```
 
-Edit PHP-FPM Configurations
+🔴 Edit PHP-FPM Configurations:
 
-`vi /etc/opt/remi/php84/php-fpm.d/www.conf`
-  -- *Please ensure the following properties are set and uncommented*
+```
+vi /etc/opt/remi/php84/php-fpm.d/www.conf
+```
+
+🔴 *Ensure the following properties are set and uncommented:*
 
 ```sh
 user = nginx                                        (change user from 'apache') 
@@ -176,7 +199,7 @@ listen.group = nginx                                (change user from 'nobody' a
 ;listen.acl_users = apache                          (ensure this is commented out with the ;)
 ```
 
-PHP Directories Ownership
+🔴 PHP Directories Ownership:
 
 ```sh
 chown -R root:nginx /var/opt/remi/php84/lib/php     (this command may differ depending on your PHP8 install directory)
@@ -184,9 +207,12 @@ mkdir /var/run/php-fpm
 chown -R nginx:nginx /var/run/php-fpm
 ```
 
-Create SystemD Service File
-`vi /etc/systemd/system/php-fpm.service`
-  -- *Add the following to the file and save it*
+🔴 Create SystemD Service File:
+```
+vi /etc/systemd/system/php-fpm.service
+```
+
+🔴 *Add the following to the file and save it*:
 
 ```sh
 [Unit]
@@ -202,7 +228,7 @@ Type=simple
 WantedBy=multi-user.target
 ```
 
-Set Permissions, Enable and Start the Service
+🔴 Set Permissions, Enable and Start the Service:
 
 ```sh
 chmod 644 /etc/systemd/system/php-fpm.service
@@ -216,15 +242,16 @@ systemctl status php-fpm
 
 Diskover Community Edition v2.3 requires at a minimum Python3.8 to be installed on the system. You can validate the Python3 version that was installed on your OS by default by running : `python3 -V` -- If this returns a version equal to or higher than 3.8, you can skip this section!
 
-Install Python v3.12
+🔴 Install Python v3.12:
 
-`yum -y install python3.12 python3.12-devel gcc`
+```
+yum -y install python3.12 python3.12-devel gcc
+```
 
-Configure Python v3.12 for Usage
-  -- *There are a couple of options here*
+🔴 Configure Python v3.12 for Usage - *There are a couple of options here*:
 
-- Call Python3.12 directly from Diskover and do nothing to the system level Python3 executable (Recommended)
-- Symlink Python3.12 in as the default Python3 executable on your OS
+- Call Python3.12 directly from Diskover and do nothing to the system level Python3 executable (Recommended).
+- Symlink Python3.12 in as the default Python3 executable on your OS.
 
 ### Diskover Python Executable
 
@@ -243,17 +270,19 @@ python3 -V
 
 The output of your `python3 -V` command should show a 3.12.X
 
-> **WARNING** - Depending on your distributtion and version of Linux, modifying the system level Python3 executable version could have unintended consequences..
+⚠️ **WARNING** Depending on your distributtion and version of Linux, modifying the system level Python3 executable version could have unintended consequences.
 
 ## Diskover Installation
 
-Now that we've settled all the requirements to run the Diskover Community Edition.. Let's put the actual software in place. You'll want to get the code from this repository on the server you've been working on. Either by cloning this Git Repo directly on the server or pulling from our [Releases](https://github.com/diskoverdata/diskover-community/releases) page!
+Now that we've settled all the requirements to run the Diskover Community Edition, let's put the actual software in place. You'll want to get the code from this repository on the server you've been working on. Either by cloning this Git Repo directly on the server or pulling from our [Releases](https://github.com/diskoverdata/diskover-community/releases) page!
 
-Uncompress the TAR
+🔴 Uncompress the TAR:
 
-`tar -xvzf diskover-community-2.3.0.tar.gz`
+```
+tar -xvzf diskover-community-2.3.0.tar.gz
+```
 
-Move the Source Code
+🔴 Move the Source Code:
 
 ```sh
 cd diskover-community-2.3.0/
@@ -261,14 +290,14 @@ cp -a diskover /opt/
 cp -a diskover-web /var/www/
 ```
 
-Install the Python Libraries
+🔴 Install the Python Libraries:
 
 ```sh
 /usr/bin/python3.12 -m ensurepip
 /usr/bin/python3.12 -m pip install -r /opt/diskover/requirements.txt
 ```
 
-Copy the Diskover-Web Nginx Configuration
+🔴 Copy the Diskover-Web Nginx Configuration:
 
 ```sh
 mv /var/www/diskover-web/diskover-web.conf /etc/nginx/conf.d/
@@ -277,22 +306,28 @@ systemctl status nginx php-fpm
 chown -R nginx.nginx /var/www/diskover-web/
 ```
 
-> **NOTE** - You should now be able to hit your Diskover system at the IP address in the browser : `http://IP:8000` if this does not work initially and you get a 500 error, re-run that `chown` command above!
+✏️ **NOTE** You should now be able to hit your Diskover system at the IP address in the browser : `http://IP:8000` if this does not work initially and you get a 500 error, re-run that `chown` command above!
 
-Execute a Scan Task
+## Execute a Scan Task
 
-We have installed all of the necessary components for Diskover Community Edition. Let's run a scan of a folder on our local system and ensure things are working properly! 
+We have installed all of the necessary components for Diskover Community Edition. 
 
-`/usr/bin/python3.12 /opt/diskover/diskover.py -i diskover-test /opt/diskover`
+🔴 Let's run a scan of a folder on our local system and ensure things are working properly:
 
-Now that your scan has completed.. Let's view the contents! 
+```
+/usr/bin/python3.12 /opt/diskover/diskover.py -i diskover-test /opt/diskover
+```
+
+🔴 Now that your scan has completed.. Let's view the contents! 
 
 - Go Back to Diskover Web `http://IP:8000`
-- Click the **Settings** Icon in the Top-Right Corner
-- Choose `Indices`
+- Click the **⚙️ Settings** Icon in the Top-Right Corner
+- Choose **Indices**
 - Select the `diskover-test` Index and Choose `Save Selection`
-- Click the **Dashboard** or **File Search** Icon in the Top-Left Corner
+- Click the **Dashboard** or **📁 File Search** Icon in the Top-Left Corner
 
 You've now successfully installed the Diskover Community Edition v2.3.X!
 
-If you have any questions feel free to reach out on our Community Slack Organization here : [Diskover Slack Workspace](https://join.slack.com/t/diskoverworkspace/shared_invite/zt-2up4tjux2-eZYt1OFgCeA3kSFQfsU93A)!
+## Community Support
+
+If you have any questions feel free to reach out on our Community Slack Organization - [Diskover Slack Workspace](https://join.slack.com/t/diskoverworkspace/shared_invite/zt-2up4tjux2-eZYt1OFgCeA3kSFQfsU93A)!
