@@ -336,9 +336,9 @@ The Community Edition doesn't require any license and it is free to use for an u
 
 If you have any questions feel free to reach out on our Community Slack Organization - [Diskover Slack Workspace](https://join.slack.com/t/diskoverworkspace/shared_invite/zt-2up4tjux2-eZYt1OFgCeA3kSFQfsU93A)!
 
-## Interested in Upgrade Features?
+## Feature Upgrade Information
 
 - If you are a **home user**, the Community Edition is your best option as it is free to use for an unlimited time, and offers features to find and organize your data. The Diskover’s [subscription plans](https://diskoverdata.com/platform/features/) are designed for corporations, offering advanced features that exceed the budget of most home users.
 
-- If you are a **company** trying out Diskover, please [contact us](https://diskoverdata.com/contact/) if would like to have more information regarding our [subscription options](https://diskoverdata.com/platform/features/).
+- If you are a **business** trying out Diskover, please [contact us](https://diskoverdata.com/contact/) if would like to have more information regarding our [subscription options](https://diskoverdata.com/platform/features/).
   
