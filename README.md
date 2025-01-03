@@ -6,7 +6,7 @@
 [![GitHub license](https://img.shields.io/github/license/diskoverdata/diskover-community)](https://github.com/diskoverdata/diskover-community/blob/master/LICENSE)
 [![GitHub releases](https://img.shields.io/github/release/diskoverdata/diskover-community)](https://github.com/diskoverdata/diskover-community/releases)
 
-<img align="left" width="125" height="95" src="https://github.com/diskoverdata/diskover-docs/blob/main/source_files/images/diskover_logo_only.png" hspace="5" vspace="5" alt="diskover logo">
+<img align="left" width="125" height="125" src="https://github.com/diskoverdata/diskover-docs/blob/main/source_files/images/diskover_logo_only.png" hspace="5" vspace="5" alt="diskover logo">
 
 Diskover is an open source file system indexer that uses Elasticsearch to index and manage data across heterogeneous storage systems. Using Diskover, you are able to more effectively search and organize files and system administrators are able to manage storage infrastructure, efficiently provision storage, monitor and report on storage usage and effectively make decisions about new infrastructure purchases.
 
