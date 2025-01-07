@@ -6,7 +6,7 @@
 [![GitHub license](https://img.shields.io/github/license/diskoverdata/diskover-community)](https://github.com/diskoverdata/diskover-community/blob/master/LICENSE)
 [![GitHub releases](https://img.shields.io/github/release/diskoverdata/diskover-community)](https://github.com/diskoverdata/diskover-community/releases)
 
-<img align="left" width="156" height="104" src="https://github.com/diskoverdata/diskover-docs/blob/main/source_files/images/diskover_logo_only.png" hspace="5" vspace="5" alt="diskover logo">
+<img align="left" width="156" height="104" src="https://github.com/diskoverdata/diskover-docs/blob/main/source_files/images/diskover_logo_only.png" hspace="2" vspace="2" alt="diskover logo">
 
 Diskover is an open source file system indexer that uses Elasticsearch to index and manage data across heterogeneous storage systems. Using Diskover, you are able to more effectively search and organize files and system administrators are able to manage storage infrastructure, efficiently provision storage, monitor and report on storage usage and effectively make decisions about new infrastructure purchases.
 
@@ -19,8 +19,8 @@ Diskover runs on Linux, macOS and Windows 10 and is written in Python. Diskover'
 ## Diskover Interface
 
 <p align="left">
-<img width="366" height="234" src="https://github.com/diskoverdata/diskover-docs/blob/main/source_files/images/diskover_ce_v2-3_dashboard.png" hspace="10" vspace="5" alt="diskover-web screenshot 1">
-<img width="366" height="234" src="https://github.com/diskoverdata/diskover-docs/blob/main/source_files/images/diskover_ce_v2-3_search_page.png" hspace="10" vspace="5" alt="diskover-web screenshot 2">
+<img width="366" height="234" src="https://github.com/diskoverdata/diskover-docs/blob/main/source_files/images/diskover_ce_v2-3_dashboard.png" hspace="5" vspace="2" alt="diskover-web screenshot 1">
+<img width="366" height="234" src="https://github.com/diskoverdata/diskover-docs/blob/main/source_files/images/diskover_ce_v2-3_search_page.png" hspace="5" vspace="2" alt="diskover-web screenshot 2">
 </p>
 
 ## News & Updates
