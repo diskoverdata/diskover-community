@@ -308,7 +308,12 @@ systemctl status nginx php-fpm
 chown -R nginx.nginx /var/www/diskover-web/
 ```
 
-✏️ **NOTE!** You should now be able to hit your Diskover system at the IP address in the browser : `http://IP:8000` if this does not work initially and you get a 500 error, re-run that `chown` command above!
+✏️ **NOTE!** You should now be able to hit your Diskover system at the IP address in the browser : **`http://IP:8000`** if this does not work initially and you get a 500 error, re-run that `chown` command above!
+
+🔴 Default credentials to log in - you can change the password once logged in by going to **⚙️ → Settings**:
+
+- Username: **diskover**
+- Password: **darkdata**
 
 ## Execute a Scan Task
 
@@ -323,7 +328,7 @@ We have installed all of the necessary components for Diskover Community Edition
 🔴 Now that your scan has completed.. Let's view the contents! 
 
 - Go Back to Diskover Web `http://IP:8000`
-- Click the **⚙️ Settings** Icon in the Top-Right Corner
+- Click the **⚙️ → Settings** Icon in the Top-Right Corner
 - Choose **Indices**
 - Select the `diskover-test` Index and Choose `Save Selection`
 - Click the **Dashboard** or **📁 File Search** Icon in the Top-Left Corner
