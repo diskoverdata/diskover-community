@@ -486,7 +486,7 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
                                             warnings += 1
                                         pass
                                 # check plugins for adding extra meta data to data dict
-                                if config['PLUGINS_ENABLE'] and plugins_files:
+                                if config['PLUGINS_ENABLE'] and config['PLUGINS_FILES']:
                                     for plugin in plugins:
                                         try:
                                             # check if plugin is for file doc
@@ -646,7 +646,7 @@ def get_tree_size(thread, root, top, path, docs, sizes, inodes, depth=0, maxdept
                         warnings += 1
                     pass
             # check plugins for adding extra meta data to data dict
-            if config['PLUGINS_ENABLE'] and plugins_dirs:
+            if config['PLUGINS_ENABLE'] and config['PLUGINS_DIRS']:
                 for plugin in plugins:
                     # check if plugin is for directory doc
                     try:
