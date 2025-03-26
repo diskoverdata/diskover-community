@@ -917,7 +917,7 @@ def banner():
             'I didn\'t even know that was there.',
             'Bringing light to the darkness.']
             
-    print("""\u001b[31;1m
+    print(r"""\u001b[31;1m
             _ _     _                       
            | (_)   | |                      
          __| |_ ___| | _______   _____ _ __ 
