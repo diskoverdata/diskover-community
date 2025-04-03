@@ -38,8 +38,13 @@ from diskover_helpers import config, dir_excluded, file_excluded, \
     index_info_crawlend, get_parent_path, get_dir_name, \
     get_file_name, load_plugins, list_plugins, get_plugins_info, set_times, \
     get_mem_usage, get_win_path, rem_win_path
+    
+# disable ES urlib3 InsecureRequestWarning warning log messages 
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-version = '2.3.0 community edition (ce)'
+
+version = '2.3.1 community edition (ce)'
 __version__ = version
 
 # Windows check

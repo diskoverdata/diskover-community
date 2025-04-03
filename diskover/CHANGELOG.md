@@ -1,5 +1,11 @@
 # Diskover v2 Community Edition Change Log
 
+# [2.3.1] - 2025-04-02
+### changed
+- improved parallel scanning threads algorithm (rakitzis)
+- removed urlib3 warnings for InsecureRequestWarning when using https with es ssl verify disabled
+
+
 # [2.3.0] - 2024-08-01
 ### BREAKING CHANGES
 - diskover yaml config file no longer used, changed to using diskover-web sqlite db for storing diskover config settings instead of config file, settings from existing config file are copied over on upgrade and config.yaml renamed to config.yaml.old
