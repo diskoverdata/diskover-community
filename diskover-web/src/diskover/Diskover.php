@@ -340,7 +340,10 @@ function indexInfo()
             // Get size of index
             // convert to bytes
             $indexsize = $val['store_size'];
-            if (strpos($indexsize, 'gb')) {
+            if (strpos($indexsize, 'tb')) {
+                $indexsize = str_replace('tb', '', $indexsize);
+                $indexsize = $indexsize * 1024 * 1024 * 1024 * 1024;
+            } elseif (strpos($indexsize, 'gb')) {
                 $indexsize = str_replace('gb', '', $indexsize);
                 $indexsize = $indexsize * 1024 * 1024 * 1024;
             } elseif (strpos($indexsize, 'mb')) {
@@ -389,6 +392,8 @@ function indexInfo()
         if (isset($_SESSION['indexinfo'])) {
             $all_index_info = array_merge($_SESSION['indexinfo']['all_index_info'], $all_index_info);
             $completed_indices = array_merge($_SESSION['indexinfo']['completed_indices'], $completed_indices);
+            // remove any duplicate indices
+            $completed_indices = array_unique($completed_indices);
             $latest_completed_index = (!is_null($latest_completed_index)) ? $latest_completed_index : $_SESSION['indexinfo']['latest_completed_index'];
             $fields = array_merge($_SESSION['indexinfo']['fields'], $fields);
             // remove any duplicate fields

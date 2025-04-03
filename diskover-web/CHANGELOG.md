@@ -2,7 +2,7 @@
 
 # [2.3.1] - 2025-04-02
 ### changed
-- version change only
+- bug fixes
 
 
 # [2.3.0] - 2024-08-01
