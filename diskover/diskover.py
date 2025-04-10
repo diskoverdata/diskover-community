@@ -1024,8 +1024,6 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
                         help='use alternate scanner module in scanners/')
     parser.add_option('--threads', type=int,
                         help='crawl scan threads (overrides config maxthreads setting)')
-    parser.add_option('--threaddepth', type=int,
-                        help='crawl scan thread directory depth (overrides config threaddirdepth setting) (ESSENTIAL VER)')
     parser.add_option('-v', '--verbose', action='store_true',
                         help='verbose output')
     parser.add_option('-V', '--vverbose', action='store_true',
@@ -1097,11 +1095,6 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
     # check for cli options not available CE
     if options.addtoindex:
         logmsg = 'Using --addtoindex cli option to add additional top paths to an index requires diskover Essential version.'
-        logger.error(logmsg)
-        if config['LOGTOFILE']: logger_warn.error(logmsg)
-        sys.exit(1)
-    if options.threaddepth:
-        logmsg = 'Using --threaddepth cli option to set crawl scan thread directory depth requires diskover Essential version.'
         logger.error(logmsg)
         if config['LOGTOFILE']: logger_warn.error(logmsg)
         sys.exit(1)
