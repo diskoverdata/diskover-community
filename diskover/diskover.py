@@ -236,7 +236,7 @@ def log_stats_thread(root):
     start = time.time()
 
     while True:
-        time.sleep(3)
+        time.sleep(10)
         if not scan_paths:
             continue
         timenow = time.time()
