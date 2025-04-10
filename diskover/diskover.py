@@ -1147,17 +1147,24 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
         sys.exit(1)
 
     # check if tree_dir is empty or all items excluded
-    dc = 0
+    empty = True
     if IS_WIN and not options.altscanner:
         tree_dir = get_win_path(tree_dir)
-    for entry in os.scandir(tree_dir):
-        if entry.is_symlink():
-            pass
-        elif entry.is_dir() and not dir_excluded(entry.path):
-            dc += 1
-        elif not file_excluded(entry.name):
-            dc += 1
-    if dc == 0:
+    try:
+        for entry in os.scandir(tree_dir):
+            if entry.is_symlink():
+                pass
+            elif entry.is_dir() and not dir_excluded(entry.path):
+                empty = False
+                break
+            elif not file_excluded(entry.name):
+                empty = False
+                break
+    except OSError as e:
+        logmsg = 'OS ERROR: {0}'.format(e)
+        logger.error(logmsg)
+        raise
+    if empty:
         logger.info('{0} is empty or all items excluded! Nothing to crawl.'.format(tree_dir))
         sys.exit(0)
 
