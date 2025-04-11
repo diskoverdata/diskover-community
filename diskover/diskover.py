@@ -25,7 +25,7 @@ import importlib
 import re
 import warnings
 import signal
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from threading import Thread, Lock, current_thread
 from concurrent import futures
 from queue import Queue
@@ -236,7 +236,7 @@ def log_stats_thread(root):
     start = time.time()
 
     while True:
-        time.sleep(3)
+        time.sleep(10)
         if not scan_paths:
             continue
         timenow = time.time()
@@ -475,7 +475,7 @@ def get_tree_size(executor, thread, root, top, path, sizes, inodes, depth=0, max
                                 
                                 # check for invalid time stamps
                                 try:
-                                    mtime = datetime.utcfromtimestamp(int(f_stat.st_mtime)).isoformat()
+                                    mtime = datetime.fromtimestamp(int(f_stat.st_mtime), timezone.utc).isoformat()
                                 except ValueError:
                                     logmsg = '[{0}] MTIME TIMESTAMP WARNING {1}'.format(thread, os.path.join(parent_path, file_name))
                                     logger.warning(logmsg)
@@ -486,7 +486,7 @@ def get_tree_size(executor, thread, root, top, path, sizes, inodes, depth=0, max
                                     pass
                                 
                                 try:
-                                    atime = datetime.utcfromtimestamp(int(f_stat.st_atime)).isoformat()
+                                    atime = datetime.fromtimestamp(int(f_stat.st_atime), tz=timezone.utc).isoformat()
                                 except ValueError:
                                     logmsg = '[{0}] ATIME TIMESTAMP WARNING {1}'.format(thread, os.path.join(parent_path, file_name))
                                     logger.warning(logmsg)
@@ -497,7 +497,7 @@ def get_tree_size(executor, thread, root, top, path, sizes, inodes, depth=0, max
                                     pass
                                 
                                 try:
-                                    ctime = datetime.utcfromtimestamp(int(f_stat.st_ctime)).isoformat()
+                                    ctime = datetime.fromtimestamp(int(f_stat.st_ctime), timezone.utc).isoformat()
                                 except ValueError:
                                     logmsg = '[{0}] CTIME TIMESTAMP WARNING {1}'.format(thread, os.path.join(parent_path, file_name))
                                     logger.warning(logmsg)
@@ -635,7 +635,7 @@ def get_tree_size(executor, thread, root, top, path, sizes, inodes, depth=0, max
             
             # handle timestamp errors in s3fs and possibly other fuse mounts
             try:
-                mtime = datetime.utcfromtimestamp(int(d_stat.st_mtime)).isoformat()
+                mtime = datetime.fromtimestamp(int(d_stat.st_mtime), timezone.utc).isoformat()
             except ValueError:
                 logmsg = '[{0}] MTIME TIMESTAMP WARNING {1}'.format(thread, os.path.join(parent_path, file_name))
                 logger.warning(logmsg)
@@ -646,7 +646,7 @@ def get_tree_size(executor, thread, root, top, path, sizes, inodes, depth=0, max
                 pass
             
             try:
-                atime = datetime.utcfromtimestamp(int(d_stat.st_atime)).isoformat()
+                atime = datetime.fromtimestamp(int(d_stat.st_atime), timezone.utc).isoformat()
             except ValueError:
                 logmsg = '[{0}] ATIME TIMESTAMP WARNING {1}'.format(thread, os.path.join(parent_path, file_name))
                 logger.warning(logmsg)
@@ -657,7 +657,7 @@ def get_tree_size(executor, thread, root, top, path, sizes, inodes, depth=0, max
                 pass
             
             try:
-                ctime = datetime.utcfromtimestamp(int(d_stat.st_ctime)).isoformat()
+                ctime = datetime.fromtimestamp(int(d_stat.st_ctime), timezone.utc).isoformat()
             except ValueError:
                 logmsg = '[{0}] CTIME TIMESTAMP WARNING {1}'.format(thread, os.path.join(parent_path, file_name))
                 logger.warning(logmsg)
@@ -838,7 +838,7 @@ def crawl(root):
         if config['LOGTOFILE']: logger_warn.critical(logmsg, exc_info=1)
         close_app_critical_error()
     scandir_walk_time = time.time() - scandir_walk_start
-    end_time = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
+    end_time = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
     
     # check if directory is empty or all files/dirs excluded
     if not root in sizes:
@@ -903,7 +903,7 @@ def banner():
             'I didn\'t even know that was there.',
             'Bringing light to the darkness.']
             
-    print(r"""\u001b[31;1m
+    print("""\u001b[31;1m
             _ _     _                       
            | (_)   | |                      
          __| |_ ___| | _______   _____ _ __ 
@@ -1024,8 +1024,6 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
                         help='use alternate scanner module in scanners/')
     parser.add_option('--threads', type=int,
                         help='crawl scan threads (overrides config maxthreads setting)')
-    parser.add_option('--threaddepth', type=int,
-                        help='crawl scan thread directory depth (overrides config threaddirdepth setting) (ESSENTIAL VER)')
     parser.add_option('-v', '--verbose', action='store_true',
                         help='verbose output')
     parser.add_option('-V', '--vverbose', action='store_true',
@@ -1100,11 +1098,6 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
         logger.error(logmsg)
         if config['LOGTOFILE']: logger_warn.error(logmsg)
         sys.exit(1)
-    if options.threaddepth:
-        logmsg = 'Using --threaddepth cli option to set crawl scan thread directory depth requires diskover Essential version.'
-        logger.error(logmsg)
-        if config['LOGTOFILE']: logger_warn.error(logmsg)
-        sys.exit(1)
 
     # get top path arg
     if args:
@@ -1154,17 +1147,24 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
         sys.exit(1)
 
     # check if tree_dir is empty or all items excluded
-    dc = 0
+    empty = True
     if IS_WIN and not options.altscanner:
         tree_dir = get_win_path(tree_dir)
-    for entry in os.scandir(tree_dir):
-        if entry.is_symlink():
-            pass
-        elif entry.is_dir() and not dir_excluded(entry.path):
-            dc += 1
-        elif not file_excluded(entry.name):
-            dc += 1
-    if dc == 0:
+    try:
+        for entry in os.scandir(tree_dir):
+            if entry.is_symlink():
+                pass
+            elif entry.is_dir() and not dir_excluded(entry.path):
+                empty = False
+                break
+            elif not file_excluded(entry.name):
+                empty = False
+                break
+    except OSError as e:
+        logmsg = 'OS ERROR: {0}'.format(e)
+        logger.error(logmsg)
+        raise
+    if empty:
         logger.info('{0} is empty or all items excluded! Nothing to crawl.'.format(tree_dir))
         sys.exit(0)
 
@@ -1238,7 +1238,7 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
         skipfilecount[tree_dir] = 0
         total_doc_count[tree_dir] = 0
         inodecount[tree_dir] = 0
-        start_time = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
+        start_time = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
         index_info_crawlstart(es, options.index, tree_dir, start_time, version, alt_scanner)
         
         # start thread for stat logging
