@@ -606,6 +606,7 @@ def get_tree_size(executor, thread, root, top, path, sizes, inodes, depth=0, max
                 dirs += dc
             with crawl_thread_lock:
                 crawl_thread_budget += len(crawl_futures)
+            del crawl_futures
             crawl_futures = []
         # if not excluding empty dirs is set or exclude empty dirs is set but there are files or 
         # dirs in the current directory, index the dir
@@ -788,6 +789,7 @@ def get_tree_size(executor, thread, root, top, path, sizes, inodes, depth=0, max
             future.result() # wait for subdir crawl to finish; discard results
         with crawl_thread_lock:
             crawl_thread_budget += len(crawl_futures)
+        del crawl_futures
     
     return size, size_du, files, dirs
 
