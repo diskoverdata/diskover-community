@@ -424,7 +424,7 @@ def list_plugins():
     """This is the list plugins function.
     It prints the name of all the available plugins
     """
-    if not config['PLUGINS_ENABLED']:
+    if not config['PLUGINS_ENABLE']:
         print('Plugins disabled in config')
     else:
         plugins_info = get_plugins_info()
