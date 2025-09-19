@@ -475,7 +475,7 @@ def get_tree_size(executor, thread, root, top, path, sizes, inodes, depth=0, max
                                 
                                 # check for invalid time stamps
                                 try:
-                                    mtime = datetime.fromtimestamp(int(f_stat.st_mtime), timezone.utc).isoformat()
+                                    mtime = datetime.fromtimestamp(int(f_stat.st_mtime), timezone.utc).replace(tzinfo=None).isoformat()
                                 except ValueError:
                                     logmsg = '[{0}] MTIME TIMESTAMP WARNING {1}'.format(thread, os.path.join(parent_path, file_name))
                                     logger.warning(logmsg)
@@ -486,7 +486,7 @@ def get_tree_size(executor, thread, root, top, path, sizes, inodes, depth=0, max
                                     pass
                                 
                                 try:
-                                    atime = datetime.fromtimestamp(int(f_stat.st_atime), tz=timezone.utc).isoformat()
+                                    atime = datetime.fromtimestamp(int(f_stat.st_atime), tz=timezone.utc).replace(tzinfo=None).isoformat()
                                 except ValueError:
                                     logmsg = '[{0}] ATIME TIMESTAMP WARNING {1}'.format(thread, os.path.join(parent_path, file_name))
                                     logger.warning(logmsg)
@@ -497,7 +497,7 @@ def get_tree_size(executor, thread, root, top, path, sizes, inodes, depth=0, max
                                     pass
                                 
                                 try:
-                                    ctime = datetime.fromtimestamp(int(f_stat.st_ctime), timezone.utc).isoformat()
+                                    ctime = datetime.fromtimestamp(int(f_stat.st_ctime), timezone.utc).replace(tzinfo=None).isoformat()
                                 except ValueError:
                                     logmsg = '[{0}] CTIME TIMESTAMP WARNING {1}'.format(thread, os.path.join(parent_path, file_name))
                                     logger.warning(logmsg)
@@ -636,7 +636,7 @@ def get_tree_size(executor, thread, root, top, path, sizes, inodes, depth=0, max
             
             # handle timestamp errors in s3fs and possibly other fuse mounts
             try:
-                mtime = datetime.fromtimestamp(int(d_stat.st_mtime), timezone.utc).isoformat()
+                mtime = datetime.fromtimestamp(int(d_stat.st_mtime), timezone.utc).replace(tzinfo=None).isoformat()
             except ValueError:
                 logmsg = '[{0}] MTIME TIMESTAMP WARNING {1}'.format(thread, os.path.join(parent_path, file_name))
                 logger.warning(logmsg)
@@ -647,7 +647,7 @@ def get_tree_size(executor, thread, root, top, path, sizes, inodes, depth=0, max
                 pass
             
             try:
-                atime = datetime.fromtimestamp(int(d_stat.st_atime), timezone.utc).isoformat()
+                atime = datetime.fromtimestamp(int(d_stat.st_atime), timezone.utc).replace(tzinfo=None).isoformat()
             except ValueError:
                 logmsg = '[{0}] ATIME TIMESTAMP WARNING {1}'.format(thread, os.path.join(parent_path, file_name))
                 logger.warning(logmsg)
@@ -658,7 +658,7 @@ def get_tree_size(executor, thread, root, top, path, sizes, inodes, depth=0, max
                 pass
             
             try:
-                ctime = datetime.fromtimestamp(int(d_stat.st_ctime), timezone.utc).isoformat()
+                ctime = datetime.fromtimestamp(int(d_stat.st_ctime), timezone.utc).replace(tzinfo=None).isoformat()
             except ValueError:
                 logmsg = '[{0}] CTIME TIMESTAMP WARNING {1}'.format(thread, os.path.join(parent_path, file_name))
                 logger.warning(logmsg)
