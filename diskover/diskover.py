@@ -27,7 +27,8 @@ import warnings
 import signal
 from datetime import datetime, timedelta, timezone
 from threading import Thread, Lock, current_thread
-from concurrent import futures
+from concurrent.futures import ThreadPoolExecutor
+import concurrent.futures
 from queue import Queue
 from random import choice
 
@@ -44,7 +45,7 @@ import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
-version = '2.3.1 community edition (ce)'
+version = '2.3.4 community edition (ce)'
 __version__ = version
 
 # Windows check
@@ -183,47 +184,71 @@ def receive_signal(signum, frame):
     close_app() 
     sys.exit(signum)
 
-def append_doc(thread, root, doc):
+
+def append_docs_buffer(thread, root, docs):
     """Append doc to docs list and upload to ES in batches. Sharded by thread."""
     global docs_buffer
+    global bulk_futures
     with crawl_thread_lock:
         if thread not in docs_buffer:
             docs_buffer[thread] = []
-        docs_buffer[thread].append(doc)
+        docs_buffer[thread] += docs
         docs = docs_buffer[thread]
         if len(docs) < config['ES_CHUNKSIZE']:
             return
+        del docs_buffer[thread]
         docs_buffer[thread] = []
-    start_bulk_upload(thread, root, docs)
+    if not quit:
+        future = bulk_executor.submit(start_bulk_upload, root, docs)
+        with crawl_thread_lock:
+            bulk_futures.append(future)
+
 
 def flush_docs_buffer(thread, root):
     """Flush docs buffer and upload to ES. Sharded by thread."""
     global docs_buffer
-    with crawl_thread_lock:
-        docs = docs_buffer[thread]
-        docs_buffer[thread] = []
-    start_bulk_upload(thread, root, docs)
+    global bulk_futures
+    if thread in docs_buffer:
+        with crawl_thread_lock:
+            docs = docs_buffer[thread]
+            docs_buffer[thread] = []
+        if not quit:
+            future = bulk_executor.submit(start_bulk_upload, root, docs)
+            with crawl_thread_lock:
+                bulk_futures.append(future)
 
-def start_bulk_upload(thread, root, docs):
+
+def start_bulk_upload(root, docs):
     """Bulk uploads docs to es index."""
     global bulktime
+    global total_doc_count
+    thread = current_thread().name
+    doc_count = len(docs)
     
     if DEBUG:
-        logger.debug('[{0}] bulk uploading {1} docs to ES...'.format(thread, len(docs)))
-    es_upload_start = time.time()
+        logger.debug('[{0}] Indexing {1} docs...'.format(thread, doc_count))
+    if options.verbose or options.vverbose:
+        logger.info('[{0}] Indexing {1} docs...'.format(thread, doc_count))
+        
+    upload_start = time.time()
     try:
         bulk_upload(es, options.index, docs)
     except Exception as e:
-        logmsg = '[{0}] FATAL ERROR: Elasticsearch bulk error! ({1})'.format(thread, e)
+        logmsg = '[{0}] FATAL ERROR: Elasticsearch bulk indexing error! ({1})'.format(thread, e)
         logger.critical(logmsg, exc_info=1)
         if config['LOGTOFILE']: logger_warn.critical(logmsg, exc_info=1)
         close_app_critical_error()
-    es_upload_time = time.time() - es_upload_start
+    upload_time = time.time() - upload_start
+    
     if DEBUG:
-        logger.debug('[{0}] bulk uploading {1} docs completed in {2:.3f}s'.format(
-            thread, len(docs), es_upload_time))
+        logger.debug('[{0}] Indexing {1} docs completed in {2:.3f}s'.format(thread, doc_count, upload_time))
+    if options.verbose or options.vverbose:
+        logger.info('[{0}] Indexing {1} docs completed in {2:.3f}s'.format(thread, doc_count, upload_time))
+
     with crawl_thread_lock:
-        bulktime[root] += es_upload_time
+        bulktime[root] += upload_time
+        total_doc_count[root] += doc_count 
+        
 
 def log_stats_thread(root):
     """Shows crawl and es upload stats."""
@@ -249,26 +274,29 @@ def log_stats_thread(root):
         inodesps_avg = (inodesps_max + inodesps_min + inodesps) / 3
         logger.info('CRAWL STATS (path {0}, files {1} (skipped {2}), dirs {3} (skipped {4}), elapsed {5}, perf {6:.3f} inodes/s (max {7:.3f}, min {8:.3f}, avg {9:.3f}), {10} paths still scanning {11}, memory usage {12})'.format(
             root, filecount[root], skipfilecount[root], dircount[root], skipdircount[root], elapsed, inodesps, inodesps_max, inodesps_min, inodesps_avg, len(scan_paths), scan_paths, get_mem_usage()))
-        dps = total_doc_count[root] / (timenow - start)
-        if dps_max is None or dps > dps_max:
-            dps_max = dps
-        if dps_min is None or dps < dps_min:
-            dps_min = dps
-        dps_avg = (dps_max + dps_min + dps) / 3
-        logger.info('ES UPLOAD STATS (path {0}, uploaded {1} docs, elapsed {2}, perf {3:.3f} docs/s (max {4:.3f}, min {5:.3f}, avg {6:.3f}))'.format(
-            root, total_doc_count[root], elapsed, dps, dps_max, dps_min, dps_avg))
+        try:
+            dps = total_doc_count[root] / bulktime[root]
+            if dps_max is None or dps > dps_max:
+                dps_max = dps
+            if dps_min is None or dps < dps_min:
+                dps_min = dps
+            dps_avg = (dps_max + dps_min + dps) / 3
+            logger.info('ES UPLOAD STATS (path {0}, uploaded {1} docs, upload time {2}, perf {3:.3f} docs/s (max {4:.3f}, min {5:.3f}, avg {6:.3f}))'.format(
+                root, total_doc_count[root], get_time(bulktime[root]), dps, dps_max, dps_min, dps_avg))
+        except ZeroDivisionError:
+            pass
 
 
-def get_tree_size(executor, thread, root, top, path, sizes, inodes, depth=0, maxdepth=999):
+def get_tree_size(executor, crawl_thread, root, top, path, d_stat, sizes, inodes, depth=0, maxdepth=999):
     """Return total size of all files in directory tree at path."""
     global filecount
     global skipfilecount
     global inodecount
     global dircount
     global skipdircount
-    global total_doc_count
     global warnings
     global crawl_thread_budget
+    thread = current_thread().name
 
     size = 0
     size_du = 0
@@ -290,38 +318,41 @@ def get_tree_size(executor, thread, root, top, path, sizes, inodes, depth=0, max
     if options.altscanner:
         if IS_WIN and options.altscanner == 'scandir_dircache':
             path = get_win_path(path)
-        try:
-            d_stat = alt_scanner.stat(path)
-        except RuntimeError as e:
-            logmsg = '[{0}] ALT SCANNER ERROR: {1}'.format(thread, e)
-            logger.error(logmsg)
-            if config['LOGTOFILE']: logger_warn.error(logmsg)
-            with crawl_thread_lock:
-                warnings += 1
-            return 0, 0, 0, 0
-        except Exception as e:
-            logmsg = '[{0}] ALT SCANNER EXCEPTION: {1}'.format(thread, e)
-            logger.exception(logmsg)
-            if config['LOGTOFILE']: logger_warn.exception(logmsg)
-            with crawl_thread_lock:
-                warnings += 1
-            return 0, 0, 0, 0
+        if d_stat is None:
+            try:
+                d_stat = alt_scanner.stat(path)
+            except RuntimeError as e:
+                logmsg = '[{0}] ALT SCANNER ERROR: {1}'.format(thread, e)
+                logger.error(logmsg)
+                if config['LOGTOFILE']: logger_warn.error(logmsg)
+                with crawl_thread_lock:
+                    warnings += 1
+                return 0, 0, 0, 0
+            except Exception as e:
+                logmsg = '[{0}] ALT SCANNER EXCEPTION: {1}'.format(thread, e)
+                logger.exception(logmsg)
+                if config['LOGTOFILE']: logger_warn.exception(logmsg)
+                with crawl_thread_lock:
+                    warnings += 1
+                return 0, 0, 0, 0
     else:
         if IS_WIN:
             path = get_win_path(path)
         # try to get os stat info for dir path
-        try:
-            d_stat = os.stat(path)
-        except OSError as e:
-            logmsg = '[{0}] OS ERROR: {1}'.format(thread, e)
-            logger.warning(logmsg)
-            if config['LOGTOFILE']: logger_warn.warning(logmsg)
-            with crawl_thread_lock:
-                warnings += 1
-            return 0, 0, 0, 0
+        if d_stat is None:
+            try:
+                d_stat = os.stat(path)
+            except OSError as e:
+                logmsg = '[{0}] OS ERROR: {1}'.format(thread, e)
+                logger.warning(logmsg)
+                if config['LOGTOFILE']: logger_warn.warning(logmsg)
+                with crawl_thread_lock:
+                    warnings += 1
+                return 0, 0, 0, 0
 
     # scan directory
     crawl_futures = []
+    docs = []
     try:
         if DEBUG:
             logger.debug('[{0}] Scanning path {1}...'.format(thread, path))
@@ -332,7 +363,7 @@ def get_tree_size(executor, thread, root, top, path, sizes, inodes, depth=0, max
                 logger.debug('[{0}] Scanning dir entry {1}...'.format(thread, entry.path))
             if options.vverbose:
                 logger.info('[{0}] Scanning dir entry {1}...'.format(thread, entry.path))         
-            
+            # skip all symlinks
             if entry.is_symlink():
                 if DEBUG:
                     logger.debug('[{0}] skipping symlink {1}'.format(thread, entry.path))
@@ -352,6 +383,7 @@ def get_tree_size(executor, thread, root, top, path, sizes, inodes, depth=0, max
                         if depth < maxdepth:
                             # recurse into subdir
                             if not quit:
+                                dir_stat = entry.stat()
                                 with crawl_thread_lock:
                                     can_submit = crawl_thread_budget > 0
                                     if can_submit:
@@ -359,11 +391,15 @@ def get_tree_size(executor, thread, root, top, path, sizes, inodes, depth=0, max
 
                                 if can_submit:
                                     # if a spare thread is available, do the subdir crawl concurrently
-                                    future = executor.submit(get_tree_size, executor, thread, root, top, dir_path, sizes, inodes, depth+1, maxdepth)
+                                    if DEBUG:
+                                        logger.debug('[{0}] starting thread for path {1}, depth {2}'.format(thread, entry.path, depth+1))
+                                    future = executor.submit(get_tree_size, executor, crawl_thread, root, top, dir_path, dir_stat, sizes, inodes, depth+1, maxdepth)
                                     crawl_futures.append(future)
                                 else:
                                     # fallback: do the crawl in the same thread recursively
-                                    s, sdu, fc, dc = get_tree_size(executor, thread, root, top, dir_path, sizes, inodes, depth+1, maxdepth)
+                                    if DEBUG:
+                                        logger.debug('[{0}] recursive same thread scan for path {1}, depth {2}'.format(thread, entry.path, depth+1))
+                                    s, sdu, fc, dc = get_tree_size(executor, crawl_thread, root, top, dir_path, dir_stat, sizes, inodes, depth+1, maxdepth)
                                     size += s
                                     size_du += sdu
                                     files += fc
@@ -401,18 +437,8 @@ def get_tree_size(executor, thread, root, top, path, sizes, inodes, depth=0, max
                 if not file_excluded(entry.name):
                     # get file stat info
                     f_stat = entry.stat()
-                    
-                    # restore file times (atime/mtime)
-                    if config['RESTORETIMES'] and not options.altscanner:
-                        res, err = set_times(entry.path, f_stat.st_atime, f_stat.st_mtime)
-                        if not res:
-                            logmsg = 'OS ERROR setting file times for {0} (error {1})'.format(entry.path, err)
-                            logger.warning(logmsg)
-                            if config['LOGTOFILE']: logger_warn.warning(logmsg)
-                            with crawl_thread_lock:
-                                warnings += 1
-
                     fsize = f_stat.st_size
+                    
                     # calculate allocated file size (du size)
                     if IS_WIN:
                         fsize_du = fsize
@@ -569,8 +595,13 @@ def get_tree_size(executor, thread, root, top, path, sizes, inodes, depth=0, max
                                                 warnings += 1
                                             pass
                                 # add file doc to docs list and upload to ES once it reaches certain size
-                                append_doc(thread, root, data.copy())
+                                docs.append(data)
                                 tot_doc_count += 1
+                                if tot_doc_count >= config['ES_CHUNKSIZE']:
+                                    append_docs_buffer(crawl_thread, root, docs.copy())
+                                    tot_doc_count = 0
+                                    del docs
+                                    docs = []
                             else:
                                 f_skip_count += 1
                                 if DEBUG:
@@ -588,7 +619,17 @@ def get_tree_size(executor, thread, root, top, path, sizes, inodes, depth=0, max
                         if DEBUG:
                             logger.debug('[{0}] empty file, skipping file {1}'.format(thread, entry.path))
                         if options.verbose or options.vverbose:
-                            logger.info('[{0}] empty file, skipping file {1}'.format(thread, entry.path))                    
+                            logger.info('[{0}] empty file, skipping file {1}'.format(thread, entry.path))
+                            
+                    # restore file times (atime/mtime)
+                    if config['RESTORETIMES'] and not options.altscanner:
+                        res, err = set_times(entry.path, f_stat.st_atime, f_stat.st_mtime)
+                        if not res:
+                            logmsg = 'OS ERROR setting file times for {0} (error {1})'.format(entry.path, err)
+                            logger.warning(logmsg)
+                            if config['LOGTOFILE']: logger_warn.warning(logmsg)
+                            with crawl_thread_lock:
+                                warnings += 1                  
                 else:
                     f_skip_count += 1
                     if DEBUG:
@@ -737,9 +778,13 @@ def get_tree_size(executor, thread, root, top, path, sizes, inodes, depth=0, max
                         pass
                     
             if depth > 0:
-                # add file doc to docs list and upload to ES once it reaches certain size
-                append_doc(thread, root, data.copy())
+                # add dir doc to docs list and upload to ES
+                docs.append(data)
                 tot_doc_count += 1
+                append_docs_buffer(crawl_thread, root, docs.copy())
+                tot_doc_count = 0
+                del docs
+                docs = []
             else:
                 with crawl_thread_lock:
                     sizes[root] = data.copy()
@@ -756,7 +801,6 @@ def get_tree_size(executor, thread, root, top, path, sizes, inodes, depth=0, max
             filecount[root] += f_count - f_skip_count
             skipfilecount[root] += f_skip_count
             skipdircount[root] += d_skip_count
-            total_doc_count[root] += tot_doc_count
             inodecount[root] += d_count + f_count
         
         # restore directory times (atime/mtime)
@@ -768,7 +812,14 @@ def get_tree_size(executor, thread, root, top, path, sizes, inodes, depth=0, max
                 if config['LOGTOFILE']: logger_warn.warning(logmsg)
                 with crawl_thread_lock:
                     warnings += 1
-
+                    
+    except PermissionError as e:
+        logmsg = '[{0}] PERMISSION ERROR: {1}'.format(thread, e)
+        logger.warning(logmsg)
+        if config['LOGTOFILE']: logger_warn.warning(logmsg)
+        with crawl_thread_lock:
+            warnings += 1
+        pass
     except OSError as e:
         logmsg = '[{0}] OS ERROR: {1}'.format(thread, e)
         logger.warning(logmsg)
@@ -777,12 +828,18 @@ def get_tree_size(executor, thread, root, top, path, sizes, inodes, depth=0, max
             warnings += 1
         pass
     except RuntimeError as e:
-        logmsg = '[{0}] ALT SCANNER ERROR: {1}'.format(thread, e)
-        logger.error(logmsg)
-        if config['LOGTOFILE']: logger_warn.error(logmsg)
-        with crawl_thread_lock:
-            warnings += 1
-        pass
+        if options.altscanner:
+            logmsg = '[{0}] ALT SCANNER ERROR: {1}'.format(thread, e)
+            logger.error(logmsg)
+            if config['LOGTOFILE']: logger_warn.error(logmsg)
+            with crawl_thread_lock:
+                warnings += 1
+            pass
+        else:
+            logmsg = '[{0}] RUNTIME ERROR: {1}'.format(thread, e)
+            logger.error(logmsg)
+            if config['LOGTOFILE']: logger_warn.error(logmsg)
+            raise
     # post-exception cleanup:
     if crawl_futures:
         for future in crawl_futures:
@@ -806,28 +863,27 @@ def crawl(root):
     global dps_avg
     sizes = {}
     inodes = set()
+    crawl_thread = current_thread().name
 
     def crawl_tree(root, top, maxdepth, sizes, inodes):
-        global total_doc_count
         global scan_paths
         global crawl_thread_budget
-        thread = current_thread().name
 
         crawl_start = time.time()
         with crawl_thread_lock:
             scan_paths.append(top)
         if DEBUG:
-            logger.debug('[{0}] starting crawl {1} (depth {2}, maxdepth {3})...'.format(thread, top, 0, maxdepth))
+            logger.debug('[{0}] starting crawl {1} (depth {2}, maxdepth {3})...'.format(crawl_thread, top, 0, maxdepth))
         if options.verbose or options.vverbose:
-            logger.info('[{0}] starting crawl {1} (depth {2}, maxdepth {3})...'.format(thread, top, 0, maxdepth))
-        with futures.ThreadPoolExecutor(max_workers=maxthreads) as executor:
+            logger.info('[{0}] starting crawl {1} (depth {2}, maxdepth {3})...'.format(crawl_thread, top, 0, maxdepth))
+        with ThreadPoolExecutor(max_workers=maxthreads) as executor:
             crawl_thread_budget = maxthreads
-            size, size_du, file_count, dir_count = get_tree_size(executor, thread, root, top, top, sizes, inodes, 0, maxdepth)
-        flush_docs_buffer(thread, root)
+            size, size_du, file_count, dir_count = get_tree_size(executor, crawl_thread, root, top, top, None, sizes, inodes, 0, maxdepth)
+        flush_docs_buffer(crawl_thread, root)
         
         crawl_time = get_time(time.time() - crawl_start)
         logger.info('[{0}] finished crawling {1} ({2} dirs, {3} files, {4}) in {5}'.format(
-                thread, top, dir_count, file_count, convert_size(size), crawl_time))
+                crawl_thread, top, dir_count, file_count, convert_size(size), crawl_time))
         with crawl_thread_lock:
             scan_paths.remove(top)
 
@@ -855,6 +911,10 @@ def crawl(root):
             es.indices.delete(index=options.index, ignore=[400, 404])
     # upload the directory doc for the root top level directory to ES
     else:
+        # wait for bulk index requests to complete
+        logger.info("Waiting for requests to complete...")
+        concurrent.futures.wait(bulk_futures)
+        
         es.index(options.index, sizes[root])
         total_doc_count[root] += 1
 
@@ -883,7 +943,7 @@ def crawl(root):
             pass
         logger.info('*** docs indexed {0} ***'.format(total_doc_count[root]))
         try:
-            dps = total_doc_count[root] / scandir_walk_time
+            dps = total_doc_count[root] / bulktime[root]
             if dps_max is None:
                 dps_max = dps
             if dps_min is None:
@@ -1026,6 +1086,8 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
                         help='use alternate scanner module in scanners/')
     parser.add_option('--threads', type=int,
                         help='crawl scan threads (overrides config maxthreads setting)')
+    parser.add_option('--indexthreads', type=int, default=16, 
+                        help='indexing threads (overrides config indexthreads setting), default "%default"')
     parser.add_option('-v', '--verbose', action='store_true',
                         help='verbose output')
     parser.add_option('-V', '--vverbose', action='store_true',
@@ -1232,6 +1294,18 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
                 maxthreads = int(os.cpu_count())
         
         logger.info('maxthreads set to {0}'.format(maxthreads))
+        
+        # check for index thread config override
+        if options.indexthreads:
+            indexthreads = options.indexthreads
+        else:
+            indexthreads = config['INDEXTHREADS']
+        
+        logger.info('indexthreads set to {0}'.format(indexthreads))
+        
+        # set up thread pool for indexing
+        bulk_executor = ThreadPoolExecutor(max_workers=indexthreads)
+        bulk_futures = []
         
         bulktime[tree_dir] = 0.0
         dircount[tree_dir] = 1
