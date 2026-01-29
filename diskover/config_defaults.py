@@ -23,6 +23,7 @@ conf = {
     'LOGTOFILE': False,
     'LOGDIRECTORY': '/var/log/diskover/',
     'MAXTHREADS': None,
+    'INDEXTHREADS': 16,
     'BLOCKSIZE': 512,
     'EXCLUDES_DIRS': ['.*', '.snapshot', '.Snapshot', '~snapshot', '~Snapshot', '.zfs'],
     'EXCLUDES_FILES': ['.*', 'Thumbs.db', '.DS_Store', '._.DS_Store', '.localized', 'desktop.ini'],
