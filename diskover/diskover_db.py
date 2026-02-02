@@ -137,6 +137,10 @@ def get_config(config):
     except confuse.NotFoundError:
         pass
     try:
+        config_confuse['INDEXTHREADS'] = config['diskover']['indexthreads'].get()
+    except confuse.NotFoundError:
+        pass
+    try:
         config_confuse['BLOCKSIZE'] = config['diskover']['blocksize'].get()
     except confuse.NotFoundError:
         pass
