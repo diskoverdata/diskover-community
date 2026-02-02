@@ -23,6 +23,7 @@ $config_defaults_diskover = [
     'LOGTOFILE' => false,
     'LOGDIRECTORY' => '/var/log/diskover/',
     'MAXTHREADS' => null,
+    'INDEXTHREADS' => 16,
     'BLOCKSIZE' => 512,
     'EXCLUDES_DIRS' => ['.*', '.snapshot', '.Snapshot', '~snapshot', '~Snapshot', '.zfs'],
     'EXCLUDES_FILES' => ['.*', 'Thumbs.db', '.DS_Store', '._.DS_Store', '.localized', 'desktop.ini'],

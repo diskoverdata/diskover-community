@@ -123,6 +123,12 @@ if ($_POST['formname'] === 'elasticsearchform') {
         $errors['MAXTHREADS'] = 'MAXTHREADS must be set to a number or empty.';
     }
 
+    if (empty($_POST['INDEXTHREADS'])) {
+        $errors['INDEXTHREADS'] = 'INDEXTHREADS is required.';
+    } elseif (!is_numeric($_POST['INDEXTHREADS'])) {
+        $errors['INDEXTHREADS'] = 'INDEXTHREADS must be set to a number.';
+    }
+
     if (empty($_POST['BLOCKSIZE'])) {
         $errors['BLOCKSIZE'] = 'BLOCKSIZE is required.';
     } elseif (!is_numeric($_POST['BLOCKSIZE'])) {
