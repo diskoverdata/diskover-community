@@ -38,6 +38,7 @@ $helptext = [
     'LOGTOFILE' => 'Log output to file. Set to true or false. Default is false.',
     'LOGDIRECTORY' => 'Log directory. By default on Linux this is /var/log/diskover/.',
     'MAXTHREADS' => 'Max number of crawl threads.<br>A thread is created up to maxthreads for each directory at level 1 of tree dir arg.<br>Set to a number or leave blank to auto set based on number of cpus.',
+    'INDEXTHREADS' => 'Number of indexing threads. Index threads are used for bulk indexing to Elasticsearch. Default is 16.',
     'BLOCKSIZE' => 'Block size used for du size, Default is 512.',
     'EXCLUDES_DIRS' => 'Directory names and absolute paths you want to exclude from crawl. Separate with a comma.<br>Directory excludes uses <a href="https://docs.python.org/3/library/re.html" target="_blank">python re.search</a> for string search (regex). Directory excludes are case-sensitive.<br>Examples: .* or .backup or .backup* or /dir/dirname.<br>To exclude none leave empty.',
     'EXCLUDES_FILES' => 'Files you want to exclude from crawl. Separate with a comma.<br>Can include wildcards (.*, *.doc or NULLEXT for files with no extension).<br>File names are case-sensitive, extensions are not.',
