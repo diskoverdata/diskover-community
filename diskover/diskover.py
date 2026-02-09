@@ -1086,8 +1086,8 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
                         help='use alternate scanner module in scanners/')
     parser.add_option('--threads', type=int,
                         help='crawl scan threads (overrides config maxthreads setting)')
-    parser.add_option('--indexthreads', type=int, default=16, 
-                        help='indexing threads (overrides config indexthreads setting), default "%default"')
+    parser.add_option('--indexthreads', type=int, 
+                        help='indexing threads (overrides config indexthreads setting)')
     parser.add_option('-v', '--verbose', action='store_true',
                         help='verbose output')
     parser.add_option('-V', '--vverbose', action='store_true',
@@ -1300,6 +1300,8 @@ Crawls a directory tree and upload it's metadata to Elasticsearch.""".format(ver
             indexthreads = options.indexthreads
         else:
             indexthreads = config['INDEXTHREADS']
+            if not indexthreads:
+                indexthreads = 16  # default to 16 threads for indexing
         
         logger.info('indexthreads set to {0}'.format(indexthreads))
         
