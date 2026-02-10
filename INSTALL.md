@@ -15,7 +15,6 @@ git clone https://github.com/diskoverdata/diskover-community.git
 
 - See [Releases](https://github.com/diskoverdata/diskover-community/releases) to download latest stable version in zip or tar format.
 - Diskover Community Edition v2.3 linuxserver.io Docker container. Download on [Docker Hub](https://hub.docker.com/r/linuxserver/diskover) or [Github](https://github.com/linuxserver/docker-diskover).
-- Diskover Community Edition v2.3 on [AWS Marketplace](https://aws.amazon.com/marketplace/pp/prodview-ahatamjklfgk4?sr=0-1&ref_=beagle&applicationId=AWSMPContessa)
 
 ## Supported Operating Systems
 
@@ -347,7 +346,7 @@ Please note that Diskover doesn't offer dedicated support for the free Community
 
 ## Feature Upgrade Information
 
-- If you are a **home user**, the Community Edition is your best option as it is free to use for an unlimited time, and offers features to find and organize your data. The Diskover’s [subscription plans](https://diskoverdata.com/platform/features/) are designed for businesses, offering advanced features that exceed the budget of most home users.
+- If you are a **home user**, the Community Edition is your best option as it is free to use for an unlimited time, and offers features to find and organize your data. The Diskover’s [subscription plans](https://diskoverdata.com/platforms/diskover-plans/) are designed for businesses, offering advanced features that exceed the budget of most home users.
 
-- If you are a **business** trying out Diskover, please [contact us](https://diskoverdata.com/contact/) if would like to have more information regarding our [subscription options](https://diskoverdata.com/platform/features/).
+- If you are a **business** trying out Diskover, please [contact us](https://diskoverdata.com/contact/) if would like to have more information regarding our [subscription options](https://diskoverdata.com/platforms/diskover-plans/).
   
