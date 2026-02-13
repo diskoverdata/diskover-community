@@ -17,7 +17,7 @@ Using Diskover, users can identify old and unused files and give better insights
 
 Diskover runs on Linux, macOS and Windows 10 and is written in Python. Diskover's web app, diskover-web, is written in PHP, Javascript, HTML5, and CSS.
 
-The Diskover Community Edition is free to use for an unlimited time—no license keys required. It is the perfect solution for home use, and try out Diskover, and start understanding your data. Diskover also offers [annual solutions](https://diskoverdata.com/solutions/) for corporations, unlocking powerful additional core and industry-specific features.
+The Diskover Community Edition is free to use for an unlimited time—no license keys required. It is the perfect solution for home use, and try out Diskover, and start understanding your data. Diskover also offers [annual subscriptions](https://diskoverdata.com/platforms/diskover-plans/) for corporations, unlocking powerful additional core and industry-specific features.
 
 ## Diskover Interface
 
@@ -28,7 +28,7 @@ The Diskover Community Edition is free to use for an unlimited time—no license
 
 ## News & Updates
 
-- Diskover v2.3.0 Community Edition - Released in August 2024
+- Diskover v2.3.4 Community Edition - Released January 2026
 - Diskover version 1.X is EOL and no longer supported
 
 ## Install & User Guides
