@@ -45,7 +45,7 @@ import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
-version = '2.3.4 community edition (ce)'
+version = '2.3.5 community edition (ce)'
 __version__ = version
 
 # Windows check
