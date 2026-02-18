@@ -847,6 +847,10 @@ def get_tree_size(executor, crawl_thread, root, top, path, d_stat, sizes, inodes
         with crawl_thread_lock:
             crawl_thread_budget += len(crawl_futures)
         del crawl_futures
+    # add any remaining docs to docs list and upload to ES
+    if docs:
+        append_docs_buffer(crawl_thread, root, docs.copy())
+        del docs
     
     return size, size_du, files, dirs
 
