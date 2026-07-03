@@ -170,10 +170,21 @@ class ConfigDatabase
         $foundSetting = false;
         $value = json_encode($value);
 
-        $res = $this->db->exec("UPDATE $table SET value='$value' WHERE name = '$name'");
+        if (!in_array($table, ['configweb', 'configdiskover'], true)) {
+            throw new \Exception('Invalid config table.');
+        }
+
+        $stmt = $this->db->prepare("UPDATE $table SET value = :value WHERE name = :name");
+        if (!$stmt) {
+            throw new \Exception('There was an error preparing the config setting update.');
+        }
+        $stmt->bindValue(':value', $value, SQLITE3_TEXT);
+        $stmt->bindValue(':name', $name, SQLITE3_TEXT);
+        $res = $stmt->execute();
 
         if ($res) {
             $foundSetting = true;
+            $res->finalize();
         }
 
         if (!$foundSetting) {
